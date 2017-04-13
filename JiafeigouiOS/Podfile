@@ -1,0 +1,17 @@
+platform :ios, '7.0'
+target 'JiafeigouiOS' do
+
+pod 'MJRefresh'
+pod 'SDWebImage', '~> 3.7.6'
+pod 'Masonry', '~> 1.0.0'
+pod 'KVOController'
+pod 'SSKeychain'
+pod 'Reachability', '~> 3.2'
+pod 'MXParallaxHeader', '~> 0.5.0'
+pod 'UITableView+FDTemplateLayoutCell_Bell', '~> 1.5.0'
+pod 'JZNavigationExtension'
+pod 'pop'
+pod 'MJExtension'
+pod 'Aspects'
+
+end

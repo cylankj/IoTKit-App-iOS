@@ -1,0 +1,631 @@
+//
+//  JiafeigouRootViewController.m
+//  JiafeigouiOS
+//
+//  Created by 杨利 on 16/5/24.
+//  Copyright © 2016年 lirenguang. All rights reserved.
+//
+
+#import "JiafeigouRootViewController.h"
+#import "UIView+FLExtensionForFrame.h"
+#import "FLGlobal.h"
+#import "PopAnimation.h"
+#import "TimeChangeMonitor.h"
+#import "LoginManager.h"
+#import <MXParallaxHeader/MXParallaxHeader.h>
+#import "jiafeigouTableView.h"
+#import "UIColor+FLExtension.h"
+#import <JZNavigationExtension/JZNavigationExtension.h>
+#import "FLTipsBaseView.h"
+#import "FLProressHUD.h"
+#import "ApnsManger.h"
+#import "EfamilyRootVC.h"
+#import "JfgMsgDefine.h"
+#import "LoginRegisterViewController.h"
+#import "QRViewController.h"
+#import "AddDeviceMainViewController.h"
+#import "DoorVideoVC.h"
+#import "NetworkMonitor.h"
+#import <JFGSDK/MPMessagePackReader.h>
+#import "JfgLanguage.h"
+#import "ProgressHUD.h"
+#import "DeviceSettingViewModel.h"
+#import "dataPointMsg.h"
+#import "SetDevNicNameViewController.h"
+#import "JfgConfig.h"
+#import "CommonMethod.h"
+#import "JFGEquipmentAuthority.h"
+#import "JFGBoundDevicesMsg.h"
+#import "LSChatModel.h"
+#import "LSBookManager.h"
+
+@interface JiafeigouRootViewController ()<TimeChangeMonitorDelegate,LoginManagerDelegate,JFGSDKCallbackDelegate>
+{
+    NSMutableArray *dataArray;
+}
+//昵称Lable
+@property (nonatomic,strong)UILabel *nickNameLabel;
+
+//问候语Label
+@property (nonatomic,strong)UILabel *greetLabel;
+
+//顶部背景图片
+@property (nonatomic,strong)UIImageView *topBackgroundImageView;
+
+//添加设备
+@property (nonatomic,strong)UIButton *addButton;
+
+
+@property (nonatomic,strong)jiafeigouTableView *_tableView;
+
+@end
+
+@implementation JiafeigouRootViewController
+
+- (void)viewDidLoad {
+    
+    [super viewDidLoad];
+    self.view.backgroundColor = [UIColor whiteColor];
+    self.automaticallyAdjustsScrollViewInsets = NO;
+    
+    NSString *titleName;
+    if ([JfgLanguage languageType] == 0) {
+        titleName = @"加菲狗";
+    }else{
+        titleName = @"Clever Dog";
+    }
+    self.navigationItem.title = [JfgLanguage getLanTextStrByKey:@"Tap1_TitleName"];
+    
+    //添加这个页面数据需要的代理
+    [self delegateManager];
+    
+    //设置头部视图
+    [self initHeaderViewForTableView];
+    
+    [self.view addSubview:self._tableView];
+    [self.view addSubview:self.addButton];
+    
+    //获取账号信息
+    [JFGSDK getAccount];
+    
+    
+    if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess)
+    {
+        [ApnsManger registerRemoteNotification:YES];
+        //刷新设备列表，防止列表回复过早导致信息丢失
+       // [JFGSDK refreshDeviceList];
+    }
+}
+
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess)
+    {
+        [ApnsManger registerRemoteNotification:NO];
+    }
+    
+    
+}
+
+-(void)orientationChanged:(NSNotification *)notification
+{
+    //UIDeviceOrientation deviceOrientation = [[UIDevice currentDevice] orientation];
+}
+
+-(void)viewDidAppear:(BOOL)animated
+{
+    //开启波浪滚动
+    [self._tableView startRipple];
+    [self._tableView loginStatueChick];
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent animated:YES];
+    
+    UIDevice *device = [UIDevice currentDevice];
+    [device beginGeneratingDeviceOrientationNotifications];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged:) name:UIDeviceOrientationDidChangeNotification object:device];
+    
+    
+    NSString *devName = [NSString stringWithUTF8String:object_getClassName(self)];
+    NSLog(@"vcName:%@",devName);
+}
+
+-(void)viewDidDisappear:(BOOL)animated
+{
+    //关闭波浪滚动
+    [self._tableView stopRipple];
+    [[NSNotificationCenter defaultCenter]removeObserver:self name:UIDeviceOrientationDidChangeNotification object:[UIDevice currentDevice]];
+}
+
+
+
+-(void)delegateManager
+{
+    //添加时间变化代理
+    [[TimeChangeMonitor sharedManager] starTimer];
+    [[TimeChangeMonitor sharedManager] addDelegate:self];
+    [[LoginManager sharedManager] addDelegate:self];
+    [JFGSDK addDelegate:self];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(jumpingRootView) name:@"JFGJumpingRootView" object:nil];
+}
+
+-(void)jumpingRootView
+{
+    [self.navigationController popToRootViewControllerAnimated:NO];
+}
+
+//创建tableView头部相关视图
+-(void)initHeaderViewForTableView
+{
+    topBgViewHeight = ceil(kheight*0.34);
+    self.nickNameLabel.text = @"Hi";
+    self.topBackgroundImageView.image = [UIImage imageNamed:@"header_bg"];
+    UIView *headerView = [[UIView alloc]initWithFrame:CGRectMake(0, -topBgViewHeight, self.view.width, topBgViewHeight)];
+    [headerView addSubview:self.nickNameLabel];
+    [headerView addSubview:self.greetLabel];
+
+    [self._tableView stretchHeaderView:self.topBackgroundImageView subViews:headerView];
+    
+    [[TimeChangeMonitor sharedManager] timerAction];
+    
+    if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+        self._tableView.refreshView.hidden = YES;
+    }
+}
+
+#pragma mark receive push_msg 
+- (void)jfgRobotSyncDataForPeer:(NSString *)peer fromDev:(BOOL)isDev msgList:(NSArray<DataPointSeg *> *)msgList
+{
+    @try
+    {
+        for (DataPointSeg *seg in msgList)
+        {
+            NSError *error = nil;
+            id obj = [MPMessagePackReader readData:seg.value error:&error];
+            if (error == nil)
+            {
+                switch (seg.msgId)
+                {
+                    /*
+                    // 插入SD卡 默认开启 移动侦测
+                    case dpMsgBase_SDStatus:
+                    {
+                        if ([obj isKindOfClass:[NSArray class]])
+                        {
+                            BOOL isExistSDCard = [[obj objectAtIndex:3] boolValue];
+                            int SDCardError = [[obj objectAtIndex:2] intValue];
+                            
+                            if (isExistSDCard && SDCardError == 0) // SD卡 正常使用
+                            {
+                                [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgCamera_WarnEnable)] withCid:peer SuccessBlock:^(NSMutableDictionary *dic)
+                                {
+                                    BOOL isWarnEnable = [[dic objectForKey:dpMsgCameraWarnEnableKey] boolValue];
+                                    if (isWarnEnable) // 移动侦测 开启
+                                    {
+                                        DeviceSettingViewModel *settingVM = [[DeviceSettingViewModel alloc] init];
+                                        settingVM.cid = peer;
+                                        [settingVM updateMotionDection:MotionDetectAbnormal tipShow:NO];
+                                    }
+                                    
+                                } FailBlock:^(RobotDataRequestErrorType error) {
+                                    
+                                }];
+                            }
+                            
+                        }
+                    }
+                        break;
+                    */
+                    // 插入SD卡 默认开启 移动侦测
+                    case dpMsgBase_SDCardInfoList:
+                    {
+                        if ([obj isKindOfClass:[NSArray class]])
+                        {
+                            BOOL isExistSDCard = [[obj objectAtIndex:0] boolValue];
+                            int SDCardError = [[obj objectAtIndex:1] intValue];
+                            
+                            if (isExistSDCard && SDCardError == 0)
+                            {
+                                [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgCamera_WarnEnable)] withCid:peer SuccessBlock:^(NSMutableDictionary *dic)
+                                 {
+                                     BOOL isWarnEnable = [[dic objectForKey:dpMsgCameraWarnEnableKey] boolValue];
+                                     if (isWarnEnable) // 移动侦测 开启
+                                     {
+                                         DeviceSettingViewModel *settingVM = [[DeviceSettingViewModel alloc] init];
+                                         settingVM.cid = peer;
+                                         [settingVM updateMotionDection:MotionDetectAbnormal tipShow:NO];
+                                     }
+                                     
+                                 } FailBlock:^(RobotDataRequestErrorType error) {
+                                     
+                                 }];
+                            }
+                            
+                        }
+                    }
+                        break;
+                }
+            }
+        }
+    } @catch (NSException *exception) {
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"jifeigou RootViewControl %@",exception]];
+    } @finally {
+        
+    }
+}
+
+#pragma mark- timeChange Delegate
+-(void)timeChangeWithCurrentYear:(NSInteger)year month:(NSInteger)month day:(NSInteger)day hour:(NSInteger)hour minute:(NSInteger)minute
+{
+    NSString *reminderText;
+//    if (![LoginManager sharedManager].isLogined) {
+//        reminderText = @"美好的一天开始了";
+//    }else{
+        if (hour>=6 && hour<18) {
+            //白天
+            reminderText = [JfgLanguage getLanTextStrByKey:@"Tap1_Index_DayGreetings"];
+                    }else{
+            //晚上
+            reminderText = [JfgLanguage getLanTextStrByKey:@"Tap1_Index_NightGreetings"];
+           
+        }
+//    }
+    
+    if (hour>=6 && hour<18) {
+        //白天
+       
+        self.topBackgroundImageView.image = [UIImage imageNamed:@"header_bg"];
+        [self._tableView setBarViewColor:YES];
+    }else{
+        //晚上
+        
+        self.topBackgroundImageView.image = [UIImage imageNamed:@"bg_top_夜晚"];
+        [self._tableView setBarViewColor:NO];
+    }
+    
+    if (![reminderText isEqualToString:self.greetLabel.text]) {
+        self.greetLabel.text = reminderText;
+    }
+    
+}
+
+#pragma mark- LoginManagerDelegate
+-(void)loginSuccess
+{
+    [[TimeChangeMonitor sharedManager] timerAction];
+    [JFGSDK getAccount];
+    [self._tableView loginStatueChick];
+    self._tableView.refreshView.hidden = NO;
+}
+
+//退出登录
+-(void)loginOut
+{
+    self._tableView.refreshView.hidden = YES;
+    [[TimeChangeMonitor sharedManager] timerAction];
+    self.nickNameLabel.text = @"Hi";
+    [self._tableView loginStatueChick];
+}
+
+-(void)jfgAccountOnline:(BOOL)online
+{
+    if (online == NO) {
+        if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusLoginOut) {
+            JFGSDKAcount *acc = [[LoginManager sharedManager] accountCache];
+            [self jfgUpdateAccount:acc];
+        }
+    }
+}
+
+#pragma mark- JFGSDKDelegate
+-(void)jfgUpdateAccount:(JFGSDKAcount *)account
+{
+    if (account) {
+        
+        if (account.alias && ![account.alias isEqualToString:@""]) {
+            
+            if (account.alias.length>8) {
+                
+                NSString *newAlias = [account.alias substringToIndex:8];
+                self.nickNameLabel.text = [NSString stringWithFormat:@"Hi,%@...",newAlias];
+                
+            }else{
+                
+                if (![account.alias isEqualToString:@""]) {
+                    self.nickNameLabel.text = [NSString stringWithFormat:@"Hi,%@",account.alias];
+                }
+                
+            }
+            
+        }else{
+            
+            if (account.account) {
+                if (account.account.length>8) {
+                    
+                    NSString *newAlias = [account.account substringToIndex:8];
+                    self.nickNameLabel.text = [NSString stringWithFormat:@"Hi,%@...",newAlias];
+                    
+                }else{
+                    
+                    if (![account.account isEqualToString:@""]) {
+                        self.nickNameLabel.text = [NSString stringWithFormat:@"Hi,%@",account.account];
+                    }
+                    
+                }
+
+            }
+            
+            
+            
+        }
+        
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"JFGAccountIsOpnePush"];
+        [[NSUserDefaults standardUserDefaults] setBool:account.pushEnable forKey:@"JFGAccountIsOpnePush"];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        
+    }
+}
+
+
+
+//门铃被动呼叫,要保持一直能收到回调
+- (void)jfgDoorbellCall:(JFGSDKDoorBellCall *)call {
+    NSLog(@"收到门铃呼叫");
+    
+    if (call.isAnswer) {
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"doorBellCall:%@ isAnswered",call.cid]];
+        return;
+    }
+    
+    BOOL isExist = NO;
+    NSMutableArray <JiafeigouDevStatuModel *> *cidList = [JFGBoundDevicesMsg sharedDeciceMsg].getDevicesList;
+    for (JiafeigouDevStatuModel *model in cidList) {
+        
+        if ([model.uuid isEqualToString:call.cid]) {
+            isExist = YES;
+            break;
+        }
+        
+    }
+    if (!isExist || !call.cid) {
+        return;
+    }
+    
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"doorBellCall:%@",call.cid]];
+    
+    NSString *playingCid = [[NSUserDefaults standardUserDefaults] objectForKey:JFGDoorBellIsPlayingCid];
+    
+    
+    if (playingCid && [playingCid isEqualToString:call.cid]) {
+        return;
+    }
+    if ([[UIApplication sharedApplication] applicationState] == UIApplicationStateActive)
+    {
+        if (![[NSUserDefaults standardUserDefaults] boolForKey:JFGDoorBellIsCallingKey])
+        {
+            [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGDoorBellIsCallingKey];
+            [[NSNotificationCenter defaultCenter] postNotificationName:JFGDoorBellIsCallingKey object:call.cid];
+            //30s 后恢复为呼叫状态，防止其他页面忘记恢复
+            [self performSelector:@selector(resetDoorBellCallStatues) withObject:nil afterDelay:30];
+            DoorVideoVC *doorVideo = [[DoorVideoVC alloc] init];
+            doorVideo.pType = productType_DoorBell;
+            doorVideo.cid = call.cid;
+            doorVideo.actionType = doorActionTypeUnActive;
+            ///[cid]/[timestamp].jpg
+            NSString *imageUrl = [JFGSDK getCloudUrlWithFlag:call.regionType fileName:[NSString stringWithFormat:@"/%@/%d.jpg",call.cid,call.time]];
+            doorVideo.imageUrl = imageUrl;
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"门铃呼叫截图：%@",imageUrl]];
+          
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"showDoorBellCallingVC" object:nil];
+            
+            UIWindow * window = [UIApplication sharedApplication].keyWindow;
+            UITabBarController * barCon = (UITabBarController *)window.rootViewController;
+            if ([barCon isKindOfClass:[UITabBarController class]]) {
+                barCon.selectedIndex = 0;
+                UINavigationController * nav = barCon.viewControllers[0];
+                doorVideo.hidesBottomBarWhenPushed = YES;
+                [nav pushViewController:doorVideo animated:YES];
+            }
+            
+            
+        }
+    }
+}
+
+
+//未读的回复消息
+-(void)jfgFeedBackWithInfoList:(NSArray <JFGSDKFeedBackInfo *> *)infoList errorType:(JFGErrorType)errorType {
+    //NSLog(@"回复未读的消息列表打印：%@,错误信息：%d",infoList,errorType);
+    NSDateFormatter *matter =[[NSDateFormatter alloc] init];
+    [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
+    NSDictionary *msgDic = nil;
+    for (JFGSDKFeedBackInfo * info in infoList) {
+        
+        msgDic =@{ @"msg"          :   info.msg,
+                   @"msgDate"      :   [matter stringFromDate:[NSDate dateWithTimeIntervalSince1970:info.timestamp]],
+                   @"lastMsgDate"  :   [matter stringFromDate:[NSDate dateWithTimeIntervalSince1970:info.timestamp]],
+                   @"modelType"    :   @0
+                   };
+        
+        
+        LSChatModel *aModel =[LSChatModel creatModel:msgDic];
+        
+
+        
+        NSMutableDictionary *writeDic =(NSMutableDictionary *)[aModel dictionaryWithValuesForKeys:@[@"msg",
+                                                                                                    @"msgDate",
+                                                                                                    @"lastMsgDate",
+                                                                                                    @"modelType",
+                                                                                                    @"cellHeight",
+                                                                                                    @"enableDateLabel"]];
+        [[LSBookManager sharedManager] writePlist:writeDic];
+        
+    }
+    
+}
+
+
+-(void)resetDoorBellCallStatues
+{
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:JFGDoorBellIsCallingKey]) {
+        [[NSUserDefaults standardUserDefaults] setBool:NO forKey:JFGDoorBellIsCallingKey];
+    }
+}
+
+#pragma mark- action
+-(void)addBtnAction
+{
+    
+    if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusLoginOut)
+    {
+        LoginRegisterViewController *loginRegister = [LoginRegisterViewController new];
+        loginRegister.viewType = FristIntoViewTypeLogin;
+        UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:loginRegister];
+        nav.navigationBarHidden = YES;
+        [self presentViewController:nav animated:YES completion:^{
+            
+        }];
+    }
+    else
+    {
+        AddDeviceMainViewController *addDevice = [AddDeviceMainViewController new];
+//        UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:addDevice];
+//        nav.navigationBarHidden = YES;
+        addDevice.hidesBottomBarWhenPushed = YES;
+        [self.navigationController pushViewController:addDevice animated:YES];
+        
+    }
+    
+    
+}
+
+
+#pragma mark- getter
+//创建顶部背景视图
+-(UIImageView *)topBackgroundImageView
+{
+    if (_topBackgroundImageView == nil) {
+        
+        UIImageView *imageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, topBgViewHeight)];
+        imageView.userInteractionEnabled = YES;
+        imageView.contentMode = UIViewContentModeScaleAspectFill;
+        imageView.clipsToBounds = YES;
+        _topBackgroundImageView = imageView;
+        
+    }
+    return _topBackgroundImageView;
+    
+}
+
+//创建昵称Label
+-(UILabel *)nickNameLabel
+{
+    if (!_nickNameLabel) {
+        CGFloat height = 29;
+        CGFloat nickNameLabelWidth = 200;
+        CGFloat nickNameFontSize = 27;
+        CGFloat center_y = ceil(kheight*0.34)*0.5;
+        _nickNameLabel = [self factoryLabelWithFrame:CGRectMake(self.view.x-nickNameLabelWidth*0.5, 75, nickNameLabelWidth, height) fontSize:nickNameFontSize];
+        _nickNameLabel.bottom = center_y;
+        _nickNameLabel.tag = 10001;
+    }
+    return _nickNameLabel;
+}
+
+
+//创建问候语Label
+-(UILabel *)greetLabel
+{
+    if (!_greetLabel) {
+        CGFloat height = 15;
+        CGFloat width = self.view.width-100;
+        CGFloat fontSize = 17;
+        CGFloat center_y = ceil(kheight*0.34)*0.5;
+        _greetLabel = [self factoryLabelWithFrame:CGRectMake(self.view.x-width*0.5, self.nickNameLabel.bottom+13, width, height) fontSize:fontSize];
+        _greetLabel.top = center_y+13;
+        _greetLabel.tag = 10002;
+    }
+    return _greetLabel;
+}
+
+-(UILabel *)factoryLabelWithFrame:(CGRect)frame fontSize:(CGFloat)fontSize
+{
+    UILabel *label = [[UILabel alloc]initWithFrame:frame];
+    label.font = [UIFont systemFontOfSize:fontSize];
+    label.textColor = [UIColor colorWithHexString:@"#ffffff"];
+    label.layer.masksToBounds = YES;
+    label.layer.cornerRadius = 3;
+    label.backgroundColor = [UIColor clearColor];
+    label.textAlignment = NSTextAlignmentCenter;
+    return label;
+}
+
+//创建添加设备按钮
+-(UIButton *)addButton
+{
+    if (!_addButton) {
+        CGFloat width = 35+4;
+        UIButton *addBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [addBtn setImage:[UIImage imageNamed:@"btn_add-to"] forState:UIControlStateNormal];
+        addBtn.frame = CGRectMake(self.view.width-width-15+5, 30-5-2, width, width);
+        [addBtn addTarget:self action:@selector(addBtnAction) forControlEvents:UIControlEventTouchUpInside];
+        _addButton = addBtn;
+    }
+    return _addButton;
+}
+
+-(UITableView *)_tableView
+{
+    if (!__tableView) {
+        __tableView = [[jiafeigouTableView alloc]initWithFrame:CGRectMake(0, 0, self.view.width, self.view.height-44) style:UITableViewStylePlain];
+        __tableView.tableFooterView = [UIView new];
+        __tableView.showsVerticalScrollIndicator = NO;
+    }
+    return __tableView;
+}
+
+#pragma mark- 显示引导tip
+//显示引导tip
+-(void)showTipView
+{
+    FLTipsBaseView *tipBaseView = [FLTipsBaseView tipBaseView];
+    
+    
+    UIView *tipBgView = [[UIView alloc]initWithFrame:CGRectMake(Kwidth-10-132, self.addButton.bottom+10, 132, 46)];
+    tipBgView.backgroundColor = [UIColor clearColor];
+    [tipBaseView addTipView:tipBgView];
+    
+    
+    UIImageView *roleImageView = [[UIImageView alloc]initWithFrame:CGRectMake(tipBgView.width-11-12, 0, 12, 6)];
+    roleImageView.image = [UIImage imageNamed:@"tip_bg"];
+    [tipBgView addSubview:roleImageView];
+    
+    
+    UIImageView *tipbgImageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, roleImageView.bottom, 132, 40)];
+    tipbgImageView.image = [UIImage imageNamed:@"tip_bg2"];
+    
+    
+    UILabel *tipLabel = [[UILabel alloc]initWithFrame:CGRectMake(10, 10, 112, 20)];
+    tipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_Add_Tips"];
+    tipLabel.textAlignment = NSTextAlignmentCenter;
+    tipLabel.textColor = [UIColor whiteColor];
+    tipLabel.font = [UIFont systemFontOfSize:13];
+    [tipbgImageView addSubview:tipLabel];
+    
+    [tipBgView addSubview:tipbgImageView];
+    
+    [tipBaseView show];
+}
+
+
+
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+    NSLog(@"JiaFeiGouRootViewController");       
+}
+
+
+@end

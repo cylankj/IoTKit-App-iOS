@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>recommend</key>
+	<dict>
+		<key>showRecommend</key>
+		<true/>
+		<key>recommendurl</key>
+		<string>http://www.jfgou.com/app/download.html</string>
+	</dict>
+	<key>about</key>
+	<dict>
+		<key>showAbout</key>
+		<true/>
+		<key>showWeb</key>
+		<true/>
+		<key>showTel</key>
+		<true/>
+	</dict>
+	<key>showCopyRight</key>
+	<true/>
+	<key>showProtocol</key>
+	<true/>
+</dict>
+</plist>

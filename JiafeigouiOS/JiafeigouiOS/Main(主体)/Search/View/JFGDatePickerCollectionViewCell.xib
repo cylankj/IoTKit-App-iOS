@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="11542" systemVersion="16B2657" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="portrait">
+        <adaptation id="fullscreen"/>
+    </device>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="11524"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="cellid" id="gTV-IL-0wX" customClass="JFGDatePickerCollectionViewCell">
+            <rect key="frame" x="0.0" y="0.0" width="47" height="47"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
+                <rect key="frame" x="0.0" y="0.0" width="47" height="47"/>
+                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                <subviews>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="12" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="yg0-ek-nLK">
+                        <rect key="frame" x="9" y="9" width="28" height="28"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="28" id="BxK-XA-8um"/>
+                            <constraint firstAttribute="height" constant="28" id="Q65-uQ-qvp"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                        <nil key="textColor"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                </subviews>
+            </view>
+            <constraints>
+                <constraint firstItem="yg0-ek-nLK" firstAttribute="centerX" secondItem="gTV-IL-0wX" secondAttribute="centerX" id="GVa-xi-oOn"/>
+                <constraint firstItem="yg0-ek-nLK" firstAttribute="centerY" secondItem="gTV-IL-0wX" secondAttribute="centerY" id="Y9o-o3-1IF"/>
+            </constraints>
+            <size key="customSize" width="50" height="76"/>
+            <connections>
+                <outlet property="contentLabel" destination="yg0-ek-nLK" id="qAj-u1-Fek"/>
+            </connections>
+            <point key="canvasLocation" x="-241" y="-25"/>
+        </collectionViewCell>
+    </objects>
+</document>
