@@ -244,7 +244,7 @@
 //    [_ruler loadDateStringArray:self.timeArray markedDateString:[self.timeArray firstObject]];
 }
 
-- (void)judgeHaveData {
+- (void)judgeHaveData{
     if (self.modelArray.count == 0) {
         //self.timeSelectButton.enabled = NO;
         //self.timeSelectButton1.enabled = NO;
@@ -523,6 +523,9 @@
         if (!cell) {
             cell= [[NSBundle mainBundle]loadNibNamed:@"ExploreTableViewCell" owner:self options:nil][1];
             [cell.shareButton1 setTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_Button"] forState:UIControlStateNormal];
+            cell.shareButton1.titleLabel.adjustsFontSizeToFitWidth = YES;
+            [cell.deleteButton1 setTitle:@"删除" forState:UIControlStateNormal];
+            
         }
         cell.msgTime = m.msgTime;
         cell._indexPath = indexPath;

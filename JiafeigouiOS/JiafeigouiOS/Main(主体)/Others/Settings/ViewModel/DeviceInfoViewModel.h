@@ -41,5 +41,6 @@ typedef NS_ENUM(NSInteger, DeviceInfoType)
 
 - (void)clearSDCard;
 
+- (BOOL)isClearingSDCard;
 //- (void)removeDataPointReq;
 @end

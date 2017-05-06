@@ -2,7 +2,7 @@
 //  JFGSDKPlayVideoDelegate.h
 //  JFGSDK
 //
-//  Created by 杨利 on 16/7/13.
+//  Created by yangli on 16/7/13.
 //  Copyright © 2016年 yangli. All rights reserved.
 //
 

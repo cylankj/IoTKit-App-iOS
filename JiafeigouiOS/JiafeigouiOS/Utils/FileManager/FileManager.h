@@ -93,7 +93,10 @@
 
 #pragma mark
 #pragma mark 加菲狗 path
-+ (NSString *)jfgPano720PhotoDirPath:(NSString *)cid;   // 720全景相机  相册路径
++ (NSString *)jfgPano720PhotoDirPath:(NSString *)cid;   // 720全景相机  相册，视频 路径
++ (NSString *)jfgPano720PhotoThumbnailsPath:(NSString *)cid; // 720全景相机  缩略图 路径
 + (NSString *)jfgLogDirPath;       //  jfg 日志文件 路径
 + (NSString *)jfgUpgradeFilePath:(int)deviceType;   //jfg 升级包文件 路径
++ (NSString *)jfgAdvertisementDirPath;
+
 @end

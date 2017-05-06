@@ -1,12 +1,12 @@
 /* de.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.  
+Created by cylan language tool  on Thu May 04 19:00:35 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Verbindung fehlgeschlagen, bitte Internet überprüfen";
 "REPEAT_TIME" = "%d Sekunde";
 "REMAIN_SPACE" = "Verfügbarer Platz %.1fGB";
 "STANBY_TIME" = "%dTag%dStunde%dMinute";
-"CHARGING" = "Aufladen %d%％";
+"CHARGING" = "Aufladen";
 "HOUR" = "%.2d H";
 "MINUTE" = "%.2d M";
 "MONTHS" = "Monat";
@@ -217,6 +217,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "LOCAL_NOTIFICATION_MSG" = "Bitte %@ auf Seite Einstellungen-Mitteilungen im iPhone finden, und Mitteilungen erlauben einschalten";
 "CLEAR_DATA" = "Cache leeren";
 "FEEDBACK" = "Feedback";
+"FEEDBACK_Copy" = "Kopieren";
 "ABOUT" = "Über";
 "YOUR_FEEDBACK" = "Vorschläge jedes Benutzers anhören";
 "DEAL_FEEDBACK" = "Vielen Dank für Ihr Feedback";
@@ -257,6 +258,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WIFI_SET_2" = "1. Bitte prüfen, ob WiFi-Leuchte am Gerät blau blinkt, wenn nicht, langes Drücken auf Taste WiFi ca. 3 Sekunden\n2. Einstellung vom iPhone->WLAN öffnen, \"%@\" wählen,Kennwort acht 1";
 "WIFI_SET_3" = "Bitte \"DOG-**-******\" in Einstellung vom phone->WLAN wählen, wenn Passwort erforderlich, bitte 11111111 eingeben";
 "WIFI_SET_3_1" = "Bitte \"DOG-ML-******\" in Einstellung vom phone->WLAN wählen,wenn Passwort erforderlich, bitte 11111111 eingeben";
+"WIFI_SET_RS" = "Bitte \"RS-CAM-******\" in Einstellung vom phone->WLAN wählen,wenn Passwort erforderlich, bitte 11111111 eingeben";
 "WIFI_SET_4" = "Zurück zum %@";
 "WIFI_SET_5GTIPS" = "Hinweis:Unterstützt nicht die 5GHz WiFi";
 "SELECT_NETWORK" = "WiFi einstellen";
@@ -534,7 +536,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "RET_ECID_UNBIND_RETRY_lOGIN" = "CID des Geräts nicht verbunden, bitte neu einloggen";
 "RET_EPARAMS_FALSE" = "Argument Fehler";
 "copyrightEn" = "Copyright ©2005-%@ Cylan.All Rights Reserved.";
-"help_url" = "https://yf.jfgou.com:8081/helps/de.html";
+"help_url" = "https://%@:8081/helps/de.html";
 "service_phonenum" = "+86 400-716-3232";
 "setwifi_check" = "Bitte schließen Sie \"%@\" WiFi-Netzwerk, dann konfigurieren";
 "show_web" = "www.cleverdog.com.cn";
@@ -810,7 +812,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Oct" = "Oct.";
 "Nov" = "Nov.";
 "Dec" = "Dec.";
-"help_url_Doby" = "https://yf.jfgou.com:8081/help/en_doby.html";
+"help_url_Doby" = "https://%@:8081/helps/en_doby.html";
 "NoNetworkTips" = "Keine Netzwerk Verbindung";
 "Tap0_AlreadyEmailed" = "Eine automatische Email an";
 "Tap0_Click_ResetPassword" = "Bitte den Link klicken zum Zurücksetzen des Passworts";
@@ -843,13 +845,14 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WeChat" = "WeChat";
 "Weibo" = "Weibo";
 "Device_Disconnected" = "Getrennt";
+"Tap1_OutdoorMode_Opened" = "Outdoor-Modus geöffnet wurde";
 "Tap1_OutdoorMode" = "Outdoor Modus";
-"720PanoramicCamera" = "720°Panorama Kamera";
+"_720PanoramicCamera" = "720°Panorama Kamera";
 "Tap1_DeviceWasBindedTips" = "Gerät wurde durch \"%@\" gebunden, bitte unbind und versuche es nochmal.";
 "WiFiLight_BlueFlashing" = "Blaues Blinken: WiFi Konfigurationsmodus";
 "WiFiLight_SteadyBlue" = "Steady blue: WiFi online";
 "WiFiLight_RedFlashing" = "Rot blinkend: Anschluss";
-"WiFiLight_RedNBlueFlashing" = "Red&Blue blinkend: Aktualisierung";
+"WiFiLight_RedNBlueFlashing" = "Red & Blue blinkend: Aktualisierung";
 "PowerLight_SteadyBlue" = "Steady blue: Booting";
 "PowerLight_BlueFlashing" = "Blaues Blinken: Niedrige Leistung";
 "PowerLight_BlueOut" = "Blaues aus: Ausschalten";
@@ -866,6 +869,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_NeedsInitializedTips" = "SD-Karte muss initialisiert werden und die Daten werden gelöscht.";
 "Tap1_SDCardFullyTips" = "Voll besetzt";
 "Tap1_HomeMode" = "Home Modus";
+"Tap1_HomeMode_Opened" = "Start-Modus geöffnet wurde";
 "Tap1_Camera_TCPconnected" = "Kamera mit App über Internet verbunden";
 "Tap1_Camera_UDPconnected" = "Kamera verbunden mit App direkt";
 "Tap1_Camera_Video_Auto" = "Auto";
@@ -888,6 +892,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_Album_CancelDownloadTips" = "Brechen Sie den Download?";
 "Tap1_Album_DownloadFailed" = "Download fehlgeschlagen";
 "Tap1_Album_Share_Description" = "Beschreibung hinzufügen";
+"Tap1_Album_Share_To_Daily_Great" = "Die freigegebenen Inhalte werden gespeichert auf \"Tageshighlight\"";
 "Tap1_Album_Share_NotInstalledTips" = "\"%@\"  nicht installiert, bitte installieren Sie es und versuchen Sie es erneut";
 "Tap1_Shared_Title" = "Geteilt von Cleverdog 720°Cam";
 "Tap1_Shared_Title_zhognxing" = "Geteilt von 720°Panorama Cam";
@@ -906,3 +911,20 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Loaded" = "Beladen";
 "Microphone" = "Mikrofon";
 "Tap3_FriendsAdd_AlreadyFriend" = "%@ Ist bereits Ihr Freund";
+"Choose_Album" = "Wähle ein Album";
+"Mail_Class_Application" = "Bitte wählen Sie die Postklassenanwendung aus";
+"Tap1_Album_Empty" = "Keine Fotos oder Videos";
+"Feedback_Sending" = "Senden …";
+"Feedback_MessageFailed" = "Nachricht konnte nicht gesendet werden";
+"Download_Then_Share" = "Bitte laden Sie das Video herunter und teilen Sie es weiter";
+"Downloading" = "Das Video wird heruntergeladen";
+"Network_Description" = "Netzwerkbeschreibung";
+"Unconnect_Network" = "Ihr Gerät ist nicht mit einem Mobilfunknetz oder einem Wi-Fi-Netzwerk verbunden";
+"Wifi_Method" = "Wi-Fi Netzwerk, beziehen Sie sich bitte auf die folgenden Methoden:";
+"Wifi_Hotspot" = "Im Gerät [Einstellungen> Wireless LAN], Bitte wählen Sie einen Wi-Fi-Hotspot zum Verbinden.";
+"Wifi_Set_Up" = "Gehen Sie zum Einrichten";
+"Cellular_Data_Method" = "Mobile Daten, beziehen sich bitte auf die folgende Methode:";
+"Cellular_Data_Set_Up" = "Aktivieren Sie mobile Daten im Gerät, verwenden Sie bitte unten, Einstellungen> Mobile Daten";
+"No_Network_Connection" = "Keine Netzwerkverbindung, bitte zuerst Netzwerk aktivieren";
+"RuiShi_Guide" = "Benutzen Sie die Nadel lange, um die RESET-Taste für 3s zu drücken";
+"RuiShi_Name" = "IPCam";

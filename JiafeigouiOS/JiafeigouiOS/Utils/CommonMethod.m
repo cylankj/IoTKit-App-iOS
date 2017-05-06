@@ -253,8 +253,20 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     if (myArray) {
         CFRelease(myArray);
     }
+    
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"current wifi :[%@]", wifiName]];
     return wifiName;
 }
+
++ (BOOL)isWifiConnectted
+{
+    if ([self currentConnecttedWifi] != nil && ![[self currentConnecttedWifi] isEqualToString:@""])
+    {
+        return YES;
+    }
+    return NO;
+}
+
 + (BOOL)isConnectedAPWithPid:(int)productID Cid:(NSString *)cid
 {
     NSString * currentwifi = [CommonMethod currentConnecttedWifi];
@@ -275,7 +287,9 @@ NSInteger nameSort(id mod1, id mod2,void*context)
         case productType_WIFI:
             ap = [NSString stringWithFormat:@"DOG-%@",[cid substringFromIndex:6]];
             break;
-        case productType_720:{
+        case productType_720:
+        case productType_720p:
+        {
             ap = [NSString stringWithFormat:@"DOG-5W-%@",[cid substringFromIndex:6]];
         }
             break;
@@ -288,16 +302,29 @@ NSInteger nameSort(id mod1, id mod2,void*context)
 {
     NSString *currentWifi = [CommonMethod currentConnecttedWifi];
     
-    if ([currentWifi hasPrefix:@"DOG"]) {
+    if ([currentWifi hasPrefix:@"DOG"] || [currentWifi hasPrefix:@"RS"])
+    {
         return YES;
     }
-    
+
     switch (productID)
     {
         
         case productType_DoorBell:
         {
             if ([currentWifi hasPrefix:doorbellWifiPrefix] && currentWifi.length == 13) //门铃 ap
+            {
+                return YES;
+            }
+            else
+            {
+                return NO;
+            }
+        }
+            break;
+        case productType_IPCam:
+        {
+            if ([currentWifi hasPrefix:@"RS"])
             {
                 return YES;
             }
@@ -440,10 +467,11 @@ NSInteger nameSort(id mod1, id mod2,void*context)
         //数据库错误
         errorString = [JfgLanguage getLanTextStrByKey:@"RET_MSG_EDATABASE"];
     }else if(error == 11){
-        
-        errorString = @"对端断开(11)";
+        errorString = [NSString stringWithFormat:@"%@(11)",[JfgLanguage getLanTextStrByKey:@"Device_Disconnected"]];
     }else if(error == 10){
         errorString = [NSString stringWithFormat:@"%@(10)",[JfgLanguage getLanTextStrByKey:@"RET_MSG_EUNKNOWN"]];
+    }else if(error == 13){
+        errorString = [NSString stringWithFormat:@"%@(13)",[JfgLanguage getLanTextStrByKey:@"Device_Disconnected"]];;
     }else
     {
         errorString = [JfgLanguage getLanTextStrByKey:@"RET_MSG_EUNKNOWN"];
@@ -656,7 +684,7 @@ NSInteger nameSort(id mod1, id mod2,void*context)
         remainder = num%2;
         divisor = num/2;
         num = divisor;
-        prepare = [prepare stringByAppendingFormat:@"%ld",remainder];
+        prepare = [prepare stringByAppendingFormat:@"%ld",(long)remainder];
         
         if (divisor == 0)
         {
@@ -674,6 +702,49 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     return result;
 }
 
++(NSString *)urlForLANFor720DevWithReqType:(JFG720DevLANReqUrlType)type ipAdd:(NSString *)ipAdd
+{
+    switch (type) {
+        case JFG720DevLANReqUrlTypeSnapShot:{
+            return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=snapShot",ipAdd];
+        }
+
+            break;
+      
+        case JFG720DevLANReqUrlTypeGetRecStatue:{
+            return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getRecStatus",ipAdd];
+        }
+            
+            break;
+        case JFG720DevLANReqUrlTypeSDFormat:{
+             return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=sdFormat",ipAdd];
+        }
+            
+            break;
+        case JFG720DevLANReqUrlTypeGetSDInfo:{
+            return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getSdInfo",ipAdd];
+        }
+            
+            break;
+        case JFG720DevLANReqUrlTypeGetPowerLine:{
+            return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getPowerLine",ipAdd];
+        }
+            
+            break;
+        case JFG720DevLANReqUrlTypeBattery:{
+            return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getBattery",ipAdd];
+        }
+            
+            break;
+        case JFG720DevLANReqUrlTypeGetRP:{
+            return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getResolution",ipAdd];
+        }
+            break;
+        default:
+            break;
+    }
+    return nil;
+}
 
 #pragma mark - 获取设备当前网络IP地址
 + (NSDictionary *)getIPAddresses
@@ -814,6 +885,17 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     }
     
     return NO;
+}
+
++(JFGDevBigType)devBigTypeForOS:(NSString *)os
+{
+    //36  37  10  18   1091
+    if ([os isEqualToString:@"36"] || [os isEqualToString:@"10"] || [os isEqualToString:@"18"] || [os isEqualToString:@"1091"] || [os isEqualToString:@"1092"]) {
+        return JFGDevBigTypeSinglefisheyeCamera;
+    }else if ([os isEqualToString:@"21"] || [os isEqualToString:@"1089"]){
+        return JFGDevBigTypeEyeCamera;
+    }
+    return JFGDevBigTypeUnknow;
 }
 
 @end

@@ -29,6 +29,8 @@ typedef NS_ENUM(NSInteger , YBPopupMenuType) {
 
 @interface YBPopupMenu : UIView
 
+@property (nonatomic, assign) BOOL isDisconnectted; // is disconnect or not 
+
 /**
  圆角半径 Default is 5.0
  */

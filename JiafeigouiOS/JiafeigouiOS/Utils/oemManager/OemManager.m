@@ -20,6 +20,8 @@ NSString *const cylan = @"cylan";
 NSString *const doby = @"zhongxing";
 NSString *const cell_c = @"cell_c";
 
+NSString *const domainKey = @"Jfgsdk_host";
+
 // oem 类型
 + (NSInteger)oemType
 {
@@ -120,13 +122,13 @@ NSString *const cell_c = @"cell_c";
         case oemTypeDoby:
         case oemTypeCell_C: // 不显示 协议
         {
-            helpUrl = [JfgLanguage getLanTextStrByKey:@"help_url_Doby"];
+            helpUrl = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"help_url_Doby"],[[[NSBundle mainBundle] infoDictionary] objectForKey:domainKey]];
         }
             break;
         case oemTypeCylan:
         default:
         {
-            helpUrl = [JfgLanguage getLanTextStrByKey:@"help_url"];
+            helpUrl = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"help_url"],[[[NSBundle mainBundle] infoDictionary] objectForKey:domainKey]];
         }
             break;
     }
@@ -168,6 +170,7 @@ NSString *const cell_c = @"cell_c";
     {
         case oemTypeDoby:
         {
+            //ekPVDWnSKiTkwCT3QQkXd0U0SolaYqr1
             oemKey = @"F6rHsK2c3af7SAV0CKsRQpwa14QijAdB";
         }
             break;

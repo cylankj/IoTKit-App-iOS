@@ -1,12 +1,12 @@
 /* ru.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.  
+Created by cylan language tool  on Thu May 04 19:00:35 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Отсутствует подключение к сети";
 "REPEAT_TIME" = "%d секунды";
 "REMAIN_SPACE" = "%.1fGB доступен";
 "STANBY_TIME" = "%d день,%d час,%d минуты";
-"CHARGING" = "Зарядка %d％%";
+"CHARGING" = "Зарядка";
 "HOUR" = "%.2d H";
 "MINUTE" = "%.2d M";
 "MONTHS" = "месяц";
@@ -217,6 +217,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "LOCAL_NOTIFICATION_MSG" = "Пожалуйста, через настройки-уведомления на вашем iPhone, найдите %@ и откройте уведомления";
 "CLEAR_DATA" = "Очистить кэш";
 "FEEDBACK" = "Обратная связь";
+"FEEDBACK_Copy" = "копия";
 "ABOUT" = "О приложении";
 "YOUR_FEEDBACK" = "Оставить отзыв (он очень важен для нас)";
 "DEAL_FEEDBACK" = "Спасибо за ваш отзыв!";
@@ -257,6 +258,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WIFI_SET_2" = "1.Пожалуйста, убедитесь, что беспроводной индикатор мигает голубым. Если нет, пожалуйста, нажмите и удерживайте кнопку WiFi 3 секунды.\n2.Через \"настройки\"->\"сети WLAN\" на вашем телефоне, подключитесь к \"%@\", пароль 11111111";
 "WIFI_SET_3" = "Зайдите в телефоне в настройки->сети WLAN, выберите \"DOG-**-******\", подключиться. Пароль:11111111";
 "WIFI_SET_3_1" = "Зайдите в телефоне в настройки->сети WLAN, выберите \"DOG-ML******\", подключиться. Пароль:11111111";
+"WIFI_SET_RS" = "Зайдите в телефоне в настройки->сети WLAN, выберите \"RS-CAM******\", подключиться. Пароль:11111111";
 "WIFI_SET_4" = "Вернитесь к %@";
 "WIFI_SET_5GTIPS" = "Примечание:5ГГц WiFi сигнал не включен сейчас";
 "SELECT_NETWORK" = "Пожалуйста, выберите сеть";
@@ -534,7 +536,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "RET_ECID_UNBIND_RETRY_lOGIN" = "CID не привязан, пожалуйста, войдите заново";
 "RET_EPARAMS_FALSE" = "Аргумент ошибки";
 "copyrightEn" = "Copyright ©2005-%@ Cylan.All Rights Reserved.";
-"help_url" = "https://yf.jfgou.com:8081/helps/ru.html";
+"help_url" = "https://%@:8081/helps/ru.html";
 "service_phonenum" = "+86 400-716-3232";
 "setwifi_check" = "Пожалуйста, настройте свой телефон, чтобы подключиться к \"%@\"";
 "show_web" = "www.cleverdog.com.cn";
@@ -810,7 +812,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Oct" = "Oct.";
 "Nov" = "Nov.";
 "Dec" = "Dec.";
-"help_url_Doby" = "https://yf.jfgou.com:8081/help/en_doby.html";
+"help_url_Doby" = "https://%@:8081/helps/en_doby.html";
 "NoNetworkTips" = "Нет подключения к сети";
 "Tap0_AlreadyEmailed" = "Письмо было отправлен на электронную почту";
 "Tap0_Click_ResetPassword" = "Обратите выберите ссылку, чтобы сбросить пароль";
@@ -843,8 +845,9 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WeChat" = "WeChat";
 "Weibo" = "Weibo";
 "Device_Disconnected" = "Отключен";
+"Tap1_OutdoorMode_Opened" = "Открытый режим был открыт";
 "Tap1_OutdoorMode" = "Наружный режим";
-"720PanoramicCamera" = "720°Панорамная камера";
+"_720PanoramicCamera" = "720°Панорамная камера";
 "Tap1_DeviceWasBindedTips" = "Прибор был связан \"%@\", пожалуйста, отвязать и повторите попытку.";
 "WiFiLight_BlueFlashing" = "Синий мигающий: режим конфигурации WiFi";
 "WiFiLight_SteadyBlue" = "Устойчивый синий: WiFi онлайн";
@@ -866,6 +869,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_NeedsInitializedTips" = "потребности карты SD для инициализации и данные будут очищены, обязательно продолжить?";
 "Tap1_SDCardFullyTips" = "Полностью занятый";
 "Tap1_HomeMode" = "Домашний режим";
+"Tap1_HomeMode_Opened" = "Режим Home был открыт";
 "Tap1_Camera_TCPconnected" = "Камера связана с приложением через интернет";
 "Tap1_Camera_UDPconnected" = "Камера связана напрямую с приложением";
 "Tap1_Camera_Video_Auto" = "Авто";
@@ -888,6 +892,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_Album_CancelDownloadTips" = "Отменить загрузку?";
 "Tap1_Album_DownloadFailed" = "Загрузка не удалась";
 "Tap1_Album_Share_Description" = "Добавить описание";
+"Tap1_Album_Share_To_Daily_Great" = "Общий контент будет сохранен в \"Ежедневное чудо \"";
 "Tap1_Album_Share_NotInstalledTips" = "\"%@\"  не установлен, установите его и попробуйте еще раз";
 "Tap1_Shared_Title" = "Отправлено от Cleverdog 720°Cam";
 "Tap1_Shared_Title_zhognxing" = "Общий от 720°Панорамный Cam";
@@ -906,3 +911,20 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Loaded" = "Hагруженный";
 "Microphone" = "Микрофон";
 "Tap3_FriendsAdd_AlreadyFriend" = "%@ Это уже ваш друг";
+"Choose_Album" = "Выберите альбом";
+"Mail_Class_Application" = "Выберите приложение класса почты";
+"Tap1_Album_Empty" = "Нет фото или видео";
+"Feedback_Sending" = "Отправка …";
+"Feedback_MessageFailed" = "Не удалось отправить сообщение";
+"Download_Then_Share" = "Загрузите видео, а затем отправьте его";
+"Downloading" = "Видео загружается";
+"Network_Description" = "Описание сети";
+"Unconnect_Network" = "Ваше устройство не подключено к мобильной сети или сети Wi-Fi";
+"Wifi_Method" = "Wi-Fi сеть, пожалуйста, обратитесь к следующим методам:";
+"Wifi_Hotspot" = "В устройстве [Настройки> Беспроводная ЛВС], выберите точку доступа Wi-Fi для подключения.";
+"Wifi_Set_Up" = "Перейти к настройке";
+"Cellular_Data_Method" = "Мобильные данные, пожалуйста, обратитесь к следующему методу:";
+"Cellular_Data_Set_Up" = "Включите мобильные данные в устройстве, используйте нижеуказанные настройки: Настройки> Мобильные данные";
+"No_Network_Connection" = "Нет подключения к сети, сначала активируйте сеть.";
+"RuiShi_Guide" = "Используйте иглу для длительного нажатия кнопки RESET в течение 3 с";
+"RuiShi_Name" = "IPCam";

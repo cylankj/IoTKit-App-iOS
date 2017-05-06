@@ -2,7 +2,7 @@
 //  AppDelegate+JFGSDK.m
 //  JiafeigouiOS
 //
-//  Created by 杨利 on 16/5/27.
+//  Created by yangli on 16/5/27.
 //  Copyright © 2016年 lirenguang. All rights reserved.
 //
 
@@ -16,6 +16,8 @@
 #import "OemManager.h"
 #import "FileManager.h"
 #import "JfgConstKey.h"
+#import "FileManager.h"
+#import "DownloadUtils.h"
 #import "JfgConfig.h"
 
 static char const *objKey;
@@ -31,6 +33,7 @@ static char const *objKey;
     [JFGBoundDevicesMsg sharedDeciceMsg];
     
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"jfg language Name: [%@]",[JfgLanguage languageName]]];
+    [JFGSDK getAdPolicyForLanguage:(int)[JfgLanguage languageType] version:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"] resolution:[NSString stringWithFormat:@"%dx%d",(int)Kwidth, (int)kheight]];
 }
 
 -(void)jfgOnUpdateNTP:(uint32_t)unixTimestamp
@@ -61,8 +64,38 @@ static char const *objKey;
 }
 
 #pragma mark- JFGSDKDelegate
-
-
+- (void)jfgGetAdpolicyResult:(JFGErrorType)errorType endTime:(uint32_t)endtime picUrl:(NSString *)picUrl tagUrl:(NSString *)tagUrl
+{
+    if (errorType == JFGErrorTypeNone)
+    {
+        
+    }
+    NSDictionary *adDict = @{adEndTimeKey:@(endtime),
+                             adPicURLKey:picUrl,
+                             adTagURLKey:tagUrl
+                             };
+    
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"ad Dict __%@",adDict]];
+    [[NSUserDefaults standardUserDefaults] setObject:adDict forKey:adDictKey];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    
+    DownloadUtils *download = [[DownloadUtils alloc] init];
+    [download checkUrl:picUrl downLoadAction:^(DownLoadModel *dlModel) {
+        switch (dlModel.dlState)
+        {
+            case downloadStateNeedDownload:
+            {
+                [download downloadWithUrl:picUrl toDirectory:[FileManager jfgAdvertisementDirPath] state:^(SRDownloadState state) {
+                    
+                } progress:nil completion:nil];
+            }
+                break;
+                
+            default:
+                break;
+        }
+    }];
+}
 
 #pragma mark- getter and setter
 -(void)setJfgSDKConnected:(BOOL)jfgSDKConnected
@@ -74,5 +107,6 @@ static char const *objKey;
 {
     return [objc_getAssociatedObject(self, &objKey) boolValue];
 }
+
 
 @end

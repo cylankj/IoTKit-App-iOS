@@ -22,7 +22,7 @@
 #import <JFGSDK/JFGSDK.h>
 #import "OemManager.h"
 
-@interface VideoPlayViewController ()<TimeChangeMonitorDelegate,UIScrollViewDelegate,UIGestureRecognizerDelegate,JFGSDKCallbackDelegate>
+@interface VideoPlayViewController ()<TimeChangeMonitorDelegate,UIScrollViewDelegate,UIGestureRecognizerDelegate,JFGSDKCallbackDelegate,MessageVCDelegate>
 
 @property (nonatomic,strong)UIView *topBarBgView;
 @property (nonatomic,strong)UIButton *backBtn;
@@ -60,12 +60,16 @@
     [self initTopBar];
     
     if (self.devModel.shareState == DevShareStatuOther) {
+        
+        self.videoPlay.isShow = YES;
         [self.view addSubview:self.bgScrollerView];
         [self addChildViewController:self.videoPlay];
         [self.bgScrollerView addSubview:self.videoPlay.view];
-        self.videoPlay.isShow = YES;
+        
         self.bgScrollerView.contentSize = CGSizeMake(self.view.width, self.bgScrollerView.height);
     }else{
+        
+        self.videoPlay.isShow = YES;
         [self.view addSubview:self.bgScrollerView];
         [self addChildViewController:self.videoPlay];
         [self.bgScrollerView addSubview:self.videoPlay.view];
@@ -74,7 +78,6 @@
         [self.bgScrollerView addSubview:self.messageVC.view];
         self.messageVC.cid = self.cid;
         
-        self.videoPlay.isShow = YES;
         self.bgScrollerView.isIntercept = YES;
         self.bgScrollerView.interceptLimits = self.view.bounds.size.height*0.45;
         [self interceptContol];
@@ -100,11 +103,14 @@
     if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
         self.navigationController.interactivePopGestureRecognizer.enabled = NO;
     }
+    if (_videoTitleLabel.selected) {
+        self.videoPlay.isShow = YES;
+    }
 }
 
 - (void)viewDidDisappear:(BOOL)animated
 {
-    [super viewWillDisappear:animated];
+    [super viewDidDisappear:animated];
     // 开启
     if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
         self.navigationController.interactivePopGestureRecognizer.enabled = YES;
@@ -113,8 +119,9 @@
         
         [JFGSDK removeDelegate:self];
         [self.videoPlay removeHistoryDelegate];
+        [self.videoPlay removeAllNotification];
     }
-    NSLog(@"vcs:%d",self.navigationController.viewControllers.count);
+    self.videoPlay.isShow = NO;
     
 }
 
@@ -140,17 +147,16 @@
     //添加时间变化代理
     [[TimeChangeMonitor sharedManager] starTimer];
     [[TimeChangeMonitor sharedManager] addDelegate:self];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(transformToVideoView:) name:@"JFGLookHistoryVideo2" object:nil];
+
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(settingAction) name:JFGGotoSettingKey object:nil];
-    // [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(delDeviceNotification:) name:JFGDeviceDelByOtherClientNotification object:nil];
 }
 
--(void)transformToVideoView:(NSNotification *)notification
+#pragma mark- MessageVC delegate
+-(void)lookHistoryForTimestamp:(uint64_t)timestamp
 {
+    [self.videoPlay setHistoryVideoForTimestamp:timestamp];
     [self.bgScrollerView setContentOffset:CGPointMake(0, 0) animated:YES];
     [self scrollerContentOffset:0];
-    [self interceptContol];
 }
 
 #pragma mark- JFGSDDelegate
@@ -244,7 +250,6 @@
         
         [self topTitleAction:_msgTitleLabel];
     }
-    [self interceptContol];
 }
 
 -(BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
@@ -283,7 +288,6 @@
     deviceSetting.cid = self.cid;
     deviceSetting.isShare = (self.devModel.shareState == DevShareStatuOther);
     deviceSetting.devModel = self.devModel;
-    //
     deviceSetting.pType = (productType)[self.devModel.pid intValue];
     
     if ([self.devModel.alias isEqualToString:@""]) {
@@ -322,78 +326,66 @@
 //顶部标题选择按钮事件
 -(void)topTitleAction:(UIButton *)sender
 {
-    [UIView animateWithDuration:0.5 animations:^{
+    if (sender == _videoTitleLabel) {
+        if (self.messageVC.editButton.selected == YES) {
+            [_messageVC editButtonAction:_messageVC.editButton];
+        }
+        if (_messageVC.timeSelectButton.selected == YES) {
+            [_messageVC selectDate:_messageVC.timeSelectButton];
+        }
+        self.videoPlay.isShow = YES;
+        if (_videoTitleLabel.selected) {
+            return ;
+        }
+        _videoTitleLabel.selected = YES;
+        _msgTitleLabel.selected = NO;
         
-        if (sender == _videoTitleLabel) {
-            if (self.messageVC.editButton.selected == YES) {
-                [_messageVC editButtonAction:_messageVC.editButton];
-            }
-            if (_messageVC.timeSelectButton.selected == YES) {
-                [_messageVC selectDate:_messageVC.timeSelectButton];
-            }
-            
-            if (_videoTitleLabel.selected) {
-                
-                return ;
-            }
-            
+        [UIView animateWithDuration:0.5 animations:^{
             self.topTitleSelectedLine.x = self.videoTitleLabel.x;
-            _videoTitleLabel.selected = YES;
-            _msgTitleLabel.selected = NO;
+            
             if (self.bgScrollerView.contentOffset.x != 0) {
                 [self.bgScrollerView setContentOffset:CGPointMake(0, 0) animated:YES];
             }
-            self.videoPlay.isShow = YES;
-             [[NSNotificationCenter defaultCenter]postNotificationName:VideoPlayViewShowingNotification object:nil];
-            
-            int64_t delayInSeconds = 1.0;
-            
-            dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
-            dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-                
-               
-                
-            });
-            
-            
-            
-            
-        }else{
-            
+
+        } completion:^(BOOL finished) {
+            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(postShowPlayView) object:nil];
+            [self performSelector:@selector(postShowPlayView) withObject:nil afterDelay:0.2];
+            [self interceptContol];
+        }];
+        
+    }else{
+        if (_msgTitleLabel.selected) {
+            return;
+        }
+        self.videoPlay.isShow = NO;
+        if (self.isClearCount == NO) {
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"JFGClearUnReadCount" object:self.cid];
+            self.isClearCount = YES;
+        }
+        _msgTitleLabel.selected = YES;
+        _videoTitleLabel.selected = NO;
+        
+        [UIView animateWithDuration:0.5 animations:^{
             self.topTitleSelectedLine.x = self.msgTitleLabel.x;
             
-            if (_msgTitleLabel.selected) {
-                return;
-            }
-            
-            _msgTitleLabel.selected = YES;
-            _videoTitleLabel.selected = NO;
             if (self.bgScrollerView.contentOffset.x != self.view.width) {
-                [self.bgScrollerView setContentOffset:CGPointMake(self.view.width, 0) animated:YES];
+                [self.bgScrollerView setContentOffset:CGPointMake(self.view.width, 0) animated:NO];
             }
-            self.videoPlay.isShow = NO;
+        } completion:^(BOOL finished) {
             [[NSNotificationCenter defaultCenter]postNotificationName:VideoPlayViewDismissNotification object:nil];
-            
-            int64_t delayInSeconds = 1.0;
-            dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
-            dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-                
-                
-                
-            });
-            
-            if (self.isClearCount == NO) {
-                
-                [[NSNotificationCenter defaultCenter] postNotificationName:@"JFGClearUnReadCount" object:self.cid];
-                self.isClearCount = YES;
-            }
-            
-        }
+            [self interceptContol];
+        }];
         
-    }];
-    [self interceptContol];
+    }
+   
+    
 }
 
+-(void)postShowPlayView
+{
+    [JFGSDK appendStringToLogFile:@"postShowPlayView"];
+    [[NSNotificationCenter defaultCenter] postNotificationName:VideoPlayViewShowingNotification object:nil];
+}
 
 -(UIView *)topBarBgView
 {
@@ -520,6 +512,7 @@
         _messageVC = [[MessageViewController alloc]init];
         _messageVC.cid = self.cid;
         _messageVC.devModel = self.devModel;
+        _messageVC.delegate = self;
         if (self.devModel.netType == JFGNetTypeOffline) {
             _messageVC.isDeviceOffline = YES;
         }else{
@@ -574,7 +567,7 @@
 -(void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-    [self.videoPlay removeAllNotification];
+    [JFGSDK appendStringToLogFile:@"videoPlayVC dealloc"];
 }
 
 - (void)didReceiveMemoryWarning {

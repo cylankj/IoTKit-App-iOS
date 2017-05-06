@@ -47,12 +47,9 @@
 #import "dataPointMsg.h"
 #import "VideoPlayViewController.h"
 
-
-
-
 typedef NS_ENUM(NSUInteger, VIEW_CONTROL_TAG)
 {
-    LABEL_TITLE_TAG = 1001,
+    LABEL_TITLE_TAG = 10001,
     IMAGEVIEW_TITLE_BG_TAG,
     IMAGEVIEW_BACKGROUND_TAG,
     IMGVIEW_CIRCLE_TAG,
@@ -84,6 +81,8 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     BOOL isShared;
     BOOL showTip;
     BOOL fristZoom;
+    BOOL isStartRender;
+    BOOL isAddVideoNotificaiton;
     
     NSDateFormatter *dateFormatter;
     UITapGestureRecognizer *videoTapGesture;
@@ -115,8 +114,6 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     
     BOOL isLoading;
     BOOL isLowSpeed;
-    BOOL isDidAppear;
-    BOOL isInCurrentView;
 }
 
 //时间显示
@@ -207,6 +204,8 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 
 @property (nonatomic, assign) BOOL isInCurrentVC; // 是否在 当前界面
 
+@property (nonatomic,strong)NSLock *renderLock;
+
 @end
 
 @implementation videoPlay1ViewController
@@ -234,13 +233,6 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     [self voiceAndMicBtnDisableState];
     
     timeoutRequestCount = 0;
-    
-    isInCurrentView = YES;
-    if (![CommonMethod isPanoCameraWithType:[self.devModel.pid intValue]])
-    {
-        [self jfgFpingRequest];
-    }
-    
 }
 
 -(void)viewWillAppear:(BOOL)animated
@@ -258,91 +250,33 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 
 -(void)viewDidAppear:(BOOL)animated
 {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        
-        
-        [JFGSDK appendStringToLogFile:@"VideoPlayView viewDidAppear"];
-        isDidAppear = YES;
-        self.isInCurrentVC = YES;
-        NSInteger pid = [self.devModel.pid integerValue];
-        if (pid == 5 || pid == 7 || pid == 13 || pid == 4 || pid == 16 || pid == 17 || pid == 1071 ) {
-            maxZoomScale = 3.0;
-        }else{
-            maxZoomScale = 1.0;
-            [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgCamera_Angle)] withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic) {
-                self.angleType = [[dic objectForKey:dpMsgCameraAngleKey] intValue];
-            } FailBlock:^(RobotDataRequestErrorType error) {
-                
-            }];
-        }
-        [self addVideoNotification];
-        if ([NetworkMonitor sharedManager].currentNetworkStatu == NotReachable) {
-            
-            [self showDisconnectViewWithText:[JfgLanguage getLanTextStrByKey:@"OFFLINE_ERR_1"]];
-            playState = videoPlayStateNotNet;
-            [self hideIdleView];
-            
-        }else{
-            
-            [self hideDisconnectNetView];
-            
-            NSInteger pid = [self.devModel.pid integerValue];
-            if (![[NSUserDefaults standardUserDefaults] boolForKey:fristIntoAngleVideoViewKey] && (pid == 18 || pid == 19 || pid == 20 || pid == 21) && self.devModel.shareState != DevShareStatuOther) {
-                
-                //显示那个角度提示
-                [[NSUserDefaults standardUserDefaults] setBool:YES forKey:fristIntoAngleVideoViewKey];
-                [[NSUserDefaults standardUserDefaults] synchronize];
-                [self showAngleTip];
-                
-                
-            }else{
-                
-                UIView *vw = [self.videoBgView viewWithTag:13145202];
-                if (vw) {
-                    [vw removeFromSuperview];
-                    vw = nil;
-                }
-                
-                if (self.devModel.safeIdle) {
-                    
-                    [self hideVideoPlayBar];
-                    [self showIdleView];
-                    if (isShared == NO) {
-                        self.historyView.hidden = YES;
-                    }
-                    
-                }else{
-                    
-                    if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
-                        return;
-                    }
-                    playState = videoPlayStatePlayPreparing;
-                    
-                    [self hideIdleView];
-                    if (isLiveVideo) {
-                        [self hideVideoPlayBar];
-                        [self startLiveVideo];
-                    }else{
-                        [self playHistoryVideoForZeroWithTimestamp:historyLastestTimeStamp];
-                    }
-                    [self performSelector:@selector(onNotifyResolutionOvertime) withObject:nil afterDelay:30];
-                    
-                }
-            }
-        }
-        
-        
-    });
+    self.isInCurrentVC = YES;
     
-    //开启屏幕常亮
-    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    if (!self.isShow) {
+        return;
+    }
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"%@",[NSThread currentThread]]];
+    [JFGSDK appendStringToLogFile:@"VideoPlayView viewDidAppear"];
+    
+    maxZoomScale = 1.0;
+    [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgCamera_Angle)] withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic) {
+        self.angleType = [[dic objectForKey:dpMsgCameraAngleKey] intValue];
+    } FailBlock:^(RobotDataRequestErrorType error) {
+        
+    }];
+    
+    if (![CommonMethod isPanoCameraWithType:[self.devModel.pid intValue]])
+    {
+        [self jfgFpingRequest];
+    }
+    [self addVideoNotification];
+    [self startVideoAction];
+    [super viewDidAppear:animated];
 }
 
 -(void)viewWillDisappear:(BOOL)animated
 {
     [super viewWillDisappear:animated];
-    isDidAppear = NO;
-    isInCurrentView = NO;
     //防止退出此页面，tip仍然显示问题
     if (showTip) {
         [FLTipsBaseView dismissAll];
@@ -350,24 +284,21 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     }
 }
 
+
 -(void)viewDidDisappear:(BOOL)animated
 {
     [JFGSDK appendStringToLogFile:@"VideoPlayView viewDidDisappear"];
-    self.isInCurrentVC = NO;
-    isDidAppear = NO;
-    if (playState == videoPlayStatePlaying) {
-        [self playAction:self.playButton];
-    }else{
-        [self stopVideoPlay];
-    }
-    [self hideVideoPlayBar];
-    playState = videoPlayStatePause;
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnRecvDisconnectNotification" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnNotifyResolutionNotification" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnNotifyRTCPNotification" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnUpdateHistoryErrorCodeNotification" object:nil];
     [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+    [JFGSDK appendStringToLogFile:@"removeNotifacation"];
+    isAddVideoNotificaiton = NO;
+    [self stopVideoAction];
+    self.isInCurrentVC = NO;
+    [super viewDidDisappear:animated];
 }
 
 -(void)removeHistoryDelegate
@@ -379,6 +310,84 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 {
     [self playRequestTimeoutDeal];
 }
+
+#pragma mark- 开始视频播放
+-(void)startVideoAction
+{
+    [JFGSDK appendStringToLogFile:@"startVideoAction"];
+    if ([NetworkMonitor sharedManager].currentNetworkStatu == NotReachable) {
+        
+        [self showDisconnectViewWithText:[JfgLanguage getLanTextStrByKey:@"OFFLINE_ERR_1"]];
+        playState = videoPlayStateNotNet;
+        [self hideIdleView];
+        
+    }else{
+        
+        [self hideDisconnectNetView];
+        
+        NSInteger pid = [self.devModel.pid integerValue];
+        if (![[NSUserDefaults standardUserDefaults] boolForKey:fristIntoAngleVideoViewKey] && (pid == 18 || pid == 19 || pid == 20 || pid == 21) && self.devModel.shareState != DevShareStatuOther) {
+            
+            //显示那个角度提示
+            [[NSUserDefaults standardUserDefaults] setBool:YES forKey:fristIntoAngleVideoViewKey];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+            [self showAngleTip];
+            
+            
+        }else{
+            
+            //移除角度提示Tip
+            UIView *vw = [self.videoBgView viewWithTag:13145202];
+            if (vw) {
+                [vw removeFromSuperview];
+                vw = nil;
+            }
+            
+            if (self.devModel.safeIdle) {
+                
+                [self hideVideoPlayBar];
+                [self showIdleView];
+                if (isShared == NO) {
+                    self.historyView.hidden = YES;
+                }
+                
+            }else{
+                
+                if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
+                    return;
+                }
+                playState = videoPlayStatePlayPreparing;
+                
+                [self hideIdleView];
+                if (isLiveVideo) {
+                    [self hideVideoPlayBar];
+                    [self startLiveVideo];
+                }else{
+                    [self playHistoryVideoForZeroWithTimestamp:historyLastestTimeStamp];
+                }
+                [self performSelector:@selector(onNotifyResolutionOvertime) withObject:nil afterDelay:30];
+                
+            }
+        }
+    }
+    //开启屏幕常亮
+    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+}
+
+//结束视频
+-(void)stopVideoAction
+{
+    [JFGSDK appendStringToLogFile:@"stopVideoAction"];
+    if (playState == videoPlayStatePlaying) {
+        self.playButton.selected = YES;
+        [self playAction:self.playButton];
+    }else{
+        [self stopVideoPlay];
+    }
+    [self hideVideoPlayBar];
+    playState = videoPlayStatePause;
+}
+
 
 #pragma mark- sd卡状态
 -(void)getSDCard
@@ -516,12 +525,24 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(safeIdleChanged:) name:JFGSettingOpenSafety object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(viewDidDisappear:) name:@"JFGJumpingRootView" object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(viewDidDisappear:) name:VideoPlayViewDismissNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(viewDidAppear:) name:VideoPlayViewShowingNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(stopVideoAction) name:VideoPlayViewDismissNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(startVideoAction) name:VideoPlayViewShowingNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didBecomeActive) name:UIApplicationDidBecomeActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(doorCalling:) name:JFGDoorBellIsCallingKey object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(transformToVideoView:) name:@"JFGLookHistoryVideo" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(angleChangedWithNotification:) name:angleChangedNotification object:nil];
+}
+
+-(void)setHistoryVideoForTimestamp:(uint64_t)timestamp
+{
+    if (isShared == NO ) {
+        
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"transformToVideoTime:%lld",timestamp/1000]];
+        isLiveVideo = NO;
+        historyLastestTimeStamp = timestamp/1000;
+        if (self.historyView.dataArray.count) {
+            [self.historyView setHistoryTableViewOffsetByTimeStamp:historyLastestTimeStamp];
+        }
+    }
 }
 
 -(void)removeAllNotification
@@ -532,27 +553,21 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 //视频播放相关代理
 -(void)addVideoNotification
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnRecvDisconnectNotification" object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnNotifyResolutionNotification" object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnNotifyRTCPNotification" object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnUpdateHistoryErrorCodeNotification" object:nil];
-    
-    
+    if (isAddVideoNotificaiton) {
+        return;
+    }
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(onRecvDisconnectForRemote:) name:@"JFGSDKOnRecvDisconnectNotification" object:nil];
-    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(historyErrorCode:) name:@"JFGSDKOnUpdateHistoryErrorCodeNotification" object:nil];
-    
-    //a
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(onNotifyResolution:) name:@"JFGSDKOnNotifyResolutionNotification" object:nil];
-    
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(onNotificatyRTCP:) name:@"JFGSDKOnNotifyRTCPNotification" object:nil];
+    isAddVideoNotificaiton = YES;
+    [JFGSDK appendStringToLogFile:@"addNotification"];
 }
 
 -(void)didBecomeActive
 {
-    if (isDidAppear) {
+    if (self.isShow) {
         
         [NSTimer bk_scheduledTimerWithTimeInterval:1 block:^(NSTimer *timer) {
         
@@ -562,9 +577,9 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
                     [timer invalidate];
                     timer = nil;
                 }
-                [self viewDidAppear:YES];
-                
-                
+                if (self.isShow) {
+                    [self startVideoAction];
+                }
             }
             
         } repeats:YES];
@@ -588,43 +603,12 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 {
     if (windowMode == videoPlayModeSmallWindow) {
         //任何状态下都要停止播放
-       [self viewDidDisappear:YES];
+       [self stopVideoAction];
     }else{
         if (windowMode == videoPlayModeFullScreen) {
             [self exitFullScreen];
         }
-        [self viewDidDisappear:YES];
-    }
-    isDidAppear = YES;//1491560175  1491825399
-}
-
--(void)transformToVideoView:(NSNotification *)notification
-{
-    if (isShared == NO ) {
-        NSNumber *num = notification.object;
-        uint64_t timestamp = [num unsignedLongLongValue];
-        //NSLog(@"transformToVideoTime:%lld",timestamp);
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"transformToVideoTime:%lld",timestamp/1000]];
-        isLiveVideo = NO;
-        historyLastestTimeStamp = timestamp/1000;
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"JFGLookHistoryVideo2" object:nil];
-//        [self hideDisconnectNetView];
-//        if (playState == videoPlayStatePlaying) {
-//            [CylanJFGSDK playVideoByTime:timestamp cid:self.cid];
-//            [self voiceAndMicBtnNomalState];
-//            [self fullVoiceAndMicBtnDisableState];
-//        }else{
-//            [self playHistoryVideoForZeroWithTimestamp:timestamp];
-//        }
-        
-        if (self.historyView.dataArray.count) {
-             [self.historyView setHistoryTableViewOffsetByTimeStamp:historyLastestTimeStamp];
-        }
-        
-       
-//        self.playButton.selected = YES;
-//        self.fullPlayBtn.selected = YES;
-//        [self performSelector:@selector(hideVideoPlayBar) withObject:nil afterDelay:3];
+        [self stopVideoAction];
     }
 }
 
@@ -658,9 +642,13 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     if (playState == videoPlayStatePlaying) {
         //[CylanJFGSDK switchLiveVideo:NO beigenTime:model.timestamp];
         [CylanJFGSDK playVideoByTime:model.timestamp cid:self.cid];
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"playCid:%@",self.cid]];
         [self voiceAndMicBtnNomalState];
-        [self fullVoiceAndMicBtnDisableState];
-
+        //[self fullVoiceAndMicBtnDisableState];
+        self.fullMicBtn.enabled = NO;
+        self.fullSnapBtn.enabled = YES;
+        self.fullVoideBtn.enabled = YES;
+        
     }else{
         [self playHistoryVideoForZeroWithTimestamp:model.timestamp];
     }
@@ -682,8 +670,11 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     if (playState == videoPlayStatePlaying) {
         //[CylanJFGSDK switchLiveVideo:NO beigenTime:model.timestamp];
         [CylanJFGSDK playVideoByTime:model.timestamp cid:self.cid];
+         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"playCid:%@",self.cid]];
         [self voiceAndMicBtnNomalState];
-        [self fullVoiceAndMicBtnDisableState];
+        self.fullMicBtn.enabled = NO;
+        self.fullSnapBtn.enabled = YES;
+        self.fullVoideBtn.enabled = YES;
 
     }else{
         [self playHistoryVideoForZeroWithTimestamp:model.timestamp];
@@ -733,11 +724,14 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     isLiveVideo = NO;
     if (playState == videoPlayStatePlaying) {
         ///[CylanJFGSDK switchLiveVideo:NO beigenTime:model.startPlayTimestamp];
-        [CylanJFGSDK playVideoByTime:model.startTimestamp cid:self.cid];
+        [CylanJFGSDK playVideoByTime:model.startPlayTimestamp cid:self.cid];
+         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"playCid:%@",self.cid]];
         [self voiceAndMicBtnNomalState];
-        [self fullVoiceAndMicBtnDisableState];
+        self.fullMicBtn.enabled = NO;
+        self.fullSnapBtn.enabled = YES;
+        self.fullVoideBtn.enabled = YES;
     }else{
-        [self playHistoryVideoForZeroWithTimestamp:model.startTimestamp];
+        [self playHistoryVideoForZeroWithTimestamp:model.startPlayTimestamp];
     }
     self.playButton.selected = YES;
     self.fullPlayBtn.selected = YES;
@@ -797,8 +791,8 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 //    }
     [self stopVideoPlay];
     [self historyCurrentModeByTimestamp];
-    [self startLodingAnimation];
-    [CylanJFGSDK connectCamera:self.cid];
+    [self startLiveVideo];
+    
 }
 
 #pragma mark- 视频播放
@@ -818,9 +812,9 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     
     isLiveVideo = YES;
     [CylanJFGSDK connectCamera:self.cid];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"playCid:%@",self.cid]];
     self.videoPlayBgScrollerView.hidden = NO;
     self.playButton.selected = YES;
-    
     
     if (self.snapeImageView.superview != self.videoPlayBgScrollerView) {
         [self.videoPlayBgScrollerView addSubview:self.snapeImageView];
@@ -831,8 +825,6 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     }else{
         self.snapeImageView.frame = CGRectMake(0, 0, self.videoPlayBgScrollerView.bounds.size.width, self.videoPlayBgScrollerView.bounds.size.height);
     }
-    
-    
     if (self.videoPlayBgScrollerView.superview != self.videoBgView) {
         [self.videoBgView addSubview:self.videoPlayBgScrollerView];
         [self.videoBgView bringSubviewToFront:self.loadingBgView];
@@ -864,7 +856,7 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
                         if (isExistSDCard == NO)
                         {
 //                            (self.devModel.shareState != DevShareStatuOther)
-                            if ([[CommonMethod viewControllerForView:self.view] isKindOfClass:[VideoPlayViewController class]] && self.isInCurrentVC &&  !isShared)
+                            if ([[CommonMethod viewControllerForView:self.view] isKindOfClass:[VideoPlayViewController class]] && self.isShow &&  !isShared)
                             {
                                 isHasSDCard = NO;
                                 self.historyView.hidden = YES;
@@ -921,9 +913,9 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
                                 }else{
                                     self.devModel.safeIdle = NO;
                                     
-                                    if (isDidAppear) {
+                                    if (self.isShow) {
                                         [self hideIdleView];
-                                        [self viewDidAppear:YES];
+                                        [self startVideoAction];
                                     }
                                     
                                 }
@@ -964,7 +956,7 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
                         [self stopVideoPlay];
                     }
                     
-                    if (isDidAppear)
+                    if (self.isShow)
                     {
                         UIAlertView *aler = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips6"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil];
                         
@@ -1011,13 +1003,18 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     if (isLiveVideo) {
         return;
     }
+    
+    if (playState == videoPlayStatePause) {
+        return;
+    }
+    
     JFGSDKHistoryVideoErrorInfo *errorInfo = notification.object;
     if (errorInfo.code == 2030) {
        
         //历史录像播放完成
         [self stopVideoPlay];
 
-        UIAlertView *aler = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"TIPS"] message:[JfgLanguage getLanTextStrByKey:@"RECORD_NO_FIND"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil];
+        UIAlertView *aler = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"TIPS"] message:[JfgLanguage getLanTextStrByKey:@"FILE_FINISHED"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil];
     
         [aler showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
             
@@ -1082,103 +1079,108 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 
 -(void)onNotifyResolution:(NSNotification *)notification
 {
-    dispatch_async(dispatch_get_main_queue(), ^{
+   // [self.renderLock lock];
+    NSDictionary *dict = notification.object;
+    if (dict) {
         
-        NSDictionary *dict = notification.object;
-        if (dict) {
-            
-            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(onNotifyResolutionOvertime) object:nil];
-            int width = [[dict objectForKey:@"width"] intValue];
-            int height = [[dict objectForKey:@"height"] intValue];
-            NSLog(@"originSize:%@",NSStringFromCGSize(CGSizeMake(width, height)));
-            CGSize size = CGSizeMake(width, height);
-            
-            //防止多次接受通知
-            if (playState == videoPlayStatePlaying) {
-                return;
-            }
-            
-            UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
-            if (remoteView) {
-                [remoteView removeFromSuperview];
-                remoteView = nil;
-            }
-            
-            NSInteger pid = [self.devModel.pid integerValue];
-            UIView *_remoteView;
-            if (pid == 18) {
-                width = self.view.width;
-                height= width;
-                size = CGSizeMake(width, width);
-                PanoramicIosView * __remoteView = [[PanoramicIosView alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, size.width, size.height)];
-                [__remoteView configV360:getSFCParamIosPreset()];
-                _remoteView = __remoteView;
-                //MODE_TOP = 0 吊顶 MODE_WALL = 1 壁挂
-                if (self.angleType == 1) {
-                    //挂壁
-                    [__remoteView setMountMode:MOUNT_WALL];
-                }else{
-                    //吊顶
-                    [__remoteView setMountMode:MOUNT_TOP];
-                }
-                
-                UITapGestureRecognizer *panTap = [__remoteView getDoubleTapRecognizer];
-                [videoTapGesture requireGestureRecognizerToFail:panTap];
-                
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(onNotifyResolutionOvertime) object:nil];
+        int width = [[dict objectForKey:@"width"] intValue];
+        int height = [[dict objectForKey:@"height"] intValue];
+        NSLog(@"originSize:%@",NSStringFromCGSize(CGSizeMake(width, height)));
+        CGSize size = CGSizeMake(width, height);
+        
+        //防止多次接受通知
+        if (playState == videoPlayStatePlaying || isStartRender) {
+            [JFGSDK appendStringToLogFile:@"isStartRender-videoPlayStatePlaying"];
+            return;
+        }
+        
+        UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+        if (remoteView) {
+            [remoteView removeFromSuperview];
+            remoteView = nil;
+        }
+        
+        //NSInteger pid = [self.devModel.pid integerValue];
+        UIView *_remoteView;
+        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
+            width = self.view.width;
+            height= width;
+            size = CGSizeMake(width, width);
+            PanoramicIosView * __remoteView = [[PanoramicIosView alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, size.width, size.height)];
+            [__remoteView configV360:getSFCParamIosPreset()];
+            _remoteView = __remoteView;
+            //MODE_TOP = 0 吊顶 MODE_WALL = 1 壁挂
+            if (self.angleType == 1) {
+                //挂壁
+                [__remoteView setMountMode:MOUNT_WALL];
             }else{
-                _remoteView = [[VideoRenderIosView alloc] initWithFrame:CGRectMake(0, 0, size.width, size.height)];
+                //吊顶
+                [__remoteView setMountMode:MOUNT_TOP];
             }
             
-            _remoteView.tag = VIEW_REMOTERENDE_VIEW_TAG;
-            _remoteView.backgroundColor = [UIColor blackColor];
-            _remoteView.layer.edgeAntialiasingMask = YES;
-            [self.videoPlayBgScrollerView addSubview:_remoteView];
-            [CylanJFGSDK startRenderRemoteView:_remoteView];
-            remoteCallViewSize = size;
+            UITapGestureRecognizer *panTap = [__remoteView getDoubleTapRecognizer];
+            [videoTapGesture requireGestureRecognizerToFail:panTap];
             
-            if (isLiveVideo == NO) {
-                
-                [self voiceAndMicBtnNomalState];
-                [self fullVoiceAndMicBtnDisableState];
-                
-            }
-            [JFGSDK appendStringToLogFile:@"onNotifyResolution remoteViewSizeFit"];
-            [self remoteViewSizeFit];
-            if (playState != videoPlayStatePlaying)
-            {
-                [self voiceAndMicBtnNomalState];
-                [self fullVideoAndMicBtnNomal];
-            }
+        }else{
+            _remoteView = [[VideoRenderIosView alloc] initWithFrame:CGRectMake(0, 0, size.width, size.height)];
+        }
+        
+        _remoteView.tag = VIEW_REMOTERENDE_VIEW_TAG;
+        _remoteView.backgroundColor = [UIColor blackColor];
+        _remoteView.layer.edgeAntialiasingMask = YES;
+        [self.videoPlayBgScrollerView addSubview:_remoteView];
+        [CylanJFGSDK startRenderRemoteView:_remoteView];
+        remoteCallViewSize = size;
+        
+        isStartRender = YES;
+        
+        if (isLiveVideo == NO) {
             
-            [self stopLoadingAnimation];
-            [self isFristIntoView];
+            [self voiceAndMicBtnNomalState];
+            [self fullVideoAndMicBtnNomal];
+            self.playButton.selected = YES;
+            self.fullPlayBtn.selected = YES;
             
-            if (self.rateLabel.superview == nil) {
-                [self.videoBgView addSubview:self.rateLabel];
-            }
-            self.rateLabel.hidden = NO;
-            self.rateLabel.alpha = 1;
-            self.rateLabel.text = [NSString stringWithFormat:@"%.0fK/s",0.0];
-            [self.videoBgView bringSubviewToFront:self.rateLabel];
+        }else{
             
-            if (windowMode == videoPlayModeSmallWindow) {
-                self.videoPlayTipLabel.x = self.view.width*0.5;
-                self.videoPlayTipLabel.bottom = self.videoBgView.height-8;
-            }else{
-                self.videoPlayTipLabel.x = kheight*0.5;
-                self.videoPlayTipLabel.bottom = self.fullScreenBottomControlBar.top-10;
-            }
-            playState = videoPlayStatePlaying;
-            self.videoPlayTipLabel.hidden = NO;
-            [self.videoBgView addSubview:self.videoPlayTipLabel];
-            
+            self.playButton.selected = YES;
+            self.fullPlayBtn.selected = YES;
             
         }
         
-    });
-    
-    
-
+        [JFGSDK appendStringToLogFile:@"onNotifyResolution remoteViewSizeFit"];
+        [self remoteViewSizeFit];
+        if (playState != videoPlayStatePlaying)
+        {
+            [self voiceAndMicBtnNomalState];
+            [self fullVideoAndMicBtnNomal];
+        }
+        
+        //[self stopLoadingAnimation];
+        [self isFristIntoView];
+        
+        if (self.rateLabel.superview == nil) {
+            [self.videoBgView addSubview:self.rateLabel];
+        }
+        self.rateLabel.hidden = NO;
+        self.rateLabel.alpha = 1;
+        self.rateLabel.text = [NSString stringWithFormat:@"%.0fK/s",0.0];
+        [self.videoBgView bringSubviewToFront:self.rateLabel];
+        
+        if (windowMode == videoPlayModeSmallWindow) {
+            self.videoPlayTipLabel.x = self.view.width*0.5;
+            self.videoPlayTipLabel.bottom = self.videoBgView.height-8;
+        }else{
+            self.videoPlayTipLabel.x = kheight*0.5;
+            self.videoPlayTipLabel.bottom = self.fullScreenBottomControlBar.top-10;
+        }
+        playState = videoPlayStatePlaying;
+        self.videoPlayTipLabel.hidden = NO;
+        [self.videoBgView addSubview:self.videoPlayTipLabel];
+        
+    }
+   // [self.renderLock unlock];
 //        dat =  [NSMutableString stringWithString:[dateFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:timesTamp]]];
 //        [dat insertString:[NSString stringWithFormat:@"%@| ",[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_Playback"]]  atIndex:0];
 //        BOOL isStop = [self.historyView setHistoryTableViewOffsetByTimeStamp:timesTamp];
@@ -1284,7 +1286,7 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     NSLog(@"disConnect:%@",remoteID);
     
 
-    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"Disconnect:%@ errorType:%@",remoteID,dict[@"error"]]];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"RecvDisconnect:%@ errorType:%@",remoteID,dict[@"error"]]];
     
     if ([remoteID isEqualToString:self.cid] || [remoteID isEqualToString:@"server"]) {
         
@@ -1330,10 +1332,13 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 #pragma mark 网络环境改变代理
 -(void)networkChanged:(NetworkStatus)statu
 {
-    if (statu == NotReachable) {
+    if (statu == NotReachable && self.isShow) {
         
         dispatch_async(dispatch_get_main_queue(), ^{
             
+            if (self.devModel.safeIdle) {
+                return ;
+            }
             [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(rtcpLowAction) object:nil];
             playState = videoPlayStateNotNet;
             [self hideVideoPlayBar];
@@ -1369,6 +1374,7 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 //停止视频播放
 -(void)stopVideoPlay
 {
+    //[self.renderLock lock];
     if (playState == videoPlayStatePlaying) {
         [self snapScreen];
         [CylanJFGSDK setAudio:YES openMic:NO openSpeaker:NO];
@@ -1384,9 +1390,7 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     }
     UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
     if (remoteView) {
-        
         if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
-            
             PanoramicIosView *rvc = (PanoramicIosView *)remoteView;
             [rvc stopRender];
         }
@@ -1394,11 +1398,14 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
         remoteView = nil;
         [JFGSDK appendStringToLogFile:@"remoteRemoveFromSuperView"];
     }
+  
+    isStartRender = NO;
     playState = videoPlayStatePause;
     self.videoPlayTipLabel.hidden = YES;
     [self stopLoadingAnimation];
     [self stopTimeoutRequest];
-    
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(onNotifyResolutionOvertime) object:nil];
+    //[self.renderLock unlock];
 }
 
 
@@ -1410,23 +1417,28 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     CGFloat ratio = 1.0;
     CGFloat width;
     if (windowMode == videoPlayModeFullScreen) {
-
         width = self.view.bounds.size.height;
-        
     }else{
-        
         width = self.view.bounds.size.width;
     }
     
-    
     ratio = remoteCallViewSize.height/remoteCallViewSize.width;
     CGFloat height = width * ratio;
+    
+    if (windowMode == videoPlayModeFullScreen) {
+        if (height < self.view.bounds.size.width) {
+            
+            height = self.view.bounds.size.width;
+            width = height/ratio;
+            
+        }
+    }
     
     UIView *remoteView =[self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
     if (remoteView) {
         
         remoteView.frame = CGRectMake(0, 0, self.videoBgView.bounds.size.width, height);
-        [self.videoPlayBgScrollerView setContentSize:CGSizeMake(width, height)];
+        [self.videoPlayBgScrollerView setContentSize:CGSizeMake(self.videoBgView.bounds.size.width, height)];
         
         if (windowMode == videoPlayModeSmallWindow) {
             
@@ -1589,8 +1601,6 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
         self.fullMicBtn.selected = sender.selected;
         self.fullVoideBtn.enabled = self.voiceButton.enabled;
     }
-    
-    
 }
 
 -(void)snap
@@ -1626,9 +1636,7 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
             int64_t time = (int64_t)[timeString longLongValue];
             
             NSString *fileName = [NSString stringWithFormat:@"%lld_1.jpg",time];
-            JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
-            NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,self.cid,fileName];
-            [JFGSDK uploadFile:[self saveImage:image] toCloudFolderPath:wonderFilePath];
+           
             
             
             NSMutableArray *list = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
@@ -1646,6 +1654,10 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
                 
                 for (DataPointIDVerRetSeg *seg in dataList) {
                     if (seg.ret == 0) {
+                        JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
+                        NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,self.cid,fileName];
+                        [JFGSDK uploadFile:[self saveImage:image] toCloudFolderPath:wonderFilePath];
+                        
                         [[NSNotificationCenter defaultCenter] postNotificationName:JFGExploreRefreshNotificationKey object:nil userInfo:nil];
                         break;
                     }
@@ -1697,7 +1709,7 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
         if ([LoginManager sharedManager].loginStatus ==JFGSDKCurrentLoginStatusSuccess) {
             
             [self hideDisconnectNetView];
-            [self viewDidAppear:YES];
+            [self startVideoAction];
             return;
         }
        
@@ -1962,6 +1974,10 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
         [self startLodingAnimation];
         
         [CylanJFGSDK playVideoByTime:historyLastestTimeStamp cid:self.cid];
+         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"playCid:%@",self.cid]];
+        self.fullMicBtn.enabled = NO;
+        self.fullSnapBtn.enabled = YES;
+        self.fullVoideBtn.enabled = YES;
         
         self.videoPlayBgScrollerView.hidden = NO;
         if (self.videoPlayBgScrollerView.contentSize.width > 0) {
@@ -2044,9 +2060,14 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
             isLiveVideo = NO;
             if (playState == videoPlayStatePlaying) {
                 [CylanJFGSDK playVideoByTime:currentHistoryModel.startTimestamp cid:self.cid];
+                 [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"playCid:%@",self.cid]];
                // [CylanJFGSDK switchLiveVideo:NO beigenTime:currentHistoryModel.startTimestamp];
                 [self voiceAndMicBtnNomalState];
-                [self fullVoiceAndMicBtnDisableState];
+                
+                self.fullMicBtn.enabled = NO;
+                self.fullSnapBtn.enabled = YES;
+                self.fullVoideBtn.enabled = YES;
+                //[self fullVoiceAndMicBtnDisableState];
 
             }else{
                 [self playHistoryVideoForZeroWithTimestamp:currentHistoryModel.startTimestamp];
@@ -2077,7 +2098,7 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
         }else{
             safeTipTimer = [NSTimer bk_scheduledTimerWithTimeInterval:1 block:^(NSTimer *timer) {
                 
-                if (self.isShow && isDidAppear) {
+                if (self.isShow) {
                     [self showSafeTip];
                     [timer invalidate];
                 }
@@ -2546,19 +2567,17 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     if (windowMode == videoPlayModeFullScreen) {
         [self exitFullScreen];
     }
+    
     [self stopLoadingAnimation];
     [self hideVideoPlayBar];
     UIView *bgView = [self.videoBgView viewWithTag:123451];
     if (bgView) {
         UILabel *textLab = [bgView viewWithTag:20005];
         if (textLab) {
-            
             textLab.text = text;
-            
         }
         return;
     }
-    
     self.videoPlayBgScrollerView.hidden = YES;
     
     bgView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, self.videoBgView.width, 170*0.5+30)];
@@ -2613,15 +2632,15 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     if (!_videoBgView) {
         
         CGFloat height = 0;
-        NSInteger pid = [self.devModel.pid integerValue];
+        //NSInteger pid = [self.devModel.pid integerValue];
         
-        if (pid == 5 || pid == 7 || pid == 13 || pid == 4 || pid == 16 || pid == 17 || pid == 1071 ) {
-            height = self.view.height*0.45;
-        }else{
+        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
             height = self.view.width;
+        }else{
+            height = self.view.height*0.45;
+            
         }
 
-        
         _videoBgView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, self.view.width, height)];
         _videoBgView.backgroundColor = [UIColor blackColor];
         _videoBgView.clipsToBounds = YES;
@@ -2954,8 +2973,8 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 
 - (void)showAlterView
 {
-    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"isInCurrentVC [%d]", isDidAppear]];
-    if (isInCurrentView)
+
+    if (self.isInCurrentVC)
     {
         [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Device_UpgradeTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
             
@@ -3260,7 +3279,7 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     vw.tag = 13145202;
     [self.videoBgView addSubview:vw];
     
-    [vw.cancelButton addTarget:self action:@selector(viewDidAppear:) forControlEvents:UIControlEventTouchUpInside];
+    [vw.cancelButton addTarget:self action:@selector(startVideoAction) forControlEvents:UIControlEventTouchUpInside];
     [vw.setAngleButton addTarget:self action:@selector(gotoSetAngle) forControlEvents:UIControlEventTouchUpInside];
 }
 
@@ -3275,7 +3294,7 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
 //显示安全防护引导tip
 -(void)showSafeTip
 {
-    if (isShared == NO && isDidAppear) {
+    if (isShared == NO && self.isShow) {
         [self showTipWithFrame:CGRectMake(5, 64+self.videoBgView.height-40-35+4, 95, 35) triangleLeft:15 content:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_SetProtectionTips"]];
         showTip = YES;
     }
@@ -3301,12 +3320,10 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     UIImageView *tipbgImageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, 0, tipBgView.width, 29)];
     tipbgImageView.image = [UIImage imageNamed:@"tip_bg2"];
     
-    
     UIImageView *roleImageView = [[UIImageView alloc]initWithFrame:CGRectMake(left, tipbgImageView.bottom, 12, 6)];
     roleImageView.transform = CGAffineTransformMakeRotation(180 * (M_PI / 180.0f));
     roleImageView.image = [UIImage imageNamed:@"tip_bg"];
     [tipBgView addSubview:roleImageView];
-    
     
     UILabel *tipLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, tipbgImageView.width, tipbgImageView.height)];
     tipLabel.text = content;
@@ -3314,7 +3331,6 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     tipLabel.textColor = [UIColor whiteColor];
     tipLabel.font = [UIFont systemFontOfSize:13];
     [tipbgImageView addSubview:tipLabel];
-    
     [tipBgView addSubview:tipbgImageView];
     
     [tipBaseView show];
@@ -3358,6 +3374,14 @@ NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey";
     NSData *imageData = UIImageJPEGRepresentation(currentImage, 1);//UIImagePNGRepresentation(currentImage);
     [imageData writeToFile:path atomically:YES];// 将图片写入文件
     return path;
+}
+
+-(NSLock *)renderLock
+{
+    if (!_renderLock) {
+        _renderLock = [[NSLock alloc]init];
+    }
+    return _renderLock;
 }
 
 

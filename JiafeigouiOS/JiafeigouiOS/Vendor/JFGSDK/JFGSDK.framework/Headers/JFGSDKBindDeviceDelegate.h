@@ -2,7 +2,7 @@
 //  JFGSDKBindDeviceDelegate.h
 //  JFGSDK
 //
-//  Created by 杨利 on 16/7/27.
+//  Created by yangli on 16/7/27.
 //  Copyright © 2016年 yangli. All rights reserved.
 //
 

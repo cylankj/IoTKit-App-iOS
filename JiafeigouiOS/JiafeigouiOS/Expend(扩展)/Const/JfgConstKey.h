@@ -14,7 +14,9 @@
 #pragma mark 文件 路径
 //NSString *const docmentStr = @"Documents";
 NSString *const jfgWorkDocment = @"jfgworkdic";         // 日志 文件 路径
-NSString *const pano720MediaPath = @"Msg720File";       // 720 摄像头 路径
+NSString *const pano720MediaPath = @"Pano720File";       // 720 摄像头 路径
+NSString *const pano720VideoThumbnailsDir = @"thumbnails";
+NSString *const pano720MediaDir = @"file";
 
 #pragma mark
 #pragma mark Notification
@@ -29,6 +31,12 @@ NSString *const angleChangedNotification = @"_angleChangedNotification"; // 角�
 NSString *const videoErrorKey = @"error";
 NSString *const videoRemoteKey = @"remote";
 
+#pragma mark
+#pragma mark advertisement key
+NSString *const adDictKey = @"adDictKey";
+NSString *const adPicURLKey = @"adPicURL";
+NSString *const adTagURLKey = @"adTagURL";
+NSString *const adEndTimeKey = @"adEndTime";
 
 #pragma mark
 #pragma mark oem Key

@@ -1,12 +1,12 @@
 /* es.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.  
+Created by cylan language tool  on Thu May 04 19:00:35 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Conexión fracasada";
 "REPEAT_TIME" = "%d Segundos";
 "REMAIN_SPACE" = "%.1fGB";
 "STANBY_TIME" = "%d D %d H %d M";
-"CHARGING" = "Cargando %d％%";
+"CHARGING" = "Cargando";
 "HOUR" = "%.2d H";
 "MINUTE" = "%.2d M";
 "MONTHS" = "mes";
@@ -217,6 +217,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "LOCAL_NOTIFICATION_MSG" = "Busque en el iPhone \"%@\" en la página de \"Aviso--Ajuste\" y elija \"permitir la notificación\"";
 "CLEAR_DATA" = "Limpiar caché";
 "FEEDBACK" = "Enviar sugerencias";
+"FEEDBACK_Copy" = "Copia";
 "ABOUT" = "Acerca de";
 "YOUR_FEEDBACK" = "Escuchamos concienzudamente las sugerencias de todos los usuarios";
 "DEAL_FEEDBACK" = "Gracias por sus comentarios";
@@ -257,6 +258,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WIFI_SET_2" = "1.Por favor, asegure que la luz azul de la señal de WIFI del dispositivo está parpadeando, si no, mantenga pulsando el botón de Wi-Fi durante tres segundos.\n2.Por favor, busque en la Configuración del iPhone - Wireless LAN, seleccione \"%@\" conexión,Contraseña ocho 1";
 "WIFI_SET_3" = "Ajustes de phone ->Red de área local inalámbrica,elija DOG-****** entre, si necesitan contraseña, introduzca 11111111";
 "WIFI_SET_3_1" = "Ajustes de phone ->Red de área local inalámbrica,elija DOG-ML****** entre,si necesitan contraseña, introduzca 11111111";
+"WIFI_SET_RS" = "Ajustes de phone ->Red de área local inalámbrica,elija RS-CAM****** entre,si necesitan contraseña, introduzca 11111111";
 "WIFI_SET_4" = "lver a %@";
 "WIFI_SET_5GTIPS" = "Nota:No es compatible con el WiFi 5G";
 "SELECT_NETWORK" = "Configurar Wifi";
@@ -534,7 +536,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "RET_ECID_UNBIND_RETRY_lOGIN" = "CIDNo enlazado, por favor inice de nuevo";
 "RET_EPARAMS_FALSE" = "Argument Fehler";
 "copyrightEn" = "Copyright ©2005-%@ Cylan.All Rights Reserved.";
-"help_url" = "https://yf.jfgou.com:8081/helps/es.html";
+"help_url" = "https://%@:8081/helps/es.html";
 "service_phonenum" = "+86 400-716-3232";
 "setwifi_check" = "Configure su teléfono para conectarse a \"%@\"";
 "show_web" = "www.cleverdog.com.cn";
@@ -810,7 +812,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Oct" = "Oct.";
 "Nov" = "Nov.";
 "Dec" = "Dec.";
-"help_url_Doby" = "https://yf.jfgou.com:8081/help/en_doby.html";
+"help_url_Doby" = "https://%@:8081/helps/en_doby.html";
 "NoNetworkTips" = "No hay conexion de red";
 "Tap0_AlreadyEmailed" = "Desde el sistema le hemos enviado un correo electrónico a";
 "Tap0_Click_ResetPassword" = "Por favor, haga clic en el enlace para restablecer la contraseña";
@@ -843,8 +845,9 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WeChat" = "WeChat";
 "Weibo" = "Weibo";
 "Device_Disconnected" = "Desconectado";
+"Tap1_OutdoorMode_Opened" = "Modo de exteriores se ha abierto";
 "Tap1_OutdoorMode" = "Modo al aire libre";
-"720PanoramicCamera" = "720°Cámara Panorámica";
+"_720PanoramicCamera" = "720°Cámara Panorámica";
 "Tap1_DeviceWasBindedTips" = "El dispositivo se ha ligado con \"%@\", por favor, desatar e intentarlo de nuevo.";
 "WiFiLight_BlueFlashing" = "Parpadeo azul: WiFi configuración modo";
 "WiFiLight_SteadyBlue" = "Azul constante: WiFi en línea";
@@ -866,6 +869,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_NeedsInitializedTips" = "Tarjeta SD necesita ser inicializado y los datos se borraron, seguro de continuar?";
 "Tap1_SDCardFullyTips" = "Totalmente ocupada";
 "Tap1_HomeMode" = "Hogar modo";
+"Tap1_HomeMode_Opened" = "Modo de casa ha sido abierto";
 "Tap1_Camera_TCPconnected" = "Cámara conectada con la app a través de Internet";
 "Tap1_Camera_UDPconnected" = "Cámara conectada directamente con la app";
 "Tap1_Camera_Video_Auto" = "Auto";
@@ -888,6 +892,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_Album_CancelDownloadTips" = "Cancelar la descarga?";
 "Tap1_Album_DownloadFailed" = "Descarga fracasó";
 "Tap1_Album_Share_Description" = "Agregar descripción";
+"Tap1_Album_Share_To_Daily_Great" = "El contenido compartido se guarda en \"Gran día \"";
 "Tap1_Album_Share_NotInstalledTips" = "\"%@\"  no está instalado, instálelo y vuelva a intentarlo";
 "Tap1_Shared_Title" = "Compartido de Cleverdog 720°Cam";
 "Tap1_Shared_Title_zhognxing" = "Compartido desde 720°Panoramic Cam";
@@ -906,3 +911,20 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Loaded" = "Cargado";
 "Microphone" = "Micrófono";
 "Tap3_FriendsAdd_AlreadyFriend" = "%@ Ya es tu amigo";
+"Choose_Album" = "Selecciona un álbum";
+"Mail_Class_Application" = "Seleccione la aplicación de clase de correo";
+"Tap1_Album_Empty" = "No hay fotos o videos";
+"Feedback_Sending" = "enviando…";
+"Feedback_MessageFailed" = "Error al enviar el mensaje";
+"Download_Then_Share" = "Descargue el video y luego comparta";
+"Downloading" = "El video se está descargando";
+"Network_Description" = "Descripción de la red";
+"Unconnect_Network" = "Su dispositivo no está conectado a una red móvil oa una red Wi-Fi";
+"Wifi_Method" = "Wi-Fi, consulte los siguientes métodos:";
+"Wifi_Hotspot" = "En el dispositivo [Configuración> LAN inalámbrica], elija un punto de acceso Wi-Fi para conectarse.";
+"Wifi_Set_Up" = "Ir a configurar";
+"Cellular_Data_Method" = "Datos móviles, consulte el siguiente método:";
+"Cellular_Data_Set_Up" = "Habilitar datos móviles en el dispositivo, utilice a continuación, Configuración> Datos móviles";
+"No_Network_Connection" = "No hay conexión de red, active primero la red";
+"RuiShi_Guide" = "Use la aguja para presionar el botón RESET durante 3 segundos";
+"RuiShi_Name" = "IPCam";

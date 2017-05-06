@@ -9,6 +9,7 @@
 #import "JfgTimeFormat.h"
 #import "DateTools.h"
 #import "JfgLanguage.h"
+
 @implementation JfgTimeFormat
 
 
@@ -115,6 +116,22 @@
     return [self transToyyyyMMddhhmmss:[NSString stringWithFormat:@"%d",timsp]];
 }
 
++ (NSString *)transToyyyyMMddWithTime:(long long)timesp
+{
+    //NSTimeInterval time=[timesp doubleValue];
+    NSDate *detaildate=[NSDate dateWithTimeIntervalSince1970:timesp]; //如果不使用本地时区,因为时差问题要加8小时 == 28800 sec
+    
+    //实例化一个NSDateFormatter对象
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setTimeZone:[NSTimeZone localTimeZone]];//设置本地时区
+    //设定时间格式,这里可以设置成自己需要的格式
+    [dateFormatter setDateFormat:@"yyyy-MM-dd"];
+    
+    NSString *currentDateStr = [dateFormatter stringFromDate: detaildate];
+    
+    return currentDateStr;
+}
+
 //时间戳--->日期
 + (NSString *)transToDate:(NSString *)timsp{
     
@@ -140,6 +157,22 @@
     return currentDateStr;
 }
 
++ (NSString *)transformTime:(long long)timesp withFormat:(NSString *)timeFormat
+{
+    //NSTimeInterval time=[timesp doubleValue];
+    NSDate *detaildate=[NSDate dateWithTimeIntervalSince1970:timesp]; //如果不使用本地时区,因为时差问题要加8小时 == 28800 sec
+    
+    //实例化一个NSDateFormatter对象
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setTimeZone:[NSTimeZone localTimeZone]];//设置本地时区
+    //设定时间格式,这里可以设置成自己需要的格式
+    [dateFormatter setDateFormat:timeFormat];
+    
+    NSString *currentDateStr = [dateFormatter stringFromDate: detaildate];
+    
+    return currentDateStr;
+}
+
 //时间---->时间戳
 +(NSString *)transTotimeSp:(NSString *)time{
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
@@ -150,9 +183,10 @@
     return timeSp;
 }
 
-+ (NSString *)transToSecond:(double)time
++ (BOOL)isToday:(double)timesp
 {
-    return @"";
-}
+    NSDate *argDate=[NSDate dateWithTimeIntervalSince1970:timesp];
 
+    return [argDate isToday];
+}
 @end

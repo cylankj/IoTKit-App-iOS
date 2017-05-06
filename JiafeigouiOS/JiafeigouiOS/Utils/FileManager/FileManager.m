@@ -8,7 +8,7 @@
 
 #import "FileManager.h"
 #import "JfgConstKey.h"
-
+#import "JfgGlobal.h"
 
 @implementation FileManager
 +(FileManager *)shared
@@ -30,7 +30,7 @@
     //[NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
-    NSLog(@"app_home_doc: %@",documentsDirectory);
+    JFGLog(@"app_home_doc: %@",documentsDirectory);
     return documentsDirectory;
 }
 //获取Library目录
@@ -105,7 +105,14 @@
 {
     NSString *homeDoc = [self dirDoc];
     NSString *currentAccount = [[LoginManager sharedManager] currentLoginedAcount];
-    return [NSString stringWithFormat:@"%@/%@/%@/%@", homeDoc,currentAccount,cid,pano720MediaPath];
+    return [NSString stringWithFormat:@"%@/%@/%@/%@/%@", homeDoc, currentAccount, cid, pano720MediaPath, pano720MediaDir];
+}
+
++ (NSString *)jfgPano720PhotoThumbnailsPath:(NSString *)cid
+{
+    NSString *homeDoc = [self dirDoc];
+    NSString *currentAccount = [[LoginManager sharedManager] currentLoginedAcount];
+    return [NSString stringWithFormat:@"%@/%@/%@/%@/%@", homeDoc, currentAccount, cid, pano720MediaPath, pano720VideoThumbnailsDir];
 }
 
 + (NSString *)jfgLogDirPath
@@ -118,6 +125,12 @@
 + (NSString *)jfgUpgradeFilePath:(int)deviceType
 {
     NSString *path = [[self jfgLogDirPath] stringByAppendingString:[NSString stringWithFormat:@"DogUpdateFile_%d.bin",deviceType]];
+    return path;
+}
+
++ (NSString *)jfgAdvertisementDirPath
+{
+    NSString *path = [[self dirDoc] stringByAppendingPathComponent:@"Advertisement"];
     return path;
 }
 

@@ -254,15 +254,9 @@
                     }
                     JFGLog(@"下载中...");
                 }
-                
             }
-            
         }
-        
     }
-    
-    
-    
 }
 
 -(void)reqOvertime
@@ -285,8 +279,6 @@
     if (![fileManager fileExistsAtPath:path]) {
         [fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:nil];
     }
-    
-    
     path = [path stringByAppendingPathComponent:fileName];
     return path;
 }

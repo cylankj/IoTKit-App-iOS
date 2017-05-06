@@ -362,9 +362,12 @@
                                 break;
                             case SDCardType_Error:
                             {
+                                if ([self.deviceInfoVM isClearingSDCard])
+                                {
+                                    return;
+                                }
                                 //格式化sd卡
                                 [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"VIDEO_SD_DESC"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"SD_INIT"] CancelBlock:^{
-                                    
                                 } OKBlock:^{
                                     [self.deviceInfoVM clearSDCard];
                                 }];

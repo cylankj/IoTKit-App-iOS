@@ -53,6 +53,22 @@
             isRebind:(BOOL)isRebind;
 
 
+/*!
+ *  绑定设备（绑定720设备过程中，手机仍然是4G/3G状态）
+ *  需在连接设备wifi后执行此操作
+ *  @param sn  新设备填写设备sn，旧设备无需填写（cid）
+ *  @param ssid  wifi ssid
+ *  @param key   wifi 密码
+ *  @note 设置wifi模式
+ */
+-(void)bindDevFor720WithSn:(NSString *)sn
+                      ssid:(NSString *)ssid
+                       key:(NSString *)key;
+
+
+
+
+
 /**
  *  绑定设备（设备通过蓝牙等方式自定义通信设置设备wifi等配置）
  *

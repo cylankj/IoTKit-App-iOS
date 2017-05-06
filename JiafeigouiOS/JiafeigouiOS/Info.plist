@@ -77,8 +77,12 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>3.2.0.1</string>
+	<key>Jfgsdk_ap_prefix</key>
+	<array>
+		<string>RS-</string>
+	</array>
 	<key>Jfgsdk_host</key>
-	<string>test1.jfgou.com</string>
+	<string>yf.jfgou.com</string>
 	<key>Jfgsdk_post</key>
 	<string>443</string>
 	<key>LSApplicationCategoryType</key>

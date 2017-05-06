@@ -11,6 +11,7 @@
 #import "JFGTimepieceView.h"
 #import "UIView+FLExtensionForFrame.h"
 #import "UIColor+HexColor.h"
+#import "XTimer.h"
 
 @interface JFGTimepieceView()
 {
@@ -19,7 +20,6 @@
     int min;
     int sec;
     UILabel *_label;
-    
 }
 @end
 
@@ -61,7 +61,12 @@
 
 -(void)startTimer
 {
+    if (_timer && [_timer isValid]) {
+        [_timer invalidate];
+        _timer = nil;
+    }
     _timer = [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(timerAction) userInfo:nil repeats:YES];
+    [[NSRunLoop currentRunLoop] addTimer:_timer forMode:NSRunLoopCommonModes];
 }
 
 -(void)timerAction
@@ -76,14 +81,15 @@
         min = 0;
     }
     _label.text = [NSString stringWithFormat:@"%02d:%02d:%02d",hour,min,sec];
+    NSLog(@"JFGTimepieceView_timer:%@",_label.text);
 }
 
 -(void)stopTimer
 {
     if (_timer && [_timer isValid]) {
         [_timer invalidate];
-        _timer = nil;
     }
+    _timer = nil;
     hour = 0; min = 0; sec = 0;
     _label.text = [NSString stringWithFormat:@"%02d:%02d:%02d",0,0,0];
 }

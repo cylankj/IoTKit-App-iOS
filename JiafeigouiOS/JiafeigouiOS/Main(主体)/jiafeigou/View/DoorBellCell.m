@@ -13,12 +13,15 @@
 @implementation DoorBellCell
 
 -(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
-    if ([super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
+    
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    
+    if (self) {
         self.bell = [[BellView alloc]init];
         
         [self.contentView addSubview:self.bell];
         
-        [_bell mas_makeConstraints:^(MASConstraintMaker *make) {
+        [self.bell mas_makeConstraints:^(MASConstraintMaker *make) {
             make.edges.mas_equalTo(UIEdgeInsetsMake(0, 0, 9, 0));
         }];
         self.bell.headerImageView.userInteractionEnabled = YES;

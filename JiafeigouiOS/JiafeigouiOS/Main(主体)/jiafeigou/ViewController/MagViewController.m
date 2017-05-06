@@ -242,7 +242,7 @@ NSString *const magStateDateKey = @"_magDateKey";
     if (arr.count > 0) {
         //给定一个初始值用于比较第一天
         NSString * dafaultDay = @"+";
-        NSMutableArray * subArr = nil;
+        NSMutableArray * subArr = [NSMutableArray new];
         for (int i = 0; i < arr.count; i++) {
             MenciModel * aM = [arr objectAtIndex:i];
             NSString * aDay = [self.dateFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:aM.timestamp]];

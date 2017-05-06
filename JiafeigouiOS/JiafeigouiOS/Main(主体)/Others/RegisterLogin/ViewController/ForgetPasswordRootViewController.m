@@ -102,12 +102,6 @@ typedef NS_ENUM(NSInteger, forgetPassControl) {
 
 
 
-
--(void)viewWillAppear:(BOOL)animated
-{
-   
-}
-
 -(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
     [super touchesEnded:touches withEvent:event];

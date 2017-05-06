@@ -18,6 +18,8 @@
 #import "ConfigWiFiViewController.h"
 #import "FLGlobal.h"
 #import "BindDevProgressViewController.h"
+#import "PilotLampStateVC.h"
+#import "OemManager.h"
 
 #define SCREEN_SIZE   [[UIScreen mainScreen] bounds].size
 #define DEVICE_IPHONE4S CGSizeEqualToSize(CGSizeMake(320, 480), SCREEN_SIZE)
@@ -28,6 +30,7 @@
 @interface ConnDeviceViewController ()<JFGSDKCallbackDelegate>
 {
     BOOL devHasNet;//设备自身网络是否可用
+    BOOL isPushed;
 }
 @property(nonatomic, strong) UIImageView * circle1;
 @property(nonatomic, strong) UILabel * label1;
@@ -37,6 +40,7 @@
 @property(nonatomic, strong)UILabel * lineLabel_bottom;
 @property(nonatomic, strong)UIButton * goToSettingButton;
 @property(nonatomic, strong)DelButton * exitBtn;
+@property(nonatomic,strong)UIButton *declareBtn;
 @end
 
 @implementation ConnDeviceViewController
@@ -51,53 +55,33 @@
     [self.view addSubview:self.label2];
     [self.view addSubview:self.exitBtn];
     
-    if (!IOS_SYSTEM_VERSION_EQUAL_OR_ABOVE(10.0)){
-        [self.view addSubview:self.goToSettingButton];
-        [self.view addSubview:self.lineLabel_bottom];
-    }
-    /*
-    AVPlayerLayer *playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.avPlayer];
-    playerLayer.frame = CGRectMake(kLeft, self.label2.bottom+40*kScreen_Scale, Width, 350*kScreen_Scale);
-    [self.view.layer addSublayer:playerLayer];
-    [self.avPlayer play];
-    
-    //监听视频播放玩后
-    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(itemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
-    //监听视屏播放状态
-    //[item addObserver:self forKeyPath:@"status" options:NSKeyValueObservingOptionNew context:nil];*/
+    [self.view addSubview:self.goToSettingButton];
+    [self.view addSubview:self.lineLabel_bottom];
     [self.view addSubview:self.olImageView];
+    
+    if (self.pType == productType_720) {
+        [self.view addSubview:self.declareBtn];
+    }
+    
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(becomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
 }
-
-
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-   
 }
--(void)viewDidAppear:(BOOL)animated {
+
+-(void)viewDidAppear:(BOOL)animated
+{
     [super viewDidAppear:animated];
     [JFGSDK addDelegate:self];
+    isPushed = NO;
     isConnectAp = [CommonMethod isConnecttedDeviceWifiWithPid:self.pType];
+    [JFGSDK ping:@"192.168.10.255"];
     if (isConnectAp) {
         [JFGSDK ping:@"255.255.255.255"];
     }
-    if (IOS_SYSTEM_VERSION_EQUAL_OR_ABOVE(10.0)) {
-        
-        
-        if (isConnectAp) {
-            if (self.goToSettingButton.superview != self.view) {
-                [self.view addSubview:self.goToSettingButton];
-                [self.view addSubview:self.lineLabel_bottom];
-            }
-        }else{
-            [self.goToSettingButton removeFromSuperview];
-            [self.lineLabel_bottom removeFromSuperview];
-        }
-        
-    }
-    
+
 }
 - (void)viewDidDisappear:(BOOL)animated
 {
@@ -112,6 +96,7 @@
 }
 - (void)becomeActive:(NSNotificationCenter *)notifi
 {
+    [JFGSDK ping:@"192.168.10.255"];
     if ([CommonMethod isConnecttedDeviceWifiWithPid:self.pType]) {
 //        ConfigWiFiViewController *configWifi = [ConfigWiFiViewController new];
 //        configWifi.cid = self.cidStr;
@@ -125,6 +110,7 @@
 //        [self.navigationController pushViewController:configWifi animated:YES];
         [JFGSDK ping:@"255.255.255.255"];
     }
+    
 }
 
 -(void)goNextVCIsConfigWifi:(BOOL)isConfig forCid:(NSString *)cid
@@ -157,13 +143,16 @@
         }else{
             configWifi.isCamare = YES;
         }
+        isPushed = YES;
         [self.navigationController pushViewController:configWifi animated:YES];
+        
     }else{
         BindDevProgressViewController * bindDev = [BindDevProgressViewController new];
         bindDev.cid = cid;
         bindDev.pType = self.pType;
         bindDev.wifiName = @"";
         bindDev.wifiPassWord = @"";
+        isPushed = YES;
         [self.navigationController pushViewController:bindDev animated:YES];
     }
 }
@@ -172,6 +161,15 @@
 - (void)jfgPingRespose:(JFGSDKUDPResposePing *)ask
 {
 //    self.netType = ask.net;
+    if (isPushed) {
+        return;
+    }
+    if ([ask.address isEqualToString:@"192.168.10.255"]) {
+        devHasNet = YES;
+        [self goNextVCIsConfigWifi:YES forCid:ask.cid];
+        return;
+    }
+    
     if ((ask.net == 2 || ask.net == 3 || ask.net == 4 || ask.net == 5) && self.configType != configWifiType_configWifi)
     {
         devHasNet = YES;
@@ -198,10 +196,7 @@
     if (isConnectAp == NO)
     {
         if (IOS_SYSTEM_VERSION_EQUAL_OR_ABOVE(10.0)) {
-            NSURL * url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
-            if ([[UIApplication sharedApplication]canOpenURL:url]) {
-                [[UIApplication sharedApplication] openURL:url];
-            }
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"App-Prefs:root=WIFI"] options:@{} completionHandler:nil];
         } else {
             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"prefs:root=WIFI"]];
         }
@@ -241,7 +236,12 @@
         _label1.numberOfLines = 0;
         _label1.lineBreakMode = NSLineBreakByCharWrapping;
         _label1.textAlignment = NSTextAlignmentLeft;
-        _label1.text = [JfgLanguage getLanTextStrByKey:@"WIFI_SET_3"];
+        
+        if (self.pType == productType_IPCam) {
+            _label1.text = [JfgLanguage getLanTextStrByKey:@"WIFI_SET_RS"];
+        }else{
+           _label1.text = [JfgLanguage getLanTextStrByKey:@"WIFI_SET_3"];
+        }
         CGSize size = [_label1 sizeThatFits:CGSizeMake(_label1.width, MAXFLOAT)];
         _label1.frame = CGRectMake(self.circle1.right+9, kTop-3, Width-self.circle1.width, size.height);
     }
@@ -262,7 +262,18 @@
 -(OLImageView *)olImageView{
     if (!_olImageView) {
         _olImageView = [[OLImageView alloc]initWithFrame:CGRectMake(kLeft, self.label2.bottom+30*kScreen_Scale, 230*kScreen_Scale, 350*kScreen_Scale)];
-        [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"connDevice"]]];
+        if (self.pType == productType_IPCam) {
+            //ruishi
+            [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"ruishi"]]];
+        }else{
+            
+            if ([OemManager oemType] == oemTypeDoby) {
+                [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"doby"]]];
+            }else{
+                [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"connDevice"]]];
+            }
+            
+        }
         _olImageView.x = self.view.x;
     }
     return _olImageView;
@@ -294,4 +305,21 @@
     }
     return _exitBtn;
 }
+-(UIButton *)declareBtn
+{
+    if (!_declareBtn) {
+        _declareBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _declareBtn.frame = CGRectMake(self.view.width-15-25, 40, 25, 25);
+        [_declareBtn setImage:[UIImage imageNamed:@"icon_explain_gray"] forState:UIControlStateNormal];
+        [_declareBtn addTarget:self action:@selector(intoVC) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _declareBtn;
+}
+
+-(void)intoVC
+{
+    PilotLampStateVC *lampVC = [PilotLampStateVC new];
+    [self.navigationController pushViewController:lampVC animated:YES];
+}
+
 @end

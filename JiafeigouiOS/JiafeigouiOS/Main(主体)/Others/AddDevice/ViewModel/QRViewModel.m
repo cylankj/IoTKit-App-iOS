@@ -93,7 +93,9 @@ NSString *const macKey = @"_macKey";
         case productType_HS_960:         // 海思 960
         case productType_HS_1080:
         case 4:
-        case 23://摄像头
+        case 23:
+        case 36:
+        case 37://摄像头
         {
             [self resultCallBack:QRReustTypePUshGuideCamera];
         }

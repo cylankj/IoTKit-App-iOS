@@ -38,6 +38,7 @@
 #pragma mark - 一系列set方法
 
 + (LSChatModel *)creatModel:(NSDictionary *)dic{
+    
     LSChatModel *aModel =[[LSChatModel alloc] init];
     
     aModel.msg =[dic objectForKey:@"msg"];

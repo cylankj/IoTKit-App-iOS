@@ -62,6 +62,7 @@
 -(void)viewWillAppear:(BOOL)animated
 {
     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault animated:YES];
+    [super viewWillAppear:animated];
 }
 
 

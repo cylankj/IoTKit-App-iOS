@@ -17,4 +17,6 @@
 @property (nonatomic,strong)UILabel *titleLabel;
 @property (nonatomic,strong)UIButton *backBtn;
 
+-(void)backAction;
+
 @end

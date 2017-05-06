@@ -9,7 +9,15 @@
 #import <UIKit/UIKit.h>
 #import "JfgTypeDefine.h"
 
+@protocol ConfigWifiVCDelegate <NSObject>
+
+-(void)configWifiVCNectActionForVC:(UIViewController *)vc;
+
+@end
+
 @interface ConfigWiFiViewController : UIViewController
+
+@property (nonatomic,weak)id <ConfigWifiVCDelegate> delegate;
 
 @property (nonatomic,assign)BOOL isCamare;
 

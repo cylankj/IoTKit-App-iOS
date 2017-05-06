@@ -39,7 +39,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.selectNum = 0;
-    self.titleLabel.text = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap3_Friends_Share"],self.remarkName];
+    self.titleLabel.text = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap3_Friends_Share"],self.remarkName?self.remarkName:self.account];
     [self.leftButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     [self.rightButton addTarget:self action:@selector(rightButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     self.rightButton.hidden = NO;
@@ -334,32 +334,34 @@
     
     for (UserShareDeviceModel * m in [self.modelArray copy]) {
         
-        for (NSString *cidKey in friendList) {
+        NSArray *shareListt = friendList[m.uuid];
+        if (shareListt.count) {
             
-            NSArray *sharedList = friendList[cidKey];
-            if ([cidKey isEqualToString:m.uuid]) {
+            for (JFGSDKFriendInfo *info in shareListt) {
                 
-                for (JFGSDKFriendInfo *info in sharedList) {
-                    
-                    if ([info.account isEqualToString:self.account]) {
-                        //如果该设备已分享账号包括当前账号，直接删除数据，跳出当前
-                        [self.modelArray removeObject:m];
-                        goto A;
-                    }
-                    
+                if ([[info.account lowercaseString] isEqualToString:[self.account lowercaseString]]) {
+                    [self.modelArray removeObject:m];
+                    break;
                 }
-                m.shareCount = sharedList.count;
-                m.tempShareCount = m.shareCount;
+                
             }
+            m.shareCount = shareListt.count;
+            m.tempShareCount = m.shareCount;
+            
+        }else{
+            
+            m.shareCount = 0;
+            m.tempShareCount = 0;
             
         }
-        
-    A:;
         
     }
     [self.friendsTableView reloadData];
 }
--(UITableView *)friendsTableView{
+
+
+-(UITableView *)friendsTableView
+{
     if (!_friendsTableView) {
         _friendsTableView = [[UITableView alloc]initWithFrame:CGRectMake(0, 64, self.view.width, self.view.height-64) style:UITableViewStylePlain];
         _friendsTableView.delegate = self;

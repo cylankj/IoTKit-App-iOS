@@ -55,5 +55,36 @@ NSString *const JFGTabBarJumpVcKey = @"JFGTabBarJumpVcKey_";
 // bugly 相关配置
 NSString *const buglyAppID = @"900022745";
 
+//摄像头大类，用于直播相关页面跳转
+typedef NS_ENUM(NSInteger,JFGDevBigType) {
+    
+    JFGDevBigTypeWifiCamare,//WiFi摄像头
+    JFGDevBigType3GCamera,//3G摄像头
+    JFGDevBigTypeDoorbell,//门铃
+    JFGDevBigTypeSinglefisheyeCamera,//单鱼眼
+    JFGDevBigTypeEyeCamera,//双鱼眼
+    JFGDevBigTypeUnknow,
+    
+};
+
+//720设备局域网请求链接类型
+typedef NS_ENUM(NSInteger,JFG720DevLANReqUrlType) {
+    
+    JFG720DevLANReqUrlTypeSnapShot,//拍照
+    JFG720DevLANReqUrlTypeGetRecStatue,//录像状态
+    JFG720DevLANReqUrlTypeSDFormat,//格式化sd卡
+    JFG720DevLANReqUrlTypeGetSDInfo,//sd卡信息
+    JFG720DevLANReqUrlTypeGetPowerLine,//是否连接电源线
+    JFG720DevLANReqUrlTypeBattery,//电量
+    JFG720DevLANReqUrlTypeGetRP,//分辨率
+    
+//    JFG720DevLANReqUrlTypeFileLogo,//设置logo
+//    JFG720DevLANReqUrlTypeStartRec,//开始录像
+//    JFG720DevLANReqUrlTypeStopRec,//停止录像
+//    JFG720DevLANReqUrlTypeGetFileList,//sd卡文件列表
+//    JFG720DevLANReqUrlTypeDownloadFile,//下载文件
+//    JFG720DevLANReqUrlTypeDelFile,//删除文件
+};
+
 #endif /* JfgConfig_h */
 

@@ -357,6 +357,13 @@
  */
 -(void)jfgUploadDeviceTokenResult:(JFGErrorType)errorType;
 
+
+/**
+ ad policy rsp
+ */
+-(void)jfgGetAdpolicyResult:(JFGErrorType)errorType endTime:(uint32_t)endtime picUrl:(NSString *)picUrl tagUrl:(NSString *)tagUrl;
+
+
 -(void)jfgMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
                                              mSeq:(uint64_t)mSeq
                                               cid:(NSString *)cid

@@ -19,6 +19,11 @@
  *  时间
  */
 @property(strong, nonatomic)UILabel * timeLabel;
+
+/**
+ *  发送状态
+ */
+@property(strong,nonatomic)UILabel *sendStatueLabel;
 /**
  *  自己的头像（右边）
  */

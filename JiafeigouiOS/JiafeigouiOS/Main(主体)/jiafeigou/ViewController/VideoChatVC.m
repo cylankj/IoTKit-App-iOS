@@ -86,17 +86,19 @@ typedef NS_ENUM(NSUInteger, VIEW_CONTROL_TAG)
 {
     [JFGSDK addDelegate:self];
     [self initNavigationView];
-    
+    [super viewDidAppear:animated];
 }
 
 -(void)viewWillAppear:(BOOL)animated
 {
      [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationFade];
+    [super viewWillAppear:animated];
 }
 
 -(void)viewWillDisappear:(BOOL)animated
 {
     [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationFade];
+    [super viewWillDisappear:animated];
 }
 
 -(void)viewDidDisappear:(BOOL)animated
@@ -104,6 +106,7 @@ typedef NS_ENUM(NSUInteger, VIEW_CONTROL_TAG)
     [JFGSDK removeDelegate:self];
     [self stopVideoCall:YES];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [super viewDidDisappear:animated];
 }
 
 -(void)addVideoNotifacation

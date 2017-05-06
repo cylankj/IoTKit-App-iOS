@@ -11,6 +11,7 @@
 #import "LoginManager.h"
 #import "JfgCachePathManager.h"
 #import "JfgConfig.h"
+#import "CommonMethod.h"
 
 /*
 
@@ -166,7 +167,7 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
             model.shareState = DevShareStatuOther;
             NSLog(@"cid:%@ Show",model.uuid);
         }
-        
+        [self setValueFor720WithModel:model];
         [newList addObject:model];
         
     }];
@@ -193,21 +194,30 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
                     newModel.safeIdle = model.safeIdle;
                     newModel.safeFence = model.safeFence;
                     newModel.doorcOpen = model.doorcOpen;
+                    
                     break;
                     
                 }
-                
             }
-            
         }
         //检查是否有设备被删除
-        [self compareDeviceListForNetList:deviceList localList:self.devicesList];
+        //[self compareDeviceListForNetList:deviceList localList:self.devicesList];
         self.devicesList = [[NSMutableArray alloc]initWithArray:newList];
         
     }
     
     
     [[NSNotificationCenter defaultCenter] postNotificationName:BoundDevicesRefreshNotification object:nil];
+}
+
+-(void)setValueFor720WithModel:(JiafeigouDevStatuModel *)model
+{
+    if ([CommonMethod devBigTypeForOS:model.pid] == JFGDevBigTypeEyeCamera) {
+        model.unReadMsgCount = 0;
+        model.lastMsg = @"";
+        model.safeIdle = NO;
+        model.safeFence = NO;
+    }
 }
 
 //比较服务端设备数据与本地(判断是否有设备被取消分享，或者其他端删除)
@@ -246,7 +256,7 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
                     NSLog(@"删除设备");
                     [dict setObject:[NSNumber numberWithInt:1] forKey:@"delType"];
                 }
-                [[NSNotificationCenter defaultCenter] postNotificationName:JFGDeviceDelByOtherClientNotification object:dict];
+                //[[NSNotificationCenter defaultCenter] postNotificationName:JFGDeviceDelByOtherClientNotification object:dict];
                 
             }
             
@@ -319,8 +329,7 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
 
 -(NSString *)filePath
 {
-    NSString *account = [[NSUserDefaults standardUserDefaults] objectForKey:@"JFGCurrentLoginedAccountKey"];
-    account = [LoginManager sharedManager].currentLoginedAcount;
+    NSString *account = [LoginManager sharedManager].currentLoginedAcount;
     NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
     path = [path stringByAppendingPathComponent:[NSString stringWithFormat:@"%@_deviceList.db",account]];
     return path;

@@ -28,4 +28,7 @@
 //本客户端自己删除的设备记录
 +(NSString *)delDeviceCachePath;
 
+//主目录
++(NSString *)cylanDic;
+
 @end

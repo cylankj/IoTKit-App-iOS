@@ -10,9 +10,11 @@
 #import "JfgGlobal.h"
 #import "YBPopupMenu.h"
 #import "VideoPlayFor720ViewController.h"
+#import <JFGSDK/JFGSDKPlayer.h>
+#import "JfgTimeFormat.h"
 #import "NSString+FLExtension.h"
 
-@interface Watch720PhotoVC ()<YBPopupMenuDelegate>
+@interface Watch720PhotoVC ()<YBPopupMenuDelegate, JFGSDKPlayerDelegate>
 
 // 顶部
 @property (nonatomic, strong) UIView *topBgView;
@@ -40,9 +42,8 @@
 // 横屏
 @property (nonatomic, assign) BOOL isLandScape; // 是否横屏
 
-@property (nonatomic, strong) UIButton *downLoadButton;
-@property (nonatomic, strong) UIButton *shareButton;
-@property (nonatomic, strong) UIButton *favoriteButton;
+// Player
+@property (nonatomic, strong) JFGSDKPlayer *panoPlayer;
 
 @end
 
@@ -78,57 +79,90 @@
     [self.bottomBgView addSubview:self.scanModelButton];
     [self.bottomBgView addSubview:self.tlyModelButton];
     
-    [self.bottomBgView addSubview:self.downLoadButton];
-    [self.bottomBgView addSubview:self.shareButton];
-    [self.bottomBgView addSubview:self.favoriteButton];
+    if (self.panoMediaType == mediaTypeVideo)
+    {
+        [self.bottomBgView addSubview:self.sliderView];
+        [self.bottomBgView addSubview:self.playButton];
+        [self.bottomBgView addSubview:self.timeLabel];
+    }
     
     [self resetViewFrame];
-    [self initData];
+
+    [self initLoadMedia];
+    [self screenDiretionChanged:(self.panoMediaType == mediaTypeVideo)];
+    
 }
 
-// 重新 调整 布局
+// according mediaType update viewFrame
 - (void)resetViewFrame
 {
     NSArray *buttons = @[self.photoButton, self.vrModelButton, self.scanModelButton, self.tlyModelButton]; // 总的 button 个数
     
-    switch (self.mediaType)
+    switch (self.panoMediaType)
     {
         case mediaTypePhoto:
         {
-            CGFloat widthMax = 40*buttons.count + 50*designWscale*(buttons.count - 1);// 所有按钮占总长度
-            CGFloat spaceX = 50*designWscale; // button 之间的间隔
-            
-            for (NSInteger i = 0; i < buttons.count ; i ++)
+            if (!self.isLandScape)
             {
-                UIButton *aButton = [buttons objectAtIndex:i];
-                aButton.left = (self.bottomBgView.width -  widthMax)*0.5 + i *(aButton.width + spaceX);
-                aButton.top = (self.bottomBgView.height - aButton.height)*0.5;
+                CGFloat widthMax = 40*buttons.count + 50*designWscale*(buttons.count - 1);// 所有按钮占总长度
+                CGFloat spaceX = 50*designWscale; // button 之间的间隔
+                
+                for (NSInteger i = 0; i < buttons.count ; i ++)
+                {
+                    UIButton *aButton = [buttons objectAtIndex:i];
+                    aButton.left = (self.bottomBgView.width -  widthMax)*0.5 + i *(aButton.width + spaceX);
+                    aButton.top = (self.bottomBgView.height - aButton.height)*0.5;
+                }
             }
-            
+            else
+            {
+                CGFloat leftest = 101; //to left or right distance
+                CGFloat spcaceX = (kheight - leftest*2 - 40*buttons.count)/(buttons.count - 1);
+                
+                for (NSInteger i = 0; i < buttons.count; i ++)
+                {
+                    UIButton *aButton = [buttons objectAtIndex:i];
+                    aButton.left = leftest + i*(spcaceX + aButton.width);
+                    aButton.top = (self.bottomBgView.width - aButton.width)*0.5;
+                }
+                
+            }
             
         }
             break;
         case mediaTypeVideo:
         {
-            [self.bottomBgView addSubview:self.sliderView];
-            [self.bottomBgView addSubview:self.playButton];
-            [self.bottomBgView addSubview:self.timeLabel];
-            
-            CGFloat widthMax = self.bottomBgView.width - self.timeLabel.right; // 按钮 占 总长度
-            CGFloat leftSpace = 30*designWscale; // 左边间距
-            CGFloat rightSpace = 13*designWscale; // 右边间距
-            CGFloat buttonWidth = 30.0f;
-            
-            CGFloat spaceX = (widthMax - leftSpace - rightSpace - buttonWidth*buttons.count)/(buttons.count - 1);
-            
-            for (NSInteger j = 0; j < buttons.count; j ++)
+            if (!self.isLandScape)
             {
-                UIButton *aButton = [buttons objectAtIndex:j];
-                aButton.width = aButton.height = buttonWidth;
-                aButton.bottom = self.bottomBgView.height - 9;
-                aButton.left = self.timeLabel.right +leftSpace + (aButton.width + spaceX)*j;
+                CGFloat widthMax = self.bottomBgView.width - self.timeLabel.right; // 按钮 占 总长度
+                CGFloat leftSpace = 30*designWscale; // 左边间距
+                CGFloat rightSpace = 13*designWscale; // 右边间距
+                CGFloat buttonWidth = 30.0f;
+                
+                CGFloat spaceX = (widthMax - leftSpace - rightSpace - buttonWidth*buttons.count)/(buttons.count - 1);
+                
+                for (NSInteger j = 0; j < buttons.count; j ++)
+                {
+                    UIButton *aButton = [buttons objectAtIndex:j];
+                    aButton.width = aButton.height = buttonWidth;
+                    aButton.bottom = self.bottomBgView.height - 9;
+                    aButton.left = self.timeLabel.right +leftSpace + (aButton.width + spaceX)*j;
+                }
             }
-            
+            else
+            {
+                CGFloat buttonWidth = 30.0;
+                CGFloat spaceX = 40.0f;
+                
+                for (NSInteger j = 0; j < buttons.count; j ++)
+                {
+                    UIButton *aButton = [buttons objectAtIndex:j];
+                    aButton.width = aButton.height = buttonWidth;
+                    aButton.right = kheight - 16.0 - (buttons.count - j - 1)*(spaceX+aButton.width);
+                    aButton.bottom = self.bottomBgView.width - 7.0;
+                }
+                
+            }
         }
             break;
         default:
@@ -136,46 +170,157 @@
     }
 }
 
-- (void)initData
+- (void)initLoadMedia
 {
-    if (self.panoMediaPath != nil)
+    self.titleTimeLabel.text = [JfgTimeFormat transformTime:self.titleTime withFormat:@"yyyy-mm-dd hh:mm"];
+    
+    
+    switch (self.panoMediaType)
     {
-        [self.pano720View loadImage:self.panoMediaPath];
+        case mediaTypeVideo:
+        {
+            NSString *path = self.panoMediaPath;
+            [self.panoPlayer playForUrl:path];
+        }
+            break;
+        case mediaTypePhoto:
+        {
+            if (self.panoMediaPath != nil)
+            {
+                [self.pano720View loadImage:self.panoMediaPath];
+            }
+            else
+            {
+                [self.pano720View loadUIImage:[UIImage imageNamed:@"guide-pages3"]];
+            }
+        }
+            break;
+        default:
+            break;
     }
-    else
-    {
-        [self.pano720View loadUIImage:[UIImage imageNamed:@"guide-pages3"]];
-    }
+    
+    
 }
 
 - (void)screenDiretionChanged:(BOOL)isLandScape
 {
     [[UIApplication sharedApplication] setStatusBarHidden:isLandScape withAnimation:UIStatusBarAnimationFade];
+    self.isLandScape = isLandScape;
+    CGFloat topViewHeigth = 50.0;
+    CGFloat bottomViewHeight = 50.0;
     
-    self.downLoadButton.hidden = !isLandScape;
-    self.shareButton.hidden = !isLandScape;
-    self.favoriteButton.hidden = !isLandScape;
-    
-    self.photoButton.hidden = isLandScape;
-    self.vrModelButton.hidden = isLandScape;
-    self.tlyModelButton.hidden = isLandScape;
-    self.scanModelButton.hidden = isLandScape;
-    self.moreButton.hidden = isLandScape;
-    self.sharedButton.hidden = isLandScape;
-    
-    if (isLandScape == YES) // 横屏
+    switch (self.panoMediaType)
     {
-        self.bottomBgView.frame = CGRectMake(0, 0, 44, kheight);
-        
-        self.backButton.frame = CGRectMake(10, (44 - self.backButton.width)*0.5, self.backButton.width, self.backButton.height);
-        self.titleTimeLabel.frame = CGRectMake(self.backButton.right + 10, (44 - self.titleTimeLabel.height)*0.5, self.titleTimeLabel.width, self.titleTimeLabel.height);
-        self.topBgView.transform = CGAffineTransformMakeRotation(M_PI_2);
-        self.topBgView.frame = CGRectMake(Kwidth-44, 0, 44, kheight);
+        case mediaTypePhoto:
+        {
+            if (isLandScape == YES)
+            {
+                self.backButton.frame = CGRectMake(10, (topViewHeigth - self.backButton.width)*0.5, self.backButton.width, self.backButton.height);
+                self.titleTimeLabel.frame = CGRectMake(self.backButton.right + 10, (topViewHeigth - self.titleTimeLabel.height)*0.5, self.titleTimeLabel.width, self.titleTimeLabel.height);
+                self.moreButton.frame = CGRectMake(kheight - self.moreButton.width - 15, (topViewHeigth-self.moreButton.height)*0.5, self.moreButton.width, self.moreButton.height);
+                self.sharedButton.frame = CGRectMake(self.moreButton.left - self.moreButton.width - 15, (topViewHeigth-self.sharedButton.height)*0.5, self.sharedButton.width, self.sharedButton.height);
+                
+                self.topBgView.transform = CGAffineTransformMakeRotation(M_PI_2);
+                self.topBgView.frame = CGRectMake(Kwidth-topViewHeigth, 0, topViewHeigth, kheight);
+                
+                self.bottomBgView.transform = CGAffineTransformMakeRotation(M_PI_2);
+                self.bottomBgView.frame = CGRectMake(0, 0, bottomViewHeight, kheight);
+                
+            }
+            else
+            {
+                self.bottomBgView.transform = CGAffineTransformIdentity;
+                self.bottomBgView.frame = CGRectMake(0, kheight-64.0, Kwidth, 64.0);
+                self.playButton.frame = CGRectMake(8, self.bottomBgView.height - 24 - 10, 24, 24);
+                self.timeLabel.frame = CGRectMake(self.playButton.right + 5, self.bottomBgView.height - 12 - 16, 70, 12);
+                
+                self.topBgView.transform = CGAffineTransformIdentity;
+                self.topBgView.frame = CGRectMake(0, 0, Kwidth, 64.0);
+                self.backButton.frame = CGRectMake(10, (self.topBgView.height - 30 + 20)*0.5, 30, 30);
+                self.titleTimeLabel.frame = CGRectMake(Kwidth*0.1, (self.topBgView.height - 17.0 + 20)*0.5, Kwidth*0.8, 17.0);
+                self.titleTimeLabel.textAlignment = NSTextAlignmentCenter;
+                self.moreButton.frame = CGRectMake(Kwidth - 23 - 15, (self.topBgView.height - 23 +20)*0.5, 23, 23);
+                self.sharedButton.frame = CGRectMake(self.moreButton.left - 18 - 23, (self.topBgView.height - 23 + 20)*0.5, 23, 23);
+                
+            }
+            [self resetViewFrame];
+        }
+            break;
+        case mediaTypeVideo:
+        {
+            if (isLandScape == YES) // 横屏
+            {
+                self.bottomBgView.transform = CGAffineTransformMakeRotation(M_PI_2);
+                self.bottomBgView.frame = CGRectMake(0, 0, bottomViewHeight, kheight);
+                
+                self.sliderView.width = kheight - 15*2.0f;
+                self.sliderView.left = 15.0f;
+                self.sliderView.top = 0.0;
+                
+                self.titleTimeLabel.left = self.backButton.right + 15.0;
+                self.titleTimeLabel.textAlignment = NSTextAlignmentLeft;
+                self.moreButton.right = kheight - 15.0;
+                self.moreButton.top = (self.topBgView.height - self.moreButton.height - 20)*0.5;
+                self.sharedButton.right = self.moreButton.left - 15.0;
+                self.sharedButton.top = self.moreButton.top;
+                self.playButton.left = 10.0;
+                self.playButton.bottom = self.bottomBgView.width - 10.0;
+                self.timeLabel.left = self.playButton.right + 5.0;
+                self.timeLabel.bottom = self.bottomBgView.width - 15.0;
+                
+                self.backButton.frame = CGRectMake(10, (44 - self.backButton.width)*0.5, self.backButton.width, self.backButton.height);
+                self.titleTimeLabel.frame = CGRectMake(self.backButton.right + 10, (44 - self.titleTimeLabel.height)*0.5, self.titleTimeLabel.width, self.titleTimeLabel.height);
+                self.topBgView.transform = CGAffineTransformMakeRotation(M_PI_2);
+                self.topBgView.frame = CGRectMake(Kwidth-44, 0, 44, kheight);
+            }
+            else // 竖屏
+            {
+                self.bottomBgView.transform = CGAffineTransformIdentity;
+                self.bottomBgView.frame = CGRectMake(0, kheight-64.0, Kwidth, 64.0);
+                self.playButton.frame = CGRectMake(8, self.bottomBgView.height - 24 - 10, 24, 24);
+                self.timeLabel.frame = CGRectMake(self.playButton.right + 5, self.bottomBgView.height - 12 - 16, 70, 12);
+                
+                self.topBgView.transform = CGAffineTransformIdentity;
+                self.topBgView.frame = CGRectMake(0, 0, Kwidth, 64.0);
+                self.backButton.frame = CGRectMake(10, (self.topBgView.height - 30 + 20)*0.5, 30, 30);
+                self.titleTimeLabel.frame = CGRectMake(Kwidth*0.1, (self.topBgView.height - 17.0 + 20)*0.5, Kwidth*0.8, 17.0);
+                self.titleTimeLabel.textAlignment = NSTextAlignmentCenter;
+                self.moreButton.frame = CGRectMake(Kwidth - 23 - 15, (self.topBgView.height - 23 +20)*0.5, 23, 23);
+                self.sharedButton.frame = CGRectMake(self.moreButton.left - 18 - 23, (self.topBgView.height - 23 + 20)*0.5, 23, 23);
+            }
+            
+            [self resetViewFrame];
+        }
+            break;
+        default:
+            break;
     }
-    else // 竖屏
-    {
+}
+
+- (void)showHideTopBottomViewAction
+{
+    
+}
+
+- (void)showTopBottomView
+{
+    [UIView animateWithDuration:0.2 animations:^{
         
-    }
+    } completion:^(BOOL finished) {
+        
+    }];
+}
+
+- (void)hideTopBottomView
+{
+    
+    [UIView animateWithDuration:0.2 animations:^{
+        dispatch_async(dispatch_get_main_queue(), ^{
+            
+        });
+    } completion:^(BOOL finished) {
+        
+    }];
 }
 
 - (void)didReceiveMemoryWarning
@@ -188,13 +333,70 @@
 #pragma mark  action
 - (void)moreButtonAction:(UIButton *)sender
 {
-    YBPopupMenu *popupMenu = [YBPopupMenu showAtPoint:CGPointMake(self.moreButton.x, 64.0) titles:@[[JfgLanguage getLanTextStrByKey:@"下载"], [JfgLanguage getLanTextStrByKey:@"删除"]] icons:@[@"details_icon_down",@"album_icon_delete"] menuWidth:149 delegate:nil];
+    YBPopupMenu *popupMenu = [YBPopupMenu showAtPoint:CGPointMake(self.moreButton.x, 64.0) titles:@[[JfgLanguage getLanTextStrByKey:@"Tap1_Album_Download"], [JfgLanguage getLanTextStrByKey:@"DELETE"]] icons:@[@"details_icon_down",@"album_icon_delete"] menuWidth:149 delegate:nil];
     popupMenu.dismissOnSelected = YES;
     popupMenu.textColor = [UIColor colorWithHexString:@"#ffffff"];
     popupMenu.isShowShadow = YES;
     popupMenu.delegate = self;
     popupMenu.offset = 2;
     popupMenu.type = YBPopupMenuTypeDark;
+    
+    popupMenu.transform = CGAffineTransformMakeRotation(M_PI_2);
+    popupMenu.frame = CGRectMake(Kwidth - 130, kheight - 40, popupMenu.width, popupMenu.height);
+    
+}
+
+- (void)leftButtonAction:(UIButton *)sender
+{
+    [super leftButtonAction:sender];
+}
+
+- (void)modelButtonAction:(UIButton *)sender
+{
+    DFDisplayMode watchModel = DM_Equirectangular;
+    
+    if (sender == self.vrModelButton)
+    {
+        watchModel = DM_Fisheye;
+    }
+    else if (sender == self.tlyModelButton)
+    {
+        watchModel = DM_LittlePlanet;
+    }
+    else if (sender == self.scanModelButton)
+    {
+        watchModel = DM_Panorama;
+    }
+    
+    [self.pano720View setDisplayMode:watchModel];
+    
+}
+
+
+
+#pragma mark
+#pragma mark  JFGSDK delegate
+-(void)jfgSDKPlayerReady:(JFGSDKPlayer *)player width:(int)width height:(int)height
+{   
+    //self.pano720View = [[Panoramic720IosView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.width*2)];
+    self.pano720View.backgroundColor = [UIColor blackColor];
+    self.pano720View.transform = CGAffineTransformMakeRotation(90 * (M_PI / 180.0f));
+    self.pano720View.frame = CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.width*2);
+    
+    [self.view bringSubviewToFront:self.bottomBgView];
+    [self.view bringSubviewToFront:self.topBgView];
+    
+    [self.panoPlayer startRenderForView:self.pano720View];
+}
+
+-(void)jfgSDKPlayerFinished:(JFGSDKPlayer *)player
+{
+    
+}
+
+-(void)jfgSDKPlayerFailed:(JFGSDKPlayer *)player
+{
+    
 }
 
 #pragma mark
@@ -207,6 +409,17 @@
 
 #pragma mark
 #pragma mark  getter
+- (JFGSDKPlayer *)panoPlayer
+{
+    //
+    if (_panoPlayer == nil) {
+        _panoPlayer = [[JFGSDKPlayer alloc]init];
+        _panoPlayer.delegate = self;
+    }
+    
+    return _panoPlayer;
+}
+
 // 顶部 view
 - (UIView *)topBgView
 {
@@ -232,7 +445,7 @@
         CGFloat width = 30;
         CGFloat height = 30;
         CGFloat x = 10;
-        CGFloat y = 20 + (self.topBgView.height - height)*0.5;
+        CGFloat y = (self.topBgView.height - height + 20)*0.5;
     
         _backButton = [UIButton buttonWithType:UIButtonTypeCustom];
         _backButton.frame = CGRectMake(x, y, width, height);
@@ -249,7 +462,7 @@
         CGFloat width = Kwidth*0.8;
         CGFloat height = 17.0;
         CGFloat x = (Kwidth - width)*0.5;
-        CGFloat y = 20 + (44 - height)*0.5;
+        CGFloat y = (self.topBgView.height - height + 20)*0.5;
         
         _titleTimeLabel = [[UILabel alloc] initWithFrame:CGRectMake(x, y, width, height)];
         _titleTimeLabel.text = @"2017-06-18 18:00";
@@ -267,7 +480,7 @@
         CGFloat width = 23;
         CGFloat height = 23;
         CGFloat x = self.moreButton.left - width - 18;
-        CGFloat y = 20 + (44 - height)*0.5;
+        CGFloat y = (self.topBgView.height - height + 20)*0.5;
         
         _sharedButton = [[UIButton alloc] initWithFrame:CGRectMake(x, y, width, height)];
         [_sharedButton setBackgroundImage:[UIImage imageNamed:@"details_icon_share"] forState:UIControlStateNormal];
@@ -283,7 +496,7 @@
         CGFloat width = 23;
         CGFloat height = 23;
         CGFloat x = Kwidth - width - 15;
-        CGFloat y = 20 + (44 - height)*0.5;
+        CGFloat y = (self.topBgView.height - height + 20)*0.5;
         
         _moreButton = [[UIButton alloc] initWithFrame:CGRectMake(x, y, width, height)];
         [_moreButton setBackgroundImage:[UIImage imageNamed:@"details_icon_more"] forState:UIControlStateNormal];
@@ -340,7 +553,7 @@
         _vrModelButton = [UIButton buttonWithType:UIButtonTypeCustom];
         _vrModelButton.frame = CGRectMake(0, 0, 40, 40);
         [_vrModelButton setBackgroundImage:[UIImage imageNamed:@"photos_icon_vr"] forState:UIControlStateNormal];
-        
+        [_vrModelButton addTarget:self action:@selector(modelButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     }
     return _vrModelButton;
 }
@@ -352,7 +565,7 @@
         _scanModelButton = [UIButton buttonWithType:UIButtonTypeCustom];
         _scanModelButton.frame = CGRectMake(0, 0, 40, 40);
         [_scanModelButton setBackgroundImage:[UIImage imageNamed:@"photos_icon_panorama"] forState:UIControlStateNormal];
-        
+        [_scanModelButton addTarget:self action:@selector(modelButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     }
     return _scanModelButton;
 }
@@ -364,7 +577,7 @@
         _tlyModelButton = [UIButton buttonWithType:UIButtonTypeCustom];
         _tlyModelButton.frame = CGRectMake(0, 0, 40, 40);
         [_tlyModelButton setBackgroundImage:[UIImage imageNamed:@"photos_icon_gyroscope"] forState:UIControlStateNormal];
-        
+        [_tlyModelButton addTarget:self action:@selector(modelButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     }
     return _tlyModelButton;
 }
@@ -416,68 +629,6 @@
         _timeLabel.textColor = [UIColor colorWithHexString:@"#ffffff"];
     }
     return _timeLabel;
-}
-
-- (UIButton *)downLoadButton
-{
-    if (_downLoadButton == nil)
-    {
-        CGFloat spaceX = 108;
-        
-        CGFloat width = 23;
-        CGFloat height = 23;
-        CGFloat x = 12;
-        CGFloat y = kheight - 3*width - 3*spaceX;
-        
-        _downLoadButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        _downLoadButton.transform = CGAffineTransformMakeRotation(M_PI_2);
-        _downLoadButton.hidden = YES;
-        _downLoadButton.frame = CGRectMake(x, y, width, height);
-        [_downLoadButton setBackgroundImage:[UIImage imageNamed:@"details_icon_down"] forState:UIControlStateNormal];
-    }
-    
-    return _downLoadButton;
-}
-
-- (UIButton *)shareButton
-{
-    if (_shareButton == nil)
-    {
-        CGFloat spaceX = 108;
-        
-        CGFloat width = 23;
-        CGFloat height = 23;
-        CGFloat x = 12;
-        CGFloat y = kheight - 3*width - 2*spaceX;
-        
-        _shareButton = [UIButton buttonWithType:UIButtonTypeCustom];
-//        _shareButton.hidden = YES;
-        _shareButton.transform = CGAffineTransformMakeRotation(M_PI_2);
-        _shareButton.frame = CGRectMake(x, y, width, height);
-        [_shareButton setBackgroundImage:[UIImage imageNamed:@"icon_share"] forState:UIControlStateNormal];
-    }
-    
-    return _shareButton;
-}
-
-- (UIButton *)favoriteButton
-{
-    if (_favoriteButton == nil)
-    {
-        CGFloat spaceX = 108;
-        
-        CGFloat width = 23;
-        CGFloat height = 23;
-        CGFloat x = 12;
-        CGFloat y = kheight - 3*width - spaceX;
-        
-        _favoriteButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        _favoriteButton.frame = CGRectMake(x, y, width, height);
-        _favoriteButton.transform = CGAffineTransformMakeRotation(M_PI_2);
-        [_favoriteButton setBackgroundImage:[UIImage imageNamed:@"icon_collection"] forState:UIControlStateNormal];
-    }
-    
-    return _favoriteButton;
 }
 
 @end

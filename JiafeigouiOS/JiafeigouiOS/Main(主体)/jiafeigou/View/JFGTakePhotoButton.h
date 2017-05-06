@@ -23,6 +23,6 @@ typedef NS_ENUM(NSUInteger, JFGTakePhotoTouchEvents) {
 
 @interface JFGTakePhotoButton : UIButton
 
-@property (nonatomic,assign)id <JFGTakePhotoTouchActionDelegate> delegate;
+@property (nonatomic,weak)id <JFGTakePhotoTouchActionDelegate> delegate;
 
 @end

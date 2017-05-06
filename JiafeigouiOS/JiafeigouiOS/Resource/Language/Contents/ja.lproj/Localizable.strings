@@ -1,12 +1,12 @@
 /* ja.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.  
+Created by cylan language tool  on Thu May 04 19:00:35 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "接続失敗、ネットワーク環境をチェックしてください";
 "REPEAT_TIME" = "%d秒";
 "REMAIN_SPACE" = "%.1fGB使用可能";
 "STANBY_TIME" = "%d日%d時間%d分間";
-"CHARGING" = "充電中 %d％%";
+"CHARGING" = "充電中";
 "HOUR" = "%.2d時";
 "MINUTE" = "%.2d分";
 "MONTHS" = "月";
@@ -217,6 +217,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "LOCAL_NOTIFICATION_MSG" = "先にiPhoneの設定－通知画面に %@ を見つけ、\"通知を許可\"をオンにしてください";
 "CLEAR_DATA" = "キャッシュクリア";
 "FEEDBACK" = "フィードバック";
+"FEEDBACK_Copy" = "コピー";
 "ABOUT" = "について";
 "YOUR_FEEDBACK" = "すべてのユーザーの意見を伺います";
 "DEAL_FEEDBACK" = "フィードバックありがとうございます";
@@ -257,6 +258,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WIFI_SET_2" = "1. デバイスのWi-Fiランプが青く点滅しているかどうかチェックしてください。点滅していない場合、点滅するまでWiFiキーを約3秒間長押ししてください\n2.iPhoneの設定> WiFiを開き、\"%@\"WiFiを選択し、追加してください,パスワード11111111";
 "WIFI_SET_3" = "システム設定->WiFiにDOG-**-******を選択し追加してください,パスワード11111111";
 "WIFI_SET_3_1" = "システム設定-> WiFiにDOG-ML -******を選択し追加してください,パスワード11111111";
+"WIFI_SET_RS" = "システム設定-> WiFiにRS-CAM -******を選択し追加してください,パスワード11111111";
 "WIFI_SET_4" = "戻る%@";
 "WIFI_SET_5GTIPS" = "注意：ただいま5GHz式のWi-Fi電波が適用されません";
 "SELECT_NETWORK" = "WiFiを設定する";
@@ -534,7 +536,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "RET_ECID_UNBIND_RETRY_lOGIN" = "CID がまたバインディングされていません。再度ログインしてください。";
 "RET_EPARAMS_FALSE" = "パラメータエラー";
 "copyrightEn" = "Copyright ©2005-%@ Cylan.All Rights Reserved.";
-"help_url" = "https://yf.jfgou.com:8081/helps/ja.html";
+"help_url" = "https://%@:8081/helps/ja.html";
 "service_phonenum" = "+86 400-716-3232";
 "setwifi_check" = "設定次に、\"%@\"のWiFiネットワークに接続してください";
 "show_web" = "www.cleverdog.com.cn";
@@ -810,7 +812,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Oct" = "Oct.";
 "Nov" = "Nov.";
 "Dec" = "Dec.";
-"help_url_Doby" = "https://yf.jfgou.com:8081/help/en_doby.html";
+"help_url_Doby" = "https://%@:8081/helps/en_doby.html";
 "NoNetworkTips" = "ネットワーク接続なし";
 "Tap0_AlreadyEmailed" = "既にに電子メールで送信";
 "Tap0_Click_ResetPassword" = "パスワードをリセットするリンクをクリックしてください";
@@ -843,8 +845,9 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WeChat" = "WeChat";
 "Weibo" = "Weibo";
 "Device_Disconnected" = "接続が切断されました";
+"Tap1_OutdoorMode_Opened" = "屋外モードが開かれています";
 "Tap1_OutdoorMode" = "屋外モード";
-"720PanoramicCamera" = "720°パノラマカメラ";
+"_720PanoramicCamera" = "720°パノラマカメラ";
 "Tap1_DeviceWasBindedTips" = "デバイスが “%@”でバインドされています。バインドを解除してもう一度やり直してください。";
 "WiFiLight_BlueFlashing" = "青色の点滅：WiFi設定モード";
 "WiFiLight_SteadyBlue" = "青色の常時点灯：WiFiオンライン";
@@ -866,6 +869,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_NeedsInitializedTips" = "SDカードを初期化してデータをクリアする必要がありますか？";
 "Tap1_SDCardFullyTips" = "SDカードのメモリーもう足りないです。";
 "Tap1_HomeMode" = "ホームモード";
+"Tap1_HomeMode_Opened" = "ホームモードが開かれています";
 "Tap1_Camera_TCPconnected" = "インターネット経由でアプリに接続されたカメラ";
 "Tap1_Camera_UDPconnected" = "アプリに直接接続されたカメラ";
 "Tap1_Camera_Video_Auto" = "オート";
@@ -888,6 +892,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_Album_CancelDownloadTips" = "ダウンロードをキャンセルしますか？";
 "Tap1_Album_DownloadFailed" = "ダウンロードに失敗しました";
 "Tap1_Album_Share_Description" = "説明を追加";
+"Tap1_Album_Share_To_Daily_Great" = "共有コンテンツは、\"毎日の見どころ\" に保存されます";
 "Tap1_Album_Share_NotInstalledTips" = "“%@”がインストールされていない、それをインストールして、再度お試しください";
 "Tap1_Shared_Title" = "Cleverdog 720°カムから共有";
 "Tap1_Shared_Title_zhognxing" = "720°パノラマカメラから共有";
@@ -905,4 +910,21 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "SMS" = "メッセージ";
 "Loaded" = "ロードされた";
 "Microphone" = "マイクロフォン";
-"Tap3_FriendsAdd_AlreadyFriend" = "％@ をすでにあなたの友達です";
+"Tap3_FriendsAdd_AlreadyFriend" = "%@  をすでにあなたの友達です";
+"Choose_Album" = "アルバムを選択";
+"Mail_Class_Application" = "メールクラスのアプリケーションを選択してください";
+"Tap1_Album_Empty" = "写真やビデオはありません";
+"Feedback_Sending" = "送信…";
+"Feedback_MessageFailed" = "メッセージの送信に失敗しました";
+"Download_Then_Share" = "動画をダウンロードして共有してください";
+"Downloading" = "ビデオがダウンロードされています";
+"Network_Description" = "ネットワークの説明";
+"Unconnect_Network" = "お使いの端末はモバイルネットワークまたはWi-Fiネットワークに接続されていません";
+"Wifi_Method" = "Wi-Fiネットワークの場合は、次の方法を参照してください。";
+"Wifi_Hotspot" = "[設定]> [無線LAN]のデバイスで、接続するWi-Fiホットスポットを選択してください。";
+"Wifi_Set_Up" = "セットアップに行く";
+"Cellular_Data_Method" = "モバイルデータは、次の方法を参照してください：";
+"Cellular_Data_Set_Up" = "端末でモバイルデータを有効にするには、以下の方法で[設定]> [モバイルデータ]を使用してください";
+"No_Network_Connection" = "ネットワークに接続していません。まずネットワークを有効にしてください";
+"RuiShi_Guide" = "ニードルを使用してRESETボタンを3秒間押し続けます";
+"RuiShi_Name" = "IPCam";

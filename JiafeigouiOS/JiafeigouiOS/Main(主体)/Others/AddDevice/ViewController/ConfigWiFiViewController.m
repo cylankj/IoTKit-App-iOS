@@ -21,6 +21,9 @@
 #import "DeviceSettingVC.h"
 #import "UIAlertView+FLExtension.h"
 #import "ProgressHUD.h"
+#import "SetWifiLoadingFor720VC.h"
+#import "CommonMethod.h"
+#import "PilotLampStateVC.h"
 
 #define kScreen_Scale [UIScreen mainScreen].bounds.size.width/375.0f
 #define kTop 100*kScreen_Scale
@@ -37,6 +40,7 @@
 @property(nonatomic, strong)UIButton * nextButton;
 @property(nonatomic, strong)UIButton *wifiListButton;
 @property(nonatomic, strong)DelButton *exitBtn;
+@property(nonatomic, strong)UIButton *declareBtn;
 
 
 @property (nonatomic, copy) NSString *ipAddress;
@@ -66,6 +70,9 @@
     [self.view addSubview:self.nextButton];
     
     [self.view addSubview:[self pwTextFieldRightView]];
+    if (self.pType == productType_720) {
+        [self.view addSubview:self.declareBtn];
+    }
     
     if ([self.cid isKindOfClass:[NSString class]] && self.cid.length >1 && ( [[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"50"] ||
         [[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"51"] ||
@@ -89,6 +96,7 @@
     [JFGSDK addDelegate:self];
     //fping获取设备信息
     [JFGSDK fping:@"255.255.255.255"];
+    [JFGSDK fping:@"192.168.10.255"];
 }
 
 - (void)viewDidAppear:(BOOL)animated
@@ -107,6 +115,7 @@
     if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
         self.navigationController.interactivePopGestureRecognizer.enabled = YES;
     }
+    [super viewDidDisappear:animated];
 }
 
 -(void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
@@ -127,9 +136,10 @@
 -(void)nextButtonAction:(UIButton *)button
 {
     // 公共判断区域
-    
-    if ([JFGSDK currentNetworkStatus] != JFGNetTypeWifi && self.pType != productType_3G_2X && self.pType != productType_3G ) {
-        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_disconnected"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
+    //断开了ap连接
+    if (![CommonMethod isConnecttedDeviceWifiWithPid:self.pType]) {
+        
+        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Item_ConnectionFail"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
         [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
             
             [self intoAddDevGuideVC];
@@ -160,8 +170,8 @@
         }
             break;
         case configWifiType_default:
-        default:
         {
+            
             [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"wifiName:%@  wifiPasword:%@",self.wifiNameTF.text,self.wifiPasswordTF.text]];
             BindDevProgressViewController *bindDevice = [BindDevProgressViewController new];
             bindDevice.pType = self.pType;
@@ -169,7 +179,21 @@
             bindDevice.wifiName = self.wifiNameTF.text;
             bindDevice.wifiPassWord = self.wifiPasswordTF.text;
             [self.navigationController pushViewController:bindDevice animated:YES];
+            
         }
+            break;
+        case configWifiType_resetWifi:{
+            
+            SetWifiLoadingFor720VC *setwifi = [SetWifiLoadingFor720VC new];
+            setwifi.wifiName = self.wifiNameTF.text;
+            setwifi.wifiPassword = self.wifiPasswordTF.text;
+            setwifi.cid = self.cid;
+            [self.navigationController pushViewController:setwifi animated:YES];
+        }
+            break;
+            
+        default:
+            
             break;
     }
     
@@ -183,6 +207,7 @@
         self.wifiNameTF.text = wifiNameString;
     }];
 }
+
 -(void)exitAction
 {
     //弹框逻辑处理
@@ -208,7 +233,7 @@
         {
             for (UIViewController *temp in self.navigationController.viewControllers)
             {
-                if ([temp isKindOfClass:[DeviceSettingVC class]])
+                if ([temp isKindOfClass:[DeviceSettingVC class]]  )
                 {
                     [self.navigationController popToViewController:temp animated:YES];
                 }
@@ -220,14 +245,11 @@
         {
             for (UIViewController *temp in self.navigationController.viewControllers)
             {
-                if ([temp isKindOfClass:[AddDeviceMainViewController class]])
+                if ([temp isKindOfClass:[AddDeviceMainViewController class]]   || [temp isKindOfClass:[DeviceSettingVC class]])
                 {
                     [self.navigationController popToViewController:temp animated:YES];
                 }
-                else if ([temp isKindOfClass:[DeviceSettingVC class]])
-                {
-                    [self.navigationController popToViewController:temp animated:YES];
-                }
+               
             }
         }
             break;
@@ -408,6 +430,22 @@
     self.wifiPasswordTF.text = text;
 }
 
+-(UIButton *)declareBtn
+{
+    if (!_declareBtn) {
+        _declareBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _declareBtn.frame = CGRectMake(self.view.width-15-25, 40, 25, 25);
+        [_declareBtn setImage:[UIImage imageNamed:@"icon_explain_gray"] forState:UIControlStateNormal];
+        [_declareBtn addTarget:self action:@selector(intoVC) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _declareBtn;
+}
+
+-(void)intoVC
+{
+    PilotLampStateVC *lampVC = [PilotLampStateVC new];
+    [self.navigationController pushViewController:lampVC animated:YES];
+}
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];

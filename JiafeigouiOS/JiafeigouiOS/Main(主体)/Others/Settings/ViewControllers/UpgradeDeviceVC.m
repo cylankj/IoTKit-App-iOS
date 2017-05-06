@@ -370,6 +370,7 @@ NSString *const redDot = @"_redDot";
     }
 }
 
+#pragma mark
 #pragma mark JFGSDK  delegate
 - (void)checkDevVersion
 {

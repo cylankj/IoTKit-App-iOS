@@ -41,6 +41,11 @@
 
         }
             break;
+        case webViewTypeAd:
+        {
+            [self loadWebView];
+        }
+            break;
         default:
             break;
     }

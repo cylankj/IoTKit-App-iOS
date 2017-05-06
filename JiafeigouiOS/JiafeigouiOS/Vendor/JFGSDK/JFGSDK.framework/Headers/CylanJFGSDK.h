@@ -2,7 +2,7 @@
 //  CylanJFGSDK.h
 //  JFGSDK
 //
-//  Created by 杨利 on 16/9/30.
+//  Created by yangli on 16/9/30.
 //  Copyright © 2016年 yangli. All rights reserved.
 //
 

@@ -1,12 +1,12 @@
 /* tr.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.  
+Created by cylan language tool  on Thu May 04 19:00:35 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Ağa bağlı değil";
 "REPEAT_TIME" = "%d saniye";
 "REMAIN_SPACE" = "%.1fGB kullanılabilir";
 "STANBY_TIME" = "%d gün, %d saat, %d dakika";
-"CHARGING" = "Şarj oluyor %d％%";
+"CHARGING" = "Şarj oluyor";
 "HOUR" = "%.2d S";
 "MINUTE" = "%.2d D";
 "MONTHS" = "ay";
@@ -217,6 +217,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "LOCAL_NOTIFICATION_MSG" = "iPhone\'nunuzda  \"Ayarlamalar-Bildirimlar\" aracılığı ile %@ i bulun ve  Bildirimler i açın";
 "CLEAR_DATA" = "Mesajlar cebini temizleyiniz";
 "FEEDBACK" = "Geri dönüş";
+"FEEDBACK_Copy" = "Kopya";
 "ABOUT" = "Hakkında";
 "YOUR_FEEDBACK" = "Geri dönüşünüz bizim için önemlidir";
 "DEAL_FEEDBACK" = "Geri dönüşünüz için teşekkür ederiz";
@@ -257,6 +258,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WIFI_SET_2" = "1.Lütfen WIFI göstergesinin mavi yanıp söndüğünden emin olun. Değilse WIFI butonuna 3 sanie basın.\n2.\"Ayarlamalar\"->\"WLAN\" aracılığıyla iPhone\'nuzdan %@ e bağlanın,  şifre 11111111";
 "WIFI_SET_3" = "Lütfen Ayarlamalar->WLAN aracılığıyla  DOG-**-****** u seçin , phone\'nuzdan katılın, Şifre 11111111";
 "WIFI_SET_3_1" = "Lütfen Ayarlamalar->WLAN aracaılığıyla DOG-ML-****** yi seçin, phone\'nuzdan katılın,  şifre 11111111";
+"WIFI_SET_RS" = "Lütfen Ayarlamalar->WLAN aracaılığıyla RS-CAM-****** yi seçin, phone\'nuzdan katılın,  şifre 11111111";
 "WIFI_SET_4" = "%@ e geri dön";
 "WIFI_SET_5GTIPS" = "İpuçları:5Ghz WiFi sinyali şu an izinsiz";
 "SELECT_NETWORK" = "Lütfen bir ağ seçiniz";
@@ -534,7 +536,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "RET_ECID_UNBIND_RETRY_lOGIN" = "CID bağlı değil, lütfen tekrar giriş yapın";
 "RET_EPARAMS_FALSE" = "Argüman hatası";
 "copyrightEn" = "Copyright ©2005-%@ Cylan.All Rights Reserved.";
-"help_url" = "https://yf.jfgou.com:8081/helps/tr.html";
+"help_url" = "https://%@:8081/helps/tr.html";
 "service_phonenum" = "+90 216 5614747";
 "setwifi_check" = "\"%@\" ye bağlanmak için lütfen telefonunuzu kurunuz";
 "show_web" = "www.cleverdog.com.cn";
@@ -810,7 +812,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Oct" = "Oct.";
 "Nov" = "Nov.";
 "Dec" = "Dec.";
-"help_url_Doby" = "https://yf.jfgou.com:8081/help/en_doby.html";
+"help_url_Doby" = "https://%@:8081/helps/en_doby.html";
 "NoNetworkTips" = "Ağ bağlantısı yok";
 "Tap0_AlreadyEmailed" = "Için zaten e-postayla gönderildi";
 "Tap0_Click_ResetPassword" = "Şifre sıfırlamak için lütfen bağlantıyı tıklayın";
@@ -843,13 +845,14 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WeChat" = "WeChat";
 "Weibo" = "Weibo";
 "Device_Disconnected" = "Bağlantısız";
+"Tap1_OutdoorMode_Opened" = "Açık modu açılmış";
 "Tap1_OutdoorMode" = "Dış mekan modu";
-"720PanoramicCamera" = "720°Panoramik Kamera";
+"_720PanoramicCamera" = "720°Panoramik Kamera";
 "Tap1_DeviceWasBindedTips" = "Cihaz, \"%@\" ile sınırlandırıldı, lütfen bağlantıyı bırakın ve tekrar deneyin.";
 "WiFiLight_BlueFlashing" = "Mavi yanıp sönüyor: WiFi yapılandırma modu";
 "WiFiLight_SteadyBlue" = "Sabit mavi: WiFi çevrimiçi";
 "WiFiLight_RedFlashing" = "Kırmızı yanıp sönen: Bağlama";
-"WiFiLight_RedNBlueFlashing" = "Red&Blue yanıp: Güncellenmesi";
+"WiFiLight_RedNBlueFlashing" = "Red & Blue yanıp: Güncellenmesi";
 "PowerLight_SteadyBlue" = "Sabit mavi: Booting";
 "PowerLight_BlueFlashing" = "Mavi yanıp sönüyor: Düşük güç";
 "PowerLight_BlueOut" = "Mavi Çıkış: kapatın";
@@ -866,6 +869,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_NeedsInitializedTips" = "SD kartının başlatılması gerekiyor ve veriler silinecek, emin misiniz?";
 "Tap1_SDCardFullyTips" = "tamamen işgal";
 "Tap1_HomeMode" = "Ev modu";
+"Tap1_HomeMode_Opened" = "Ev modu açılmış";
 "Tap1_Camera_TCPconnected" = "Kamera internet üzerinden uygulama ile bağlantı kurdu";
 "Tap1_Camera_UDPconnected" = "Kamera uygulamayla doğrudan bağlantılı";
 "Tap1_Camera_Video_Auto" = "Oto";
@@ -888,6 +892,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_Album_CancelDownloadTips" = "İndirmeyi iptal et?";
 "Tap1_Album_DownloadFailed" = "İndirme Başarısız";
 "Tap1_Album_Share_Description" = "Açıklama ekle";
+"Tap1_Album_Share_To_Daily_Great" = "Paylaşılan içerik kaydedilir \"Günlük Mükemmel \"";
 "Tap1_Album_Share_NotInstalledTips" = "\"%@\"  yüklü değil, lütfen yükleyin ve tekrar deneyin";
 "Tap1_Shared_Title" = "Cleverdog 720°Cam ile paylaşılanlar";
 "Tap1_Shared_Title_zhognxing" = "720°Panoramik Kameradan Paylaşılan";
@@ -906,3 +911,20 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Loaded" = "Yüklü";
 "Microphone" = "Mikrofon";
 "Tap3_FriendsAdd_AlreadyFriend" = "%@ Zaten arkadaşın mı";
+"Choose_Album" = "Bir albüm seçin";
+"Mail_Class_Application" = "Lütfen posta sınıfı uygulamasını seçin";
+"Tap1_Album_Empty" = "Fotoğraf Yok Videolar";
+"Feedback_Sending" = "Gönderiliyor …";
+"Feedback_MessageFailed" = "Mesaj gönderilemedi";
+"Download_Then_Share" = "Lütfen videoyu indirin ve ardından paylaşın";
+"Downloading" = "Video indiriliyor";
+"Network_Description" = "Ağ açıklaması";
+"Unconnect_Network" = "Cihazınız bir mobil şebekeye veya bir Kablosuz ağa bağlı değil";
+"Wifi_Method" = "Wi-Fi şebekesi, lütfen aşağıdaki yöntemlere bakın:";
+"Wifi_Hotspot" = "Aygıtta [Settings> Wireless LAN], bağlanmak için lütfen bir Wi-Fi hotspot seçin.";
+"Wifi_Set_Up" = "Kurmaya git";
+"Cellular_Data_Method" = "Mobil veri, lütfen aşağıdaki yönteme bakın:";
+"Cellular_Data_Set_Up" = "Cihazdaki Mobil verileri etkinleştirin, lütfen aşağıdaki şekilde kullanın; Ayarlar> Mobil veri";
+"No_Network_Connection" = "Şebeke bağlantısı yok, lütfen önce şebekeyi etkinleştirin";
+"RuiShi_Guide" = "3s için RESET düğmesine uzun basmak için iğne kullanın";
+"RuiShi_Name" = "IPCam";

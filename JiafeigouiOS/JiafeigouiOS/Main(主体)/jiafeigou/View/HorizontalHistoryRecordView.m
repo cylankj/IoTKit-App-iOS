@@ -209,9 +209,9 @@
     
     for (int i=0;i<histroryDataModelList.count;i++) {
         
-        if (i>240) {
-            break;
-        }
+//        if (i>240) {
+//            break;
+//        }
         
         historyVideoDurationTimeModel *model = [histroryDataModelList objectAtIndex:i];
         
@@ -401,9 +401,8 @@
 {
     NSDate *now = [NSDate dateWithTimeIntervalSince1970:timeStamp];
     NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];//设置成中国阳历
-    NSDateComponents *comps = [[NSDateComponents alloc] init];
     NSInteger unitFlags = NSYearCalendarUnit | NSMonthCalendarUnit | NSDayCalendarUnit | NSWeekdayCalendarUnit | NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit;
-    comps = [calendar components:unitFlags fromDate:now];
+    NSDateComponents *comps = [calendar components:unitFlags fromDate:now];
     currentYear = [comps year];
     currentMounth = [comps month];
     currentDay = [comps day];
@@ -526,9 +525,8 @@
     
     NSDate *now = [NSDate dateWithTimeIntervalSince1970:timeStamp];
     NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];//设置成中国阳历
-    NSDateComponents *comps = [[NSDateComponents alloc] init];
     NSInteger unitFlags = NSYearCalendarUnit | NSMonthCalendarUnit | NSDayCalendarUnit | NSWeekdayCalendarUnit | NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit;
-    comps = [calendar components:unitFlags fromDate:now];
+    NSDateComponents *comps = [calendar components:unitFlags fromDate:now];
     NSInteger year = [comps year];
     NSInteger mouth = [comps month];
     NSInteger day = [comps day];
@@ -545,9 +543,9 @@
     __block NSInteger index = 0;
     
     [self.historyRecordDays enumerateObjectsUsingBlock:^(HistoryVideoDayModel *dayModel, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSDateComponents *comps2 = [[NSDateComponents alloc] init];
+
         NSDate *hisDate = [NSDate dateWithTimeIntervalSince1970:dayModel.timestamp];
-        comps2 = [calendar components:unitFlags fromDate:hisDate];
+        NSDateComponents *comps2 = [calendar components:unitFlags fromDate:hisDate];
         NSInteger _year = [comps2 year];
         NSInteger _mouth = [comps2 month];
         NSInteger _day = [comps2 day];

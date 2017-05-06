@@ -2,7 +2,7 @@
 //  JFGSDKVideoView.h
 //  JFGSDK
 //
-//  Created by 杨利 on 16/8/29.
+//  Created by yangli on 16/8/29.
 //  Copyright © 2016年 yangli. All rights reserved.
 //
 

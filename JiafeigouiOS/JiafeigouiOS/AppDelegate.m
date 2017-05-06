@@ -34,15 +34,18 @@
 #import "VideoChatVC.h"
 #import "JFGBoundDevicesMsg.h"
 #import "JfgLanguage.h"
-#import <Bugrpt/NTESCrashReporter.h>
 #import "JfgConfig.h"
 #import <Bugly/Bugly.h>
 #import "VideoPlayViewController.h"
 #import "JFGBaseTabBarViewController.h"
 #import "BellViewController.h"
 #import "WeiboSDK.h"
+#import "PLeakSniffer.h"
+#import "JFGWebViewController.h"
+#import "AdView.h"
 
-@interface AppDelegate ()<UIAlertViewDelegate, GeTuiSdkDelegate, BuglyDelegate>
+@interface AppDelegate ()<UIAlertViewDelegate, GeTuiSdkDelegate, BuglyDelegate, AdDelegate>
+@property (nonatomic, strong) AdView *ad;
 
 @end
 
@@ -66,11 +69,7 @@
     //初始化SHARESDk
     [FLShareSDKHelper registerPlatforms];
     
-    //网易云捕
-    [[NTESCrashReporter sharedInstance] initWithAppId:@"I003679343"];
-    [[NTESCrashReporter sharedInstance] enableLog:YES];
-    [[NTESCrashReporter sharedInstance] setChannel:@"cylan"];
-    [[NTESCrashReporter sharedInstance] setBlockMonitorStatus:YES];
+    
     [self customizeBuglySDKConfig];
     
     /**
@@ -85,6 +84,7 @@
     BOOL isShowLoadViewVC = YES;//是否显示引导页
     
     NSString *ver = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+    [Bugly setUserValue:ver forKey:@"BundleVersion"];
     NSArray *verArr = [ver componentsSeparatedByString:@"."];
     NSMutableString *verPrefix = [[NSMutableString alloc]init];
     for (int i=0; i<verArr.count; i++) {
@@ -168,6 +168,12 @@
     //扬声器改变通知处理
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(routeChange:)  name:AVAudioSessionRouteChangeNotification object:[AVAudioSession sharedInstance]];
 
+#if DEBUG 
+    //内存泄漏监控
+    [[PLeakSniffer sharedInstance] installLeakSniffer];
+#endif
+    
+    [self.window addSubview:self.ad];
     return YES;
 }
 
@@ -201,64 +207,6 @@
     [tabBarItem setTitleTextAttributes:[NSDictionary dictionaryWithObjectsAndKeys:[UIColor colorWithHexString:@"#929292"],NSForegroundColorAttributeName, nil] forState:UIControlStateNormal];
     return tabBarItem;
 }
-/*
--(void)checkAppStoreVersion
-{
-    NSURL *url = [NSURL URLWithString:@"http://itunes.apple.com/lookup?id=922810939"];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url
-                                                           cachePolicy:NSURLRequestReloadIgnoringCacheData
-                                                       timeoutInterval:10];
-    
-    [request setHTTPMethod:@"POST"];
-    NSOperationQueue *queue = [NSOperationQueue new];
-    
-    [NSURLConnection sendAsynchronousRequest:request queue:queue completionHandler:^(NSURLResponse *response,NSData *data,NSError *error){
-        
-        NSMutableDictionary *receiveStatusDic=[[NSMutableDictionary alloc]init];
-        if (data) {
-            
-            NSDictionary *receiveDic = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableLeaves error:nil];
-            if ([[receiveDic valueForKey:@"resultCount"] intValue]>0) {
-                
-                [receiveStatusDic setValue:@"1" forKey:@"status"];
-                [receiveStatusDic setValue:[[[receiveDic valueForKey:@"results"] objectAtIndex:0] valueForKey:@"version"]   forKey:@"version"];
-            }else{
-                
-                [receiveStatusDic setValue:@"-1" forKey:@"status"];
-            }
-        }else{
-            [receiveStatusDic setValue:@"-1" forKey:@"status"];
-        }
-        
-        if ([[receiveStatusDic objectForKey:@"status"] integerValue] == 1) {
-            
-            NSString *appstoreVer = [receiveStatusDic objectForKey:@"version"];
-            //CFBundleShortVersionString
-            NSString *appVer = [[[NSBundle mainBundle] infoDictionary] valueForKey:@"CFBundleVersion"];
-            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"appStoreVer:[%@]  localVer[%@]", appstoreVer,appVer]];
-//          [JfgDataTool compareVersion:appstoreVer with:appVer]
-            if ([appstoreVer compare:appVer options:NSNumericSearch] == NSOrderedDescending)
-            {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    
-//                    "UPGRADE" = "哇，软件有更新啦！相信你很期待，赶快升级体验吧！";
-//                    "UPGRADE_NOW" = "立即更新";
-//                    "NEXT_TIME" = "下次再说";
-                    UIAlertView *aler = [[UIAlertView alloc]initWithTitle:@"" message:[JfgLanguage getLanTextStrByKey:@"UPGRADE"] delegate:self cancelButtonTitle:nil otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"NEXT_TIME"],[JfgLanguage getLanTextStrByKey:@"UPGRADE_NOW"], nil];
-                    aler.tag = 12358;
-                    [aler show];
-                    
-                    
-                });
-                
-                
-            }
-        }
-        
-        
-    }];
-}
-*/
 
 -(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
@@ -617,6 +565,41 @@
 {
     [GeTuiSdk startSdkWithAppId:[ApnsManger geTuiAppID] appKey:[ApnsManger geTuiAppKey] appSecret:[ApnsManger geTuiAppSecret] delegate:self];
     [JFGSDK appendStringToLogFile:@"getui init"];
+}
+
+#pragma mark
+#pragma mark   advertisement
+- (AdView *)ad
+{
+    if (_ad == nil)
+    {
+        _ad = [[AdView alloc] initWithFrame:self.window.bounds];
+        _ad.delegate = self;
+        _ad.backgroundColor = [UIColor brownColor];
+    }
+    
+    return _ad;
+}
+
+- (void)watchAd:(NSString *)adUrlString
+{
+    JFGWebViewController *webView = [[JFGWebViewController alloc] init];
+    webView.type = webViewTypeAd;
+    webView.urlString = adUrlString;
+    
+    UIWindow * window = [UIApplication sharedApplication].keyWindow;
+    UITabBarController * barCon = (UITabBarController *)window.rootViewController;
+    if ([barCon isKindOfClass:[UITabBarController class]]) {
+        barCon.selectedIndex = 0;
+        UINavigationController * nav = barCon.viewControllers[0];
+        webView.hidesBottomBarWhenPushed = YES;
+        [nav pushViewController:webView animated:YES];
+    }
+}
+
+- (void)skipAction
+{
+    [self.ad removeFromSuperview];
 }
 
 #pragma mark

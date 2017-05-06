@@ -2,7 +2,7 @@
 //  JFGSDKDataPoint.h
 //  JFGSDK
 //
-//  Created by 杨利 on 16/7/18.
+//  Created by yangli on 16/7/18.
 //  Copyright © 2016年 yangli. All rights reserved.
 //  cylan dpID define  https://github.com/cylankj/IoTKit-MsgDefine/blob/master/msgDefine/atomic_define.md
 

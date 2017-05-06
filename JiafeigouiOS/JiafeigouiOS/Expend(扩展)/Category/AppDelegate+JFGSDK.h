@@ -2,7 +2,7 @@
 //  AppDelegate+JFGSDK.h
 //  JiafeigouiOS
 //
-//  Created by 杨利 on 16/5/27.
+//  Created by yangli on 16/5/27.
 //  Copyright © 2016年 lirenguang. All rights reserved.
 //
 

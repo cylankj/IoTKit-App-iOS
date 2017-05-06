@@ -11,7 +11,8 @@
 typedef NS_ENUM(NSInteger,webViewType){
     webViewTypeJFG = 0,
     webViewTypeUserProtocol,
-    webViewTypePhone
+    webViewTypePhone,
+    webViewTypeAd
 };
 @interface JFGWebViewController : BaseViewController
 @property(nonatomic, assign)webViewType type;

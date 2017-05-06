@@ -19,6 +19,7 @@
 #import <POP.h>
 #import "VideoSnapImageView.h"
 #import "LSAlertView.h"
+#import "UIAlertView+FLExtension.h"
 #import "ProgressHUD.h"
 #import "CommonMethod.h"
 #import "JFGAlbumManager.h"
@@ -279,7 +280,12 @@
         self.snapImageView.image = [UIImage imageNamed:@"camera_bg"];
         imageResetCount = 0;
         if (self.actionType == doorActionTypeActive) {
-            [self resetHeadImageViewForUrl:[NSURL URLWithString:self.imageUrl]];
+            //[self resetHeadImageViewForUrl:[NSURL URLWithString:self.imageUrl]];
+            UIImage *Image = [self cacheSnapImage];
+            if (Image) {
+                self.snapImageView.image = Image;
+            }
+            
         }else{
             
             int64_t delayInSeconds = 3;
@@ -496,6 +502,9 @@
 #pragma mark action
 - (void)leftButtonAction:(UIButton *)sender
 {
+    [self videoCancel];
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(playOuttime) object:nil];
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(callTimeout) object:nil];
     if (self.navigationController.viewControllers.count > 1) // 如果 堆栈有，就pop
     {
         [self.navigationController popViewControllerAnimated:YES];
@@ -506,9 +515,7 @@
             
         }];
     }
-    [self videoCancel];
-    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(playOuttime) object:nil];
-    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(callTimeout) object:nil];
+    
 }
 
 -(void)voiceAction:(UIButton *)sender
@@ -782,25 +789,34 @@
     isConnected = NO;
     self.fullScreenButton.hidden = YES;
     [self saveSnapImage:Image];
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(playOuttime) object:nil];
+    
 }
 
 -(void)saveSnapImage:(UIImage *)snapImage
 {
     NSData *imageData = UIImagePNGRepresentation(snapImage);
+    if ([imageData isKindOfClass:[NSData class]]) {
+        imageData = UIImageJPEGRepresentation(snapImage, 1);
+    }else{
+        return;
+    }
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:[self snapImagePath]];
     [[NSUserDefaults standardUserDefaults] setObject:imageData forKey:[self snapImagePath]];
+    [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 -(UIImage *)cacheSnapImage
 {
     NSData *data = [[NSUserDefaults standardUserDefaults] objectForKey:[self snapImagePath]];
     UIImage *Image = [UIImage imageWithData:data];
+   
     return Image;
 }
 
 -(NSString *)snapImagePath
 {
-    JFGSDKAcount *acc =[[LoginManager sharedManager] accountCache];
-    NSString *key = [NSString stringWithFormat:@"snapImage_%@_%@",acc.account,self.cid];
+    NSString *key = [NSString stringWithFormat:@"snapImage_%@",self.cid];
     return key;
 }
 
@@ -892,7 +908,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
             [LSAlertView disMiss]; // 防止 联通 弹框还存在
             remoteView = [[VideoRenderIosView alloc] initWithFrame:CGRectMake(0, 0, size.width, size.height)];
             remoteView.tag = VIEW_REMOTERENDE_VIEW_TAG;
-            remoteView.backgroundColor = [[UIColor orangeColor] colorWithAlphaComponent:0.5];
+            remoteView.backgroundColor = [[UIColor clearColor] colorWithAlphaComponent:0.5];
             remoteView.layer.edgeAntialiasingMask = YES;
            
             [self.doorVideoScrollView addSubview:remoteView];
@@ -1067,10 +1083,11 @@ NSString *sharkAnimationKey = @"sharkAnimation";
         [self recoverScreen];
     }
     
-    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"NETWORK_TIMEOUT"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
-        [self.navigationController popViewControllerAnimated:YES];
-    } OKBlock:^{}];
-
+    if (isDidApper) {
+        [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"NETWORK_TIMEOUT"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
+            [self.navigationController popViewControllerAnimated:YES];
+        } OKBlock:^{}];
+    }
     [self stopLoadingAnimation];
 }
 
@@ -1193,6 +1210,22 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 {
     if (self.navigationController.visibleViewController == self)
     {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            
+            UIAlertView *aler = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Device_UpgradeTips"] message:nil delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"]  otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"OK"], nil];
+            [aler showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+                if (buttonIndex == 1)
+                {
+                    UpgradeDeviceVC *upgradeDevice = [[UpgradeDeviceVC alloc] init];
+                    upgradeDevice.cid = self.cid;
+                    upgradeDevice.pType = self.pType;
+                    [self.navigationController pushViewController:upgradeDevice animated:YES];
+                }
+                
+            } otherDelegate:nil];
+        });
+        
+        /*
         [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Device_UpgradeTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
             
         } OKBlock:^{
@@ -1201,6 +1234,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
             upgradeDevice.pType = self.pType;
             [self.navigationController pushViewController:upgradeDevice animated:YES];
         }];
+        */
     }
 }
 
@@ -1517,10 +1551,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     
     ///long/[vid]/[account]/wonder/
     
-    JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
     
-    NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,self.cid,fileName];
-    [JFGSDK uploadFile:[self saveImage:image] toCloudFolderPath:wonderFilePath];
     NSString *alias = self.cid;
     
     if (self.nickName) {
@@ -1534,6 +1565,10 @@ NSString *sharkAnimationKey = @"sharkAnimation";
         for (DataPointIDVerRetSeg *seg in dataList) {
             if (seg.ret == 0) {
                 [[NSNotificationCenter defaultCenter] postNotificationName:JFGExploreRefreshNotificationKey object:nil userInfo:nil];
+                JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
+                NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,self.cid,fileName];
+                [JFGSDK uploadFile:[self saveImage:image] toCloudFolderPath:wonderFilePath];
+                
             }else if (seg.ret == 1050){
             }
             
@@ -1680,6 +1715,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 -(void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+    NSLog(@"doorVideoVC delloc");
 }
 
 @end

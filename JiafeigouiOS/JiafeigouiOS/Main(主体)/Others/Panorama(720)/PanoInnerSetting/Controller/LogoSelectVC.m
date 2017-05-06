@@ -7,6 +7,7 @@
 //
 
 #import "LogoSelectVC.h"
+#import "JfgHttp.h"
 #import "JfgGlobal.h"
 
 #define logoIconNum 4.0  //每行 显示logo 个数
@@ -14,15 +15,18 @@
 typedef NS_ENUM(NSInteger, ViewTag) {
     Btn_Logo_tag = 1000, //
     
-    
 };
 
 @interface LogoSelectVC ()
 
+@property (nonatomic, copy) NSString *setLogoUrlString;
+@property (nonatomic, copy) NSString *getLogoUrlString;
+@property (nonatomic, copy) NSString *udpAddress;
+
 @property (nonatomic, strong) Panoramic720IosView *pano720View;
 @property (nonatomic, strong) UIScrollView *bottomScrolView;
 @property (nonatomic, strong) NSArray *logoIconImages;
-@property (nonatomic, strong) NSArray *logoSelectIconImages;
+@property (nonatomic, strong) NSMutableArray *buttons;
 @end
 
 @implementation LogoSelectVC
@@ -32,9 +36,9 @@ typedef NS_ENUM(NSInteger, ViewTag) {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     [self initView];
-    
     [self initNavigation];
     
+    [self jfgFpingRequest];
 }
 
 - (void)initView
@@ -47,6 +51,7 @@ typedef NS_ENUM(NSInteger, ViewTag) {
 
 - (void)initButtons
 {
+    [self.buttons removeAllObjects];
     CGFloat btnWidth = 66.0f;
     CGFloat spaceX = (self.bottomScrolView.contentSize.width - btnWidth*self.logoIconImages.count)/(self.logoIconImages.count+1);
     
@@ -75,6 +80,7 @@ typedef NS_ENUM(NSInteger, ViewTag) {
         }
         
         [self.bottomScrolView addSubview:btn];
+        [self.buttons addObject:btn];
     }
 }
 
@@ -89,22 +95,50 @@ typedef NS_ENUM(NSInteger, ViewTag) {
     // Dispose of any resources that can be recreated.
 }
 
+#pragma mark msg
+- (void)jfgFpingRequest
+{
+    [JFGSDK fping:@"255.255.255.255"];
+    [JFGSDK fping:@"192.168.10.255"];
+}
+
+- (void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
+{
+    if ([ask.cid isEqualToString:self.cid])
+    {
+        self.udpAddress = ask.address;
+        
+        [[JfgHttp sharedHttp] get:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getLog",ask.address] parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+            
+        } failure:^(NSURLSessionDataTask *task, NSError *error) {
+            
+        }];
+    }
+}
+
 #pragma mark
 #pragma mark action
 - (void)logoButtonAction:(UIButton *)sender
 {
-    for (NSInteger i = Btn_Logo_tag; i < Btn_Logo_tag+self.logoIconImages.count; i ++)
-    {   
-        if (i == sender.tag)
+    for (NSInteger i = 0; i < self.buttons.count; i ++)
+    {
+        if ([self.buttons objectAtIndex:i] == sender)
         {
             sender.selected = YES;
+            
+            [[JfgHttp sharedHttp] get:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=setLog&logType=%ld",self.udpAddress, sender.tag - Btn_Logo_tag +1] parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+                
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                
+            }];
         }
         else
         {
-            sender.selected = NO;
+            UIButton *otherButton = [self.buttons objectAtIndex:i];
+            otherButton.selected = NO;
         }
     }
-    
+
 }
 
 #pragma mark
@@ -144,6 +178,14 @@ typedef NS_ENUM(NSInteger, ViewTag) {
     return _logoIconImages;
 }
 
+- (NSMutableArray *)buttons
+{
+    if (_buttons == nil)
+    {
+        _buttons = [[NSMutableArray alloc] initWithCapacity:5];
+    }
+    return _buttons;
+}
 
 - (Panoramic720IosView *)pano720View
 {
@@ -154,8 +196,6 @@ typedef NS_ENUM(NSInteger, ViewTag) {
         _pano720View.backgroundColor = [UIColor blackColor];
         _pano720View.layer.edgeAntialiasingMask = YES;
     }
-    
-    
     
     return _pano720View;
 }

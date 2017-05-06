@@ -13,7 +13,7 @@
 #import "JfgLanguage.h"
 #import "AddDeviceGuideViewController.h"
 #import "BindDevProgressViewController.h"
-
+#import "OemManager.h"
 
 @interface AddDeviceMainViewController()
 
@@ -66,7 +66,6 @@
         _addDeviceTableView.backgroundColor = [UIColor colorWithHexString:@"#f0f0f0"];
         _addDeviceTableView.separatorColor = [UIColor colorWithHexString:@"#e1e1e1"];
     }
-    
     return _addDeviceTableView;
 }
 
@@ -77,17 +76,26 @@
 {
     if (_dataGroupArray == nil)
     {
-        
         NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
         NSString *appCurVersionNum = [infoDictionary objectForKey:@"CFBundleVersion"];
-        if ([appCurVersionNum hasPrefix:@"3.2"]) {
-            _dataGroupArray = [[NSArray alloc] initWithObjects: @[[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR"]], @[[JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"], @"720°全景摄像头",[JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"]], nil];
+        if ([appCurVersionNum hasPrefix:@"3.1"]) {
+            
+            if ([OemManager oemType] == oemTypeDoby) {
+                _dataGroupArray = [[NSArray alloc] initWithObjects: @[[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR"]], @[[JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"], [JfgLanguage getLanTextStrByKey:@"IPCam"],[JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"]], nil];
+            }else{
+                _dataGroupArray = [[NSArray alloc] initWithObjects: @[[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR"]], @[[JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"], [JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"]], nil];
+            }
+            
+
         }else{
-            _dataGroupArray = [[NSArray alloc] initWithObjects: @[[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR"]], @[[JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"],[JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"]], nil];
+            
+            if ([OemManager oemType] == oemTypeDoby) {
+                _dataGroupArray = [[NSArray alloc] initWithObjects: @[[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR"]], @[[JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"], [JfgLanguage getLanTextStrByKey:@"_720PanoramicCamera"],[JfgLanguage getLanTextStrByKey:@"IPCam"],[JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"]], nil];
+            }else{
+                _dataGroupArray = [[NSArray alloc] initWithObjects: @[[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR"]], @[[JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"], [JfgLanguage getLanTextStrByKey:@"_720PanoramicCamera"],[JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"]], nil];
+            }
         }
         
-        
-        //
         
     }
     return _dataGroupArray;
@@ -99,12 +107,21 @@
     {
         NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
         NSString *appCurVersionNum = [infoDictionary objectForKey:@"CFBundleVersion"];
-        if ([appCurVersionNum hasPrefix:@"3.2"]) {
-            _imageGroupArray = [[NSArray alloc] initWithObjects:@[@"add_icon_scancode"], @[@"add_icon_camera",@"home_icon_720camera", @"add_icon_ring"], nil];
+        if ([appCurVersionNum hasPrefix:@"3.1"]){
+        
+            if ([OemManager oemType] == oemTypeDoby) {
+                _imageGroupArray = [[NSArray alloc] initWithObjects:@[@"add_icon_scancode"], @[@"add_icon_camera",@"icon_ruishi1_carame", @"add_icon_ring"], nil];
+            }else{
+                _imageGroupArray = [[NSArray alloc] initWithObjects:@[@"add_icon_scancode"], @[@"add_icon_camera", @"add_icon_ring"], nil];
+            }
+            
         }else{
-            _imageGroupArray = [[NSArray alloc] initWithObjects:@[@"add_icon_scancode"], @[@"add_icon_camera", @"add_icon_ring"], nil];
+            if ([OemManager oemType] == oemTypeDoby) {
+                _imageGroupArray = [[NSArray alloc] initWithObjects:@[@"add_icon_scancode"], @[@"add_icon_camera",@"home_icon_720camera",@"icon_ruishi1_carame", @"add_icon_ring"], nil];
+            }else{
+                _imageGroupArray = [[NSArray alloc] initWithObjects:@[@"add_icon_scancode"], @[@"add_icon_camera",@"home_icon_720camera", @"add_icon_ring"], nil];
+            }
         }
-        //
         
     }
     return _imageGroupArray;
@@ -120,7 +137,8 @@
 #pragma mark tableView datasource
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return [[self.dataGroupArray objectAtIndex:section] count];
+    NSArray *rows = [self.dataGroupArray objectAtIndex:section];
+    return [rows count];
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -195,16 +213,42 @@
                 {
                     NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
                     NSString *appCurVersionNum = [infoDictionary objectForKey:@"CFBundleVersion"];
-                    if ([appCurVersionNum hasPrefix:@"3.2"]) {
-                        addDeviceGuide.pType = productType_720;
+                    if ([appCurVersionNum hasPrefix:@"3.1"]){
+                        
+                        if ([OemManager oemType] == oemTypeDoby) {
+                            addDeviceGuide.pType = productType_IPCam;
+                        }else{
+                            addDeviceGuide.pType = productType_DoorBell;
+                        }
+                        
+                       
                     }else{
-                        addDeviceGuide.pType = productType_DoorBell;
+                        
+                       addDeviceGuide.pType = productType_720;
+                        
                     }
-                    //
                     
                 }
                     break;
                 case 2:
+                {
+                    
+                    NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
+                    NSString *appCurVersionNum = [infoDictionary objectForKey:@"CFBundleVersion"];
+                    if ([appCurVersionNum hasPrefix:@"3.1"]){
+                        
+                        addDeviceGuide.pType = productType_DoorBell;
+                        
+                    }else{
+                        if ([OemManager oemType] == oemTypeDoby) {
+                            addDeviceGuide.pType = productType_IPCam;
+                        }else{
+                            addDeviceGuide.pType = productType_DoorBell;
+                        }
+                    }
+                }
+                    break;
+                case 3:
                 {
                     addDeviceGuide.pType = productType_DoorBell;
                 }
@@ -212,8 +256,6 @@
                 default:
                     break;
             }
-            
-           
             
             [self.navigationController pushViewController:addDeviceGuide animated:YES];
         }

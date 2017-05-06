@@ -2,7 +2,7 @@
 //  JFGSDKSock.h
 //  JFGSDK
 //
-//  Created by 杨利 on 2017/3/16.
+//  Created by yangli on 2017/3/16.
 //  Copyright © 2017年 yangli. All rights reserved.
 //
 

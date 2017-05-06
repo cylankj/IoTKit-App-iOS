@@ -1,12 +1,12 @@
 /* it.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.  
+Created by cylan language tool  on Thu May 04 19:00:35 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Nessuna Connessione";
 "REPEAT_TIME" = "%d Secondi";
 "REMAIN_SPACE" = "%.1fGB Rimanenti";
 "STANBY_TIME" = "%d giorni, %d ore, %d minuti";
-"CHARGING" = "Ricarica %d％%";
+"CHARGING" = "Ricarica";
 "HOUR" = "%.2d H";
 "MINUTE" = "%.2d M";
 "MONTHS" = "mese";
@@ -217,6 +217,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "LOCAL_NOTIFICATION_MSG" = "Andare in impostazioni notifiche del tuo iPhone per cercare %@ e aprire \'Notifiche\'";
 "CLEAR_DATA" = "Cancella Cache";
 "FEEDBACK" = "Feedback";
+"FEEDBACK_Copy" = "Copia";
 "ABOUT" = "Info";
 "YOUR_FEEDBACK" = "La Tua opinione è importante per noi";
 "DEAL_FEEDBACK" = "Grazie per la Tua opinione";
@@ -257,6 +258,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WIFI_SET_2" = "1.Accettarsi che l\'indicatore WiFi lampeggia in colore blu, in caso contrario premere il pulsante WiFi per ca. 3 secondi \n 2.Nelle Impostazioni - WLAN , scegli \'%@\'  usa sul tuo iPhone";
 "WIFI_SET_3" = "Andare in \"Settings\"->\"WLAN\",scegliere \"DOG-**-******\" collegare il telefono, Password è 11111111";
 "WIFI_SET_3_1" = "Andare in \"Settings\"->\"WLAN\",scegliere \"DOG-ML-******\" collegare il telefono,password è 11111111";
+"WIFI_SET_RS" = "Andare in \"Settings\"->\"WLAN\",scegliere \"RS-CAM-******\" collegare il telefono,password è 11111111";
 "WIFI_SET_4" = "Tornare a %@";
 "WIFI_SET_5GTIPS" = "Nota: il segnale WiFi 5Ghz non è ancora supportato";
 "SELECT_NETWORK" = "Scegliere una rete";
@@ -534,7 +536,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "RET_ECID_UNBIND_RETRY_lOGIN" = "CID is not binded, please relogin";
 "RET_EPARAMS_FALSE" = "Parametri errati.";
 "copyrightEn" = "Copyright ©2005-%@ Cylan.All Rights Reserved.";
-"help_url" = "https://yf.jfgou.com:8081/helps/it.html";
+"help_url" = "https://%@:8081/helps/it.html";
 "service_phonenum" = "+86 400-716-3232";
 "setwifi_check" = "Connettere \"%@\" per effettuare la configurazione.";
 "show_web" = "www.cleverdog.com.cn";
@@ -810,7 +812,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Oct" = "Oct.";
 "Nov" = "Nov.";
 "Dec" = "Dec.";
-"help_url_Doby" = "https://yf.jfgou.com:8081/help/en_doby.html";
+"help_url_Doby" = "https://%@:8081/helps/en_doby.html";
 "NoNetworkTips" = "Nessuna connessione di rete";
 "Tap0_AlreadyEmailed" = "Email inviata a";
 "Tap0_Click_ResetPassword" = "Prega fare clic sul link per reimpostare la password";
@@ -843,13 +845,14 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WeChat" = "WeChat";
 "Weibo" = "Weibo";
 "Device_Disconnected" = "Disconnessa";
+"Tap1_OutdoorMode_Opened" = "Modalità esterni è stato aperto";
 "Tap1_OutdoorMode" = "modalità Outdoor";
-"720PanoramicCamera" = "720°Panoramic Camera";
+"_720PanoramicCamera" = "720°Panoramic Camera";
 "Tap1_DeviceWasBindedTips" = "Dispositivo è stato vincolato da \"%@\", prega non associare e riprovare.";
 "WiFiLight_BlueFlashing" = "Blu infiammante: WiFi configurazione modalità";
 "WiFiLight_SteadyBlue" = "Blu fisso: WiFi on line";
 "WiFiLight_RedFlashing" = "Rosso lampeggiante: Collegamento";
-"WiFiLight_RedNBlueFlashing" = "Red&Blu flashing: Aggiornamento";
+"WiFiLight_RedNBlueFlashing" = "Red & Blu flashing: Aggiornamento";
 "PowerLight_SteadyBlue" = "Blu fisso: Fare il boot";
 "PowerLight_BlueFlashing" = "Blu infiammante: Bassa potenza";
 "PowerLight_BlueOut" = "Blu out: Spegnimento";
@@ -866,6 +869,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_NeedsInitializedTips" = "Esigenze scheda SD per inizializzare e dati sarebbero stati cancellati, sicuro di continuare?";
 "Tap1_SDCardFullyTips" = "Pienamente occupato";
 "Tap1_HomeMode" = "Modalità di casa";
+"Tap1_HomeMode_Opened" = "Modalità Home è stato aperto";
 "Tap1_Camera_TCPconnected" = "Telecamera collegata con App via internet";
 "Tap1_Camera_UDPconnected" = "Telecamera collegata con app direttamente";
 "Tap1_Camera_Video_Auto" = "Auto";
@@ -888,6 +892,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_Album_CancelDownloadTips" = "Annullare il download?";
 "Tap1_Album_DownloadFailed" = "Scaricamento fallito";
 "Tap1_Album_Share_Description" = "Aggiungere descrizione";
+"Tap1_Album_Share_To_Daily_Great" = "Il contenuto condiviso verrà salvato a \"Splendida della giornata \"";
 "Tap1_Album_Share_NotInstalledTips" = "\"%@\"  non è installato, installarlo e riprova";
 "Tap1_Shared_Title" = "Condiviso da Cleverdog 720°Cam";
 "Tap1_Shared_Title_zhognxing" = "Condiviso da 720°panoramica Cam";
@@ -906,3 +911,20 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Loaded" = "Loaded";
 "Microphone" = "Microfono";
 "Tap3_FriendsAdd_AlreadyFriend" = "%@ È già tuo amico";
+"Choose_Album" = "Seleziona un album";
+"Mail_Class_Application" = "Seleziona l\'applicazione della classe mail";
+"Tap1_Album_Empty" = "Nessuna foto o video";
+"Feedback_Sending" = "Inviare …";
+"Feedback_MessageFailed" = "Il messaggio non è riuscito a inviare";
+"Download_Then_Share" = "Scarica il video e poi condividi";
+"Downloading" = "Il video viene scaricato";
+"Network_Description" = "Descrizione della rete";
+"Unconnect_Network" = "Il tuo dispositivo non è connesso a una rete mobile oa una rete Wi-Fi";
+"Wifi_Method" = "Wi-Fi, fare riferimento ai seguenti metodi:";
+"Wifi_Hotspot" = "Nel dispositivo [Impostazioni> Wireless LAN], scegliere un punto di accesso Wi-Fi per connettersi.";
+"Wifi_Set_Up" = "Vai alla configurazione";
+"Cellular_Data_Method" = "Dati mobili, fare riferimento al seguente metodo:";
+"Cellular_Data_Set_Up" = "Abilita i dati mobili nel dispositivo, per favore usa il modo seguente, Impostazioni> Dati mobili";
+"No_Network_Connection" = "Nessuna connessione di rete, si prega di attivare la rete innanzitutto";
+"RuiShi_Guide" = "Usare l\'ago per premere a lungo il pulsante RESET per 3s";
+"RuiShi_Name" = "IPCam";

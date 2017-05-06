@@ -9,11 +9,18 @@
 #import "BaseViewController.h"
 #import "JfgTypeDefine.h"
 
+@protocol AddDeviceGuideVCNextActionDelegate <NSObject>
+
+-(void)addDeviceGuideVCNectActionForVC:(UIViewController *)vc;
+
+@end
+
 @interface AddDeviceGuideViewController : BaseViewController
 {
     
 }
 
 @property (nonatomic, assign) configWifiType configType;
+@property (nonatomic, weak) id<AddDeviceGuideVCNextActionDelegate>delegate;
 
 @end

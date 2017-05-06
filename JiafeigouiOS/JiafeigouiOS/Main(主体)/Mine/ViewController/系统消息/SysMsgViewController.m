@@ -15,6 +15,7 @@
 #import <MJRefresh/MJRefresh.h>
 #import <JFGSDK/JFGSDK.h>
 #import "LoginManager.h"
+#import "NSString+FLExtension.h"
 
 @interface SysMsgViewController ()<UITableViewDelegate,UITableViewDataSource,UIWebViewDelegate>
 {
@@ -98,7 +99,7 @@
                                     }else{
 
                                         if (model.bindAccount.length >= 7) {
-                                            model.bindAccount = [model.bindAccount stringByReplacingCharactersInRange:NSMakeRange(3, 4) withString:@"****"];
+                                            model.bindAccount = [self bindAccountDealForAccount:model.bindAccount];   
                                         }
 
                                         model.msg = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"MSG_REBIND"],model.bindAccount];
@@ -173,6 +174,36 @@
     
 }
 
+
+-(NSString *)bindAccountDealForAccount:(NSString *)account
+{
+    if ([account isEmail]) {
+        NSRange range = [account rangeOfString:@"@"];
+        if (range.location == 1) {
+            return account;
+        }else if (range.location == 2){
+            return [account stringByReplacingCharactersInRange:NSMakeRange(1, 1) withString:@"*"];
+        }else if (range.location == 3 || range.location == 4){
+            return [account stringByReplacingCharactersInRange:NSMakeRange(1, 2) withString:@"**"];
+        }else if (range.location > 4 && range.location <= 8){
+            return [account stringByReplacingCharactersInRange:NSMakeRange(2, range.location-3) withString:@"***"];
+        }else if (range.location > 8 && range.location <= 16){
+            return [account stringByReplacingCharactersInRange:NSMakeRange(3, range.location-4) withString:@"****"];
+        }else{
+            return [account stringByReplacingCharactersInRange:NSMakeRange(4, range.location-8) withString:@"********"];
+        }
+    }else if ([account isMobileNumber]){
+       // 185****6063
+       return [account stringByReplacingCharactersInRange:NSMakeRange(3, 4) withString:@"****"];
+    }else{
+        if (account.length>8) {
+            return [account stringByReplacingCharactersInRange:NSMakeRange(3, account.length-7) withString:@"****"];
+        }else{
+            return account;
+        }
+    }
+    return account;
+}
 
 
 -(void)initView

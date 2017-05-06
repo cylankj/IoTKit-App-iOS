@@ -45,8 +45,7 @@
 - (void)initView
 {
     
-    CGFloat cropheight = SCREEN_SIZE.width;
-    cropheight = 300;
+    CGFloat cropheight = 300;
     
     self.originalImage = self.image;
     CGFloat scale = self.originalImage.size.height/self.originalImage.size.width;

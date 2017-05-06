@@ -35,6 +35,9 @@ typedef NS_ENUM(NSInteger, productType) {
     productType_720p,           // 720
     productType_DoorBell2 = 25,      // 门铃 二代
     productType_ColudCameraOs,  // 看家王 云相机
+    productType_RS_180 = 36,    // RS camera
+    productType_RS_120 = 37,
+    productType_IPCam = 38, // 睿视方案（doby）120°
     
 #pragma mark pid
     productType_3G = 1071,
@@ -106,6 +109,7 @@ typedef NS_ENUM(NSInteger, configWifiType)
 {
     configWifiType_default, // 配置 并且跳转
     configWifiType_configWifi, // 仅仅 配置wifi
+    configWifiType_resetWifi, 
 };
 
 typedef NS_ENUM(NSInteger, angleType) {

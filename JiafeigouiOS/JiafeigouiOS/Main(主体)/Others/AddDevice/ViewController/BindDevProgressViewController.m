@@ -59,7 +59,12 @@ int const timeoutDuration = 90; // 90秒 超时
     
     [self.animationView starAnimation];
     [self getCacheCidList];
-    [self.bindingDeviceSDK bindDevWithSn:@"" ssid:self.wifiName key:self.wifiPassWord];
+    if (self.pType == productType_720) {
+        [self.bindingDeviceSDK bindDevFor720WithSn:@"" ssid:self.wifiName key:self.wifiPassWord];
+    }else{
+        [self.bindingDeviceSDK bindDevWithSn:@"" ssid:self.wifiName key:self.wifiPassWord];
+    }
+    
     isShowOuttime = YES;
     [JFGSDK appendStringToLogFile:@"startOuttimeCount"];
     
@@ -197,13 +202,15 @@ int const timeoutDuration = 90; // 90秒 超时
                 timeOutTimer = nil;
             }
 
+            __block BindDevProgressViewController *blockSelf = self;
+            
             [self.animationView successAnimationWithCompletionBlock:^{
                 SetDevNicNameViewController *se = [SetDevNicNameViewController new];
                 se.cid = currentCid;
-                se.pType = self.pType;
-                se.configType = self.configType;
-                [self.navigationController pushViewController:se animated:YES];
-                self.isPushedToSuccess = YES;
+                se.pType = blockSelf.pType;
+                se.configType = blockSelf.configType;
+                [blockSelf.navigationController pushViewController:se animated:YES];
+                blockSelf.isPushedToSuccess = YES;
             }];
         }
     }
@@ -419,6 +426,8 @@ int const timeoutDuration = 90; // 90秒 超时
     }
     return _backBtn;
 }
+
+
 
 -(BindProgressAnimationView *)animationView
 {

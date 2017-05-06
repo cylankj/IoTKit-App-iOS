@@ -1,12 +1,12 @@
 /* id-ID.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.  
+Created by cylan language tool  on Thu May 04 19:00:35 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Tidak terhubung ke jaringan";
 "REPEAT_TIME" = "%d detik";
 "REMAIN_SPACE" = "%.1fGB dapat digunakan";
 "STANBY_TIME" = "%d hari,%d jam,%d menit";
-"CHARGING" = "Mengisi %d％%";
+"CHARGING" = "Mengisi";
 "HOUR" = "%.2d Jam";
 "MINUTE" = "%.2d Menit";
 "MONTHS" = "bulan";
@@ -217,6 +217,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "LOCAL_NOTIFICATION_MSG" = "Silakan pergi ke iPhone\'s pengaturan-notifikasi untuk mencari %@ dan terbuka \'Pemberitahuan\'";
 "CLEAR_DATA" = "Hapus Pesan";
 "FEEDBACK" = "Saran";
+"FEEDBACK_Copy" = "Salinan";
 "ABOUT" = "Tentang";
 "YOUR_FEEDBACK" = "Saran anda sangat penting bagi kami";
 "DEAL_FEEDBACK" = "Terima kasih untuk saran yang anda berikan";
@@ -257,6 +258,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WIFI_SET_2" = "1.Pastikan indikator WIFI dalam kondisi biru berkedip.Jika tidak,silahkan tyekan tombol WIFI selama 3 detik.\n2.Melalui \"Pengaturan\"->\"WLAN\" di iPhone anda,sambungkan ke \"%@\",password 11111111";
 "WIFI_SET_3" = "Silahkan melalui \"Pengaturan\"->\"WLAN\",pilih \"DOG-**-******\"sambungkan ke iPhone anda, Kata sandinya adalah 11111111";
 "WIFI_SET_3_1" = "Silahkan melalui \"Pengaturan\"->\"WLAN\", pilih \"DOG-ML-******\" sambungkan ke phone anda, kata sandinya adalah 11111111";
+"WIFI_SET_RS" = "Silahkan melalui \"Pengaturan\"->\"WLAN\", pilih \"RS-CAM-******\" sambungkan ke phone anda, kata sandinya adalah 11111111";
 "WIFI_SET_4" = "Kembali ke %@";
 "WIFI_SET_5GTIPS" = "Tips:Sinyal 5G WIFI tidak memungkinkan sekarang";
 "SELECT_NETWORK" = "Silahkan pilih jaringan";
@@ -534,7 +536,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "RET_ECID_UNBIND_RETRY_lOGIN" = "CID tidak terikat, silahkan login kembali";
 "RET_EPARAMS_FALSE" = "Argumen error";
 "copyrightEn" = "Copyright ©2005-%@ Cylan.All Rights Reserved.";
-"help_url" = "https://yf.jfgou.com:8081/helps/id.html";
+"help_url" = "https://%@:8081/helps/id.html";
 "service_phonenum" = "+86 400-716-3232";
 "setwifi_check" = "Silahkan setel ponsel anda ke \"%@\"";
 "show_web" = "www.cleverdog.com.cn";
@@ -810,7 +812,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Oct" = "Oct.";
 "Nov" = "Nov.";
 "Dec" = "Dec.";
-"help_url_Doby" = "https://yf.jfgou.com:8081/help/en_doby.html";
+"help_url_Doby" = "https://%@:8081/helps/en_doby.html";
 "NoNetworkTips" = "Tidak koneksi jaringan";
 "Tap0_AlreadyEmailed" = "Sudah email ke";
 "Tap0_Click_ResetPassword" = "silakan klik link dalam email untuk mereset password";
@@ -843,13 +845,14 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WeChat" = "WeChat";
 "Weibo" = "Weibo";
 "Device_Disconnected" = "Terputus";
+"Tap1_OutdoorMode_Opened" = "Modus luar ruangan telah dibuka";
 "Tap1_OutdoorMode" = "Modus luar ruangan";
-"720PanoramicCamera" = "720°Panoramic Kamera";
+"_720PanoramicCamera" = "720°Panoramic Kamera";
 "Tap1_DeviceWasBindedTips" = "Perangkat telah terikat oleh \"%@\", silakan memperlonggar dan coba lagi.";
 "WiFiLight_BlueFlashing" = "Biru berkedip: WiFi konfigurasi mode";
 "WiFiLight_SteadyBlue" = "Mantap biru: WiFi secara online";
 "WiFiLight_RedFlashing" = "flashing merah: Connecting";
-"WiFiLight_RedNBlueFlashing" = "Red&Blue flashing: Memperbarui";
+"WiFiLight_RedNBlueFlashing" = "Red & Blue flashing: Memperbarui";
 "PowerLight_SteadyBlue" = "Mantap biru: Booting";
 "PowerLight_BlueFlashing" = "Biru berkedip: Daya rendah";
 "PowerLight_BlueOut" = "Biru mati: Matikan";
@@ -866,6 +869,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_NeedsInitializedTips" = "kebutuhan kartu SD diinisialisasi dan data akan dibersihkan, pasti untuk melanjutkan?";
 "Tap1_SDCardFullyTips" = "Terisi penuh";
 "Tap1_HomeMode" = "Mode rumah";
+"Tap1_HomeMode_Opened" = "Modus rumah telah dibuka";
 "Tap1_Camera_TCPconnected" = "Kamera terhubung dengan app via internet";
 "Tap1_Camera_UDPconnected" = "Kamera terhubung dengan app langsung";
 "Tap1_Camera_Video_Auto" = "Auto";
@@ -888,6 +892,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_Album_CancelDownloadTips" = "Batalkan mengunduh?";
 "Tap1_Album_DownloadFailed" = "Download gagal";
 "Tap1_Album_Share_Description" = "Tambahkan deskripsi";
+"Tap1_Album_Share_To_Daily_Great" = "Konten bersama akan disimpan ke \"Daily Great \"";
 "Tap1_Album_Share_NotInstalledTips" = "\"%@\"  tidak terpasang, silahkan install dan coba lagi";
 "Tap1_Shared_Title" = "Dibagi dari Cleverdog 720°Cam";
 "Tap1_Shared_Title_zhognxing" = "Dibagikan dari 720°Panoramic Cam";
@@ -906,3 +911,20 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Loaded" = "Sarat";
 "Microphone" = "Mikropon";
 "Tap3_FriendsAdd_AlreadyFriend" = "%@ Apakah sudah teman Anda";
+"Choose_Album" = "Pilih album";
+"Mail_Class_Application" = "Silakan pilih aplikasi kelas surat";
+"Tap1_Album_Empty" = "Tidak ada Foto atau Video";
+"Feedback_Sending" = "Mengirim …";
+"Feedback_MessageFailed" = "Pesan gagal dikirim";
+"Download_Then_Share" = "Silahkan download video dan kemudian bagikan";
+"Downloading" = "Video sedang didownload";
+"Network_Description" = "Deskripsi jaringan";
+"Unconnect_Network" = "Perangkat Anda tidak terhubung ke jaringan selular atau jaringan Wi-Fi";
+"Wifi_Method" = "Jaringan Wi-Fi, lihat metode berikut:";
+"Wifi_Hotspot" = "Di perangkat [Settings> Wireless LAN], pilih hotspot Wi-Fi untuk terhubung.";
+"Wifi_Set_Up" = "Pergi ke set up";
+"Cellular_Data_Method" = "Data seluler, lihat metode berikut:";
+"Cellular_Data_Set_Up" = "Aktifkan data Mobile di perangkat, gunakan cara di bawah ini, Settings> Mobile data";
+"No_Network_Connection" = "Tidak ada koneksi jaringan, tolong aktifkan jaringan terlebih dulu";
+"RuiShi_Guide" = "Gunakan jarum untuk lama menekan tombol RESET selama 3 detik";
+"RuiShi_Name" = "IPCam";

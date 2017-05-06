@@ -48,12 +48,9 @@ static CGFloat defaultPicWidth = 500;
     [self.scrollerView3 setContentOffset:CGPointMake(self.scrollerView3.contentSize.width-self.bounds.size.width, 0)];
     [self addSubview:self.scrollerView3];
     
-    
     [self scrollerAddContentImageNamed:self.bottomImage scrollerView:self.scrollerView2 height:ripple2Height];
     [self addSubview:self.scrollerView2];
     
-    
-   
     [self startTimer];
 }
 

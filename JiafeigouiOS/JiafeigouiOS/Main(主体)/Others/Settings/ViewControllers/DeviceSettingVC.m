@@ -66,6 +66,7 @@
 -(void)viewDidDisappear:(BOOL)animated
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:deleteDeviceNotification object:nil];
+    [super viewDidDisappear:animated];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -82,7 +83,7 @@
 
 -(void)deleteDevice:(NSNotification *)notification
 {
-    NSString *cid = notification.object;
+    //NSString *cid = notification.object;
     [self.navigationController popToRootViewControllerAnimated:YES];
 }
 
@@ -227,33 +228,6 @@
 #pragma mark deviceSettingDelegate
 - (void)deviceSettingTableViewDidSelect:(NSIndexPath *)indexPath withData:(NSDictionary *)dataInfo
 {
-    /*
-    if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess)
-    {
-        // 不需要弹出提示的 可进入的单元格
-        if ((self.pType == productType_Mine && indexPath.section == 1) ||
-            (self.pType == productType_DoorBell && indexPath.section == 1) ||
-            (self.pType ==  productType_FreeCam && indexPath.section == 1) ||
-            (self.pType ==  productType_3G && indexPath.section == 1) ||
-            (self.pType ==  productType_WIFI && indexPath.section == 1) ||
-            (self.pType ==  productType_WIFI_V2 && indexPath.section == 1) ||
-            (self.pType ==  productType_WIFI_V3 && indexPath.section == 1) ||
-            (self.pType ==  productType_Camera_HS && indexPath.section == 1) ||
-            (self.pType ==  productType_Camera_ZY && indexPath.section == 1) ||
-            (self.pType ==  productType_Camera_GK && indexPath.section == 1)
-            )
-        {
-            
-        }
-        else
-        {
-            [CommonMethod showNetDisconnectAlert];
-            return ;
-        }
-        
-        
-    }
-    */
     switch (self.pType) {
         case productType_Mag://门磁
         {

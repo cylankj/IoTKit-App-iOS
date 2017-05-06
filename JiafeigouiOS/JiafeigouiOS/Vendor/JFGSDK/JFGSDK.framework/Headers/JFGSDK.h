@@ -602,6 +602,14 @@
 
 
 /*!
+ * 获取当前账号文件存储地区
+ 
+ ~English
+ * Get the current account file storage area
+ */
++(int)getRegionType;
+
+/*!
  *  萝卜头透传消息
  *
  *  @param message 透传消息体
@@ -657,6 +665,14 @@
 
 +(uint64_t)sendMsgForTcpWithDst:(NSArray <NSString *>*)dst isAck:(BOOL)isAck fileType:(int)fileType msg:(NSData *)msg;
 
++(uint64_t)sendMsgForTcpDownloadWithDst:(NSArray <NSString *>*)dst fileName:(NSString *)fileName md5:(NSString *)md5 begin:(int)begin offset:(int)offset;
+
 +(uint64_t)sendDPDataMsgForSockWithPeer:(NSString *)peer dpMsgIDs:(NSArray <DataPointSeg *>*)dpMsgIDs;
+
+//广告位相关
++(void)getAdPolicyForLanguage:(int)language version:(NSString *)version resolution:(NSString *)resolution;
+
+//广告位点击数统计
++(void)statisticsADClickForLanguage:(int)language version:(NSString *)version tapUrl:(NSString *)tapUrl;
 
 @end

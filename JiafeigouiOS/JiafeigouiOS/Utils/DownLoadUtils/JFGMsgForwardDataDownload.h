@@ -40,7 +40,7 @@ typedef NS_ENUM(NSInteger,JFGMsgFwDlFailedType){
 //是否正在下载中
 @property (nonatomic,readonly)BOOL isDownloading;
 //下载回调代理
-@property (nonatomic,assign)id <JFGMsgForwardDataDownloadDelegate> delegate;
+@property (nonatomic,weak)id <JFGMsgForwardDataDownloadDelegate> delegate;
 
 /*
  开始下载某个文件

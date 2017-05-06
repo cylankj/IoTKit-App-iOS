@@ -20,6 +20,8 @@
         }else{
             self.scrollEnabled = YES;
         }
+    }else{
+       self.scrollEnabled = YES;
     }
     return result;
 }

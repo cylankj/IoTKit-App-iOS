@@ -2,7 +2,7 @@
 //  DataPointModel.h
 //  JFGSDK
 //
-//  Created by 杨利 on 16/7/6.
+//  Created by yangli on 16/7/6.
 //  Copyright © 2016年 yangli. All rights reserved.
 //
 

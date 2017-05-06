@@ -1,12 +1,12 @@
 /* vi-VN.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.  
+Created by cylan language tool  on Thu May 04 19:00:35 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Chưa kết nối";
 "REPEAT_TIME" = "%d giây";
 "REMAIN_SPACE" = "%.1fGB sử dụng";
 "STANBY_TIME" = "%d ngày,%d giờ,%d phút";
-"CHARGING" = "Sạc %d%%";
+"CHARGING" = "Sạc";
 "HOUR" = "%.2d H";
 "MINUTE" = "%2d M";
 "MONTHS" = "tháng";
@@ -217,6 +217,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "LOCAL_NOTIFICATION_MSG" = "Trong mục Cài Đặt-Thông báo trên iPhone, tìm %@ mở \'Thông báo\'";
 "CLEAR_DATA" = "Xoá tin nhắn";
 "FEEDBACK" = "Phản hồi";
+"FEEDBACK_Copy" = "Sao chép";
 "ABOUT" = "Giới thiệu";
 "YOUR_FEEDBACK" = "Ý kiến của bạn rất quan trọng";
 "DEAL_FEEDBACK" = "Cảm ơn đóng góp ý kiến";
@@ -257,6 +258,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WIFI_SET_2" = "1.Please đảm bảo các chỉ số WIFI là blinking.If xanh không, xin vui lòng nhấn vào nút WIFI 3 giây \ n2.Via \"Settings\" -.> \"WLAN\" trên iPhone của bạn, kết nối với \"%@\", mật khẩu 11111111";
 "WIFI_SET_3" = "Trong mục \"Cài đặt\"->\"WLAN\", chọn \"DOG-**-*****\" kết nối phone, Mật khẩu 11111111";
 "WIFI_SET_3_1" = "Trong mục \"Cài đặt\"->\"WLAN\", chọn \"DOG-ML-*****\" kết nối iPhone, Mật khẩu 11111111";
+"WIFI_SET_RS" = "Trong mục \"Cài đặt\"->\"WLAN\", chọn \"RS-CAM-*****\" kết nối iPhone, Mật khẩu 11111111";
 "WIFI_SET_4" = "Trở lại %@";
 "WIFI_SET_5GTIPS" = "Lưu ý:5G Wi-Fi chưa được bật";
 "SELECT_NETWORK" = "Hãy chọn mạng";
@@ -534,7 +536,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "RET_ECID_UNBIND_RETRY_lOGIN" = "CID chưa được gắn, hãy đăng nhập lại";
 "RET_EPARAMS_FALSE" = "Lỗi thông số";
 "copyrightEn" = "Copyright ©2005-%@ Cylan.All Rights Reserved.";
-"help_url" = "https://yf.jfgou.com:8081/helps/vn.html";
+"help_url" = "https://%@:8081/helps/vn.html";
 "service_phonenum" = "84822101327";
 "setwifi_check" = "Hãy cho điện thoại kết nối với \"%@\"";
 "show_web" = "www.cleverdog.com.cn";
@@ -810,7 +812,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Oct" = "Oct.";
 "Nov" = "Nov.";
 "Dec" = "Dec.";
-"help_url_Doby" = "https://yf.jfgou.com:8081/help/en_doby.html";
+"help_url_Doby" = "https://%@:8081/helps/en_doby.html";
 "NoNetworkTips" = "Không có kết nối mạng";
 "Tap0_AlreadyEmailed" = "Đã gửi email đến";
 "Tap0_Click_ResetPassword" = "hãy nhấn vào liên kết để tạo lại mật khẩu";
@@ -843,13 +845,14 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WeChat" = "WeChat";
 "Weibo" = "Weibo";
 "Device_Disconnected" = "Đã ngắt kết nối";
+"Tap1_OutdoorMode_Opened" = "Chế độ ngoài trời đã được mở";
 "Tap1_OutdoorMode" = "Chế độ ngoài trời";
-"720PanoramicCamera" = "720°Panoramic Camera";
+"_720PanoramicCamera" = "720°Panoramic Camera";
 "Tap1_DeviceWasBindedTips" = "Thiết bị đã bị ràng buộc bởi \"%@\", hãy bỏ liên kết và thử lại.";
 "WiFiLight_BlueFlashing" = "Màu xanh nhấp nháy: chế độ cấu hình WiFi";
 "WiFiLight_SteadyBlue" = "Ổn định màu xanh: WiFi trực tuyến";
 "WiFiLight_RedFlashing" = "Đỏ nhấp nháy: Kết nối";
-"WiFiLight_RedNBlueFlashing" = "Red&Blue nhấp nháy: Đang cập nhật";
+"WiFiLight_RedNBlueFlashing" = "Red & Blue nhấp nháy: Đang cập nhật";
 "PowerLight_SteadyBlue" = "Ổn định màu xanh: Khởi động";
 "PowerLight_BlueFlashing" = "Màu xanh nhấp nháy: Công suất thấp";
 "PowerLight_BlueOut" = "Màu xanh ra: Power off";
@@ -866,6 +869,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_NeedsInitializedTips" = "Thẻ SD cần được khởi tạo và dữ liệu sẽ bị xóa, chắc chắn để tiếp tục?";
 "Tap1_SDCardFullyTips" = "Chiếm đóng hoàn toàn";
 "Tap1_HomeMode" = "chế độ nhà";
+"Tap1_HomeMode_Opened" = "Chế độ nhà đã được mở";
 "Tap1_Camera_TCPconnected" = "Máy ảnh được kết nối với ứng dụng qua internet";
 "Tap1_Camera_UDPconnected" = "Máy ảnh được kết nối trực tiếp với ứng dụng";
 "Tap1_Camera_Video_Auto" = "Auto";
@@ -888,6 +892,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_Album_CancelDownloadTips" = "Hủy bỏ việc download?";
 "Tap1_Album_DownloadFailed" = "Tải về thất bại";
 "Tap1_Album_Share_Description" = "Thêm mô tả";
+"Tap1_Album_Share_To_Daily_Great" = "Các nội dung được chia sẻ sẽ được lưu vào \"Daily Great \"";
 "Tap1_Album_Share_NotInstalledTips" = "\"%@\"  chưa được cài đặt, vui lòng cài đặt và thử lại";
 "Tap1_Shared_Title" = "Được chia sẻ từ Cleverdog 720°Cam";
 "Tap1_Shared_Title_zhognxing" = "Được chia sẻ từ 720°Panoramic Cam";
@@ -906,3 +911,20 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Loaded" = "Nạp vào";
 "Microphone" = "Micrô";
 "Tap3_FriendsAdd_AlreadyFriend" = "%@ Đã là bạn bè của bạn";
+"Choose_Album" = "Chọn anbom";
+"Mail_Class_Application" = "Vui lòng chọn ứng dụng lớp thư";
+"Tap1_Album_Empty" = "Không có Ảnh hoặc Video";
+"Feedback_Sending" = "gửi…";
+"Feedback_MessageFailed" = "Không thể gửi tin nhắn";
+"Download_Then_Share" = "Vui lòng tải video xuống và chia sẻ";
+"Downloading" = "Video đang được tải xuống";
+"Network_Description" = "Mô tả mạng";
+"Unconnect_Network" = "Thiết bị của bạn không được kết nối với mạng di động hoặc mạng Wi-Fi";
+"Wifi_Method" = "Mạng Wi-Fi, vui lòng tham khảo các phương pháp sau:";
+"Wifi_Hotspot" = "Trong thiết bị [Cài đặt> Mạng LAN không dây], Vui lòng chọn điểm truy cập Wi-Fi để kết nối.";
+"Wifi_Set_Up" = "Đi tới thiết lập";
+"Cellular_Data_Method" = "Dữ liệu di động, vui lòng tham khảo phương pháp sau:";
+"Cellular_Data_Set_Up" = "Bật dữ liệu di động trong thiết bị, vui lòng sử dụng dưới đây, Cài đặt> Dữ liệu di động";
+"No_Network_Connection" = "Không có kết nối mạng, trước tiên hãy kích hoạt mạng";
+"RuiShi_Guide" = "Sử dụng kim để nhấn và giữ nút RESET trong 3 giây";
+"RuiShi_Name" = "IPCam";

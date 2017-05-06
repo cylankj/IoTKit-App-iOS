@@ -203,6 +203,7 @@
     }
 #warning 执行刷新列表干嘛？
     //[JFGSDK refreshDeviceList];
+    [super viewWillDisappear:animated];
 }
 
 -(void)stepRefresh
@@ -441,9 +442,23 @@
             infoVC.alis = self.devModel.alias;
         }
         [self.navigationController pushViewController:infoVC animated:YES];
+        
     }else{
-        MessageViewCell *cell = [_contentTableView cellForRowAtIndexPath:indexPath];
-        [[NSNotificationCenter defaultCenter]postNotificationName:@"JFGLookHistoryVideo" object:[NSNumber numberWithUnsignedLongLong:cell.timestamp]];
+        
+        sender.enabled = NO;
+        
+        if (self.delegate && [self.delegate respondsToSelector:@selector(lookHistoryForTimestamp:)]) {
+            MessageViewCell *cell = [_contentTableView cellForRowAtIndexPath:indexPath];
+            [self.delegate lookHistoryForTimestamp:cell.timestamp];
+        }
+        //JFGLookHistoryVideo
+        int64_t delayInSeconds = 1.0;
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            
+            sender.enabled = YES;
+            
+        });
     }
     
    
@@ -638,7 +653,6 @@
                 break;
             }
         }
-        
     }
     [self.timeSelectButton setTitle:[self timeSelecedBtnTitleForTimestamp:lastM.timestamp] forState:UIControlStateNormal];
     [self.ruler loadDateStringArray:self.dateArr markedDateString:[self.dateArr firstObject]];

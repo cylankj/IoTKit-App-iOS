@@ -1,12 +1,12 @@
 /* zh-Hans.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.  
+Created by cylan language tool  on Thu May 04 19:00:35 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "连接失败，请检查网络";
 "REPEAT_TIME" = "%d秒";
 "REMAIN_SPACE" = "%.1fGB可用";
 "STANBY_TIME" = "%d天%d小时%d分钟";
-"CHARGING" = "充电中 %d%%";
+"CHARGING" = "充电中";
 "HOUR" = "%.2d时";
 "MINUTE" = "%.2d分";
 "MONTHS" = "月";
@@ -217,6 +217,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "LOCAL_NOTIFICATION_MSG" = "请在iPhone的设置－通知页，找到“%@”，开启“允许通知”";
 "CLEAR_DATA" = "清空消息缓存";
 "FEEDBACK" = "意见反馈";
+"FEEDBACK_Copy" = "复制";
 "ABOUT" = "关于";
 "YOUR_FEEDBACK" = "聆听每一位用户的意见与建议";
 "DEAL_FEEDBACK" = "感谢您的反馈";
@@ -257,6 +258,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WIFI_SET_2" = "1.请检查设备WiFi灯是否蓝色闪烁,如果没有,请长按WiFi键约3秒\n2.打开iPhone的设置->无线网络,选择\“%@\”WiFi加入,密码8个1";
 "WIFI_SET_3" = "请在系统设置->无线局域网，选择“DOG-**-******”加入，密码8个1";
 "WIFI_SET_3_1" = "请在系统设置->无线局域网，选择“DOG-ML-******”加入，密码8个1";
+"WIFI_SET_RS" = "请在系统设置->无线局域网，选择“RS-CAM-******”加入，密码8个1";
 "WIFI_SET_4" = "回到%@";
 "WIFI_SET_5GTIPS" = "注：暂不支持5GHz的WiFi信号";
 "SELECT_NETWORK" = "配置WiFi";
@@ -534,7 +536,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "RET_ECID_UNBIND_RETRY_lOGIN" = "CID未被绑定，请重新登录";
 "RET_EPARAMS_FALSE" = "参数错误";
 "copyrightEn" = "Copyright ©2005-%@ Cylan.All Rights Reserved";
-"help_url" = "https://yf.jfgou.com:8081/helps/zh-rCN.html";
+"help_url" = "https://%@:8081/helps/zh-rCN.html";
 "service_phonenum" = "400-716-3232";
 "setwifi_check" = "请设置手机连接到“%@”WiFi网络，再进行配置";
 "show_web" = "www.jfgou.com";
@@ -810,7 +812,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Oct" = "10月";
 "Nov" = "11月";
 "Dec" = "12月";
-"help_url_Doby" = "https://yf.jfgou.com:8081/help/zh-rCN_doby.html";
+"help_url_Doby" = "https://%@:8081/helps/zh-rCN_doby.html";
 "NoNetworkTips" = "当前网络不可用";
 "Tap0_AlreadyEmailed" = "已发送邮件到";
 "Tap0_Click_ResetPassword" = "请点击邮箱内的链接重置密码";
@@ -843,8 +845,9 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "WeChat" = "微信";
 "Weibo" = "微博";
 "Device_Disconnected" = "对端断开";
+"Tap1_OutdoorMode_Opened" = "户外模式已开启";
 "Tap1_OutdoorMode" = "户外模式";
-"720PanoramicCamera" = "720°全景摄像机";
+"_720PanoramicCamera" = "720°全景摄像机";
 "Tap1_DeviceWasBindedTips" = "设备已被“%@”用户绑定，请解绑后重试";
 "WiFiLight_BlueFlashing" = "蓝色闪烁：WiFi配置模式";
 "WiFiLight_SteadyBlue" = "蓝色长亮：WiFi在线";
@@ -866,6 +869,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_NeedsInitializedTips" = "设备SD卡需要先初始化，但会删除卡内数据，确定初始化吗？";
 "Tap1_SDCardFullyTips" = "SD卡存储空间已满";
 "Tap1_HomeMode" = "家居模式";
+"Tap1_HomeMode_Opened" = "家居模式已开启";
 "Tap1_Camera_TCPconnected" = "摄像机通过网络与客户端相连";
 "Tap1_Camera_UDPconnected" = "摄像机直接与客户端相连";
 "Tap1_Camera_Video_Auto" = "自动";
@@ -888,6 +892,7 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Tap1_Album_CancelDownloadTips" = "是否取消下载？";
 "Tap1_Album_DownloadFailed" = "下载失败";
 "Tap1_Album_Share_Description" = "请输入照片（视频）描述…";
+"Tap1_Album_Share_To_Daily_Great" = "分享的内容将会保存到“每日精彩”";
 "Tap1_Album_Share_NotInstalledTips" = "未安装“%@”，请安装后重试";
 "Tap1_Shared_Title" = "来自加菲狗720°相机分享";
 "Tap1_Shared_Title_zhognxing" = "来自720°全景相机分享";
@@ -906,3 +911,20 @@ Created by cylan language tool  on Fri Apr 07 10:09:07 CST 2017.
 "Loaded" = "已全部加载完毕";
 "Microphone" = "麦克风";
 "Tap3_FriendsAdd_AlreadyFriend" = "%@ 已经是你的好友";
+"Choose_Album" = "选择相册";
+"Mail_Class_Application" = "请选择邮件类应用";
+"Tap1_Album_Empty" = "暂无照片或视频";
+"Feedback_Sending" = "发送中...";
+"Feedback_MessageFailed" = "消息发送失败";
+"Download_Then_Share" = "请先下载视频再分享";
+"Downloading" = "视频正在下载中";
+"Network_Description" = "网络说明";
+"Unconnect_Network" = "您的设备未连接移动网络，或Wi-Fi网络";
+"Wifi_Method" = "Wi-Fi网络请参照下面方法：";
+"Wifi_Hotspot" = "在设备的【设置>无线局域网】请选择一个Wi-Fi热点连接。";
+"Wifi_Set_Up" = "立即去设置";
+"Cellular_Data_Method" = "移动数据网络请参照下面方法：";
+"Cellular_Data_Set_Up" = "在设备的【设置>移动网络】中启用移动数据网络。";
+"No_Network_Connection" = "无网络连接，请先开启网络";
+"RuiShi_Guide" = "使用取卡针长按重置键3秒";
+"RuiShi_Name" = "IPCam";

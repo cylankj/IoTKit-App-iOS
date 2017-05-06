@@ -99,6 +99,11 @@
             self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"];
         }
     }
+    if (self.pType == productType_720) {
+        self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"_720PanoramicCamera"];
+    }else if (self.pType == productType_IPCam){
+        self.nameTextFiled.text = @"IPCam";
+    }
     
     // Do any additional setup after loading the view.
 }

@@ -40,6 +40,7 @@
 - (void)viewDidDisappear:(BOOL)animated
 {
     [self removeNotificationObserver];
+    [super viewDidDisappear:animated];
 }
 
 #pragma mark view

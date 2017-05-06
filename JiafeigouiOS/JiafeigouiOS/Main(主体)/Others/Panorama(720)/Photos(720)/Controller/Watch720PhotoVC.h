@@ -19,7 +19,9 @@ typedef NS_ENUM(NSInteger, MediaType) {
 
 @interface Watch720PhotoVC : BaseViewController
 
-@property (nonatomic, assign) MediaType mediaType;
+
+@property (nonatomic, assign) long long titleTime;
+@property (nonatomic, assign) MediaType panoMediaType;
 
 @property (nonatomic, copy) NSString *panoMediaPath;
 

@@ -76,13 +76,21 @@
   
     //加载通讯录
     [self loadPerson];
-    [JFGSDK addDelegate:self];
+    
     [self.contactTableView reloadData];
     
 }
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    
+    
+}
+
+-(void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [JFGSDK addDelegate:self];
     if (self.vcType == VCTypeShareDeviceFromAddrBook) {
         //获取设备已分享列表
         if (!self.deviceShareList.count) {
@@ -95,12 +103,12 @@
         //获取好友列表
         [JFGSDK getFriendList];
     }
-    
 }
+
 - (void)viewDidDisappear:(BOOL)animated
 {
     [super viewDidDisappear:animated];
-    //[JFGSDK removeDelegate:self];
+    [JFGSDK removeDelegate:self];
     
 }
 -(void)leftButtonAction:(UIButton *)btn
@@ -531,11 +539,33 @@
         JFGSDKFriendInfo * fInfo = [self.friendsArray objectAtIndex:i];
         for (int j = 0; j<self.contactArray.count; j++) {
             ContactModel * model2 = [self.contactArray objectAtIndex:j];
-            if ([fInfo.account isEqualToString: model2.phoneNum]) {
+            
+            NSString *str1 = [CommonMethod formatPhoneNum:fInfo.account];
+            str1 = [str1 stringByReplacingOccurrencesOfString:@"-" withString:@""];
+            
+            NSString *str2 = [CommonMethod formatPhoneNum:model2.phoneNum];
+            str2 = [str2 stringByReplacingOccurrencesOfString:@"-" withString:@""];
+            
+            if ([str2 isEqualToString:str1]) {
                 model2.isShared = YES;
             }
         }
+        for (int j=0; j<self.searchArray.count; j++) {
+            ContactModel * model2 = [self.searchArray objectAtIndex:j];
+            
+            NSString *str1 = [CommonMethod formatPhoneNum:fInfo.account];
+            str1 = [str1 stringByReplacingOccurrencesOfString:@"-" withString:@""];
+            
+            NSString *str2 = [CommonMethod formatPhoneNum:model2.phoneNum];
+            str2 = [str2 stringByReplacingOccurrencesOfString:@"-" withString:@""];
+            
+            if ([str2 isEqualToString:str1]) {
+                model2.isShared = YES;
+            }
+        }
+        
     }
+    [self.searchDisplayController.searchResultsTableView reloadData];
 }
 //判断当前账号是邮箱还是手机号
 - (BOOL)isPhone:(NSString *)str {

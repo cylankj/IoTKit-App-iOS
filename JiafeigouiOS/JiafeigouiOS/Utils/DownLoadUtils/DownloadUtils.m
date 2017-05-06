@@ -73,9 +73,15 @@ NSString *const eTagKey = @"Etag";
             [self keeEtagString];
         }
     } progress:^(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress) {
-        aProgress(receivedSize, expectedSize, progress);
+        if (aProgress)
+        {
+            aProgress(receivedSize, expectedSize, progress);
+        }
     } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
-        aCompletion(isSuccess, filePath, error);
+        if (aCompletion != nil)
+        {
+            aCompletion(isSuccess, filePath, error);
+        }
         
         if (isSuccess)
         {
@@ -85,6 +91,14 @@ NSString *const eTagKey = @"Etag";
     
 }
 
+- (BOOL)isDownloadFileCompleted:(NSString *)URLString
+{
+    if (URLString != nil)
+    {
+        return [[SRDownloadManager sharedManager] isDownloadFileCompleted:[NSURL URLWithString:URLString]];
+    }
+    return NO;
+}
 
 #pragma mark private
 

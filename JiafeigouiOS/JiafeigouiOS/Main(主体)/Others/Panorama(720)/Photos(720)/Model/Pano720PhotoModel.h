@@ -25,9 +25,17 @@ typedef NS_ENUM(NSInteger, DownLoadState)
 @interface Pano720PhotoModel : BaseModel
 
 @property (nonatomic, copy) NSString *fileName; // 文件名
-@property (nonatomic, assign) FileType fileType;     // 文件类型
-@property (nonatomic, copy) NSString *MD5;
+
+@property (nonatomic, assign, readonly) FileType panoFileType;     // 文件类型
+
 @property (nonatomic, assign) int fileZise; // 总大小 字节
+
 @property (nonatomic, copy) NSString *filePath;
+@property (nonatomic, copy) NSString *imageShowedPath; // video's first picture path or image Path
+
 @property (nonatomic, assign) DownLoadState downLoadState;
+
+@property (nonatomic, assign) long long  fileTime;
+@property (nonatomic, copy, readonly) NSString *videoDurationStr;
+@property (nonatomic, copy) NSString *headerString;
 @end

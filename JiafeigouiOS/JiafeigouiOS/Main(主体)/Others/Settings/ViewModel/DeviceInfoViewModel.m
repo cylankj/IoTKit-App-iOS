@@ -69,6 +69,17 @@
     return _model;
 }
 
+- (BOOL)isClearingSDCard
+{
+    return self.model.isClearingSDCard;
+}
+
+// clear sdcard overtime
+- (void)clearSDCardOverTime
+{
+    self.model.isClearingSDCard = NO;
+}
+
 -(void)initModel:(NSMutableDictionary *)dict
 {
     self.model.cid = self.cid;
@@ -237,6 +248,9 @@
                     [self.groupArray addObjectsFromArray:[self mobileDeviceInfos]];
                 }
                     break;
+                case productType_IPCam:
+                case productType_RS_180:
+                case productType_RS_120:
                 case productType_WIFI:{
                     [self.groupArray addObjectsFromArray:[self wifiDevicesInfos]];
                 }
@@ -1108,6 +1122,8 @@
 
 - (void)clearSDCard
 {
+    int sdcardClearDuration = 120.0f;
+    
     if (self.netWorkState == JFGNetTypeOffline)
     {
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"OFFLINE_ERR_1"]];
@@ -1117,8 +1133,10 @@
     seg.msgId = dpMsgBase_FormatSD;
     seg.version = 0;
     [ProgressHUD shared].timeOutTip = [JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips5"];
-    [ProgressHUD showProgress:[JfgLanguage getLanTextStrByKey:@"SD_INFO_2"] lastingTime:120.0f];
+    [ProgressHUD showProgress:[JfgLanguage getLanTextStrByKey:@"SD_INFO_2"] lastingTime:sdcardClearDuration];
     
+    self.model.isClearingSDCard = YES;
+    [self performSelector:@selector(clearSDCardOverTime) withObject:nil afterDelay:sdcardClearDuration];
     
     [[JFGSDKDataPoint sharedClient] robotSetDataWithPeer:self.cid dps:@[seg] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
         
@@ -1176,7 +1194,7 @@
                                         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
                                     }
                                 }
-                                
+                                self.model.isClearingSDCard = NO;
                                 [self update];
                             }
                         }

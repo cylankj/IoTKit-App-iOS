@@ -25,6 +25,7 @@
 @property (nonatomic, assign) BOOL isSDCardExist;
 @property (nonatomic, assign) int sdCardError;
 @property (nonatomic, copy) NSString *SDCardInfo;       //SDCard 是否存在，报错等 信息
+@property (nonatomic, assign) BOOL isClearingSDCard; // is clearing sdCard now ?
 
 @property (nonatomic, assign) long long totalSpace;     //总容量
 @property (nonatomic, assign) long long usedSpace;      //已使用 容量

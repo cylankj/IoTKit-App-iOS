@@ -36,6 +36,8 @@ typedef void (^downLoadFile)(DownLoadModel *dlModel);
                progress:(void(^)(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress))aProgress
              completion:(void(^)(BOOL isSuccess, NSString *filePath, NSError *error))aCompletion;
 
+- (BOOL)isDownloadFileCompleted:(NSString *)URLString;
+
 @end
 
 

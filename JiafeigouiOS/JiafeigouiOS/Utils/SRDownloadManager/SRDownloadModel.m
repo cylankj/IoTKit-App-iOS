@@ -18,7 +18,7 @@
 
 - (void)closeOutputStream {
     
-    if (_outputStream) {
+    if (_outputStream != nil) {
         [_outputStream close];
         _outputStream = nil;
     }

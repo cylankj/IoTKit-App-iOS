@@ -42,6 +42,7 @@
 #import "CommonMethod.h"
 #import "JfgCacheManager.h"
 #import "JfgUserDefaultKey.h"
+#import "JfgTimeFormat.h"
 #import "LoginManager.h"
 #import "JFGBoundDevicesMsg.h"
 
@@ -97,14 +98,6 @@
     }else{
         self.bellTableView.tableModelArray= [NSMutableArray new];
     }
-    
-
-    [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgBase_Battery)] withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic)
-     {
-
-     } FailBlock:^(RobotDataRequestErrorType error){
-         
-     }];
 }
 
 -(void)viewWillAppear:(BOOL)animated
@@ -147,6 +140,7 @@
     
     [[NSNotificationCenter defaultCenter] postNotificationName:@"JFGClearUnReadCount" object:self.cid];
     
+    [self checkDoorBattery];
     
 }
 
@@ -361,6 +355,46 @@
         [self.refreshView scrollViewDidEndDrag:scrollView];
     }
 }
+
+- (void)checkDoorBattery
+{
+    if (self.isShare)
+    {
+        return;
+    }
+    
+    if (self.state == BellStateOnline)
+    {
+        [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgBase_Battery)] withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic)
+         {
+             NSUserDefaults *stdDefault = [NSUserDefaults standardUserDefaults];
+             double showedTime = [[stdDefault objectForKey:areadyShowLowBatteryView(self.cid)] doubleValue];
+             BOOL isToday = [JfgTimeFormat isToday:showedTime];
+             int battery = [[dic objectForKey:msgBaseBatteryKey] intValue];
+             
+             [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cid[%@]'s battery %d  isToday [%d]",self.cid, battery, isToday]];
+             
+             if (!isToday)
+             {
+                 if (battery < 20)
+                 {
+                     [JFGPicAlertView showAlertWithImage:[UIImage imageNamed:@"doorbell_lowpower"] Title:[JfgLanguage getLanTextStrByKey:@"DOOR_LOWBETTERY"] Message:[JfgLanguage getLanTextStrByKey:@"DOOR_BETTERYMESG"] cofirmButtonTitle:[JfgLanguage getLanTextStrByKey:@"SURE"] didDismissBlock:^{
+                         
+                     }];
+                     
+                     [stdDefault setObject:@([[NSDate date] timeIntervalSince1970]) forKey:areadyShowLowBatteryView(self.cid)];
+                 }
+             }
+             
+             [stdDefault synchronize];
+         } FailBlock:^(RobotDataRequestErrorType error){
+             
+         }];
+    }
+    
+    
+}
+
 #pragma mark - JFGSDK
 
 
@@ -489,59 +523,6 @@
             [self.navigationController popToRootViewControllerAnimated:YES];
             
         } otherDelegate:nil];
-        
-    }
-}
-
-
-- (void)jfgRobotSyncDataForPeer:(NSString *)peer fromDev:(BOOL)isDev msgList:(NSArray<DataPointSeg *> *)msgList
-{
-    @try {
-        if ([peer isEqualToString:self.cid] && self.navigationController.visibleViewController == self)
-        {
-            for (DataPointSeg *seg in msgList)
-            {
-                NSError *error = nil;
-                id obj = [MPMessagePackReader readData:seg.value error:&error];
-                if (error == nil)
-                {
-                    switch (seg.msgId)
-                    {
-                        case dpMsgBase_Battery:
-                        {
-                            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cid[%@]'s battery %@",self.cid, obj]];
-                            NSUserDefaults *stdDefault = [NSUserDefaults standardUserDefaults];
-                            BOOL isAreadyShow = [stdDefault boolForKey:areadyShowLowBatteryView(self.cid)];
-                            int battery = [obj intValue];
-                            
-                            if (battery < 20 && !isAreadyShow)
-                            {
-                                [JFGPicAlertView showAlertWithImage:[UIImage imageNamed:@"doorbell_lowpower"] Title:[JfgLanguage getLanTextStrByKey:@"DOOR_LOWBETTERY"] Message:[JfgLanguage getLanTextStrByKey:@"DOOR_BETTERYMESG"] cofirmButtonTitle:[JfgLanguage getLanTextStrByKey:@"SURE"] didDismissBlock:^{
-                                    
-                                }];
-                                
-                                [stdDefault setBool:YES forKey:areadyShowLowBatteryView(self.cid)];
-                            }
-                            else
-                            {
-                                if (battery > 20)
-                                {
-                                    [stdDefault setBool:NO forKey:areadyShowLowBatteryView(self.cid)];
-                                }
-                                
-                            }
-                            [stdDefault synchronize];
-                        }
-                            break;
-                    }
-                }
-            }
-        }
-        
-        
-    } @catch (NSException *exception) {
-        
-    } @finally {
         
     }
 }
@@ -710,19 +691,19 @@
         if (timesp > model.timestamp) {
             cell.bell.redDot.hidden = YES;
         }else{
-            if (!cell.bell.isAnswered) {
-                cell.bell.redDot.hidden = NO;
-            }else{
+            if (cell.bell.isAnswered) {
                 cell.bell.redDot.hidden = YES;
+            }else{
+                cell.bell.redDot.hidden = NO;
             }
         }
         
     }else{
         
-        if (!cell.bell.isAnswered) {
-            cell.bell.redDot.hidden = NO;
-        }else{
+        if (cell.bell.isAnswered) {
             cell.bell.redDot.hidden = YES;
+        }else{
+            cell.bell.redDot.hidden = NO;
         }
         
     }

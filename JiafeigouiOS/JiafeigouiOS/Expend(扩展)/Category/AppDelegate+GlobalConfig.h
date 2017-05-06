@@ -2,7 +2,7 @@
 //  AppDelegate+GlobalConfig.h
 //  JiafeigouiOS
 //
-//  Created by 杨利 on 16/6/1.
+//  Created by yangli on 16/6/1.
 //  Copyright © 2016年 lirenguang. All rights reserved.
 //
 

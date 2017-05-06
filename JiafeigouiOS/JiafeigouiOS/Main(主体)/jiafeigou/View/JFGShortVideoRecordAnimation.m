@@ -57,6 +57,9 @@
 {
     timerCount --;
     [UIView animateWithDuration:0.2 animations:^{
+        if (animationView.width == 0) {
+            return ;
+        }
         animationView.width = cutWidth * timerCount;
         animationView.x = self.width * 0.5;
     }];

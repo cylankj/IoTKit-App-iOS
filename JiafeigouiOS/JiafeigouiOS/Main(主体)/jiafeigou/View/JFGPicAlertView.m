@@ -28,7 +28,10 @@ void (^dismissBlock) (void) = nil;
 @implementation JFGPicAlertView
 
 -(instancetype)initWithFrame:(CGRect)frame WithImage:(UIImage *)image Title:(NSString *)title Message:(NSString *)msg cofirmButtonTitle:(NSString *)btnTitle{
-    if ([super initWithFrame:frame]) {
+    
+    self = [super initWithFrame:frame];
+    
+    if (self) {
 
         [self setBackgroundColor:[UIColor clearColor]];
         [self.layer setCornerRadius:15];

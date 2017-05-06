@@ -13,7 +13,7 @@
 #import "JfgConfig.h"
 #import "NetworkMonitor.h"
 #import "FLShareSDKHelper.h"
-#import <Bugrpt/NTESCrashReporter.h>
+#import <Bugly/Bugly.h>
 #import "JfgConfig.h"
 #import "SDWebImageManager.h"
 #import "ProgressHUD.h"
@@ -199,7 +199,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
                 break;
         }
         [JFGSDK openLoginWithOpenId:user.linkId accessToken:accessToken cerType:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"certType"] loginType:tp];
-        [[NTESCrashReporter sharedInstance] setUserId:user.linkId];
+        [Bugly setUserValue:user.linkId forKey:@"account"];
         self.loginStatus = JFGSDKCurrentLoginStatusSuccess;
         
         
@@ -371,7 +371,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
         currentLoginStatu = YES;
         [self setLoginStatu:YES];
         [self loginSuccessRespone];
-        [[NTESCrashReporter sharedInstance] setUserId:currentAccount];
+        [Bugly setUserValue:currentAccount forKey:@"account"];
         [JFGSDK checkClientVersion];
     
     }else{
@@ -429,7 +429,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     [self setLoginStatu:online];
     if (online == NO)
     {
-        currentAccount = nil;
+
         if (self.loginStatus != JFGSDKCurrentLoginStatusLoginOut) {
             self.loginStatus = JFGSDKCurrentLoginStatusLoginFailed;
         }

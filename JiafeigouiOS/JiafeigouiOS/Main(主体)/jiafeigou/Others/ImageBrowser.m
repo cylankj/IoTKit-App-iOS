@@ -688,10 +688,7 @@
         
     }
     
-    JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
-    NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,self.cid,_fileNam];
-    NSLog(@"wonderFilePath:%@",wonderFilePath);
-    [JFGSDK copyCloudFile:cloudFilePath toWonderPath:wonderFilePath requestId:1111];
+   
     
     //set 602
     NSMutableArray *list = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
@@ -721,6 +718,11 @@
             NSLog(@"ret:%d",seg.ret);
             
             if (seg.ret == 0) {
+                
+                JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
+                NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,self.cid,_fileNam];
+                NSLog(@"wonderFilePath:%@",wonderFilePath);
+                [JFGSDK copyCloudFile:cloudFilePath toWonderPath:wonderFilePath requestId:1111];
                 
                 [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"Tap3_FriendsAdd_Success"]];
                 self.collectButton.selected = YES;

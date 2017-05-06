@@ -9,6 +9,7 @@
 #import "YBPopupMenu.h"
 #import "UIView+FLExtensionForFrame.h"
 #import "UIColor+HexColor.h"
+#import "JfgGlobal.h"
 
 #define kScreenWidth [UIScreen mainScreen].bounds.size.width
 #define kScreenHeight [UIScreen mainScreen].bounds.size.height
@@ -19,9 +20,17 @@
 #pragma mark - /////////////
 #pragma mark - private cell
 
+#define rowHeight 53
+
 @interface YBPopupMenuCell : UITableViewCell
 @property (nonatomic, assign) BOOL isShowSeparator;
 @property (nonatomic, strong) UIColor * separatorColor;
+
+@property (nonatomic, strong) UIImageView *iconImgeView;
+@property (nonatomic, strong) UIButton *iconTitleButton;
+@property (nonatomic, strong) UILabel *iconTitleLabel;
+
+@property (nonatomic, assign) BOOL canClicked;
 @end
 
 @implementation YBPopupMenuCell
@@ -32,6 +41,17 @@
     if (self) {
         _isShowSeparator = YES;
         _separatorColor = [UIColor colorWithHexString:@"#e1e1e1"];
+        [self addSubview:self.iconImgeView];
+        [self.iconImgeView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(self.mas_left).with.offset(25.0f);
+            make.centerY.equalTo(self);
+        }];
+        [self addSubview:self.iconTitleLabel];
+        [self.iconTitleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(self.iconImgeView.mas_right).with.offset(15.0f);
+            make.centerY.equalTo(self);
+        }];
+        
         [self setNeedsDisplay];
     }
     return self;
@@ -49,6 +69,23 @@
     [self setNeedsDisplay];
 }
 
+
+- (void)setHighlighted:(BOOL)highlighted animated:(BOOL)animated
+{
+    [super setHighlighted:highlighted animated:animated];
+    
+    self.iconTitleLabel.textColor = [UIColor colorWithHexString:highlighted?@"#4b9fd5":@"#666666"];
+}
+
+- (void)setCanClicked:(BOOL)canClicked
+{
+    _canClicked = canClicked;
+    
+    self.userInteractionEnabled = _canClicked;
+    self.iconImgeView.alpha = _canClicked?1.0:0.6f;
+    self.iconTitleLabel.alpha = _canClicked?1.0:0.6f;
+}
+
 - (void)drawRect:(CGRect)rect
 {
     if (!_isShowSeparator) return;
@@ -56,6 +93,28 @@
     [_separatorColor setFill];
     [bezierPath fillWithBlendMode:kCGBlendModeNormal alpha:1];
     [bezierPath closePath];
+}
+
+- (UIImageView *)iconImgeView
+{
+    if (_iconImgeView == nil)
+    {
+        _iconImgeView = [[UIImageView alloc] init];
+    }
+    return _iconImgeView;
+}
+
+- (UILabel *)iconTitleLabel
+{
+    if (_iconTitleLabel == nil)
+    {
+        _iconTitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(self.iconImgeView.right + 15, (rowHeight-16.0)*0.5, kScreenWidth, 16.0f)];
+        _iconTitleLabel.textAlignment = NSTextAlignmentLeft;
+        _iconTitleLabel.textColor = [UIColor colorWithHexString:@"#666666"];
+        _iconTitleLabel.font = [UIFont systemFontOfSize:16.0f];
+    }
+    
+    return _iconTitleLabel;
 }
 
 @end
@@ -225,26 +284,52 @@ UITableViewDataSource
         cell = [[YBPopupMenuCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:identifier];
     }
     cell.backgroundColor = [UIColor clearColor];
-    cell.textLabel.textColor = _textColor;
-    cell.textLabel.font = [UIFont systemFontOfSize:_fontSize];
-    cell.textLabel.text = _titles[indexPath.row];
+    cell.iconTitleLabel.textColor = _textColor;
+    cell.iconTitleLabel.font = [UIFont systemFontOfSize:_fontSize];
+    cell.iconTitleLabel.text = _titles[indexPath.row];
     cell.separatorColor = _separatorColor;
+    
+    if (self.isDisconnectted)
+    {
+        switch (indexPath.row)
+        {
+            case 0:
+            {
+                cell.canClicked = NO;
+            }
+                break;
+            case 1:
+            {
+                cell.canClicked = NO;
+            }
+                break;
+            default:
+            {
+                cell.canClicked = YES;
+            }
+                break;
+        }
+    }
+    else
+    {
+        cell.canClicked = YES;
+    }
     
     if (_icons.count >= indexPath.row + 1)
     {
         if ([_icons[indexPath.row] isKindOfClass:[NSString class]])
         {
-            cell.imageView.image = [UIImage imageNamed:_icons[indexPath.row]];
+            cell.iconImgeView.image = [UIImage imageNamed:_icons[indexPath.row]];
         }else if ([_icons[indexPath.row] isKindOfClass:[UIImage class]])
         {
-            cell.imageView.image = _icons[indexPath.row];
+            cell.iconImgeView.image = _icons[indexPath.row];
         }
         else
         {
-            cell.imageView.image = nil;
+            cell.iconImgeView.image = nil;
         }
     }else {
-        cell.imageView.image = nil;
+        cell.iconImgeView.image = nil;
     }
     return cell;
 }
@@ -252,6 +337,7 @@ UITableViewDataSource
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    
     if (_dismissOnSelected) [self dismiss];
     
     if (self.delegate && [self.delegate respondsToSelector:@selector(ybPopupMenuDidSelectedAtIndex:ybPopupMenu:)]) {
@@ -259,6 +345,7 @@ UITableViewDataSource
         [self.delegate ybPopupMenuDidSelectedAtIndex:indexPath.row ybPopupMenu:self];
     }
 }
+
 
 #pragma mark - scrollViewDelegate
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
@@ -317,6 +404,12 @@ UITableViewDataSource
 - (void)setTextColor:(UIColor *)textColor
 {
     _textColor = textColor;
+    [_contentView reloadData];
+}
+
+- (void)setIsDisconnectted:(BOOL)isDisconnectted
+{
+    _isDisconnectted = isDisconnectted;
     [_contentView reloadData];
 }
 

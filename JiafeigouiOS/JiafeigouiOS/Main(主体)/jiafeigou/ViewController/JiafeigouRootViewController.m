@@ -38,6 +38,9 @@
 #import "JFGBoundDevicesMsg.h"
 #import "LSChatModel.h"
 #import "LSBookManager.h"
+#import "LSChatDataManager.h"
+#import "JFGLogUploadManager.h"
+#import "ShareVideoViewController.h"
 
 @interface JiafeigouRootViewController ()<TimeChangeMonitorDelegate,LoginManagerDelegate,JFGSDKCallbackDelegate>
 {
@@ -67,13 +70,7 @@
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor whiteColor];
     self.automaticallyAdjustsScrollViewInsets = NO;
-    
-    NSString *titleName;
-    if ([JfgLanguage languageType] == 0) {
-        titleName = @"加菲狗";
-    }else{
-        titleName = @"Clever Dog";
-    }
+
     self.navigationItem.title = [JfgLanguage getLanTextStrByKey:@"Tap1_TitleName"];
     
     //添加这个页面数据需要的代理
@@ -106,9 +103,9 @@
     {
         [ApnsManger registerRemoteNotification:NO];
     }
-    
-    
 }
+
+
 
 -(void)orientationChanged:(NSNotification *)notification
 {
@@ -129,6 +126,8 @@
     
     NSString *devName = [NSString stringWithUTF8String:object_getClassName(self)];
     NSLog(@"vcName:%@",devName);
+    [JFGSDK refreshDeviceList];
+    [super viewDidAppear:animated];
 }
 
 -(void)viewDidDisappear:(BOOL)animated
@@ -136,6 +135,7 @@
     //关闭波浪滚动
     [self._tableView stopRipple];
     [[NSNotificationCenter defaultCenter]removeObserver:self name:UIDeviceOrientationDidChangeNotification object:[UIDevice currentDevice]];
+    [super viewDidDisappear:animated];
 }
 
 
@@ -436,32 +436,27 @@
 
 //未读的回复消息
 -(void)jfgFeedBackWithInfoList:(NSArray <JFGSDKFeedBackInfo *> *)infoList errorType:(JFGErrorType)errorType {
+    
     //NSLog(@"回复未读的消息列表打印：%@,错误信息：%d",infoList,errorType);
     NSDateFormatter *matter =[[NSDateFormatter alloc] init];
     [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
-    NSDictionary *msgDic = nil;
+    
     for (JFGSDKFeedBackInfo * info in infoList) {
         
-        msgDic =@{ @"msg"          :   info.msg,
-                   @"msgDate"      :   [matter stringFromDate:[NSDate dateWithTimeIntervalSince1970:info.timestamp]],
-                   @"lastMsgDate"  :   [matter stringFromDate:[NSDate dateWithTimeIntervalSince1970:info.timestamp]],
-                   @"modelType"    :   @0
-                   };
+        LSChatModel *lastModel =[[LSChatDataManager shareChatDataManager].chatModelList lastObject];
+        LSChatModel *aModel =[LSChatModel new];
         
+        aModel.msg = info.msg;
+        aModel.msgDate = [matter stringFromDate:[NSDate dateWithTimeIntervalSince1970:info.timestamp]];
+        aModel.timestamp = info.timestamp;
+        aModel.lastMsgDate = lastModel.msgDate;
+        aModel.modelType = LSModelTypeOther;
+        aModel.sendStatue = LSSendStatueSuccess;
         
-        LSChatModel *aModel =[LSChatModel creatModel:msgDic];
-        
-
-        
-        NSMutableDictionary *writeDic =(NSMutableDictionary *)[aModel dictionaryWithValuesForKeys:@[@"msg",
-                                                                                                    @"msgDate",
-                                                                                                    @"lastMsgDate",
-                                                                                                    @"modelType",
-                                                                                                    @"cellHeight",
-                                                                                                    @"enableDateLabel"]];
-        [[LSBookManager sharedManager] writePlist:writeDic];
-        
+        [[LSChatDataManager shareChatDataManager] addChatModel:aModel];
+    
     }
+
     
 }
 
@@ -476,7 +471,6 @@
 #pragma mark- action
 -(void)addBtnAction
 {
-    
     if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusLoginOut)
     {
         LoginRegisterViewController *loginRegister = [LoginRegisterViewController new];
@@ -490,6 +484,13 @@
     else
     {
         AddDeviceMainViewController *addDevice = [AddDeviceMainViewController new];
+//        ShareVideoViewController *addDevice = [ShareVideoViewController new];
+//        
+//        NSString *filePath = [[NSBundle mainBundle] pathForResource:@"1493969112_8" ofType:@"mp4"];
+//        addDevice.filePath = filePath;
+//        addDevice.cid = @"290000000031";
+//        addDevice.devAlias = @"720测试视频";
+        
 //        UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:addDevice];
 //        nav.navigationBarHidden = YES;
         addDevice.hidesBottomBarWhenPushed = YES;

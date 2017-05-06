@@ -49,6 +49,14 @@
     if (self.errorType == BindResultType_Success)
     {
         [self.navigationController popToRootViewControllerAnimated:YES];
+    }else if (self.errorType == 600){
+        for (UIViewController *temp in self.navigationController.viewControllers)
+        {
+            if ([temp isKindOfClass:[AddDeviceGuideViewController class]])
+            {
+                [self.navigationController popToViewController:temp animated:YES];
+            }
+        }
     }else{
         for (UIViewController *temp in self.navigationController.viewControllers)
         {

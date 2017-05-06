@@ -2,68 +2,40 @@
 //  Pano720PhotoViewModel.m
 //  JiafeigouiOS
 //
-//  Created by lirenguang on 2017/3/18.
+//  Created by lirenguang on 2017/4/22.
 //  Copyright © 2017年 lirenguang. All rights reserved.
 //
 
 #import "Pano720PhotoViewModel.h"
-#import "Pano720PhotoModel.h"
+#import "JfgHttp.h"
 #import "FileManager.h"
+#import "JfgTimeFormat.h"
+#import "DownloadUtils.h"
 #import <JFGSDK/JFGSDK.h>
-#import "JFGMsgForwardDataDownload.h"
-#import "FileManager.h"
-#import "JfgGlobal.h"
 
-@interface Pano720PhotoViewModel()<JFGSDKCallbackDelegate, Pano720SocketDelegate, JFGMsgForwardDataDownloadDelegate>
+@interface Pano720PhotoViewModel()<JFGSDKCallbackDelegate>
 
-@property (nonatomic, strong) NSMutableArray *groupArray;
-
-@property (nonatomic, assign) int beginTime;
-@property (nonatomic, assign) int entTime;
-@property (nonatomic, assign) int maxCount; //请求最多条数
-
-@property (nonatomic, strong) JFGMsgForwardDataDownload *panoDownLoad;
-
+@property (nonatomic, copy) NSString *urlString;
+@property (nonatomic, strong) DownloadUtils *downLoadMedia;
+@property (nonatomic, strong) DownloadUtils *downloadThumbNail;
+@property (nonatomic, strong) NSMutableArray *sections;
 @end
 
 @implementation Pano720PhotoViewModel
+NSString *const panoPhotoListKey = @"files";
 
-- (void)dealloc
-{
-    [JFGSDK removeDelegate:self];
-    [[Pano720Socket sharedSocket] removeDelegate:self];
-}
 
 - (instancetype)init
 {
-    self = [super init];
-    
-    if (self)
+    if (self = [super init])
     {
-        [JFGSDK addDelegate:self];
-        [[Pano720Socket sharedSocket] addDelegate:self];
+        
     }
     
     return self;
 }
 
-#pragma mark
-#pragma mark action
-// 根据 名字 获取 Model
-- (Pano720PhotoModel *)modelByFileName:(NSString *)fileName
-{
-    for (NSInteger i = 0; i < self.groupArray.count ; i ++)
-    {
-        Pano720PhotoModel *model = [self.groupArray objectAtIndex:i];
-        if ([fileName isEqualToString:model.fileName])
-        {
-            return model;
-        }
-    }
-    
-    return nil;
-}
-
+#pragma mark local or remoto data
 // 本地数据
 - (NSMutableArray *)localModels
 {
@@ -72,14 +44,20 @@
     NSArray *localArr = [[NSArray alloc] initWithArray:[[NSFileManager defaultManager] contentsOfDirectoryAtPath:[FileManager jfgPano720PhotoDirPath:self.cid] error:nil]];
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"local arr Data %@",localArr]];
     
-    for (int i = 0; i < localArr.count; i ++)
+    NSInteger limit = localArr.count>20?20:localArr.count; // limit 20
+    
+    for (int i = 0; i < limit; i ++)
     {
-        Pano720PhotoModel *localModel = [[Pano720PhotoModel alloc] init];
-        localModel.fileName = [localArr objectAtIndex:i];
-        localModel.filePath = [[FileManager jfgPano720PhotoDirPath:self.cid] stringByAppendingPathComponent:[localArr objectAtIndex:i]];
-        localModel.downLoadState = DownLoadStateFinished;
-        localModel.fileType = [[localArr objectAtIndex:i] hasSuffix:@"jpg"]?FileTypePhoto:FileTypeVideo;
-        [localModelArr addObject:localModel];
+        NSString *fileName = [localArr objectAtIndex:i];
+        if ([fileName hasSuffix:@".jpg"] || [fileName hasSuffix:@".mp4"])
+        {
+            Pano720PhotoModel *localModel = [[Pano720PhotoModel alloc] init];
+            localModel.fileName = [localArr objectAtIndex:i];
+            localModel.cid = self.cid;
+            localModel.downLoadState = DownLoadStateFinished;
+            [localModelArr addObject:localModel];
+        }
+        
     }
     
     return localModelArr;
@@ -101,8 +79,6 @@
             Pano720PhotoModel *remoteModel = (Pano720PhotoModel *)[remoteModels objectAtIndex:i];
             Pano720PhotoModel *localModel = (Pano720PhotoModel *)[localModels objectAtIndex:j];
             
-            JFGLog(@"localModel name:%@  remoteModel name:%@",localModel.fileName, remoteModel.fileName);
-            
             if ([localModel.fileName isEqualToString:remoteModel.fileName])
             {
                 [sameModelArr addObject:localModel];
@@ -114,43 +90,114 @@
     [unSortedArr addObjectsFromArray:localModels];
     [unSortedArr addObjectsFromArray:remoteModels];
     
-    // 排序
+    // 排序 数据处理 挑出时间
     
     return resultArr;
 }
 
-
-
-#pragma mark
-#pragma mark 私有 接口
-- (void)downLoadWithModel:(Pano720PhotoModel *)model
+- (NSMutableArray *)handleModelData:(NSArray *)dataArr
 {
-    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"download fileName %@",model.fileName]];
-    [self.panoDownLoad downloadMsgForwardDataForCid:self.cid fileName:model.fileName md5:model.MD5 fileSize:model.fileZise];
+    if (dataArr.count > 0)
+    {
+        NSMutableArray *resultArr = [NSMutableArray arrayWithCapacity:5];
+        NSMutableArray *sectionArr = [NSMutableArray arrayWithCapacity:5];
+        Pano720PhotoModel *model = [dataArr firstObject];
+        
+        NSString *aDay = [JfgTimeFormat transToyyyyMMddWithTime:model.fileTime];
+        model.headerString = aDay;
+        
+        for (NSInteger i = 0; i < dataArr.count; i ++)
+        {
+            Pano720PhotoModel *model = [dataArr objectAtIndex:i];
+            NSString *curDay = [JfgTimeFormat transToyyyyMMddWithTime:model.fileTime];
+            [sectionArr addObject:model];
+            
+            if (![aDay isEqualToString:curDay])
+            {
+                // is aready next model remove lastObject, then add to resultArr
+                [sectionArr removeLastObject];
+                NSArray *tempSectionArr = [NSArray arrayWithArray:sectionArr];
+                [resultArr addObject:tempSectionArr];
+                
+                [sectionArr removeAllObjects];
+                [sectionArr addObject:model];
+                
+                aDay = curDay;
+                model.headerString = curDay;
+            }
+        }
+        if (sectionArr.count > 0)
+        {
+            [resultArr addObject:sectionArr];
+        }
+        
+        return resultArr;
+    }
+    
+    return nil;
 }
 
+
 #pragma mark
-#pragma mark 公开 接口
-// 获取 照片列表
-- (void)getPhotoListBeginTime:(int)beginTime endTime:(int)endTime count:(int)count
+#pragma mark 删除
+// delete file
+- (void)deleteFileWithModels:(NSArray <Pano720PhotoModel *> *)models
+                 deleteModel:(DeleteModel)delModel
+                     success:(void (^)(NSURLSessionDataTask *task, id responseObject))success
+                     failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure
 {
-    switch (self.fileExistType) {
+    
+    switch (self.fileExistType)
+    {
         case FileExistTypeLocal:
         {
-            if (self.delegate != nil && [self.delegate respondsToSelector:@selector(unHandledPhotoList:)])
-            {
-                [self.delegate unHandledPhotoList:[self localModels]];
-            }
+            [self deleteLocalFileWithModels:models deleteModel:delModel success:^(NSURLSessionDataTask *task, id responseObject) {
+                if (success)
+                {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        success(task, responseObject);
+                    });
+                }
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                if (failure)
+                {
+                    failure(task, error);
+                }
+            }];
         }
             break;
         case FileExistTypeRemote:
+        {
+            [self deleteRemoteFileWithModels:models deleteModel:delModel success:^(NSURLSessionDataTask *task, id responseObject) {
+                if (success)
+                {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        success(task, responseObject);
+                    });
+                }
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                if (failure)
+                {
+                    failure(task, error);
+                }
+            }];
+        }
+            break;
         case FileExistTypeBoth:
         {
-            self.beginTime = beginTime;
-            self.entTime = endTime;
-            self.maxCount = count;
-            
-            [JFGSDK fping:@"255.255.255.255"];
+            [self deleteBothFileWithModels:models deleteModel:delModel success:^(NSURLSessionDataTask *task, id responseObject) {
+                if (success)
+                {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        success(task, responseObject);
+                    });
+                }
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                if (failure)
+                {
+                    failure(task, error);
+                }
+            }];
         }
             break;
         default:
@@ -158,150 +205,445 @@
     }
 }
 
-#pragma mark
-#pragma mark downLoad Delegate
-- (void)downloadFinishedForCid:(NSString *)cid fileName:(NSString *)fileName filePath:(NSString *)filePath
+//delete local file
+- (void)deleteLocalFileWithModels:(NSArray <Pano720PhotoModel *> *)models
+                      deleteModel:(DeleteModel)delModel
+                          success:(void (^)(NSURLSessionDataTask *task, id responseObject))success
+                          failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure
 {
-    if ([self.cid isEqualToString:cid])
+    switch (delModel)
     {
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"finished fileName  %@", filePath]];
-        Pano720PhotoModel *model = [self modelByFileName:fileName];
-        model.filePath = filePath;
-        model.downLoadState = DownLoadStateFinished;
-        
-        if (_delegate != nil && [_delegate respondsToSelector:@selector(updateDownloadedList:)])
+        case DeleteModel_Keep:
         {
-            [_delegate updateDownloadedList:self.groupArray];
+            
         }
-        
-        for (Pano720PhotoModel *model in self.groupArray)
+            break;
+        case DeleteModel_Delete:
         {
-            if (model.downLoadState == DownLoadStateWaitLoad)
+            // queue
+            dispatch_queue_t serialQueue = dispatch_queue_create("_delete720panoList", DISPATCH_QUEUE_SERIAL);
+            
+            for (int i = 0; i < models.count; i ++)
             {
-                model.downLoadState = DownLoadStateRunning;
-                [self downLoadWithModel:model];
+                dispatch_async(serialQueue, ^{
+                    
+                    Pano720PhotoModel *model = (Pano720PhotoModel *)[models objectAtIndex:i];
+                    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"delete Local File %@", model.fileName]];
+                    NSString *filePath = [[FileManager jfgPano720PhotoDirPath:self.cid] stringByAppendingPathComponent:model.fileName];
+                    
+                    if ([[NSFileManager defaultManager] fileExistsAtPath:filePath])
+                    {
+                        [[NSFileManager defaultManager] removeItemAtPath:filePath error:nil];
+                    }
+                    
+                });
                 
-                break;
+                if (i == models.count - 1)
+                {
+                    if (success)
+                    {
+                        success(nil,nil);
+                    }
+                }
             }
+            return;
+        }
+            break;
+        case DeleteModel_DeleteAll:
+        {
+            NSString *fileDirString = [FileManager jfgPano720PhotoDirPath:self.cid];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:fileDirString])
+            {
+                [[NSFileManager defaultManager] removeItemAtPath:fileDirString error:nil];
+            }
+        }
+            break;
+        default:
+            break;
+    }
+    
+    if (success)
+    {
+        success(nil,nil);
+    }
+}
+
+// 删除 设备文件
+- (void)deleteRemoteFileWithModels:(NSArray <Pano720PhotoModel *> *)models
+                       deleteModel:(DeleteModel)delModel
+                           success:(void (^)(NSURLSessionDataTask *task, id responseObject))success
+                           failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure
+{
+    switch (delModel)
+    {
+        case DeleteModel_Keep:
+        {
+        }
+            break;
+        case DeleteModel_DeleteAll:
+        {
+            NSString *URLString = [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=fileDelete&deltype=%ld",self.ipAddress,delModel];
+            
+            [[JfgHttp sharedHttp] get:URLString parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+                if (success)
+                {
+                    success(task, responseObject);
+                }
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                if (failure)
+                {
+                    failure(task, error);
+                }
+            }];
+        }
+            break;
+        case DeleteModel_Delete:
+        {
+            NSMutableString *fileNameStr = [NSMutableString string];
+            
+            for (Pano720PhotoModel *model in models)
+            {
+                [fileNameStr appendString:[NSString stringWithFormat:@"&filename=%@",model.fileName]];
+            }
+            
+            NSString *URLString = [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=fileDelete&deltype=%ld%@",self.ipAddress,delModel, fileNameStr];
+            
+            [[JfgHttp sharedHttp] get:URLString parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+                if (success)
+                {
+                    success(task, responseObject);
+                }
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                if (failure)
+                {
+                    failure(task, error);
+                }
+            }];
+        }
+            break;
+        default:
+            break;
+    }
+    
+    
+    
+}
+//delete both local and remote file
+- (void)deleteBothFileWithModels:(NSArray <Pano720PhotoModel *> *)models
+                     deleteModel:(DeleteModel)delModel
+                         success:(void (^)(NSURLSessionDataTask *task, id responseObject))success
+                         failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure
+{
+    [self deleteRemoteFileWithModels:models deleteModel:delModel success:^(NSURLSessionDataTask *task, id responseObject) {
+        [self deleteLocalFileWithModels:models deleteModel:delModel success:^(NSURLSessionDataTask *task, id responseObject) {
+            if (success)
+            {
+                success(task, responseObject);
+            }
+        } failure:nil];
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        
+    }];
+}
+
+
+#pragma mark download
+
+- (void)downloadFileWithModel:(Pano720PhotoModel *)model
+                        state:(void(^)(SRDownloadState state))aState
+                     progress:(void(^)(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress))aProgress
+                   completion:(void(^)(BOOL isSuccess, NSString *filePath, NSError *error))aCompletion
+{
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        NSString *desFilePath = [FileManager jfgPano720PhotoDirPath:self.cid];
+        NSString *urlString = [NSString stringWithFormat:@"http://%@/images/%@",self.ipAddress,model.fileName];
+        
+        [self.downLoadMedia downloadWithUrl:urlString toDirectory:desFilePath state:^(SRDownloadState state) {
+            if (aState)
+            {
+                aState(state);
+            }
+        } progress:^(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress) {
+            if (aProgress)
+            {
+                aProgress(receivedSize, expectedSize, progress);
+            }
+        } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
+            
+        }];
+        
+        
+        switch (model.panoFileType)
+        {
+            case FileTypePhoto:
+            {
+                
+            }
+                break;
+            case FileTypeVideo:
+            {
+                NSString *thumbnailName = [model.fileName stringByDeletingPathExtension];
+                
+                if (thumbnailName != nil && ![thumbnailName isEqualToString:@""])
+                {
+                    NSString *thumbnailsPath = [FileManager jfgPano720PhotoThumbnailsPath:self.cid];
+                    NSString *thumbNailsString = [NSString stringWithFormat:@"http://%@/thumb/%@",self.ipAddress,[NSString stringWithFormat:@"%@.thumb",[model.fileName stringByDeletingPathExtension]]];
+                    
+                    [self.downloadThumbNail downloadWithUrl:thumbNailsString toDirectory:thumbnailsPath state:^(SRDownloadState state) {
+                        if (aState)
+                        {
+                            aState(state);
+                        }
+                    } progress:^(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress) {
+                        if (aProgress)
+                        {
+                            aProgress(receivedSize, expectedSize, progress);
+                        }
+                    } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
+                        
+                    }];
+                }
+                
+                
+            }
+                break;
+            default:
+                break;
         }
         
+        
+        
+    });
+}
+
+#pragma mark request
+
+- (void)requestURL:(NSString *)urlString
+        parameters:(id)parameters
+          progress:(void (^)(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress))aProgress
+     downloadSuccess:(void (^)(Pano720PhotoModel *dlModel, int result))downloadTask
+           success:(void (^)(NSURLSessionDataTask *task, NSMutableArray <Pano720PhotoModel *> *models))success
+           failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure
+{
+    self.urlString = urlString;
+    NSMutableArray *models = [[NSMutableArray alloc] initWithCapacity:5];
+    
+    switch (self.fileExistType) {
+        case FileExistTypeLocal:
+        {
+            if (success)
+            {
+                [models addObjectsFromArray:[self handleModelData:[self localModels]]];
+                success(nil, models);
+            }
+        }
+            break;
+        case FileExistTypeRemote:
+        {
+            [[JfgHttp sharedHttp] get:self.urlString parameters:parameters progress:nil success:^(NSURLSessionDataTask *task, id responseObject){
+                if (responseObject != nil)
+                {
+                    NSArray *serverArr = [responseObject objectForKey:panoPhotoListKey];
+                    
+                    for (NSInteger i = 0; i < serverArr.count; i ++)
+                    {
+                        Pano720PhotoModel *model = [[Pano720PhotoModel alloc] init];
+                        model.cid = self.cid;
+                        model.fileName = [serverArr objectAtIndex:i];
+                        model.downLoadState = [self.downLoadMedia isDownloadFileCompleted:[NSString stringWithFormat:@"http://%@/images/%@",self.ipAddress,model.fileName]]?DownLoadStateFinished:DownLoadStateWaitLoad;
+                        [models addObject:model];
+                        
+                        if (model.downLoadState == DownLoadStateWaitLoad)
+                        {
+                            [self downloadFileWithModel:model state:^(SRDownloadState state) {
+                                switch (state)
+                                {
+                                    case SRDownloadStateFailed:
+                                        
+                                        break;
+                                    case SRDownloadStateCompleted:
+                                    {
+                                        model.downLoadState = DownLoadStateFinished;
+                                        if (downloadTask)
+                                        {
+                                            downloadTask(model, 0);
+                                        }
+                                        
+                                    }
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                
+                            } progress:^(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress) {
+                                if (aProgress)
+                                {
+                                    aProgress(receivedSize, expectedSize, progress);
+                                }
+                            } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
+                                
+                            }];
+                        }
+                    }
+                    
+                    if (success)
+                    {
+                        success(task, [self handleModelData:models]);
+                    }
+                }
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                if (failure)
+                {
+                    failure(task, error);
+                }
+            }];
+        }
+            break;
+        case FileExistTypeBoth:
+        {
+            [[JfgHttp sharedHttp] get:self.urlString parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject){
+                if (responseObject != nil)
+                {
+                    NSArray *datas = [responseObject objectForKey:panoPhotoListKey];
+                    
+                    for (NSInteger i = 0; i < datas.count; i ++)
+                    {
+                        Pano720PhotoModel *model = [[Pano720PhotoModel alloc] init];
+                        model.cid = self.cid;
+                        model.fileName = [datas objectAtIndex:i];
+                        model.downLoadState = [self.downLoadMedia isDownloadFileCompleted:[NSString stringWithFormat:@"http://%@/images/%@",self.ipAddress,model.fileName]]?DownLoadStateFinished:DownLoadStateWaitLoad;
+                        [models addObject:model];
+                        
+                        if (model.downLoadState == DownLoadStateWaitLoad)
+                        {
+                            [self downloadFileWithModel:model state:^(SRDownloadState state) {
+                                switch (state)
+                                {
+                                    case SRDownloadStateFailed:
+                                        
+                                        break;
+                                    case SRDownloadStateCompleted:
+                                    {
+                                        model.downLoadState = DownLoadStateFinished;
+                                        if (downloadTask)
+                                        {
+                                            downloadTask(model, 0);
+                                        }
+                                    }
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                
+                            } progress:^(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress) {
+                                if (aProgress)
+                                {
+                                    aProgress(receivedSize, expectedSize, progress);
+                                }
+                            } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
+                                
+                            }];
+                        }
+                    }
+                    
+                    if (success)
+                    {
+                        success(task, [self handleModelData:models]);
+                    }
+                }
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                if (failure)
+                {
+                    failure(task, error);
+                }
+            }];
+        }
+            break;
+        default:
+            break;
     }
 }
 
-#pragma mark
-#pragma mark socket Delegate
--(void)receivePanoDataMsgID:(NSString *)msgID sequence:(uint64_t)mSeq cid:(NSString *)cid reponseType:(int)reponseType msgContent:(id)msgContent
+- (void)getMoreLocalDataWithBeginTime:(long long)beginTime
+                                count:(int)count
+                              success:(void (^)(NSURLSessionDataTask *task, NSMutableArray <Pano720PhotoModel *> *models))success
+                              failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure
 {
-    if ([msgContent isKindOfClass:[NSArray class]])
+    NSMutableArray *localModelArr = [[NSMutableArray alloc] initWithCapacity:5];
+    
+    NSArray *localArr = [[NSArray alloc] initWithArray:[[NSFileManager defaultManager] contentsOfDirectoryAtPath:[FileManager jfgPano720PhotoDirPath:self.cid] error:nil]];
+    int limitCount = 0;
+    
+    for (int i = 0; i < localArr.count; i ++)
     {
-        if ([(NSArray *)msgContent count] > 0)
+        NSString *fileName = [localArr objectAtIndex:i];
+        
+        if ([fileName hasSuffix:@".jpg"] || [fileName hasSuffix:@".mp4"])
         {
-            switch (reponseType)
+            if (fileName.length >= 10)
             {
-                case JfgPanoMsgType_LIST_RSP:
+                long long modelTime = [[[localArr objectAtIndex:i] substringToIndex:10] longLongValue];
+                
+                if (beginTime < modelTime)
                 {
-                    NSArray *groupArr = [msgContent objectAtIndex:0];
+                    Pano720PhotoModel *localModel = [[Pano720PhotoModel alloc] init];
+                    localModel.fileName = [localArr objectAtIndex:i];
+                    localModel.cid = self.cid;
+                    localModel.downLoadState = DownLoadStateFinished;
+                    [localModelArr addObject:localModel];
+                    limitCount ++;
                     
-                    for (NSInteger i = 0; i < groupArr.count; i ++)
+                    if (limitCount == count)
                     {
-                        NSArray *rowArr = [groupArr objectAtIndex:i];
-                        
-                        Pano720PhotoModel *photoModel = [[Pano720PhotoModel alloc] init];
-                        photoModel.cid =  self.cid;
-                        photoModel.fileName = [rowArr objectAtIndex:0];
-                        photoModel.fileZise = [[rowArr objectAtIndex:1] intValue];
-                        photoModel.MD5 = [rowArr objectAtIndex:2];
-                        [self.groupArray addObject:photoModel];
+                        success(nil, [self handleModelData:localModelArr]);
+                        return;
                     }
-                    
-                    
-                    if (self.groupArray.count > 0)
-                    {
-                        Pano720PhotoModel *model = (Pano720PhotoModel *)[self.groupArray firstObject];
-                        [self downLoadWithModel:model];
-                    }
-                    
-                    switch (self.fileExistType)
-                    {
-                        case FileExistTypeBoth:
-                        {
-                            if (self.delegate && [self.delegate respondsToSelector:@selector(unHandledPhotoList:)])
-                            {
-                                [self.delegate unHandledPhotoList:[self remoteLocalModels:self.groupArray]];
-                            }
-                            
-                        }
-                            break;
-                        case FileExistTypeRemote:
-                        {
-                            if (self.delegate && [self.delegate respondsToSelector:@selector(unHandledPhotoList:)])
-                            {
-                                [self.delegate unHandledPhotoList:self.groupArray];
-                            }
-                        }
-                            break;
-                        default:
-                            break;
-                    }
-                    
                 }
-                    break;
-                    
-                default:
-                    break;
             }
-            
-            
         }
     }
-}
-
-- (void)downloadFailedForCid:(NSString *)cid fileName:(NSString *)fileName errorType:(JFGMsgFwDlFailedType)errorType
-{
     
-}
-
-- (void)panoConnectted
-{
-    [[Pano720Socket sharedSocket] sendMsgWithCids:@[self.cid] isCallBack:YES requestType:JfgPanoMsgType_LIST_REQ requestData:@[@(self.beginTime),@(self.entTime),@(self.maxCount)]];
-}
-
-- (void)panoDisconnectted
-{
-    
-}
-
-#pragma mark
-#pragma mark JFGSDK Delegate
-- (void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
-{
-    if ([self.cid isEqualToString:ask.cid])
+    if (limitCount < count) // less than count
     {
-        [[Pano720Socket sharedSocket] panoConnectIp:ask.address port:ask.port autoConnect:YES];
+        success(nil, [self handleModelData:localModelArr]);
     }
+    
 }
 
-
-#pragma mark
 #pragma mark getter
-- (NSMutableArray *)groupArray
+- (void)setFileExistType:(FileExistType)fileExistType
 {
-    if (_groupArray == nil)
-    {
-        _groupArray = [[NSMutableArray alloc] initWithCapacity:5];
-    }
-    return _groupArray;
+    _fileExistType = fileExistType;
 }
 
-- (JFGMsgForwardDataDownload *)panoDownLoad
+- (NSMutableArray *)sections
 {
-    if (_panoDownLoad == nil)
+    if (_sections == nil)
     {
-        _panoDownLoad = [[JFGMsgForwardDataDownload alloc] init];
-        _panoDownLoad.delegate = self;
+        _sections = [[NSMutableArray alloc] initWithCapacity:5];
+    }
+    return _sections;
+}
+
+- (DownloadUtils *)downLoadMedia
+{
+    if (_downLoadMedia == nil)
+    {
+        _downLoadMedia = [[DownloadUtils alloc] init];
+        _downLoadMedia.pType = self.pType;
     }
     
-    return _panoDownLoad;
+    return _downLoadMedia;
+}
+
+- (DownloadUtils *)downloadThumbNail
+{
+    if (_downloadThumbNail == nil)
+    {
+        _downloadThumbNail = [[DownloadUtils alloc] init];
+        _downloadThumbNail.pType = self.pType;
+    }
+    return _downloadThumbNail;
 }
 
 @end

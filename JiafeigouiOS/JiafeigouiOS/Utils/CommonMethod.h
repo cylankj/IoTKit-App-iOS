@@ -10,6 +10,7 @@
 #import <UIKit/UIKit.h>
 #import <AddressBook/AddressBook.h>
 #import <JFGSDK/JFGSDK.h>
+#import "JfgConfig.h"
 
 @interface CommonMethod : NSObject
 
@@ -38,7 +39,13 @@
 + (NSString *)currentConnecttedWifi;
 
 /**
- *  是否起了AP
+ *  是否 是wifi连接
+ *
+ */
++ (BOOL)isWifiConnectted;
+
+/**
+ *  是否 连接了 任意一个 ap
  *  使用场景： 绑定设备，目前你还不知道cid，需 传入 pid
  */
 + (BOOL)isConnecttedDeviceWifiWithPid:(int)productID;
@@ -133,6 +140,11 @@
  */
 +(NSString *)getCloudHeadImageForAccount:(NSString *)account;
 
+/*
+ *  部分720设备局域网请求链接
+ */
++(NSString *)urlForLANFor720DevWithReqType:(JFG720DevLANReqUrlType)type ipAdd:(NSString *)ipAdd;
+
 /**
  *  显示网络连接失败轻提示
  */
@@ -170,4 +182,8 @@
 + (BOOL)isPanoCameraWithType:(NSInteger)pType;
 
 +(NSString*)deviceType;// 需要#import "sys/utsname.h"
+
++(JFGDevBigType)devBigTypeForOS:(NSString *)os;
+
+
 @end

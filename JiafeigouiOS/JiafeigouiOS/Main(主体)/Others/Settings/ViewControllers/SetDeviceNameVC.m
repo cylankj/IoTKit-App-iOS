@@ -66,6 +66,7 @@
 {
     [ProgressHUD dismiss];
     [JFGSDK removeDelegate:self];
+    [super viewDidDisappear:animated];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -218,6 +219,14 @@ int maxLength = 12;
             
         }
     }
+    
+    if (self.deviceNameVCType == DeviceNameVCTypeSetHelloWorld) {
+        if (str.length>20) {
+            return  NO;
+            
+        }
+    }
+    
     return YES;
 }
 

@@ -102,6 +102,25 @@
     [self reloadData];
 }
 
+-(void)jfgDeviceShareList:(NSDictionary<NSString *,NSArray<JFGSDKFriendRequestInfo *> *> *)friendList
+{
+    for (NSString *key in friendList.allKeys) {
+        
+        JiafeigouDevStatuModel *model = [self.dataDict objectForKey:key];
+        if (model) {
+            NSArray *arr = friendList[key];
+            if (arr && arr.count>0) {
+                
+                if (model.shareState != DevShareStatuOther) {
+                    model.shareState = DevShareStatuAlready;
+                }
+            }
+        }
+        
+    }
+    [self reloadData];
+}
+
 -(void)loginOutAccount
 {
     [self.dataArray removeAllObjects];
@@ -288,7 +307,8 @@
         case JFGDeviceTypePanoramicCamera:
         {
             //720全景
-            if ([dev.pid isEqualToString:@"21"] || [dev.pid isEqualToString:@"1089"]) {
+            
+            if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
                 
                 cell.deviceImageView.image = [UIImage imageNamed:@"home_icon1_720camera"];
                 if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
@@ -313,16 +333,12 @@
         }
             break;
     }
-    
-    
-    
-    
+
+    //未读消息
     cell.devicemsgTimeLabel.text = dev.lastMsgTime;
     if (dev.unReadMsgCount !=0) {
         cell.unreadRedPoint.hidden = NO;
         if (dev.unReadMsgCount > 99) {
-            
-            
             
             if (dev.deviceType == JFGDeviceTypeDoorBell) {
                 cell.deviceMsgLabel.text = [NSString stringWithFormat:@"[99+]%@",[JfgLanguage getLanTextStrByKey:@"Tap1_Index_Tips_Newvisitor"]];
@@ -350,11 +366,20 @@
         }
         
         if (dev.shareState == DevShareStatuOther && dev.deviceType != JFGDeviceTypeDoorBell) {
+            cell.unreadRedPoint.hidden = YES;
+            cell.deviceMsgLabel.text = @"";
             cell.devicemsgTimeLabel.text = @"";
         }else{
             cell.devicemsgTimeLabel.text = dev.lastMsgTime;
         }
         
+        if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera){
+            cell.unreadRedPoint.hidden = YES;
+            cell.devicemsgTimeLabel.text = @"";
+            cell.deviceMsgLabel.text = @"";
+        }
+        
+
         
     }else{
         if (dev.shareState == DevShareStatuOther && dev.deviceType != JFGDeviceTypeDoorBell) {
@@ -364,27 +389,6 @@
         }
         cell.devicemsgTimeLabel.text = @"";
         cell.unreadRedPoint.hidden = YES;
-    }
-    
-    NSString *onText = [JfgLanguage getLanTextStrByKey:@"MAGNETISM_OFF"];
-    NSString *openText = [JfgLanguage getLanTextStrByKey:@"MAGNETISM_ON"];
-    
-    if (dev.deviceType == JFGDeviceTypeDoorSensor) {
-        if (dev.unReadMsgCount !=0) {
-            
-            if (dev.doorcOpen) {
-                cell.deviceMsgLabel.text = [NSString stringWithFormat:@"[%ld]%@",(long)dev.unReadMsgCount,openText];
-            }else{
-                cell.deviceMsgLabel.text = [NSString stringWithFormat:@"[%ld]%@",(long)dev.unReadMsgCount,onText];
-            }
-            
-        }else{
-            if (dev.doorcOpen) {
-                cell.deviceMsgLabel.text = openText;
-            }else{
-                cell.deviceMsgLabel.text = onText;
-            }
-        }
     }
     
     BOOL showShareIcon = NO;
@@ -401,7 +405,7 @@
         showShareIcon = YES;
     }
     
-    
+    //右侧图标
     if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
         cell.iconImage1.hidden = YES;
         cell.iconImage2.hidden = YES;
@@ -413,15 +417,23 @@
             cell.iconImage1.image = [UIImage imageNamed:@"ico_share_status"];
         }
         
-        if ([dev.pid isEqualToString:@"21"] || [dev.pid isEqualToString:@"1089"]){
+        if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera){
             // 720全景
             if ([CommonMethod isConnectedAPWithPid:productType_720 Cid:dev.uuid]) {
                 //ap模式
-                cell.deviceMsgLabel.text = @"户外模式";
+                cell.deviceMsgLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_OutdoorMode"];
+                
+                if (cell.iconImage1.hidden) {
+                    cell.iconImage1.hidden = NO;
+                    cell.iconImage1.image = [UIImage imageNamed:@"home_icon_ap"];
+                }else{
+                    cell.iconImage2.hidden = NO;
+                    cell.iconImage2.image = [UIImage imageNamed:@"home_icon_ap"];
+                }
+                
             }else{
-                //cell.deviceMsgLabel.text = @"";
+                cell.deviceMsgLabel.text = [JfgLanguage getLanTextStrByKey:@"OFF_LINE"];
             }
-            
             
         }
         
@@ -431,6 +443,7 @@
         cell.iconImage2.hidden = YES;
         cell.iconImage3.hidden = YES;
         cell.iconImage4.hidden = YES;
+        
         if (dev.netType == JFGNetTypeWifi) {
             cell.iconImage1.image = [UIImage imageNamed:@"ico_wifi_status"];
         }else if(dev.netType == JFGNetType2G){
@@ -439,16 +452,18 @@
             cell.iconImage1.image = [UIImage imageNamed:@"ico_3g"];
         }
         
-        
-        if (dev.shareState == DevShareStatuOther && dev.deviceType != JFGDeviceTypeDoorBell) {
-            
-            cell.unreadRedPoint.hidden = YES;
-            cell.deviceMsgLabel.text = @"";
-            cell.devicemsgTimeLabel.text = @"";
+        if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera){
+            // 720全景
+            if ([CommonMethod isConnectedAPWithPid:productType_720 Cid:dev.uuid]) {
+                //ap模式
+                cell.deviceMsgLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_OutdoorMode"];
+                cell.iconImage1.image = [UIImage imageNamed:@"home_icon_ap"];
+            }else{
+                cell.deviceMsgLabel.text =  [JfgLanguage getLanTextStrByKey:@"DEVICE_WIFI_ONLINE"];
+            }
             
         }
-            
-            
+        
         BOOL isLowBattery = NO;
         if (dev.deviceType == JFGDeviceTypeCamera3G) {
             if (dev.Battery < 50) {
@@ -462,7 +477,7 @@
             if (dev.Battery < 5) {
                 isLowBattery = YES;
             }
-        }else if ([dev.pid isEqualToString:@"17"]){
+        }else if ([dev.pid isEqualToString:@"17"] || [CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera){
             if (dev.Battery <= 20) {
                 isLowBattery = YES;
             }
@@ -479,6 +494,10 @@
                 if (dev.delayCamera) {//延时摄影开启中
                     cell.iconImage4.hidden = NO;
                     cell.iconImage4.image = [UIImage imageNamed:@"ico_photography_status"];
+                    if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
+                        cell.iconImage4.image = [UIImage imageNamed:@"home_icon_recording"];
+                    }
+
                 }
                 
             }else{
@@ -486,6 +505,9 @@
                 if (dev.delayCamera && dev.shareState != DevShareStatuOther) {//延时摄影开启中
                     cell.iconImage3.hidden = NO;
                     cell.iconImage3.image = [UIImage imageNamed:@"ico_photography_status"];
+                    if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
+                        cell.iconImage3.image = [UIImage imageNamed:@"home_icon_recording"];
+                    }
                     
                     if (showShareIcon) {//已分享
                         cell.iconImage4.hidden = NO;
@@ -528,6 +550,10 @@
                 if (dev.delayCamera) {//延时摄影开启中
                     cell.iconImage3.hidden = NO;
                     cell.iconImage3.image = [UIImage imageNamed:@"ico_photography_status"];
+                    if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
+                        cell.iconImage3.image = [UIImage imageNamed:@"home_icon_recording"];
+                    }
+
                     if (showShareIcon) {//已分享
                         cell.iconImage4.hidden = NO;
                         cell.iconImage4.image = [UIImage imageNamed:@"ico_share_status"];
@@ -567,6 +593,10 @@
                     
                     cell.iconImage2.hidden = NO;
                     cell.iconImage2.image = [UIImage imageNamed:@"ico_photography_status"];
+                    if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
+                        cell.iconImage2.image = [UIImage imageNamed:@"home_icon_recording"];
+                    }
+
                     if (showShareIcon) {
                         cell.iconImage3.hidden = NO;
                         cell.iconImage3.image = [UIImage imageNamed:@"ico_share_status"];
@@ -683,7 +713,7 @@
                 break;
             
             case JFGDeviceTypePanoramicCamera:{
-                if ([dev.pid isEqualToString:@"21"] || [dev.pid isEqualToString:@"1089"]) {
+                if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
                     
                     VideoPlayFor720ViewController *videoFor720 = [[VideoPlayFor720ViewController alloc]init];
                     videoFor720.devModel = dev;
@@ -874,10 +904,9 @@
 -(void)messageList
 {
     [JFGSDK appendStringToLogFile:@"messageList"];
-    
     NSMutableArray *cidList = [NSMutableArray new];
-    
     NSMutableDictionary *dpsDict = [[NSMutableDictionary alloc]init];
+    NSMutableArray *devFor720Arr = [NSMutableArray new];
    // NSMutableDictionary *dpCountDict = [NSMutableDictionary new];
     
     for (JiafeigouDevStatuModel *mode in self.dataArray) {
@@ -889,17 +918,26 @@
         
         NSMutableArray *msgIDArr = [[NSMutableArray alloc]initWithArray:@[[NSNumber numberWithInt:dpMsgCamera_isLive],[NSNumber numberWithInt:dpMsgBase_Battery],[NSNumber numberWithInt:dpMsgBase_Net],[NSNumber numberWithInt:dpMsgCamera_TimeLapse],[NSNumber numberWithInt:dpMsgCamera_WarnEnable]]];
         
+        //720设备只有两个属性需要获取
+        if ([CommonMethod devBigTypeForOS:mode.pid] == JFGDevBigTypeEyeCamera) {
+            msgIDArr = [[NSMutableArray alloc]initWithArray:@[[NSNumber numberWithInt:dpMsgBase_Battery],[NSNumber numberWithInt:dpMsgBase_Net]]];
+            [devFor720Arr addObject:mode];
+        }
+        
         //不是被分享设备，获取设备最新一条报警消息时间
         if (mode.deviceType == JFGDeviceTypeDoorBell) {
             
             [msgIDArr addObject:[NSNumber numberWithInt:dpMsgBell_callMsg]];
+            
+        }else{
+            
+            //720设备不获取
+            if (mode.shareState != DevShareStatuOther && [CommonMethod devBigTypeForOS:mode.pid] != JFGDevBigTypeEyeCamera){
+                [msgIDArr addObject:[NSNumber numberWithInt:dpMsgCamera_WarnMsg]];
+            }
         }
         
-        if (mode.shareState != DevShareStatuOther && mode.deviceType != JFGDeviceTypeDoorBell){
-            
-            [msgIDArr addObject:[NSNumber numberWithInt:dpMsgCamera_WarnMsg]];
-            
-        }
+        
         
         NSMutableArray *msgVerSegArr = [NSMutableArray new];
         for (NSNumber *msgID in msgIDArr) {
@@ -911,7 +949,7 @@
         
 #pragma mark- 报警与门铃呼叫未读消息数
         //被分享设备不显示报警消息
-        if (mode.shareState == DevShareStatuOther && mode.deviceType != JFGDeviceTypeDoorBell) {
+        if ((mode.shareState == DevShareStatuOther && mode.deviceType != JFGDeviceTypeDoorBell) || [CommonMethod devBigTypeForOS:mode.pid] == JFGDevBigTypeEyeCamera ) {
             
             mode.unReadMsgCount = 0;
             
@@ -927,9 +965,7 @@
                     seg.version = 0;
                     [msgVerSegArr addObject:seg];
                 }
-                
-                //[unReadMsgIDArr addObject:[NSNumber numberWithInt:401]];
-                //[unReadMsgIDArr addObject:[NSNumber numberWithInt:403]];
+
             }else{
                 
                 //2.0 ，3.0报警消息，sd卡拔插消息
@@ -939,11 +975,9 @@
                     seg.version = 0;
                     [msgVerSegArr addObject:seg];
                 }
-                //[unReadMsgIDArr addObject:[NSNumber numberWithInt:505]];
+                
             }
             
-            
-            //[dpCountDict setObject:unReadMsgIDArr forKey:mode.uuid];
         }
         
         [dpsDict setObject:msgVerSegArr forKey:mode.uuid];
@@ -993,7 +1027,7 @@
                         case dpMsgBase_Battery:{//电量
                             
                             
-                            if (model.deviceType == JFGDeviceTypeDoorBell || model.deviceType == JFGDeviceTypeCamera3G || [model.pid isEqualToString:@"21"] ||[model.pid isEqualToString:@"1089"] || [model.pid isEqualToString:@"17"]) {
+                            if (model.deviceType == JFGDeviceTypeDoorBell || model.deviceType == JFGDeviceTypeCamera3G || [CommonMethod devBigTypeForOS:model.pid] == JFGDevBigTypeEyeCamera || [model.pid isEqualToString:@"17"]) {
                                 id obj = [MPMessagePackReader readData:seg.value error:nil];
                                 if ([obj isKindOfClass:[NSNumber class]]) {
                                     model.Battery = [obj intValue];
@@ -1137,65 +1171,28 @@
         });
     }];
     
-    
-//    [[JFGSDKDataPoint sharedClient] robotCountMultiDataWithClear:NO dpIDDict:dpCountDict success:^(NSDictionary<NSString *,NSArray *> *rspDict) {
-//        
-//        for (NSString *identity in rspDict) {
-//            
-//            JiafeigouDevStatuModel *model = [self.dataDict objectForKey:identity];
-//            NSArray *dataList = rspDict[identity];
-//            if (model.deviceType == JFGDeviceTypeDoorBell) {
-//                
-//                if (dataList.count == 1) {
-//                    DataPointCountSeg *seg = dataList[0];
-//                    model.unReadMsgCount = seg.count;
-//                }else if(dataList.count == 2){
-//                    
-//                    DataPointCountSeg *seg = dataList[0];
-//                    DataPointCountSeg *seg1 = dataList[1];
-//                    if (seg.count > seg1.count) {
-//                        model.unReadMsgCount = seg.count;
-//                    }else{
-//                        model.unReadMsgCount = seg1.count;
-//                    }
-//                }
-//                if (model.unReadMsgCount < 0) {
-//                    model.unReadMsgCount  = 0;
-//                }
-//                
-//            }else{
-//                if (dataList.count>0) {
-//                    
-//                    DataPointCountSeg *seg = dataList[0];
-//                    model.unReadMsgCount = seg.count;
-//                    
-//                }
-//            }
-//        }
-//        
-//        dispatch_async(dispatch_get_main_queue(), ^{
-//            
-//            [self reloadData];
-//        });
-//        
-//    } failure:^(RobotDataRequestErrorType type) {
-//        
-//        dispatch_async(dispatch_get_main_queue(), ^{
-//            [self reloadData];
-//        });
-//        
-//    }];
-    
+    for (JiafeigouDevStatuModel *mode  in devFor720Arr) {
+        
+        if ([CommonMethod isConnectedAPWithPid:productType_720 Cid:mode.uuid]) {
+            
+            //192.168.10.255
+            
+        }else{
+            
+            
+        }
+        
+    }
     //获取已分享好友列表
     [JFGSDK getDeviceSharedListForCids:cidList];
     
-    int64_t delayInSeconds = 2.0;
-    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
-    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-        
-        [self reloadData];
-        
-    });
+//    int64_t delayInSeconds = 2.0;
+//    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+//    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+//        
+//        [self reloadData];
+//        
+//    });
     
     
 }

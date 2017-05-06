@@ -20,6 +20,5 @@
 @property (nonatomic, strong) UILabel *durationLabel;
 @property (nonatomic, strong) UILabel *progressLabel;
 
-//@property (nonatomic, strong) UILabel *timeLabel;
-//@property (nonatomic, strong) UIImageView *dotImgView;
+- (void)updateIconImageViewLayout;
 @end

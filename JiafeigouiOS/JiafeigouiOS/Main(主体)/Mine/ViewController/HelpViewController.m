@@ -24,10 +24,13 @@
 #import <ZipArchive/ZipArchive.h>
 #import "JfgConfig.h"
 #import "UIImageView+JFGImageView.h"
+#import "LSChatDataManager.h"
+#import "JFGLogUploadManager.h"
 
-@interface HelpViewController ()<UITableViewDataSource, UITableViewDelegate,JFGSDKCallbackDelegate,UITextFieldDelegate> {
+@interface HelpViewController ()<UITableViewDataSource, UITableViewDelegate,JFGSDKCallbackDelegate,UITextFieldDelegate,JFGLogUploadManagerDelegate> {
     BOOL needReport;//标记是否需要发送日志
     int64_t uploadLogTimestamp;
+    int64_t showAutoTimestamp;
 }
 @property(nonatomic, strong)UITableView * _tableView;
 @property(nonatomic, strong)NSMutableArray * chatArray;
@@ -39,18 +42,21 @@
 @end
 
 @implementation HelpViewController
-//[UIImage imageNamed:@"image_defaultHead"]
-- (void)viewDidLoad {
+
+
+- (void)viewDidLoad
+{
     [super viewDidLoad];
     needReport = YES;//每一次进这个页面表示全新的一次报告，需要发送日志
+    showAutoTimestamp = 0;
     self.view.backgroundColor = [UIColor colorWithHexString:@"#f0f0f0"];
+    [[JFGLogUploadManager shareLogUpload] addDelegate:self];
     self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"FEEDBACK"];
     [self.leftButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     [self.rightButton addTarget:self action:@selector(rightButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     self.rightButton.hidden = NO;
     [self setRightButtonImage:nil title:[JfgLanguage getLanTextStrByKey:@"Tap3_Feedback_Clear"] font:[UIFont systemFontOfSize:15]];
-    //self.chatModel = [[LSChatModel alloc]init];
-    //self.chatArray = [LSChatModel readModelArray];
+    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
     //[self getAccountHeadImage];
     [self.view addSubview:self._tableView];
@@ -79,28 +85,6 @@
 }
 
 
-#pragma mark- 上传日志
--(void)uploadLogFile
-{
-    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
-    NSString * path1 = [path stringByAppendingPathComponent:@"jfgworkdic"];
-    NSString *path2 = [path1 stringByAppendingPathComponent:@"smartCall_t.txt"];
-    NSString *path3 = [path1 stringByAppendingPathComponent:@"smartCall_w.txt"];
-    NSString *path4 = [path1 stringByAppendingPathComponent:@"userCall_t.txt"];
-    [SSZipArchive createZipFileAtPath:[path stringByAppendingPathComponent:@"jfgworkdic.zip"] withFilesAtPaths:@[path2,path3,path4]];
-    JFGSDKAcount *acc =[[LoginManager sharedManager] accountCache];
-    NSString *account = acc.account;
-    //company_vid  /log/[vid]/[account]
-    
-    [JFGSDK uploadFile:[path stringByAppendingPathComponent:@"jfgworkdic.zip"] toCloudFolderPath:[CommonMethod uplodUrlForLogWithAccount:account timestamp:uploadLogTimestamp]];
-    // 输入时候，顶部bar消失了
-}
-
--(void)jfgHttpResposeRet:(int)ret requestID:(int)requestID result:(NSString *)result
-{
-    
-}
-
 #pragma mark - UITableViewDatasource
 
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -116,10 +100,18 @@
     return cell;
 }
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
-//    LSChatModel * model = self.chatArray[indexPath.row];
-//    return model.cellHeight;
+    LSChatModel * model = self.chatArray[indexPath.row];
+    if (model.modelType == LSModelTypeMe) {
+        return [tableView fd_heightForCellWithIdentifier:@"talk" cacheByIndexPath:indexPath configuration:^(LSChatCell * cell) {
+            
+            cell.model = self.chatArray[indexPath.row];
+            
+        }] + 20 ;
+    }
     return [tableView fd_heightForCellWithIdentifier:@"talk" cacheByIndexPath:indexPath configuration:^(LSChatCell * cell) {
+        
         cell.model = self.chatArray[indexPath.row];
+        
     }];
 }
 #pragma mark 监听方法
@@ -182,39 +174,28 @@
     
     NSDateFormatter *matter =[[NSDateFormatter alloc] init];
     [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
-    NSDictionary *msgDic = nil;
+    
+    LSChatModel *aModel =[[LSChatModel alloc]init];
+    aModel.msgDate = [matter stringFromDate:[NSDate date]];
+    aModel.modelType = LSModelTypeOther;
+    aModel.timestamp = [[NSDate date] timeIntervalSince1970]+1;
+    aModel.sendStatue = LSSendStatueSuccess;
+    
     if (self.chatArray.count == 0) {
         //此时代表是初次进入此ye
-        msgDic =@{ @"msg"       :   [JfgLanguage getLanTextStrByKey:@"Tap3_Feedback_AutoTips"],
-                                    @"msgDate"      :   [matter stringFromDate:[NSDate date]],
-                                    @"lastMsgDate"  :   @"0",
-                                    @"modelType"    :   @0
-                                    };
-
+        aModel.lastMsgDate = @"0";
+        aModel.msg =  [JfgLanguage getLanTextStrByKey:@"Tap3_Feedback_AutoTips"];
+        showAutoTimestamp = 0;
     } else {
         LSChatModel *lastModel =[self.chatArray lastObject];
-        
-        NSDateFormatter *matter =[[NSDateFormatter alloc] init];
-        [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
-        
-        msgDic =@{ @"msg"       :   [JfgLanguage getLanTextStrByKey:@"Tap3_Feedback_AutoReply"],
-                                    @"msgDate"      :   [matter stringFromDate:[NSDate date]],
-                                    @"lastMsgDate"  :   lastModel.msgDate,
-                                    @"modelType"    :   @0
-                                    };
+        aModel.lastMsgDate = lastModel.msgDate;
+        aModel.msg = [JfgLanguage getLanTextStrByKey:@"Tap3_Feedback_AutoReply"];
+        showAutoTimestamp = [[NSDate date] timeIntervalSince1970];
     }
     
-    LSChatModel *aModel =[LSChatModel creatModel:msgDic];
-    
     [self.chatArray addObject:aModel];
+    [[LSChatDataManager shareChatDataManager] addChatModel:aModel];
     
-    NSMutableDictionary *writeDic =(NSMutableDictionary *)[aModel dictionaryWithValuesForKeys:@[@"msg",
-                                                                                                @"msgDate",
-                                                                                                @"lastMsgDate",
-                                                                                                @"modelType",
-                                                                                                @"cellHeight",
-                                                                                                @"enableDateLabel"]];
-    [[ LSBookManager sharedManager] writePlist:writeDic];
 //    CGPoint p =self._tableView.contentOffset;
 //    
 //    [self._tableView setContentOffset:CGPointMake(p.x, p.y +aModel.cellHeight +72) animated:YES];
@@ -232,21 +213,25 @@
         [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_Feedback_ClearTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_Feedback_Clear"] CancelBlock:^{
             
         } OKBlock:^{
-            [[LSBookManager sharedManager] deletePlist];
-            
+            [[LSChatDataManager shareChatDataManager] removeAllChatModel];
             [self._tableView scrollsToTop];
             [self.chatArray removeAllObjects];
             [self._tableView reloadData];
         }];
     }
 }
--(void)sendButtonAction:(UIButton *)sender{
+-(void)sendButtonAction:(UIButton *)sender
+{
+    if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+        [CommonMethod showNetDisconnectAlert];
+        return;
+    }
     if (self.inputTextF.text.length >= 10) {
         
         LSChatModel *lastModel;
         NSString * lastModelDate;
         //上一条自己发送的内容
-        LSChatModel * lastSelfModel = [self lastSelfModel];
+        //LSChatModel * lastSelfModel = [self lastSelfModel];
         
         NSDateFormatter *matter =[[NSDateFormatter alloc] init];
         [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
@@ -256,92 +241,131 @@
         } else {
             lastModel =[self.chatArray lastObject];
             lastModelDate = lastModel.msgDate;
-            
         }
-        NSDictionary *msgDic =@{    @"msg"          :   _inputTextF.text,
-                                    @"msgDate"      :   [matter stringFromDate:[NSDate date]],
-                                    @"lastMsgDate"  :   lastModelDate,
-                                    @"modelType"    :   @1
-                                };
-        
-        LSChatModel *aModel =[LSChatModel creatModel:msgDic];
-        [self.chatArray addObject:aModel];
-        
-        
-        
-        NSMutableDictionary *writeDic =(NSMutableDictionary *)[aModel dictionaryWithValuesForKeys:@[@"msg",
-                                                                      @"msgDate",
-                                                                      @"lastMsgDate",
-                                                                      @"modelType",
-                                                                      @"cellHeight",
-                                                                      @"enableDateLabel"]];
-        
-        [[LSBookManager sharedManager] writePlist:writeDic];
-        //发给服务器
         NSDate* dat = [NSDate dateWithTimeIntervalSinceNow:0];
         NSTimeInterval timestamp =[dat timeIntervalSince1970];
         uploadLogTimestamp = timestamp;
-        [JFGSDK sendFeedbackWithTimestamp:uploadLogTimestamp content:self.inputTextF.text hasSendLog:needReport];
+        
+        needReport = [[JFGLogUploadManager shareLogUpload] uploadLogFileForTimestamp:timestamp];
+        
+        LSChatModel *aModel =[LSChatModel new];
+        aModel.msg = _inputTextF.text;
+        aModel.msgDate = [matter stringFromDate:[NSDate date]];
+        aModel.lastMsgDate = lastModelDate;
+        aModel.modelType = LSModelTypeMe;
+        aModel.timestamp = timestamp;
+        aModel.sendStatue = LSSendStatueSending;
+        if (needReport) {
+            aModel.isUplog = YES;
+        }else{
+            aModel.isUplog = NO;
+        }
+        [self.chatArray addObject:aModel];
+        [[LSChatDataManager shareChatDataManager] addChatModel:aModel];
+        
+        //发给服务器
+        [JFGSDK sendFeedbackWithTimestamp:timestamp content:self.inputTextF.text hasSendLog:needReport];
         //移动表格17102
     
         [self._tableView reloadData];
         [self changeTableViewContentOffSetToBottom];
         //如果这一条的消息比最后一条我的消息大于五分钟，将发送自动回复
-        
-        
-        if ([[NSDate date] timeIntervalSince1970] - [[matter dateFromString:lastSelfModel.msgDate] timeIntervalSince1970] >= 300) {
-            [self autoAnswer];
-        }
-        //提交日志
-        if (needReport) {
-            [self uploadLogFile];
-            needReport = NO;//发送一次后，之后的对话无需再发送
-        }
         self.inputTextF.text = @"";
+        self.inputTextF.enabled = NO;
+        if (!needReport) {
+            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(sendOvertime) object:nil];
+            [self performSelector:@selector(sendOvertime) withObject:nil afterDelay:30];
+        }
         
     } else {
+        
         [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"Tap3_Feedback_TextFail"]];
+        
     }
 }
+
+-(void)sendOvertime
+{
+    self.inputTextF.enabled = YES;
+    LSChatModel * lastSelfModel = [self lastSelfModel];
+    lastSelfModel.sendStatue = LSSendStatueSending;
+    [[LSChatDataManager shareChatDataManager] replaceChatModel:lastSelfModel];
+}
+
 #pragma mark - JFGSDKCallBack
+-(void)jfgSendFeedBackResult:(JFGErrorType)errorType
+{
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(sendOvertime) object:nil];
+    self.inputTextF.enabled = YES;
+    LSChatModel * lastSelfModel = [self lastSelfModel];
+    lastSelfModel.sendStatue = LSSendStatueSuccess;
+    [self._tableView reloadData];
+    [[LSChatDataManager shareChatDataManager] replaceChatModel:lastSelfModel];
+    NSDateFormatter *matter =[[NSDateFormatter alloc] init];
+    [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
+    if (errorType == JFGErrorTypeNone && !lastSelfModel.isUplog) {
+        if ([[NSDate date] timeIntervalSince1970] - showAutoTimestamp >= 300) {
+            [self autoAnswer];
+        }
+    }
+}
+
 //未读的回复消息
--(void)jfgFeedBackWithInfoList:(NSArray <JFGSDKFeedBackInfo *> *)infoList errorType:(JFGErrorType)errorType {
+-(void)jfgFeedBackWithInfoList:(NSArray <JFGSDKFeedBackInfo *> *)infoList errorType:(JFGErrorType)errorType
+{
     //NSLog(@"回复未读的消息列表打印：%@,错误信息：%d",infoList,errorType);
     NSDateFormatter *matter =[[NSDateFormatter alloc] init];
     [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
-    NSDictionary *msgDic = nil;
+    
     for (JFGSDKFeedBackInfo * info in infoList) {
+        
         LSChatModel *lastModel =[self.chatArray lastObject];
+        LSChatModel *aModel =[LSChatModel new];
         
-        msgDic =@{ @"msg"          :   info.msg,
-                   @"msgDate"      :   [matter stringFromDate:[NSDate dateWithTimeIntervalSince1970:info.timestamp]],
-                   @"lastMsgDate"  :   lastModel.msgDate,
-                   @"modelType"    :   @0
-                   };
-        
-        
-        LSChatModel *aModel =[LSChatModel creatModel:msgDic];
+        aModel.msg = info.msg;
+        aModel.msgDate = [matter stringFromDate:[NSDate dateWithTimeIntervalSince1970:info.timestamp]];
+        aModel.timestamp = info.timestamp;
+        aModel.lastMsgDate = lastModel.msgDate;
+        aModel.modelType = LSModelTypeOther;
+        aModel.sendStatue = LSSendStatueSuccess;
         
         [self.chatArray addObject:aModel];
-        
-        NSMutableDictionary *writeDic =(NSMutableDictionary *)[aModel dictionaryWithValuesForKeys:@[@"msg",
-                                                                                                    @"msgDate",
-                                                                                                    @"lastMsgDate",
-                                                                                                    @"modelType",
-                                                                                                    @"cellHeight",
-                                                                                                    @"enableDateLabel"]];
-        [[LSBookManager sharedManager] writePlist:writeDic];
+        [[LSChatDataManager shareChatDataManager] addChatModel:aModel];
         [self._tableView reloadData];
         [self changeTableViewContentOffSetToBottom];
 
     }
     
 }
-//客户消息是否成功的回调
--(void)jfgSendFeedBackResult:(JFGErrorType)errorType {
-    NSLog(@"反馈的消息错误信息：%d",errorType);
+
+-(void)logUploadSuccessForTimestamp:(uint64_t)timestamp
+{
+    for (LSChatModel *model in [self.chatArray copy]) {
+        if (timestamp == model.timestamp) {
+            model.sendStatue = LSSendStatueSuccess;
+            LSChatModel *lastModel =[self.chatArray lastObject];
+            if (lastModel && lastModel.timestamp == timestamp) {
+                if ([[NSDate date] timeIntervalSince1970] - showAutoTimestamp >= 300) {
+                    [self autoAnswer];
+                }
+            }else{
+                [self._tableView reloadData];
+            }
+            break;
+        }
+    }
 }
 
+-(void)logUploadFailedForTimestamp:(uint64_t)timestamp errorType:(JFGLogUploadErrorType)errorType
+{
+    for (LSChatModel *model in self.chatArray) {
+        if (timestamp == model.timestamp) {
+            model.sendStatue = LSSendStatueFailed;
+            [self._tableView reloadData];
+            break;
+        }
+    }
+}
 
 -(BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
@@ -383,7 +407,8 @@
 #pragma mark - UI
 -(NSMutableArray *)chatArray{
     if (_chatArray == nil) {
-        _chatArray =[NSMutableArray arrayWithArray:[LSChatModel allMsgModel]];
+        NSArray *cache = [LSChatDataManager shareChatDataManager].chatModelList;
+        _chatArray =[NSMutableArray arrayWithArray:cache];
         if (_chatArray.count == 0) {
             [self autoAnswer];
         }
@@ -446,6 +471,9 @@
     // Dispose of any resources that can be recreated.
 }
 
-
+-(void)dealloc
+{
+    NSLog(@"helpVC dealloc");
+}
 
 @end

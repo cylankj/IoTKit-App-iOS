@@ -17,6 +17,8 @@ typedef void (^aFailBlock)(RobotDataRequestErrorType error);
 
 + (dataPointMsg *)shared;
 
+- (NSString *)dpKeyWithMsgID:(NSInteger)msgID;
+
 // 获取某些消息id的最新一条数据
 - (void)packSingleDataPointMsg:(NSArray *)msgIdArr withCid:(NSString *)cid SuccessBlock:(aSuccessBlock)sBlock FailBlock:(aFailBlock)fBlock;
 

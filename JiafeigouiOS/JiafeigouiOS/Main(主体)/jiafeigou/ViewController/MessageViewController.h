@@ -10,11 +10,19 @@
 #import "DelButton.h"
 #import "JiafeigouDevStatuModel.h"
 
+@protocol MessageVCDelegate <NSObject>
+
+-(void)lookHistoryForTimestamp:(uint64_t)timestamp;
+
+@end
+
 @interface MessageViewController : UIViewController
 //顶部日期选择按钮
 @property(nonatomic, strong)UIButton * timeSelectButton;
 //编辑按钮
 @property(nonatomic, strong)DelButton * editButton;
+
+@property(nonatomic,weak)id <MessageVCDelegate> delegate;
 
 @property (nonatomic,strong)NSString *cid;
 

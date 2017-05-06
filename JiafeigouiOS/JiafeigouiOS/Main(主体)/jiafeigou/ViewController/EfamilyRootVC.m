@@ -108,6 +108,7 @@ const CGFloat animationDuration = 0.3f;
         }
         
     }
+    [super viewDidDisappear:animated];
 }
 
 -(void)viewWillAppear:(BOOL)animated
@@ -115,6 +116,7 @@ const CGFloat animationDuration = 0.3f;
     NSArray *data = [[JFGEfamilyDataManager defaultEfamilyManager] getEfamilyMsgListForCid:self.cid];
     
     [self tableViewData:data isScrollToBottom:YES];
+    [super viewWillAppear:animated];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -482,13 +484,13 @@ const CGFloat animationDuration = 0.3f;
     startRecordVoiceTimestamp = timestamp;
     currentRecordVoicePath = [NSString stringWithFormat:@"%lld",timestamp];
     
-    long ntpTimeError;
-    NSNumber *num = [[NSUserDefaults standardUserDefaults] objectForKey:JFGSDKNTPTIMESTAMP];
-    if (num) {
-        ntpTimeError = [num longValue];
-    }else{
-        ntpTimeError = 0;
-    }
+    //long ntpTimeError;
+   // NSNumber *num = [[NSUserDefaults standardUserDefaults] objectForKey:JFGSDKNTPTIMESTAMP];
+//    if (num) {
+//        ntpTimeError = [num longValue];
+//    }else{
+//        ntpTimeError = 0;
+//    }
     
     self.filePath = [self filePathForCurrentUser:@"message" cid:self.cid];
     

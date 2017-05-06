@@ -61,26 +61,10 @@ typedef NS_ENUM(NSInteger,WebLoadingState){
     AKWebView *_akwebView = [[AKWebView alloc]initWithFrame:CGRectMake(0, 64, self.view.bounds.size.width, self.view.bounds.size.height - 64)];
     [_akwebView webViewWithLoadRequestWithURL:[NSURL URLWithString:_url] Fram:_akwebView.frame];
     [self.view addSubview:_akwebView];
-    
-//    [self.view addSubview:self.uiWebView];
-//    [self.uiWebView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:_url]]];
-    
-//    if ([[[UIDevice currentDevice] systemVersion] floatValue] >=8.0) {
-//        [self.view addSubview:self.webView];
-//        [self.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:_url]]];
-//    }else{
-//        
-//    }
-   
-    
-    //[self.view bringSubviewToFront:self.progressView];
-    
     if (self.showRightBarItem) {
         [self rightBarItem];
     }
     
-   
-    // Do any additional setup after loading the view.
 }
 
 -(void)xieyi
@@ -90,66 +74,6 @@ typedef NS_ENUM(NSInteger,WebLoadingState){
 
 -(void)moreLanguage
 {
-//    /*
-//     
-//     //中文 http://yun.jfgou.com/help/zh-rCN.html
-//     //繁体 http://yun.jfgou.com/help/zh-hk.html  (同用简体中文)
-//     //英文 http://yun.jfgou.com/help/en.html    （默认）
-//     //日文 http://yun.jfgou.com/help/ja.html
-//     //法文 http://yun.jfgou.com/help/fr.html
-//     //德文 http://yun.jfgou.com/help/de.html
-//     //俄文 http://yun.jfgou.com/help/ru.html
-//     //西文 http://yun.jfgou.com/help/es.html
-//     //葡文 http://yun.jfgou.com/help/pt.html
-//     土耳其 http://yun.jfgou.com/help/tr.html  （同用英文）
-//     意大利 http://yun.jfgou.com/help/it.html  （同用英文）
-//     
-//     
-//     LANGUAGE_TYPE_CHINESE = 0,
-//     LANGUAGE_TYPE_ENGLISH,
-//     LANGUAGE_TYPE_RUSSIAN, // 俄语
-//     LANGUAGE_TYPE_PORTUGUESE, // 葡萄牙语
-//     LANGUAGE_TYPE_SPANISH, //西班牙语
-//     LANGUAGE_TYPE_JANPANESE = 5,  // 日语
-//     LANGUAGE_TYPE_FRENCH, // 法语
-//     LANGUAGE_TYPE_GERMAN, // 德语
-//     LANGUAGE_TYPE_ITALIAN, // 意大利、
-//     LANGUAGE_TYPE_TURKISH, // 土耳其
-//     LANGUAGE_TYPE_CH_TRADITIONAL = 10, // 繁体中文
-//     
-//     */
-//    NSInteger language = [JfgLanguage languageType];
-//    switch (language) {
-//        case 0:
-//            _url = @"http://yun.jfgou.com/help/zh-rCN.html";
-//            break;
-//        case 1:
-//            _url = @"http://yun.jfgou.com/help/en.html";
-//            break;
-//        case 2:
-//            _url = @"http://yun.jfgou.com/help/ru.html";
-//            break;
-//        case 3:
-//            _url = @"http://yun.jfgou.com/help/pt.html";
-//            break;
-//        case 4:
-//            _url = @"http://yun.jfgou.com/help/es.html";
-//            break;
-//        case 5:
-//            _url = @"http://yun.jfgou.com/help/ja.html";
-//            break;
-//        case 6:
-//            _url = @"http://yun.jfgou.com/help/fr.html";
-//            break;
-//        case 7:
-//            _url = @"http://yun.jfgou.com/help/de.html";
-//            break;
-//            
-//        default:
-//            _url = @"http://yun.jfgou.com/help/en.html";
-//            break;
-//    }
-    
     _url = [OemManager getOemHelpUrl];
 }
 

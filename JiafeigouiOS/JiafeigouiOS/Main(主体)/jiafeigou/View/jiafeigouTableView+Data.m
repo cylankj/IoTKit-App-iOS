@@ -14,15 +14,17 @@
 #import "LoginManager.h"
 #import "NetworkMonitor.h"
 #import "JfgLanguage.h"
+
+
 @implementation jiafeigouTableView (Data)
 
 -(void)addDataDelegate
 {
     [JFGSDK appendStringToLogFile:@"addDataDelegate"];
     [JFGSDK addDelegate:self];
-    //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deviceList) name:BoundDevicesRefreshNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(clearUnreadCount:) name:@"JFGClearUnReadCount" object:nil];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(becomeActive) name:UIApplicationDidBecomeActiveNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(videoRecordFor720:) name:@"DevFor720VideoStatues" object:nil];
 }
 
 -(void)becomeActive
@@ -38,26 +40,28 @@
 //    }
 }
 
-
-
--(void)jfgDeviceShareList:(NSDictionary<NSString *,NSArray<JFGSDKFriendRequestInfo *> *> *)friendList
+-(void)videoRecordFor720:(NSNotification *)notification
 {
-    for (NSString *key in friendList.allKeys) {
-        
-        JiafeigouDevStatuModel *model = [self.dataDict objectForKey:key];
-        if (model) {
-            NSArray *arr = friendList[key];
-            if (arr && arr.count>0) {
-                
-                if (model.shareState != DevShareStatuOther) {
-                    model.shareState = DevShareStatuAlready;
-                }
-            }
-        }
-        
+    NSDictionary *dict = notification.object;
+    
+    NSNumber *num = dict[@"videoType"];
+    NSString *uuid = dict[@"uuid"];
+    int videoType = [num intValue];
+    JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:uuid];
+    if (videoType == -1) {
+        //无录像
+        mode.delayCamera = NO;
+    }else if(videoType == 1){
+        //短视频
+        mode.delayCamera = YES;
+    }else if (videoType == 2){
+        //长视频
+        mode.delayCamera = YES;
     }
     [self reloadData];
 }
+
+
 
 -(void)jfgRobotSyncDataForPeer:(NSString *)peer fromDev:(BOOL)isDev msgList:(NSArray<DataPointSeg *> *)msgList
 {
@@ -207,6 +211,117 @@
 {
     NSLog(@"主动推送消息%@",peer);
 }
+
+-(void)jfgMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID mSeq:(uint64_t)mSeq cid:(NSString *)cid type:(int)type msgData:(NSData *)msgData
+{
+    if (type == 14){
+        //视频录制情况
+        [self videoRecordDeal:msgData forCid:cid];
+    }else if (type == 10){
+        //录制视频请求回调
+        [self videoDataDeal:msgData forCid:cid];
+    }
+}
+
+
+-(void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID mSeq:(uint64_t)mSeq cid:(NSString *)cid type:(int)type dpMsgArr:(NSArray *)dpMsgArr
+{
+    for (DataPointSeg *seg in dpMsgArr) {
+        
+        NSLog(@"%@",seg.value);
+        if (seg.msgId == 204) {
+            id obj = [MPMessagePackReader readData:seg.value error:nil];
+            NSLog(@"%@",obj);
+        }else if (seg.msgId == 206 || seg.msgId == dpMsgBase_Power){
+            [self baratyDeal:seg forCid:cid];
+        }
+    }
+}
+
+-(void)baratyDeal:(DataPointSeg *)seg forCid:(NSString *)cid
+{
+    if (seg.msgId == 206){
+        
+        id obj = [MPMessagePackReader readData:seg.value error:nil];
+        if ([obj isKindOfClass:[NSNumber class]]) {
+            JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:cid];
+            mode.Battery = [obj intValue];
+            NSLog(@"barrty:%d",[obj intValue]);
+        }
+        
+    }else if (seg.msgId == dpMsgBase_Power){
+        JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:cid];
+        mode.Battery = 200;
+    }
+    [self reloadData];
+}
+
+-(void)videoRecordDeal:(NSData *)msgData forCid:(NSString *)cid
+{
+    id obj = [MPMessagePackReader readData:msgData error:nil];
+    if ([obj isKindOfClass:[NSArray class]]) {
+        
+        NSArray *sourceArr = obj;
+        if (sourceArr.count >= 3) {
+            
+            @try {
+                /*
+                 int，     ret       错误码
+                 int，     secends   视频录制的时长,单位秒
+                 int,      videoType 特征值定义： videoTypeShort = 1 8s短视频； videoTypeLong = 2 长视频；
+                 */
+                 JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:cid];
+                
+//                int ret = [sourceArr[0] intValue];
+//                int secouds = [sourceArr[1] intValue];
+                int videoType = [sourceArr[2] intValue];
+                if (videoType == -1) {
+                   //没有录像
+                   mode.delayCamera = NO;
+                    
+                }else if(videoType == 1){
+                   //8s短视频
+                   mode.delayCamera = NO;
+                }else if (videoType == 2){
+                    //长视频
+                   mode.delayCamera = YES;
+                }
+                
+                [self reloadData];
+                
+            } @catch (NSException *exception) {
+                
+            } @finally {
+                
+            }
+            
+            
+            
+        }
+        
+    }
+}
+
+-(void)videoDataDeal:(NSData *)msgData forCid:(NSString *)cid
+{
+    id obj = [MPMessagePackReader readData:msgData error:nil];
+    if ([obj isKindOfClass:[NSNumber class]]) {
+        int ret = [obj intValue];
+        if (ret == 0) {
+            NSLog(@"录像成功");
+            //[ProgressHUD showText:@"录像成功"];
+            JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:cid];
+            mode.delayCamera = YES;
+            [self reloadData];
+        }else{
+            JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:cid];
+            mode.delayCamera = NO;
+            [self reloadData];
+        }
+    }
+}
+
+
 
 //根据数据修改设备网络状况
 -(void)deviceNetworkState:(DataPointSeg *)seg devModel:(JiafeigouDevStatuModel *)model

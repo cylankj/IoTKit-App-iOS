@@ -39,10 +39,6 @@
 - (void)initView
 {
     [self addSubview:self.lineView];
-    
-//    [self addSubview:self.timeLabel];
-//    [self addSubview:self.dotImgView];
-    
     [self addSubview:self.picImageView];
     
     [self.picImageView addSubview:self.phoneIconImgeView];
@@ -59,12 +55,12 @@
         if (editing)
         {
             CGFloat picWidth = Kwidth - 39 - 15.0f;
-            self.picImageView.frame = CGRectMake(39 + self.offsetX, 0, picWidth, picWidth/3);
+            self.picImageView.frame = CGRectMake(39 + self.offsetX, self.picImageView.top, picWidth, picWidth/3);
         }
         else
         {
             CGFloat picWidth = Kwidth - 39 - 15.0f;
-            self.picImageView.frame = CGRectMake(39, 0, picWidth, picWidth/3);
+            self.picImageView.frame = CGRectMake(39, self.picImageView.top, picWidth, picWidth/3);
         }
     } completion:^(BOOL finished) {
         
@@ -78,6 +74,25 @@
     [super setSelected:selected animated:animated];
 }
 
+
+- (void)updateIconImageViewLayout
+{
+    if (self.phoneIconImgeView.hidden == NO && self.deviceIconImgeView.hidden == YES)
+    {
+        CGFloat width = 13;
+        CGFloat height = 23;
+        CGFloat x = self.picImageView.width - width - 6;
+        CGFloat y = self.picImageView.height - height - 5;
+        
+        self.phoneIconImgeView.frame = CGRectMake(x, y, width, height);
+    }
+    else
+    {
+        self.deviceIconImgeView.frame = CGRectMake(self.picImageView.width - 13 - 6, self.picImageView.height - 23 - 5, 13, 23);
+        self.phoneIconImgeView.frame = CGRectMake(self.deviceIconImgeView.left - 13 - 12, self.picImageView.height - 23 - 5, 13, 23);
+    }
+}
+
 #pragma mark
 #pragma mark  imageView cell
 - (UIImageView *)picImageView
@@ -85,7 +100,7 @@
     if (_picImageView == nil)
     {
         CGFloat x = 39;
-        CGFloat y = 0;
+        CGFloat y = 2.5;
         CGFloat width = Kwidth - x - 15.0f;
         CGFloat heigth = width/3;
         

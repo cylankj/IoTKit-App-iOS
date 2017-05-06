@@ -7,6 +7,7 @@
 //
 
 #import "JFGTakePhotoButton.h"
+#import "XTimer.h"
 
 @interface JFGTakePhotoButton()
 {
@@ -27,18 +28,14 @@
 -(void)offsetButtonTouchBegin:(id)sender{
     
     count = 0;
-    timer = [NSTimer scheduledTimerWithTimeInterval:0.1
-                                             target: self
-                                           selector: @selector(handleTimer:)
-                                           userInfo: nil
-                                            repeats: YES];
-    [timer fire];
+    timer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(handleTimer:) userInfo:nil repeats:YES];
 }
 
 -(void)offsetButtonTouchEnd:(id)sender{
     
     if (timer && [timer isValid]) {
         [timer invalidate];
+        timer = nil;
     }
     if (count > 0.8) {
         if (self.delegate && [self.delegate respondsToSelector:@selector(takePhotoTouchUpDown:forTakePhotoEvents:)]) {
@@ -55,6 +52,7 @@
 -(void)handleTimer:(id)sender
 {
     count = count + 0.1;
+    NSLog(@"%@ timer",[self class]);
 }
 
 

@@ -140,10 +140,9 @@
         
         if (list.count && !isNot) {
             ShareForSomeOneVC * shareVC = [ShareForSomeOneVC new];
-            
             if (![self.nameLabel.text isEqualToString:@""]) {
                 shareVC.remarkName = self.nameLabel.text;
-            }else{
+            }else if(![self.nickNameLabel.text isEqualToString:@""]){
                 shareVC.remarkName = self.nickNameLabel.text;
             }
             shareVC.account = self.account;
@@ -238,7 +237,7 @@
     return 44;
 }
 
-- (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     if (self.friendsInfoType == FriendsInfoIsFriens) {
         if (indexPath.row == 0) {

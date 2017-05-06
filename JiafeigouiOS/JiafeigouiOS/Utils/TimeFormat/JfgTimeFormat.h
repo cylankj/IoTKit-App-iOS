@@ -17,8 +17,13 @@
 + (NSString *)transTotimeSp:(NSString *)time;
 + (NSString *)transToyyyyMMddhhmmss:(NSString *)timsp;
 + (NSString *)transToyyyyMMddhhmmssWithTime:(int)timsp;
++ (NSString *)transToyyyyMMddWithTime:(long long)timesp;
+
++ (NSString *)transformTime:(long long)timesp withFormat:(NSString *)timeFormat;
 
 // 服务器 时间戳 转换 到 秒
 + (NSString *)transToSecond:(double)time;
+
++ (BOOL)isToday:(double)timesp;
 
 @end

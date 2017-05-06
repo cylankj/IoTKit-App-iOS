@@ -9,6 +9,12 @@
 #import <UIKit/UIKit.h>
 #import "JfgTypeDefine.h"
 
+@protocol ConnDeviceVCNextActionDelegate <NSObject>
+
+-(void)connDeviceVCNextActionForVC:(UIViewController *)VC;
+
+@end
+
 @interface ConnDeviceViewController : UIViewController
 {
     BOOL isConnectAp; //是否 连接ap，测试使用
@@ -19,5 +25,7 @@
 @property (nonatomic, copy) NSString *cidStr;
 
 @property (nonatomic, assign) configWifiType configType;
+
+@property (nonatomic,assign)id <ConnDeviceVCNextActionDelegate> delegate;
 
 @end

@@ -16,6 +16,9 @@
 #import "BindDevProgressViewController.h"
 #import "CarameFor720AddAnimationView.h"
 #import "AddDeviceMainViewController.h"
+#import "OLImageView.h"
+#import "OLImage.h"
+#import "PilotLampStateVC.h"
 
 @interface AddDeviceGuideViewController()<JFGSDKCallbackDelegate>
 
@@ -23,10 +26,12 @@
 @property (nonatomic, strong) UILabel *bottomTipLabel;
 @property (nonatomic, strong) UIButton *nextButton;
 @property (nonatomic, strong) UIButton *backBtn;
+@property (nonatomic, strong) UIButton *declareBtn;
 
 @property (nonatomic, strong) DoorAddAnimationView *doorAddAnimationView;
 @property (nonatomic, strong) CameraAddAnimationView *cameraAddAnimationView;
 @property (nonatomic, strong) CarameFor720AddAnimationView *carame720AddView;
+@property (nonatomic, strong) OLImageView * olImageView;
 @property (nonatomic, assign) JFGNetType netType;
 @end
 
@@ -37,10 +42,10 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    
     [self initView];
     [self initNavigation];
 }
+
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
@@ -58,19 +63,19 @@
 
 - (void)initView
 {
-    [self.view addSubview:self.topTipsLabel];
-    [self.view addSubview:self.bottomTipLabel];
-    [self.view addSubview:self.nextButton];
-    
     if ([CommonMethod isCameraWithType:self.pType]) {
         [self.view addSubview:self.cameraAddAnimationView];
     }else if (self.pType == productType_720){
         [self.view addSubview:self.carame720AddView];
-    }else{
+        [self.view addSubview:self.declareBtn];
+    }else if (self.pType == productType_IPCam){
+        [self.view addSubview:self.olImageView];
+    }else {
         [self.view addSubview:self.doorAddAnimationView];
     }
-    
-    
+    [self.view addSubview:self.topTipsLabel];
+    [self.view addSubview:self.bottomTipLabel];
+    [self.view addSubview:self.nextButton];
     [self.view addSubview:self.backBtn];
 }
 
@@ -96,6 +101,8 @@
         
         if ([CommonMethod isCameraWithType:self.pType] || self.pType == productType_720) {
             _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTipsTitle"];
+        }else if (self.pType == productType_IPCam){
+            _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"RuiShi_Guide"];
         }else{
             _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_DoorbellTipsTitle"];
         }
@@ -123,6 +130,8 @@
         
         if ([CommonMethod isCameraWithType:self.pType] || self.pType == productType_720) {
             _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTips"];
+        }else if (self.pType == productType_IPCam){
+            _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTips"];
         }else{
             _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_DoorbellTips"];
         }
@@ -148,11 +157,14 @@
         
         if ([CommonMethod isCameraWithType:self.pType] || self.pType == productType_720) {
             [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"BLINKING"] forState:UIControlStateNormal];
+        }else if(self.pType == productType_IPCam){
+            
+            [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"BLINKING"] forState:UIControlStateNormal];
+            
         }else{
             [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"DOOR_BLINKING"] forState:UIControlStateNormal];
         }
 
-        
         [_nextButton setTitleColor:[UIColor colorWithHexString:@"#4b9fd5"] forState:UIControlStateNormal];
         [_nextButton setBackgroundImage:[UIImage imageNamed:@"add_btn_pressed"] forState:UIControlStateNormal];
         [_nextButton setBackgroundImage:[UIImage imageNamed:@"add_btn"] forState:UIControlStateHighlighted];
@@ -160,6 +172,23 @@
     }
     
     return _nextButton;
+}
+
+-(UIButton *)declareBtn
+{
+    if (!_declareBtn) {
+        _declareBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _declareBtn.frame = CGRectMake(self.view.width-15-25, 40, 25, 25);
+        [_declareBtn setImage:[UIImage imageNamed:@"icon_explain_gray"] forState:UIControlStateNormal];
+        [_declareBtn addTarget:self action:@selector(intoVC) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _declareBtn;
+}
+
+-(void)intoVC
+{
+    PilotLampStateVC *lampVC = [PilotLampStateVC new];
+    [self.navigationController pushViewController:lampVC animated:YES];
 }
 
 - (DoorAddAnimationView *)doorAddAnimationView
@@ -210,6 +239,17 @@
     return _carame720AddView;
 }
 
+-(OLImageView *)olImageView{
+    if (!_olImageView) {
+        CGFloat widgetX = self.view.center.x;
+        CGFloat widgetY = self.bottomTipLabel.bottom + 50 * designHscale - 80;
+        _olImageView = [[OLImageView alloc]initWithFrame:CGRectMake(widgetX, widgetY, 750*0.5, 750*0.5)];
+        [_olImageView setImage:[OLImage imageNamed:@"ruishiyindao.gif"]];
+        _olImageView.x = self.view.x;
+    }
+    return _olImageView;
+}
+
 -(UIButton *)backBtn
 {
     if (!_backBtn) {
@@ -255,6 +295,10 @@
 //    } else {
 //       
 //    }
+    if (self && self.delegate && [self.delegate respondsToSelector:@selector(addDeviceGuideVCNectActionForVC:)]) {
+        [self.delegate addDeviceGuideVCNectActionForVC:self];
+        return;
+    }
     ConnDeviceViewController *conn = [[ConnDeviceViewController alloc] init];
     conn.pType = self.pType;
     conn.cidStr =self.cid;
@@ -293,14 +337,10 @@
                 [[ask.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"67"]||
                 [[ask.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"69"]||
                 [[ask.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"68"]) {
-                
                 configWifi.isCamare = YES;
-                
             }else{
-                
                 configWifi.isCamare = NO;
             }
-            
         }else{
             configWifi.isCamare = YES;
         }
