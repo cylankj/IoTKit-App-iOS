@@ -7,9 +7,9 @@
 //
 
 #import "JFGDatePickers.h"
-#import "JFGDatePickerCollectionViewCell.h"
+
 #import "UIColor+FLExtension.h"
-#define DATELIMITS 30  //日期范围
+#define DATELIMITS 15  //日期范围
 
 @implementation DatePickerModel
 
@@ -18,10 +18,11 @@
 
 @interface JFGDatePickers()<UICollectionViewDelegate,UICollectionViewDataSource>
 {
-    NSIndexPath *selectedIndexPath;
+    NSInteger maxNumber;
 }
+
 @property (nonatomic,strong)UICollectionView *collectionView;
-@property (nonatomic,strong)UILabel *monthLabel;
+
 @property (nonatomic,strong)UIView *topLineView;
 @property (nonatomic,strong)NSCalendar *calendar;
 @property (nonatomic,strong)NSMutableArray *dataArray;
@@ -30,15 +31,17 @@
 
 @implementation JFGDatePickers
 
+
+
 -(instancetype)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
-    selectedIndexPath = [NSIndexPath indexPathForRow:3 inSection:0];
+    self.selectedIndexPath = [NSIndexPath indexPathForRow:3 inSection:0];
     self.dataArray = [[NSMutableArray alloc]init];
     [self addSubview:self.collectionView];
     [self addSubview:self.monthLabel];
     [self addSubview:self.topLineView];
-    self.monthLabel.text = [NSString stringWithFormat:@"%d月",[self compsForDate:[NSDate date]].month];
+    self.monthLabel.text = [NSString stringWithFormat:@"%ld月",(long)[self compsForDate:[NSDate date]].month];
     self.backgroundColor = [UIColor colorWithHexString:@"#f7f8fa"];
     return self;
 }
@@ -46,8 +49,6 @@
 -(void)didMoveToSuperview
 {
     [super didMoveToSuperview];
-    [self initData];
-    [self.collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:self.dataArray.count-1 inSection:0] atScrollPosition:0 animated:NO];
 }
 
 
@@ -84,8 +85,8 @@
             model.day = i;
             model.year = frontYear;
             model.isSelectedDate = NO;//yyyy-MM-dd HH:mm:ss
-            NSString *startStr = [NSString stringWithFormat:@"%4d-%2d-%2d 00:00:00",frontYear,frontMonth,i];
-            NSString *lastestStr = [NSString stringWithFormat:@"%4d-%2d-%2d 23:59:59",frontYear,frontMonth,i];
+            NSString *startStr = [NSString stringWithFormat:@"%4ld-%2ld-%2d 00:00:00",(long)frontYear,(long)frontMonth,i];
+            NSString *lastestStr = [NSString stringWithFormat:@"%4ld-%2ld-%2d 23:59:59",(long)frontYear,(long)frontMonth,i];
             model.startTimestamp = [self timestampFromDate:[self dateFromString:startStr]];
             model.lastestTimestamp = [self timestampFromDate:[self dateFromString:lastestStr]];
             [self.dataArray addObject:model];
@@ -106,8 +107,8 @@
         model.day = i;
         model.year = currentYear;
         model.isSelectedDate = NO;//yyyy-MM-dd HH:mm:ss
-        NSString *startStr = [NSString stringWithFormat:@"%4d-%2d-%2d 00:00:00",currentYear,currentMonth,i];
-        NSString *lastestStr = [NSString stringWithFormat:@"%4d-%2d-%2d 23:59:59",currentYear,currentMonth,i];
+        NSString *startStr = [NSString stringWithFormat:@"%4ld-%2ld-%2d 00:00:00",(long)currentYear,(long)currentMonth,i];
+        NSString *lastestStr = [NSString stringWithFormat:@"%4ld-%2ld-%2d 23:59:59",(long)currentYear,(long)currentMonth,i];
         model.startTimestamp = [self timestampFromDate:[self dateFromString:startStr]];
         model.lastestTimestamp = [self timestampFromDate:[self dateFromString:lastestStr]];
         [self.dataArray addObject:model];
@@ -127,59 +128,68 @@
 //返回每个分区的item个数
 -(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
-    return self.dataArray.count;
+    if (self.delegate && [self.delegate respondsToSelector:@selector(datePickersCollectionView:numberOfItemsInSection:)]) {
+        maxNumber =  [self.delegate datePickersCollectionView:collectionView numberOfItemsInSection:section];
+        return maxNumber;
+    }
+    maxNumber = 0;
+    return 0;
 }
 
 //返回每个item
 -(UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    JFGDatePickerCollectionViewCell *cell  = [collectionView dequeueReusableCellWithReuseIdentifier:@"cellid" forIndexPath:indexPath];
     
-    DatePickerModel *model = self.dataArray[indexPath.row];
-    if (model.isSelectedDate) {
-        cell.viewMode = pickerViewModeSelected;
-    }else{
-        if (model.hasData) {
-            cell.viewMode = pickerViewModeHasData;
-        }else{
-            cell.viewMode = pickerViewModeNotData;
-        }
+    if (self.delegate && [self.delegate respondsToSelector:@selector(datePickersCollectionView:cellForItemAtIndexPath:)]) {
+        return [self.delegate datePickersCollectionView:collectionView cellForItemAtIndexPath:indexPath];
     }
-    cell.contentLabel.text = [NSString stringWithFormat:@"%d",model.day];
+    
+    JFGDatePickerCollectionViewCell *cell  = [collectionView dequeueReusableCellWithReuseIdentifier:@"cellid" forIndexPath:indexPath];
+//    DatePickerModel *model = self.dataArray[indexPath.row];
+//    if (model.isSelectedDate) {
+//        cell.viewMode = pickerViewModeSelected;
+//    }else{
+//        if (model.hasData) {
+//            cell.viewMode = pickerViewModeHasData;
+//        }else{
+//            cell.viewMode = pickerViewModeNotData;
+//        }
+//    }
+//    cell.contentLabel.text = [NSString stringWithFormat:@"%ld",(long)model.day];
     return cell;
 }
 
 -(void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    DatePickerModel *model = self.dataArray[indexPath.row];
-    if (model.hasData && indexPath.row != selectedIndexPath.row) {
-        
-        JFGDatePickerCollectionViewCell *cell  = (JFGDatePickerCollectionViewCell *)[collectionView cellForItemAtIndexPath:selectedIndexPath];
-        JFGDatePickerCollectionViewCell *cell2  = (JFGDatePickerCollectionViewCell *)[collectionView cellForItemAtIndexPath:indexPath];
-        
-        DatePickerModel *oldModel = [self.dataArray objectAtIndex:selectedIndexPath.row];
-        oldModel.isSelectedDate = NO;
-        
-        if (cell) {
-            cell.viewMode = pickerViewModeHasData;
-        }
-        cell2.viewMode = pickerViewModeSelected;
-        selectedIndexPath = indexPath;
-    
-        self.monthLabel.text = [NSString stringWithFormat:@"%d月",model.month];
-        model.isSelectedDate = YES;
-        
-        if (self.delegate && [self.delegate respondsToSelector:@selector(didSelectedRowForIndexPath:)]) {
-            [self.delegate didSelectedRowForIndexPath:indexPath];
-        }
-        
+//    DatePickerModel *model = self.dataArray[indexPath.row];
+//    if (model.hasData && indexPath.row != selectedIndexPath.row) {
+//        
+//        JFGDatePickerCollectionViewCell *cell  = (JFGDatePickerCollectionViewCell *)[collectionView cellForItemAtIndexPath:selectedIndexPath];
+//        JFGDatePickerCollectionViewCell *cell2  = (JFGDatePickerCollectionViewCell *)[collectionView cellForItemAtIndexPath:indexPath];
+//        
+//        DatePickerModel *oldModel = [self.dataArray objectAtIndex:selectedIndexPath.row];
+//        oldModel.isSelectedDate = NO;
+//        
+//        if (cell) {
+//            cell.viewMode = pickerViewModeHasData;
+//        }
+//        cell2.viewMode = pickerViewModeSelected;
+//        selectedIndexPath = indexPath;
+//    
+//        self.monthLabel.text = [NSString stringWithFormat:@"%ld月",(long)model.month];
+//        model.isSelectedDate = YES;
+//        
+//        
+//        
+//    }
+    if (self.delegate && [self.delegate respondsToSelector:@selector(datePickersCollectionView:didSelectItemAtIndexPath:)]) {
+        [self.delegate datePickersCollectionView:collectionView didSelectItemAtIndexPath:indexPath];
     }
-    
 }
 
 - (void)collectionView:(UICollectionView *)collectionView didEndDisplayingCell:(UICollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    NSLog(@"%d",indexPath.row);
+    NSLog(@"%ld",(long)indexPath.row);
 }
 
 
@@ -189,6 +199,10 @@
     [self.collectionView reloadData];
 }
 
+-(void)scrollToEndItem
+{
+    [self.collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:maxNumber==0?0:(maxNumber-1) inSection:0] atScrollPosition:UICollectionViewScrollPositionLeft animated:YES];
+}
 
 #pragma mark -日期处理
 //获取当前时间上个月的日期

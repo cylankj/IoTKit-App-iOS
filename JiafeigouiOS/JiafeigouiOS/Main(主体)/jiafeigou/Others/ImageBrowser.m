@@ -31,6 +31,10 @@
 #import "UIAlertView+FLExtension.h"
 #import "MessageImageView.h"
 #import "videoPlay1ViewController.h"
+#import "ShareView.h"
+#import "LSAlertView.h"
+#import "FLShareSDKHelper.h"
+#import "JfgCacheManager.h"
 
 #define ImageViewTag_0 633
 #define ImageViewTag_1 1+633
@@ -91,7 +95,7 @@
 
 @implementation ImageBrowser
 
--(instancetype)initAllAnglePicViewWithImageView:(NSArray<UIImageView *> *)oldImageViews Title:(NSString *)title tly:(int)tly currentImageIndex:(NSInteger)index
+-(instancetype)initAllAnglePicViewWithImageView:(NSArray<UIImageView *> *)oldImageViews Title:(NSString *)title tly:(int)tly currentImageIndex:(NSInteger)index cid:(NSString *)cid
 {
     self = [super initWithFrame:CGRectMake(0, 0, Kwidth, kheight)];
     _isExpore = NO;
@@ -141,7 +145,13 @@
         
         
         PanoramicIosView * remoteView = [[PanoramicIosView alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, Kwidth, Kwidth)];
-        [remoteView configV360:getSFCParamIosPreset()];
+        
+        SFCParamModel *paramModel = [JfgCacheManager getSfcPatamModelForCid:cid];
+        if (paramModel) {
+            [remoteView configV360:SFCParamIosMake(paramModel.x, paramModel.y, paramModel.r, paramModel.w, paramModel.h, 180)];
+        }else{
+            [remoteView configV360:getSFCParamIosPreset()];
+        }
         //[remoteView setMountMode:MOUNT_TOP];
         [remoteView loadUIImage:oldImageView.image];
         [imageV addSubview:remoteView];
@@ -171,6 +181,25 @@
     [window addSubview:self];
     [JFGSDK addDelegate:self];
     [self getCollectedData];
+    /**
+     *  开始生成 设备旋转 通知
+     */
+    [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
+    
+    
+    /**
+     *  添加 设备旋转 通知
+     *
+     *  当监听到 UIDeviceOrientationDidChangeNotification 通知时，调用handleDeviceOrientationDidChange:方法
+     *  @param handleDeviceOrientationDidChange: handleDeviceOrientationDidChange: description
+     *
+     *  @return return value description
+     */
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleDeviceOrientationDidChange:)
+                                                 name:UIDeviceOrientationDidChangeNotification
+                                               object:nil
+     ];
     return self;
 }
 
@@ -247,15 +276,93 @@
         showTopBottomView = NO;
         [window addSubview:self];
         [JFGSDK addDelegate:self];
+        /**
+         *  开始生成 设备旋转 通知
+         */
+        [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
         
+        
+        /**
+         *  添加 设备旋转 通知
+         *
+         *  当监听到 UIDeviceOrientationDidChangeNotification 通知时，调用handleDeviceOrientationDidChange:方法
+         *  @param handleDeviceOrientationDidChange: handleDeviceOrientationDidChange: description
+         *
+         *  @return return value description
+         */
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(handleDeviceOrientationDidChange:)
+                                                     name:UIDeviceOrientationDidChangeNotification
+                                                   object:nil
+         ];
         
     }
     return self;
 }
 
+- (void)handleDeviceOrientationDidChange:(UIInterfaceOrientation)interfaceOrientation
+{
+    //1.获取 当前设备 实例
+    UIDevice *device = [UIDevice currentDevice] ;
+    
+    
+    
+    
+    /**
+     *  2.取得当前Device的方向，Device的方向类型为Integer
+     *
+     *  必须调用beginGeneratingDeviceOrientationNotifications方法后，此orientation属性才有效，否则一直是0。orientation用于判断设备的朝向，与应用UI方向无关
+     *
+     *  @param device.orientation
+     *
+     */
+    
+    switch (device.orientation) {
+        case UIDeviceOrientationFaceUp:
+            NSLog(@"屏幕朝上平躺");
+            break;
+            
+        case UIDeviceOrientationFaceDown:
+            NSLog(@"屏幕朝下平躺");
+            break;
+            
+            //系統無法判斷目前Device的方向，有可能是斜置
+        case UIDeviceOrientationUnknown:
+            NSLog(@"未知方向");
+            break;
+            
+        case UIDeviceOrientationLandscapeLeft:
+            NSLog(@"屏幕向左横置");
+            break;
+            
+        case UIDeviceOrientationLandscapeRight:
+            NSLog(@"屏幕向右橫置");
+            break;
+            
+        case UIDeviceOrientationPortrait:
+            NSLog(@"屏幕直立");
+            break;
+            
+        case UIDeviceOrientationPortraitUpsideDown:
+            NSLog(@"屏幕直立，上下顛倒");
+            break;
+            
+        default:
+            NSLog(@"无法辨识");
+            break;
+    }
+    
+}
+
 -(void)didMoveToWindow
 {
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(restoreImage:) name:@"showDoorBellCallingVC" object:nil];
+}
+
+-(void)removeFromSuperview
+{
+    [super removeFromSuperview];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 -(void)initPreview
@@ -339,9 +446,7 @@
         btn.frame = rect;
         btn.center = point;
     }];
-    
     btn.layer.borderColor = [UIColor colorWithHexString:@"#319de4"].CGColor;
-    
 }
 
 -(void)previewBgTapAction
@@ -479,7 +584,8 @@
     
 }
 //恢复原状
--(void)restoreImage:(UIButton *)btn{
+-(void)restoreImage:(UIButton *)btn
+{
     UIWindow * window = [UIApplication sharedApplication].keyWindow;
     int currentIndex = (int)self.bigScrollView.contentOffset.x/BigScrollWidth;
     UIImageView *imageView = (UIImageView *)[self viewWithTag:ImageViewTag_0+currentIndex];
@@ -495,14 +601,18 @@
         }];
     }
     [JFGSDK removeDelegate:self];
-    
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-- (CGPoint)centerOfView:(UIView *)view{
+- (CGPoint)centerOfView:(UIView *)view
+{
     return [[UIApplication sharedApplication].keyWindow convertPoint:CGPointMake(Kwidth /2, kheight /2) toView:view];
 }
 
-
+-(void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
 
 #pragma mark - ButtonAction
 -(void)saveImageToAlbum:(DelButton *)button{
@@ -548,10 +658,22 @@
     if (self.imagesUrl.count > currentIndex) {
         imageUrl = self.imagesUrl[currentIndex];
     }
-    [ShareClassView showShareViewWithTitle:@"" content:@"" url:@"www.jfgou.com" image:imageV.image?imageV.image:imageV.subImage imageUrl:imageUrl Type:shareTypeVendor navigationController:nil Cid:nil];
+    
+    ShareView *sv = [[ShareView alloc]initWithLandScape:NO];
+    [sv showShareView:^(SSDKPlatformType platformType) {
+        
+        NSString *title = [OemManager appName];
+        NSString *url = @"www.jfgou.com";
+        if ([OemManager oemType] == oemTypeDoby) {
+            url = @"";
+        }
+        [FLShareSDKHelper shareToThirdpartyPlatform:platformType url:url image:imageV.image?imageV.image:imageV.subImage title:title contentType:SSDKContentTypeImage];
+        
+    } cancel:^{
+        
+    }];
+    
 }
-
-
 
 
 -(void)markDeal
@@ -599,9 +721,16 @@
     
     if (_isExpore) {
         
-        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tips_SureDelete"] delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"CANCEL"], nil];
-        alert.tag = 10223;
-        [alert show];
+        __weak typeof(self) weakSelf = self;
+        [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tips_SureDelete"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+            
+        } OKBlock:^{
+            
+            [[NSNotificationCenter defaultCenter] postNotificationName:JFGDelExporePicKey object:weakSelf._indexPath];
+            [weakSelf restoreImage:nil];
+            
+        }];
+        
         return;
         
     }
@@ -759,19 +888,17 @@
                 //超过收藏值
                 //NSLog(@"retError:%d",seg.ret);
                 
-                
-                
-                UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"DailyGreatTips_Full"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Yes"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Button_No"], nil];
-                [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+                __weak typeof(self) weakSelf = self;
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"DailyGreatTips_Full"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_No"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Yes"] CancelBlock:^{
                     
-                    if (buttonIndex == 0) {
-                        
-                        [[NSNotificationCenter defaultCenter] postNotificationName:@"JFGJumpingRootView" object:nil];
-                        [self restoreImage:nil];
-                        [[NSNotificationCenter defaultCenter]postNotificationName:JFGTabBarJumpVcKey object:[NSNumber numberWithInt:1]];
-                    }
+                } OKBlock:^{
                     
-                } otherDelegate:nil];
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"JFGJumpingRootView" object:nil];
+                    [weakSelf restoreImage:nil];
+                    [[NSNotificationCenter defaultCenter]postNotificationName:JFGTabBarJumpVcKey object:[NSNumber numberWithInt:1]];
+                    
+                }];
+            
                 
             }
             
@@ -1066,6 +1193,9 @@
         [_bottomView addSubview:self.downloadButton];
         [_bottomView addSubview:self.shareButton];
         [_bottomView addSubview:self.collectButton];
+        if ([OemManager oemType] == oemTypeCell_C) {
+            [self.shareButton removeFromSuperview];
+        }
     }
     return _bottomView;
 }
@@ -1099,7 +1229,17 @@
             _downloadButton.frame = CGRectMake(self.collectButton.right+108*designWscale, 18, 23, 23);
         }
     }
+    
+    if ([OemManager oemType] == oemTypeCell_C) {
+        if (_isExpore) {
+            _downloadButton.x = self.width/3*2;
+        }else{
+            _downloadButton.x = self.width/3;
+        }
+    }
+    
     return _downloadButton;
+    
 }
 -(DelButton *)shareButton{
     if (!_shareButton) {
@@ -1115,6 +1255,8 @@
         }
     }
     return _shareButton;
+    
+    
 }
 -(DelButton *)collectButton{
     if (!_collectButton) {
@@ -1127,6 +1269,13 @@
             _collectButton.frame = CGRectMake(self.shareButton.right+108*designWscale, 18, 23, 23);
             [_collectButton setImage:[UIImage imageNamed:@"icon_collection"] forState:UIControlStateNormal];
             [_collectButton setImage:[UIImage imageNamed:@"icon_be_collected"] forState:UIControlStateSelected];
+        }
+        if ([OemManager oemType] == oemTypeCell_C) {
+            if (_isExpore) {
+                _collectButton.x = self.width/3;
+            }else{
+                _collectButton.x = self.width/3*2;
+            }
         }
         [_collectButton addTarget:self action:@selector(addToExplore:) forControlEvents:UIControlEventTouchUpInside];
     }

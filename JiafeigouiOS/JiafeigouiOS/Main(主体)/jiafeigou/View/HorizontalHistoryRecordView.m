@@ -23,6 +23,7 @@
     NSInteger currentDay;
     NSMutableArray *tempDataArray;
     dispatch_queue_t myVideoHistoryQueue;
+    BOOL isWait;
 }
 @property (nonatomic,strong)UIButton *historyVideoBtn;
 
@@ -48,7 +49,6 @@
         [self addSubview:self.signView];
         [self addSubview:self.bottomLineImageView];
         [self addNotifacation];
-        [self requestData];
     }
     return self;
 }
@@ -131,10 +131,72 @@
 
 -(void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
-    //NSLog(@"*********************YES*********************");
     isScrolling = YES;
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(setScrolling) object:nil];
     [self performSelector:@selector(setScrolling) withObject:nil afterDelay:2];
+    
+    CGFloat offset_y = scrollView.contentOffset.y;
+    CGFloat driff;//一天时间的偏移量
+    NSInteger index;//倒数第几天
+    
+    if (offset_y<_fristRowHeight) {
+        
+        driff = _fristRowHeight-offset_y;
+        index = 0;
+        
+    }else{
+        
+        driff = offset_y - _fristRowHeight;
+        index = driff/markImageWidth+1;
+        driff = driff-(index-1)*markImageWidth;
+        driff = markImageWidth - driff;
+        
+    }
+    
+    //防止越界取值
+    if (index >= self.dataArray.count) {
+        
+        if (self.dataArray.count && self.dataArray.count > 0) {
+            index = self.dataArray.count-1;
+            driff = 0;
+        }else{
+            return;
+        }
+        
+    }
+    
+    NSDate *tempDate = nil;
+    
+    NSArray *histroryDataModelList = [_dataArray objectAtIndex:index];
+    CGFloat sForPx = (24*60*60)/markImageWidth;
+    CGFloat allS = driff*sForPx;
+    if (histroryDataModelList.count) {
+        historyVideoDurationTimeModel *resultModel = [histroryDataModelList lastObject];
+        NSInteger seconds = allS;
+        //format of hour
+        NSString *str_hour = [NSString stringWithFormat:@"%02d",seconds/3600];
+        //format of minute
+        NSString *str_minute = [NSString stringWithFormat:@"%02d",(seconds%3600)/60];
+        //format of second
+        NSString *str_second = [NSString stringWithFormat:@"%02d",seconds%60];
+        NSCalendar *greCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
+        NSDateComponents *dateComponentsForDate = [[NSDateComponents alloc] init];
+        [dateComponentsForDate setDay:resultModel.startDay];
+        [dateComponentsForDate setMonth:resultModel.startMouth];
+        [dateComponentsForDate setYear:resultModel.startYear];
+        [dateComponentsForDate setHour:[str_hour integerValue]];
+        [dateComponentsForDate setMinute:[str_minute integerValue]];
+        [dateComponentsForDate setSecond:[str_second integerValue]];
+        NSDate *startDate = [greCalendar dateFromComponents:dateComponentsForDate];
+        tempDate = startDate;
+        //NSLog(@"dateTime:%@",startDate);
+        
+    }
+
+    if (self.delegate && [self.delegate respondsToSelector:@selector(scrollerDidScrollForHistoryVideoDate:)]) {
+        [self.delegate scrollerDidScrollForHistoryVideoDate:tempDate];
+    }
+    
 }
 
 -(void)setScrolling
@@ -143,15 +205,10 @@
     //NSLog(@"*********************NO*********************");
 }
 
-
 -(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 {
     CGFloat offset_y = scrollView.contentOffset.y;
     [self calculatePositionWithOffset:offset_y];
-//    if (!self.historyVideoBtn.selected) {
-//        self.historyVideoBtn.selected = YES;
-//        
-//    }
     self.historyVideoBtn.enabled = YES;
     if (self.delegate && [self.delegate respondsToSelector:@selector(historyBarEndScroll)]) {
         
@@ -327,6 +384,7 @@
         dispatch_async(dispatch_get_global_queue(0, 0), ^{
             
             [lock lock];
+            
             NSLog(@"thread:%@",[NSThread currentThread]);
             NSArray <JFGSDKHistoryVideoInfo *> *list = notification.object;
             
@@ -338,35 +396,19 @@
             NSLog(@"historyCount:%ld",(unsigned long)tempDataArray.count);
             NSArray *resultA = [self dataDeal:tempDataArray];
             self.dataArray = [[NSMutableArray alloc]initWithArray:resultA];
-            if (self.delegate && [self.delegate respondsToSelector:@selector(historyVideoDateLimits:)]) {
-                
-                NSArray *dat = [self historyVideoLimistForDayFromAllDataArr:self.dataArray];
-                self.historyRecordDays = [[dat reverseObjectEnumerator] allObjects];
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self.delegate historyVideoDateLimits:dat];
-                });
-                
-            }
             
-            if (self.delegate && [self.delegate respondsToSelector:@selector(historyVideoAllList:)]) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self.delegate historyVideoAllList:[NSArray arrayWithArray:self.dataArray]];
-                });
-            }
             
             dispatch_async(dispatch_get_main_queue(), ^{
-                
-                if (self.dataArray.count==0) {
-                    self.hidden = YES;
-                    return;
-                }
-                [self.horizontalTableView reloadData];
+                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(historyDataFinished) object:nil];
+                [self performSelector:@selector(historyDataFinished) withObject:nil afterDelay:1];
             });
             
+            
             [lock unlock];
+            
+            
+            
         });
-        
-        
         
     } @catch (NSException *exception) {
         
@@ -374,17 +416,41 @@
         
     } @finally {
         
-        
-        
-    }
-    
-    
-    
 
+    }
 }
 
 
-
+-(void)historyDataFinished
+{
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(reqTimeout) object:nil];
+    self.isLoadingData = NO;
+    NSLog(@"historyFinished");
+    if (self.delegate && [self.delegate respondsToSelector:@selector(historyVideoDateLimits:)]) {
+        
+        NSArray *dat = [self historyVideoLimistForDayFromAllDataArr:self.dataArray];
+        self.historyRecordDays = [[dat reverseObjectEnumerator] allObjects];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate historyVideoDateLimits:dat];
+        });
+        
+    }
+    
+    if (self.delegate && [self.delegate respondsToSelector:@selector(historyVideoAllList:)]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate historyVideoAllList:[NSArray arrayWithArray:self.dataArray]];
+        });
+    }
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        
+        if (self.dataArray.count==0) {
+            self.hidden = YES;
+            return;
+        }
+        [self.horizontalTableView reloadData];
+    });
+}
 
 #pragma mark- 数据处理
 //设置偏移量从某天开始
@@ -501,6 +567,15 @@
         return;
     }
     [CylanJFGSDK getHistoryVideoListForCid:self.cid];
+    self.isLoadHistoryData = YES;
+    self.isLoadingData = YES;
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(reqTimeout) object:nil];
+    [self performSelector:@selector(reqTimeout) withObject:nil afterDelay:30];
+}
+
+-(void)reqTimeout
+{
+    self.isLoadingData = NO;
 }
 
 -(CGFloat)offsetFromeTimeStamp:(int64_t)timestamp

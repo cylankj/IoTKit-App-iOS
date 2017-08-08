@@ -14,4 +14,6 @@
 
 @property (nonatomic,assign)BOOL isXieyi;
 
+@property (nonatomic,assign)BOOL isShowRedPoint;
+
 @end

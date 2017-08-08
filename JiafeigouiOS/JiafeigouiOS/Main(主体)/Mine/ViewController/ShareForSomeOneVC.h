@@ -26,5 +26,6 @@
 @property (nonatomic,assign)NSInteger tempShareCount;
 @property (nonatomic,assign)JFGDeviceType deviceType;
 @property (nonatomic,assign)BOOL _selected;
+@property (nonatomic,copy)NSString *pid;
 
 @end

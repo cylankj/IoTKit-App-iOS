@@ -29,7 +29,8 @@ typedef NS_ENUM(NSInteger , YBPopupMenuType) {
 
 @interface YBPopupMenu : UIView
 
-@property (nonatomic, assign) BOOL isDisconnectted; // is disconnect or not 
+@property (nonatomic, assign) BOOL firstCellCanClicked;
+@property (nonatomic, assign) BOOL secondCellCanClicked;
 
 /**
  圆角半径 Default is 5.0
@@ -109,4 +110,7 @@ typedef NS_ENUM(NSInteger , YBPopupMenuType) {
  消失
  */
 - (void)dismiss;
+
+- (void)setRows:(NSArray *)rows;
+
 @end

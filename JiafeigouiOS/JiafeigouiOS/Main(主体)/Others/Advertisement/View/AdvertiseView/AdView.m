@@ -11,8 +11,13 @@
 #import "ZZCircleProgress.h"
 #import "JFGWebViewController.h"
 #import "FileManager.h"
+#import "JfgUserDefaultKey.h"
 #import "DownloadUtils.h"
 #import "JfgConstKey.h"
+#import "CommonMethod.h"
+#import "AdWebViewController.h"
+
+#define showTime 3      // 显示n次
 
 @interface AdView()
 
@@ -53,18 +58,66 @@
 
 - (void)didMoveToSuperview
 {
-    [self performSelector:@selector(skipButtonAction:) withObject:nil afterDelay:3.0f];
+    [self performSelector:@selector(skipButtonAction:) withObject:nil afterDelay:4.0f];
     
     UIImage *adImage = [UIImage imageWithContentsOfFile:[[FileManager jfgAdvertisementDirPath] stringByAppendingPathComponent:[[NSURL URLWithString:[self.adDict objectForKey:adPicURLKey]] lastPathComponent]]];
     
+//    if (adImage == nil) {
+//        adImage = [UIImage imageNamed:@"test1"];
+//    }
     
-    if (adImage == nil)
+    if (adImage == nil )
     {
-        [self removeFromSuperview]; // if nil, don't need show, so removefromsuperview
+        [[NSUserDefaults standardUserDefaults] setValue:@(0) forKey:adShowTimeKey];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        [self removeFromSuperview];
     }
     else
     {
-        self.adImageView.image = adImage;
+        int adShowCount = [[[NSUserDefaults standardUserDefaults] valueForKey:adShowTimeKey] intValue];
+        
+        if (adShowCount < showTime)
+        {
+            self.adImageView.image = adImage;
+            adShowCount ++;
+            [[NSUserDefaults standardUserDefaults] setValue:@(adShowCount) forKey:adShowTimeKey];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+        }
+        else
+        {
+            [self removeFromSuperview];
+        }
+        
+        /*
+        switch ([JfgLanguage languageType])
+        {
+            case LANGUAGE_TYPE_CHINESE:
+            case LANGUAGE_TYPE_ENGLISH:
+            {
+                int adShowCount = [[[NSUserDefaults standardUserDefaults] valueForKey:adShowTimeKey] intValue];
+
+                if (adShowCount < showTime)
+                {
+                    self.adImageView.image = adImage;
+                    adShowCount ++;
+                    [[NSUserDefaults standardUserDefaults] setValue:@(adShowCount) forKey:adShowTimeKey];
+                    [[NSUserDefaults standardUserDefaults] synchronize];
+                }
+                else
+                {
+                    [self removeFromSuperview];
+                }
+                
+            }
+                break;
+                
+            default:
+            {
+                [self removeFromSuperview];
+            }
+                break;
+        }
+        */
     }
 }
 
@@ -72,6 +125,8 @@
 
 - (void)skipButtonAction:(UIButton*)skipButton
 {
+    [self removeFromSuperview];
+    
     if (self.delegate != nil && [self.delegate respondsToSelector:@selector(skipAction)])
     {
         [self.delegate skipAction];
@@ -80,9 +135,20 @@
 
 - (void)watchAdAction:(UITapGestureRecognizer *)gesture
 {
-    if (self.delegate != nil && [self.delegate respondsToSelector:@selector(watchAd:)])
-    {
-        [self.delegate watchAd:[self.adDict objectForKey:adTagURLKey]];
+    //[self removeFromSuperview];
+//    if (self.delegate != nil && [self.delegate respondsToSelector:@selector(watchAd:)])
+//    {
+//        [self.delegate watchAd:[self.adDict objectForKey:adTagURLKey]];
+//    }
+    UIViewController *vc = [CommonMethod viewControllerForView:self];
+    if (vc) {
+        NSString *url = [self.adDict objectForKey:adTagURLKey];
+        if (url) {
+            AdWebViewController *adwb = [AdWebViewController new];
+            adwb.url = url;
+            [vc presentViewController:adwb animated:YES completion:nil];
+        }
+        
     }
 }
 

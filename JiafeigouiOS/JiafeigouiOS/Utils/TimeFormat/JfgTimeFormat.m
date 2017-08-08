@@ -38,7 +38,7 @@
     NSTimeInterval time=[timsp doubleValue];//如果不使用本地时区,因为时差问题要加8小时 == 28800 sec
     NSDate *detaildate=[NSDate dateWithTimeIntervalSince1970:time];
     
-    NSLog(@"%@",detaildate);
+    //NSLog(@"%@",detaildate);
     
     NSCalendar * calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar]; // 指定日历的算法 NSCalendarIdentifierGregorian,NSGregorianCalendar
     // NSDateComponent 可以获得日期的详细信息，即日期的组成
@@ -89,7 +89,7 @@
    
     //设定时间格式,这里可以设置成自己需要的格
     //NSString *currentDateStr = [dateFormatter stringFromDate: detaildate];
-    NSLog(@"%@",timsStr);
+    //NSLog(@"%@",timsStr);
     return timsStr;
 }
 
@@ -160,11 +160,13 @@
 + (NSString *)transformTime:(long long)timesp withFormat:(NSString *)timeFormat
 {
     //NSTimeInterval time=[timesp doubleValue];
-    NSDate *detaildate=[NSDate dateWithTimeIntervalSince1970:timesp]; //如果不使用本地时区,因为时差问题要加8小时 == 28800 sec
+    NSDate *detaildate = [NSDate dateWithTimeIntervalSince1970:timesp]; //如果不使用本地时区,因为时差问题要加8小时 == 28800 sec
     
     //实例化一个NSDateFormatter对象
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setTimeZone:[NSTimeZone localTimeZone]];//设置本地时区
+    [dateFormatter setAMSymbol:@"am"];
+    [dateFormatter setPMSymbol:@"pm"];
     //设定时间格式,这里可以设置成自己需要的格式
     [dateFormatter setDateFormat:timeFormat];
     

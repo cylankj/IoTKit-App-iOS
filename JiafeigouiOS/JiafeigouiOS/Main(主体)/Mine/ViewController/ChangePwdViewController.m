@@ -12,6 +12,7 @@
 #import <JFGSDK/JFGSDK.h>
 #import "CommonMethod.h"
 #import "LoginManager.h"
+#import "JfgConstKey.h"
 
 @interface ChangePwdViewController ()<UITextFieldDelegate,JFGSDKCallbackDelegate>
 {
@@ -132,7 +133,7 @@
         
     }
     
-    if (str.length>12) {
+    if (str.length > pwMaxLength) {
         //[ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"PASSWORD_LESSTHAN_SIX"]];
         return NO;
     }
@@ -217,7 +218,7 @@
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"CURRENT_PWD"]];
     }  else if (_confirmPwdTextField.text.length == 0) {
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"PASSWORD_LESSTHAN_SIX"]];
-    }else if (_confirmPwdTextField.text.length>12 || _confirmPwdTextField.text.length<6){
+    }else if (_confirmPwdTextField.text.length>pwMaxLength || _confirmPwdTextField.text.length<pwMinLength){
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"PASSWORD_LESSTHAN_SIX"]];
     }else{
         

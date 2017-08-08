@@ -23,11 +23,15 @@
 
 @property (nonatomic, copy) NSString *binUrl;
 
+@property (nonatomic, copy) NSMutableArray *binUrls;          // 记录 url 包
+
 @property (nonatomic, assign) CGFloat totalSize;
 @property (nonatomic, copy) NSString *totalSizeStr;
 
 @property (nonatomic, assign) int dlState;
 
 @property (nonatomic, assign) int netState;
+
+@property (nonatomic, strong) NSMutableArray *downLoadURLArr;   // 记录 需要下载的URL，下载完后 逐个删除
 
 @end

@@ -19,7 +19,7 @@
 ////背景图片（默认无)
 //@property (nonatomic,strong)UIImageView *bgImageView;
 
-@property (nonatomic,assign)id <DJDelayPickerViewDelegate> delegate;
+@property (nonatomic,weak)id <DJDelayPickerViewDelegate> delegate;
 
 + (instancetype)delayPickerView;
 

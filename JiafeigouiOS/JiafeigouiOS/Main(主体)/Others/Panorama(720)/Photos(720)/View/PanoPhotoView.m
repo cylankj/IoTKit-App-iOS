@@ -35,12 +35,13 @@
     
     [self addSubview:self.deleteButton];
     [self.deleteButton mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self).with.offset(15);
+        make.right.equalTo(self).with.offset(-15.0);
         make.centerY.equalTo(self);
     }];
     [self addSubview:self.selectAllBtn];
     [self.selectAllBtn mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.right.equalTo(self).with.offset(-15.0);
+        
+        make.left.equalTo(self).with.offset(15);
         make.centerY.equalTo(self);
     }];
     [self addSubview:self.lineView];
@@ -62,7 +63,7 @@
         [_deleteButton.titleLabel setFont:[UIFont systemFontOfSize:15]];
         [_deleteButton setTitleColor:[UIColor colorWithHexString:@"#4b9fd5"] forState:UIControlStateNormal];
         [_deleteButton setTitleColor:[UIColor colorWithHexString:@"#e1e1e1"] forState:UIControlStateDisabled];
-        [_deleteButton setTitle:[JfgLanguage getLanTextStrByKey:@"DELETE"] forState:UIControlStateNormal];
+//        [_deleteButton setTitle:[JfgLanguage getLanTextStrByKey:@"不全选"] forState:UIControlStateSelected];
         _deleteButton.enabled = NO;
     }
     

@@ -39,6 +39,37 @@ NSString *const adTagURLKey = @"adTagURL";
 NSString *const adEndTimeKey = @"adEndTime";
 
 #pragma mark
+#pragma mark 长度 常量
+
+// 注册，登录，修改密码 密码长度
+int const pwMinLength = 6;
+int const pwMaxLength = 32;
+
+// 账号 长度
+int const accountMaxLength = 65;
+
+// 验证码长度
+int const smsMaxLength = 6;
+
+#pragma mark
+#pragma mark Panorama720 Key
+NSString *const panoSdCardExistKey = @"sdIsExist";
+NSString *const panoSdCardTotalStorage = @"storage";
+NSString *const panoSdCardUsedStorage = @"storage_used";
+NSString *const panoSdCardError = @"sdcard_recogntion";
+
+NSString *const devName = @"devname";
+NSString *const sdCardIsExist = @"sdIsExist";
+NSString *const totalSpace = @"storage";
+NSString *const usedSpace = @"storage_used";
+NSString *const ssid = @"SSID";
+NSString *const mac = @"Mac";
+NSString *const sysVersion = @"sysver";
+NSString *const panoBattery = @"battery";
+NSString *const panoUptime = @"uptime";
+NSString *const panoIsCharging = @"powerline";
+
+#pragma mark
 #pragma mark oem Key
 NSString *const oemNameKey = @"oemname";
 

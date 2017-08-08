@@ -26,6 +26,6 @@
 
 @property (nonatomic, assign) configWifiType configType;
 
-@property (nonatomic,assign)id <ConnDeviceVCNextActionDelegate> delegate;
+@property (nonatomic,weak)id <ConnDeviceVCNextActionDelegate> delegate;
 
 @end

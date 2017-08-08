@@ -23,6 +23,8 @@
  */
 @property (copy, nonatomic) NSString *info;
 
+@property (nonatomic, assign) productType pType;
+
 @property (assign, nonatomic) DeviceNetType deviceNetType;
 
 /**
@@ -54,6 +56,9 @@
 // SD卡 信息
 @property (assign, nonatomic) BOOL isExistSDCard;
 @property (assign, nonatomic) int sdCardError;
+@property (nonatomic, copy) NSString *SDCardInfo;
+@property (nonatomic, assign) SDCardType sdCardType;
+@property (nonatomic, assign) BOOL isClearingSDCard;
 
 /**
  *  延迟拍摄
@@ -85,6 +90,14 @@
  *  电流 频率 110V
  */
 @property (assign, nonatomic) BOOL isNTSC;
+/*
+ *  有线网 是否可用
+ */
+@property (assign, nonatomic) BOOL isWiredNetAvailalbe;
+/*
+ *  有线网 是否 开启
+ */
+@property (assign, nonatomic) BOOL isUsingWiredNet;
 
 /**
  *  是否开启 通知
@@ -95,6 +108,11 @@
  门磁,开关时通知我
  */
 @property (assign, nonatomic) BOOL isNotifyMe;
+/*
+ *  是否在 局域网
+ */
+@property (assign, nonatomic) BOOL isInLocalNet;
+@property (nonatomic, copy) NSString *ipAdress;
 
 #pragma mark
 #pragma mark  是否显示小红点
@@ -104,8 +122,14 @@
 @property (nonatomic, assign) BOOL isShowAutoPhotoRedDot;
 // 延时摄影 小红点
 @property (nonatomic, assign) BOOL isShowDelayPhotoRedDot;
+// 微信报警 小红点
+@property (nonatomic, assign) BOOL isShowWxRedDot;
 // 其他小红点
 @property (nonatomic, assign) BOOL isShowOthersRedDot;
+
+#pragma mark
+#pragma mark  720p 独有属性
+@property (nonatomic, copy) NSString *outdoorString;
 
 #pragma mark
 #pragma mark  单元格 是否可点击
@@ -117,6 +141,8 @@
 @property (assign, nonatomic) BOOL isMobileCanClick;
 @property (assign, nonatomic) BOOL isDelayPhotoCanClick;
 @property (assign, nonatomic) BOOL isStandByCanClick;
+@property (assign, nonatomic) BOOL isWifiConfigCanClick;
+@property (assign, nonatomic) BOOL isHotWiredCanClick;
 
 // 所有的cell
 @property (assign, nonatomic) BOOL isCellCanClick;
@@ -124,4 +150,6 @@
 // detail Text Color
 @property (nonatomic, copy) UIColor *detailTextColor;
 
+// cache size
+@property (nonatomic, copy) NSString *cacheString;
 @end

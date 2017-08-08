@@ -19,11 +19,24 @@
  */
 @property (assign, nonatomic) NSInteger sensitive;
 @property (copy, nonatomic) NSString *sensitiveStr;
+/*
+ *  AI 识别
+ */
+@property (strong, nonatomic) NSArray *aiRecognitions;
+@property (copy, nonatomic) NSString *aiRecognitionStr;
+@property (nonatomic, assign) BOOL isShowAIRedDot;
 /**
  *  设备 提示音
  */
 @property (assign, nonatomic) int soundType;
 @property (copy, nonatomic) NSString *soundStr;
+
+/*
+ * 报警 时间间隔 单位：秒
+ */
+@property (assign, nonatomic) int alramDuration;
+@property (nonatomic, copy) NSString *alramDurStr;
+
 /**
  *  设备提示音提示时长
  */
@@ -97,4 +110,5 @@
 @property (assign, nonatomic) BOOL isSunChecked;
 
 @end
+
 

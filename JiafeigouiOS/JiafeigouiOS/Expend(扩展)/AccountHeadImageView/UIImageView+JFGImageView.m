@@ -16,7 +16,18 @@
 
 - (void)jfg_setImageWithURL:(NSURL *)url placeholderImage:(UIImage *)placeholder
 {
-    [self jfg_setImageWithURL:url placeholderImage:placeholder options:0 progress:nil completed:nil];
+    [self jfg_setImageWithURL:url placeholderImage:placeholder options:0 progress:nil completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+        
+        if (cacheType == SDImageCacheTypeDisk || cacheType == SDImageCacheTypeMemory) {
+            //NSLog(@"%@",imageURL);
+            
+        }
+        
+        if (error) {
+            NSLog(@"error:%@ imageUrl:%@",error,imageURL);
+        }
+        
+    }];
 }
 
 - (void)jfg_setImageWithURL:(NSURL *)url placeholderImage:(UIImage *)placeholder options:(SDWebImageOptions)options progress:(SDWebImageDownloaderProgressBlock)progressBlock completed:(SDWebImageCompletionBlock)completedBlock

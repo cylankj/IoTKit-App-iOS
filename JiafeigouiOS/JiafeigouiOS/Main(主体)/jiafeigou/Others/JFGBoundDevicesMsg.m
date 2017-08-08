@@ -12,6 +12,8 @@
 #import "JfgCachePathManager.h"
 #import "JfgConfig.h"
 #import "CommonMethod.h"
+#import "jfgConfigManager.h"
+#import "JfgTypeDefine.h"
 
 /*
 
@@ -90,6 +92,8 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
 -(void)jfgDeviceList:(NSArray<JFGSDKDevice *> *)deviceList
 {
     NSMutableArray *newList = [[NSMutableArray alloc]init];
+    NSArray <NSArray <AddDevConfigModel *>*>* allType = [jfgConfigManager getAddDevModel];
+    
     
     [deviceList enumerateObjectsUsingBlock:^(JFGSDKDevice * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
        
@@ -98,75 +102,55 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
         model.sn = obj.sn;
         model.alias = obj.alias;
         model.pid = obj.pid;
-        model.Battery = 200;
-        switch ([obj.pid intValue]) {
-            case 4:
-            case 1071:{
-                //3G摄像头
-                model.deviceType = JFGDeviceTypeCamera3G;
+        model.Battery = 100;
+        
+        NSInteger typeMark = 0;
+        
+        for (NSArray *subArr in allType) {
+            for (AddDevConfigModel *_model in subArr) {
+                
+                for (NSNumber *osNum in _model.osList) {
+                    
+                    if ([osNum intValue] == [model.pid intValue]) {
+                        typeMark = [_model.typeMark intValue];
+                        break;
+                    }
+                }
+                if (typeMark !=0) {
+                    break;
+                }
             }
+            if (typeMark !=0) {
                 break;
-            case 16:{
-                //4G摄像头
-                model.deviceType = JFGDeviceTypeCamera4G;
             }
-                break;
-            case 5:
-            case 7:
-            case 17:
-            case 23:
-            case 26:
-            case 1090:
-            case 1088:
-            {
-                //摄像头
-                model.deviceType = JFGDeviceTypeCameraWifi;
-            }
-                break;
-            case 18:
-            case 19:
-            case 20:
-            case 21:
-            case 1089:
-            case 1091:
-            case 1092:{
-                //全景摄像机
+        }
+        
+        switch (typeMark) {
+            case 2:
                 model.deviceType = JFGDeviceTypePanoramicCamera;
-            }
-                break;                
-            case 6:
-            case 15:
-            case 22:
-            case 24:
-            case 25:
-            case 27:
-            case 1160:
-            case 1093:
-            case 1094:{
-                //门铃
+                break;
+            case 3:
+            case 7:
                 model.deviceType = JFGDeviceTypeDoorBell;
-            }
-                break;
-            case 11:{
-                //门磁
-                model.deviceType = JFGDeviceTypeDoorSensor;
-            }
-                break;
-            case 8:{
-                //中控
-                model.deviceType = JFGDeviceTypeEfamily;
-            }
                 break;
             default:
+                model.deviceType = JFGDeviceTypeCameraWifi;
                 break;
         }
-
-        if (obj.shareAccount == nil || [obj.shareAccount isEqualToString:@""]) {
-            //model.shareState = DevShareStatuNot;
-        }else{
+        
+        if ([obj.pid intValue] == 4 || [obj.pid intValue] == 1071) {
+            //3G摄像头
+            model.deviceType = JFGDeviceTypeCamera3G;
+        }else if ([obj.pid intValue] == 16){
+            //4G摄像头
+            model.deviceType = JFGDeviceTypeCamera4G;
+        }
+        
+        if ([obj.shareAccount isKindOfClass:[NSString class]] && ![obj.shareAccount isEqualToString:@""]) {
             model.shareState = DevShareStatuOther;
             NSLog(@"cid:%@ Show",model.uuid);
         }
+        
         [self setValueFor720WithModel:model];
         [newList addObject:model];
         
@@ -191,9 +175,11 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
                     newModel.lastMsgTime = model.lastMsgTime;
                     newModel.delayCamera = model.delayCamera;
                     newModel.Battery = model.Battery;
+                    newModel.isPower = model.isPower;
                     newModel.safeIdle = model.safeIdle;
                     newModel.safeFence = model.safeFence;
                     newModel.doorcOpen = model.doorcOpen;
+                    newModel.unReadPhotoCount = model.unReadPhotoCount;
                     
                     break;
                     
@@ -218,6 +204,12 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
         model.safeIdle = NO;
         model.safeFence = NO;
     }
+}
+
+
+-(void)jfgOtherClientAnswerDoorbellForCid:(NSString *)cid
+{
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"rev:门铃被其他端接听:%@",cid]];
 }
 
 //比较服务端设备数据与本地(判断是否有设备被取消分享，或者其他端删除)
@@ -302,6 +294,11 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
     //NSLog(@"%d",success);
 }
 
+-(void)clearDeviceList
+{
+    [self.devicesList removeAllObjects];
+}
+
 //解档
 -(NSMutableArray <JiafeigouDevStatuModel *>*)getDevicesList
 {
@@ -309,6 +306,23 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
         self.devicesList = [[NSMutableArray alloc]initWithArray:[self getCacheDeviceList]];
     }
     return self.devicesList;
+}
+
+- (JiafeigouDevStatuModel *)getDevModelWithCid:(NSString *)cid
+{
+    NSArray *devModels = [self getDevicesList];
+    JiafeigouDevStatuModel *resultModel = nil;
+    
+    for (NSInteger i = 0; i < devModels.count; i ++)
+    {
+        resultModel = (JiafeigouDevStatuModel *)[devModels objectAtIndex:i];
+        if ([resultModel.uuid isEqualToString:cid])
+        {
+            return resultModel;
+        }
+    }
+    
+    return resultModel;
 }
 
 -(NSArray *)getCacheDeviceList

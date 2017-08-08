@@ -24,20 +24,30 @@
 #import "Pano720PhotoModel.h"
 #import "JFGLanguage.h"
 #import "CommonMethod.h"
+#import "JfgConstKey.h"
 #import "LSAlertView.h"
 #import "ProgressHUD.h"
 #import <JFGSDK/JFGSDK.h>
+#import <JFGSDK/MPMessagePackReader.h>
 #import "PanoPhotoView.h"
+#import "FLProressHUD.h"
 #import "CommonMethod.h"
+#import "PopAnimation.h"
 #import "LoginManager.h"
+#import "JfgHttp.h"
 
 #define headerViewHeight 46
+
+#define timeoutDur  10
 
 typedef NS_ENUM(NSInteger, controlTag) {
     alertViewTag = 1001,
 };
 
-@interface Pano720PhotoVC ()<UITableViewDelegate, UITableViewDataSource, YBPopupMenuDelegate, JFGSDKCallbackDelegate>
+@interface Pano720PhotoVC ()<UITableViewDelegate, UITableViewDataSource, YBPopupMenuDelegate, JFGSDKCallbackDelegate, watchPhotoDelegate>
+{
+    NSTimer *fpingTimer;
+}
 
 @property (nonatomic, assign) BOOL isConnectted;
 
@@ -53,11 +63,17 @@ typedef NS_ENUM(NSInteger, controlTag) {
 @property (nonatomic, strong) PanoPhotoView *bottomBiew;
 
 @property (nonatomic, strong) Pano720PhotoViewModel *pano720VM;
-@property (nonatomic, assign) DeleteModel delModel;
+@property (nonatomic, assign) DeleteModel delModel;   // delte Type
+
+@property (nonatomic, strong) NSMutableArray *downloadArr; // need download models
+@property (nonatomic, strong) NSMutableArray *videoDownloadArr; // video download models
+@property (nonatomic, strong) NSMutableArray *thumbNailArr;
+
+@property (nonatomic, assign) BOOL isFirstPing;
+
 @end
 
 @implementation Pano720PhotoVC
-
 
 - (void)viewDidLoad
 {
@@ -69,22 +85,88 @@ typedef NS_ENUM(NSInteger, controlTag) {
     
     [self initData];
     
+    self.isFirstPing = YES;
+    self.isConnectted = NO; // default NO
+    [self jfgFpingRequest];
+    [self startFping];
 }
+
+-(void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+}
+
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    
+    [self stopFping];
+    fpingTimer = nil;
+}
+
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
 
+- (void)dealloc
+{
+    JFGLog(@"Pano720PhotoVC dealloc");
+}
+
+#pragma mark- fping
+-(void)startFping
+{
+    /*
+    if (fpingTimer == nil) {
+        fpingTimer = [NSTimer scheduledTimerWithTimeInterval:timeoutDur+1 target:self selector:@selector(fpingAction) userInfo:nil repeats:YES];
+    }
+     */
+}
+
+- (void)jfgFpingRequest
+{
+    [JFGSDK fping:@"255.255.255.255"];
+    [JFGSDK fping:@"192.168.10.255"];
+    [JFGSDK appendStringToLogFile:@"__f_ping request "];
+    [self performSelector:@selector(changeConnectState) withObject:nil afterDelay:timeoutDur];
+}
+
+-(void)fpingAction
+{
+    [self jfgFpingRequest];
+    self.isFirstPing = NO;
+}
+
+-(void)stopFping
+{
+    if (fpingTimer && [fpingTimer isValid])
+    {
+        [fpingTimer invalidate];
+    }
+    fpingTimer = nil;
+}
+
+#pragma mark 
+#pragma mark  view
 
 - (void)initView
 {
+    JFG_WS(weakSelf)
+    
     [self.view addSubview:self.panoTableView];
     [self.panoTableView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(self.view).with.offset(64.0f);
-        make.left.equalTo(self.view).with.offset(0);
-        make.right.equalTo(self.view).with.offset(0);
-        make.bottom.equalTo(self.view).with.offset(0);
+        make.top.equalTo(weakSelf.view).with.offset(64.0f);
+        make.left.equalTo(weakSelf.view).with.offset(0);
+        make.right.equalTo(weakSelf.view).with.offset(0);
+        make.bottom.equalTo(weakSelf.view).with.offset(0);
     }];
     
     [self.view addSubview:self.titltView];
@@ -96,19 +178,14 @@ typedef NS_ENUM(NSInteger, controlTag) {
     
     [self initRefreshView];
     [self.titltView updateLayout];
-    
-    // foot head refresh
-    MJRefreshAutoNormalFooter *footer = (MJRefreshAutoNormalFooter *)self.panoTableView.mj_footer;
-    [footer setTitle:[JfgLanguage getLanTextStrByKey:@"RELEASE_TO_LOAD"] forState:MJRefreshStatePulling];
-    [footer setTitle:[JfgLanguage getLanTextStrByKey:@"PULL_TO_LOAD"] forState:MJRefreshStateIdle];
-    [footer setTitle:[JfgLanguage getLanTextStrByKey:@"LOADING"] forState:MJRefreshStateRefreshing];
-    footer.automaticallyHidden = NO;
+
 }
 
 - (void)initNavigation
 {
     [self.leftButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     
+    self.rightButton.enabled = NO;
     self.rightButton.hidden = NO;
     [self.rightButton setImage:[UIImage imageNamed:@"album_icon_delete"] forState:UIControlStateNormal];
     [self.rightButton setImage:[UIImage imageNamed:@"album_icon_delete_disabled"] forState:UIControlStateDisabled];
@@ -119,34 +196,43 @@ typedef NS_ENUM(NSInteger, controlTag) {
 
 -(void)initRefreshView
 {
-    __weak typeof(self)weakSelf = self;
+    JFG_WS(weakSelf);
     
     // header refresh block
-    self.panoTableView.mj_header = [JFGRefreshLoadingHeader headerWithRefreshingBlock:^{
-        
-        if (self.isConnectted)
+#pragma mark head
+    //MJRefreshStateHeader
+    self.panoTableView.mj_header = [MJRefreshNormalHeader headerWithRefreshingBlock:^{
+        if (weakSelf.isConnectted)
         {
             [weakSelf.panoTableView.mj_footer resetNoMoreData];
             
-            [weakSelf.pano720VM requestURL:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getFileList&begintime=0&endtime=%lld&count=20",self.pano720VM.ipAddress,(long long)[[NSDate date]timeIntervalSince1970]] parameters:nil progress:nil downloadSuccess:^(Pano720PhotoModel *dlModel, int result) {
-                [weakSelf.panoTableView reloadData];
-            } success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
+            [weakSelf.pano720VM requestURL:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getFileList&begintime=0&endtime=%lld&count=20",weakSelf.pano720VM.ipAddress,(long long)[[NSDate date]timeIntervalSince1970]] parameters:nil progress:nil downloadSuccess:nil success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
                 [weakSelf updateTableView:models];
-                [weakSelf.panoTableView.mj_header endRefreshing];
             } failure:^(NSURLSessionDataTask *task, NSError *error) {
                 [weakSelf.panoTableView.mj_header endRefreshing];
             }];
             
         }else{
-            [self.panoTableView.mj_header endRefreshing];
+            [weakSelf.panoTableView.mj_header endRefreshing];
         }
+    
     }];
     
-    // footer refresh block
+    MJRefreshNormalHeader *header = (MJRefreshNormalHeader *) self.panoTableView.mj_header;
+    [header setTitle:[JfgLanguage getLanTextStrByKey:@"REFRESHING"] forState:MJRefreshStateRefreshing];
+    [header setTitle:[JfgLanguage getLanTextStrByKey:@"RELEASE_TO_REFRESH"] forState:MJRefreshStatePulling];
+    [header setTitle:[JfgLanguage getLanTextStrByKey:@"PULL_TO_REFRESH"] forState:MJRefreshStateIdle];
     
+    header.lastUpdatedTimeLabel.hidden = YES;
+    
+    if ([CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+    {
+        [self.panoTableView.mj_header beginRefreshing];
+    }
+    
+#pragma mark foot
+    // footer refresh block
     self.panoTableView.mj_footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
-        
-        NSLog(@"update more");
         
         switch (weakSelf.pano720VM.fileExistType)
         {
@@ -159,10 +245,10 @@ typedef NS_ENUM(NSInteger, controlTag) {
                     return ;
                 }
                 
-                Pano720PhotoModel *model = [[self.dataArray lastObject] lastObject];
+                Pano720PhotoModel *model = [[weakSelf.dataArray lastObject] lastObject];
                 
-                [weakSelf.pano720VM requestURL:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getFileList&begintime=0&endtime=%lld&count=20",self.pano720VM.ipAddress,model.fileTime] parameters:nil progress:nil downloadSuccess:^(Pano720PhotoModel *dlModel, int result) {
-                    [weakSelf.panoTableView reloadData];
+                [weakSelf.pano720VM requestMoreURL:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getFileList&begintime=0&endtime=%lld&count=20",weakSelf.pano720VM.ipAddress,model.fileTime] parameters:nil progress:nil downloadSuccess:^(Pano720PhotoModel *dlModel, int result) {
+                    [weakSelf reloadTableView];
                 } success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
                     if (models.count>0)
                     {
@@ -180,8 +266,8 @@ typedef NS_ENUM(NSInteger, controlTag) {
                 break;
             case FileExistTypeLocal:
             {
-                Pano720PhotoModel *model = [[self.dataArray lastObject] lastObject];
-                [self.pano720VM getMoreLocalDataWithBeginTime:model.fileTime count:20 success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
+                Pano720PhotoModel *model = [[weakSelf.dataArray lastObject] lastObject];
+                [weakSelf.pano720VM getMoreLocalDataWithBeginTime:model.fileTime count:20 success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
                     if (models.count>0)
                     {
                         [weakSelf addDataWithArray:models];
@@ -201,20 +287,26 @@ typedef NS_ENUM(NSInteger, controlTag) {
         }
     }];
     
-    
+    MJRefreshAutoNormalFooter *footer = (MJRefreshAutoNormalFooter *)weakSelf.panoTableView.mj_footer;
+    [footer setTitle:[JfgLanguage getLanTextStrByKey:@"RELEASE_TO_LOAD"] forState:MJRefreshStatePulling];
+    [footer setTitle:[JfgLanguage getLanTextStrByKey:@"PULL_TO_LOAD"] forState:MJRefreshStateIdle];
+    [footer setTitle:[JfgLanguage getLanTextStrByKey:@"LOADING"] forState:MJRefreshStateRefreshing];
 }
 
 - (void)updateTableView:(NSArray *)data
 {
     self.panoTableView.hidden = !(data.count>0);
     self.noDataView.hidden = !self.panoTableView.hidden;
-    self.rightButton.hidden = self.panoTableView.hidden;
+    self.rightButton.enabled = !self.panoTableView.hidden;
     
     if (data.count > 0)
     {
         [self.dataArray removeAllObjects];
         [self.dataArray addObjectsFromArray:data];
-        [self.panoTableView reloadData];
+        
+        [self handleDataArray:self.dataArray];
+        
+        [self reloadTableView];
         
         if (self.delModel == DeleteModel_DeleteAll)
         {
@@ -231,58 +323,125 @@ typedef NS_ENUM(NSInteger, controlTag) {
     }
 }
 
+- (void)reloadTableView
+{
+    if (self.rightButton.selected == YES)
+    {
+        return;
+    }
+    
+    JFG_WS(weakSelf);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [weakSelf.panoTableView reloadData];
+    });
+}
+
+- (void)showLocalData
+{
+    [self setTitleLabelText:[JfgLanguage getLanTextStrByKey:@"Tap1_File_Phone"]];
+    self.pano720VM.fileExistType = FileExistTypeLocal;
+    
+    JFG_WS(weakSelf);
+    [self.pano720VM requestURL:nil parameters:nil progress:nil downloadSuccess:nil success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
+        [weakSelf updateTableView:models];
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        
+    }];
+}
+
+- (void)showSDcardPulloutAlert
+{
+    if (self.navigationController.visibleViewController == self)
+    {
+        [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
+            
+        } OKBlock:^{
+        }];
+        
+        [self showLocalData];
+    }
+}
+
+- (void)leftButtonAction:(UIButton *)sender
+{
+    [self.navigationController.view.layer addAnimation:[PopAnimation moveBottomAnimation] forKey:nil];
+    [self.navigationController popViewControllerAnimated:NO];
+}
+
 #pragma mark
 #pragma mark data
 - (void)initData
 {
     [self setDefaultFileExistType];
     [JFGSDK addDelegate:self];
-    [self jfgFpingRequest];
     self.delModel = DeleteModel_Delete;
-}
-- (void)jfgFpingRequest
-{
-    [JFGSDK fping:@"255.255.255.255"];
-    [JFGSDK fping:@"192.168.10.255"];
 }
 
 - (void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
 {
     if ([ask.cid isEqualToString:self.cid])
     {
-        [self setIsConnectted:YES];
-        [self setDefaultFileExistType];
-        self.pano720VM.ipAddress = ask.address;
-        [self.pano720VM requestURL:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getFileList&begintime=0&endtime=%lld&count=20",ask.address,(long long)[[NSDate date] timeIntervalSince1970]] parameters:nil  progress:nil downloadSuccess:^(Pano720PhotoModel *dlModel, int result) {
-            NSLog(@"download success");
-            [self.panoTableView reloadData];
-        }  success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
-            [self updateTableView:models];
-        } failure:^(NSURLSessionDataTask *task, NSError *error) {
-            
-        }];
+        [JFGSDK appendStringToLogFile:@"__f_ping response "];
         
+        JFG_WS(weakSelf);
+//        if (self.isFirstPing)
+        {
+            self.isConnectted = YES;
+            [self setIsConnectted:YES];
+            [self setDefaultFileExistType];
+            self.pano720VM.ipAddress = ask.address;
+            [self cancelChangeConnectState];
+            
+            [self.pano720VM requestURL:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getFileList&begintime=0&endtime=%lld&count=20",ask.address,(long long)[[NSDate date] timeIntervalSince1970]] parameters:nil  progress:nil downloadSuccess:nil success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
+                [weakSelf updateTableView:models];
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                
+            }];
+            
+            [[JfgHttp sharedHttp] get:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getSdInfo", ask.address] parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+                
+                BOOL isExistSDCard = [[responseObject objectForKey:panoSdCardExistKey] boolValue];
+                [weakSelf setIsConnectted:isExistSDCard];
+                
+                if (isExistSDCard == NO)
+                {
+                    [weakSelf showLocalData];
+                }
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                
+            }];
+        }
     }
 }
 
 - (void)setDefaultFileExistType
 {
     // when wifi or ap connect, show phone_photo and photo else show  phonephoto
-    if ([[NetworkMonitor sharedManager] currentNetworkStatu] == ReachableViaWiFi || [CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+    if ([CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid] || self.isConnectted)
     {
-        [self setTitleLabelText:[JfgLanguage getLanTextStrByKey:@"Tap1_File_CameraNPhone"]];
+        [self setTitleLabelText:[JfgLanguage getLanTextStrByKey:@"photo"]];
         self.pano720VM.fileExistType = FileExistTypeBoth;
     }
     else
     {
         [self setTitleLabelText:[JfgLanguage getLanTextStrByKey:@"Tap1_File_Phone"]];
         self.pano720VM.fileExistType = FileExistTypeLocal;
+        
+        JFG_WS(weakSelf);
+        [self.pano720VM requestURL:nil parameters:nil progress:nil downloadSuccess:nil success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
+            [weakSelf updateTableView:models];
+        } failure:^(NSURLSessionDataTask *task, NSError *error) {
+            
+        }];
     }
 }
 
 - (void)fileExistTypeChanged:(FileExistType)changedValue
 {
+    [self.panoTableView.mj_header endRefreshing];
+    
     self.pano720VM.fileExistType = changedValue;
+    JFG_WS(weakSelf);
     
     switch (self.pano720VM.fileExistType)
     {
@@ -291,11 +450,11 @@ typedef NS_ENUM(NSInteger, controlTag) {
         {
             if (self.pano720VM.ipAddress != nil)
             {
-                
-                [self.pano720VM requestURL:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getFileList&begintime=0&endtime=%lld&count=20",self.pano720VM.ipAddress,(long long)[[NSDate date]timeIntervalSince1970]] parameters:nil  progress:nil downloadSuccess:^(Pano720PhotoModel *dlModel, int result) {
-                    
-                } success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
-                    [self updateTableView:models];
+                [self.pano720VM requestURL:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getFileList&begintime=0&endtime=%lld&count=20",self.pano720VM.ipAddress,(long long)[[NSDate date]timeIntervalSince1970]] parameters:nil  progress:nil downloadSuccess:nil success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
+                    if (weakSelf.pano720VM.fileExistType == FileExistTypeBoth)
+                    {
+                        [weakSelf updateTableView:models];
+                    }
                 } failure:^(NSURLSessionDataTask *task, NSError *error) {
                     
                 }];
@@ -305,9 +464,13 @@ typedef NS_ENUM(NSInteger, controlTag) {
             break;
         case FileExistTypeLocal:
         {
-            
+            [self setTitleLabelText:[JfgLanguage getLanTextStrByKey:@"Tap1_File_Phone"]];
             [self.pano720VM requestURL:nil parameters:nil progress:nil downloadSuccess:nil success:^(NSURLSessionDataTask *task, NSMutableArray<Pano720PhotoModel *> *models) {
-                [self updateTableView:models];
+                if (weakSelf.pano720VM.fileExistType == FileExistTypeLocal)
+                {
+                    [weakSelf updateTableView:models];
+                }
+                
             } failure:^(NSURLSessionDataTask *task, NSError *error) {
                 
             }];
@@ -364,6 +527,261 @@ typedef NS_ENUM(NSInteger, controlTag) {
     
 }
 
+- (NSMutableArray *)handleDataArray:(NSMutableArray *)originArr
+{
+    [self.downloadArr removeAllObjects];
+    [self.thumbNailArr removeAllObjects];
+    
+    for (NSInteger i = 0; i < originArr.count; i ++)
+    {
+        id element = [originArr objectAtIndex:i];
+        
+        if ([element isKindOfClass:[NSArray class]])
+        {
+            NSArray *elementArr = (NSArray *)element;
+            for (NSInteger j = 0; j < elementArr.count; j ++)
+            {
+                Pano720PhotoModel *model = [elementArr objectAtIndex:j];
+                if ([model.fileName hasSuffix:@".jpg"])
+                {
+                    [self.downloadArr addObject:[elementArr objectAtIndex:j]];
+                }
+            
+                [self.thumbNailArr addObject:[elementArr objectAtIndex:j]];
+            }
+        }
+    }
+    
+    [self downloadThumbNailWithModel:[self.thumbNailArr firstObject]];
+    [self downloadImageWithModel:[self.downloadArr firstObject]];
+    
+    return self.downloadArr;
+}
+
+- (void)changeConnectState
+{
+    self.isConnectted = NO;
+    [self stopFping];
+    [self setIsConnectted:NO];
+    
+    [self fileExistTypeChanged:FileExistTypeLocal];
+}
+
+- (void)cancelChangeConnectState
+{
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(changeConnectState) object:nil];
+}
+
+- (BOOL)isDownloading:(NSArray <Pano720PhotoModel *> *)models
+{
+    if (self.videoDownloadArr.count > 0)
+    {
+        for (NSInteger i = 0; i < self.videoDownloadArr.count; i ++)
+        {
+            Pano720PhotoModel *downloadModel = [self.videoDownloadArr objectAtIndex:i];
+            
+            for (NSInteger j = 0; j < models.count; j ++)
+            {
+                Pano720PhotoModel *deleteModel = [models objectAtIndex:j];
+                
+                if ([downloadModel.fileName isEqualToString:deleteModel.fileName])
+                {
+                    return YES;
+                }
+            }
+        }
+    }
+    
+    return NO;
+}
+
+// 从数据源中 寻找正在下载的model 并返回
+- (Pano720PhotoModel *)currentDownloadVideoModel:(Pano720PhotoModel *)model
+{
+    for (NSInteger i = 0; i < self.dataArray.count; i ++)
+    {
+        NSArray *rows = [self.dataArray objectAtIndex:i];
+        
+        for (NSInteger j = 0; j < rows.count; j ++)
+        {
+            Pano720PhotoModel *dataModel = [[self.dataArray objectAtIndex:i] objectAtIndex:j];
+            
+            if ([dataModel.fileName isEqualToString:model.fileName])
+            {
+                return dataModel;
+            }
+        }
+    }
+    
+    return nil;
+}
+
+
+#pragma mark
+#pragma mark download
+// download image
+- (void)downloadImageWithModel:(Pano720PhotoModel *)model
+{
+    JFG_WS(weakSelf);
+    model.downloadProgressStr = @"0%";
+    [self.pano720VM downloadImageWithModel:model state:^(SRDownloadState state) {
+        switch (state)
+        {
+            case SRDownloadStateFailed:
+            {
+                // 放后面，继续其他的下载
+                [weakSelf.downloadArr removeObject:model];
+                
+                for (NSInteger i = 0; i < weakSelf.dataArray.count; i ++)
+                {
+                    NSArray *rows = [weakSelf.dataArray objectAtIndex:i];
+                    
+                    for (NSInteger j = 0; j < rows.count; j ++)
+                    {
+                        Pano720PhotoModel *curModel = [rows objectAtIndex:j];
+                        
+                        if ([curModel.fileName isEqualToString:model.fileName])
+                        {
+                            curModel.location = fileInBoth;
+                            curModel.downLoadState = DownLoadStateFinished;
+                            
+                            [weakSelf reloadTableView];
+                        }
+                    }
+                }
+                
+                if (weakSelf.downloadArr.count > 0)
+                {
+                    [weakSelf downloadImageWithModel:[weakSelf.downloadArr firstObject]];
+                }
+            }
+                break;
+            case SRDownloadStateCompleted:
+            {
+                [weakSelf.downloadArr removeObject:model];
+                
+                for (NSInteger i = 0; i < weakSelf.dataArray.count; i ++)
+                {
+                    NSArray *rows = [weakSelf.dataArray objectAtIndex:i];
+                    
+                    for (NSInteger j = 0; j < rows.count; j ++)
+                    {
+                        Pano720PhotoModel *curModel = [rows objectAtIndex:j];
+                        
+                        if ([curModel.fileName isEqualToString:model.fileName])
+                        {
+                            curModel.location = fileInBoth;
+                            curModel.downLoadState = DownLoadStateFinished;
+                            
+                            [weakSelf reloadTableView];
+                        }
+                    }
+                }
+                
+                
+                if (weakSelf.downloadArr.count > 0)
+                {
+                    [weakSelf downloadImageWithModel:[weakSelf.downloadArr firstObject]];
+                }
+
+                if (weakSelf.downloadArr.count == 0) // 同步完成
+                {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [weakSelf.panoTableView.mj_header endRefreshing];
+                    });
+                }
+                
+            }
+            default:
+                break;
+        }
+    } progress:^(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress) {
+        int progressShow = progress*100;
+        model.downloadProgressStr = [NSString stringWithFormat:@"%02d%%",progressShow];
+        [weakSelf reloadTableView];
+    } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
+        
+    }];
+}
+
+// download video
+- (void)downloadVideoWithModel:(Pano720PhotoModel *)model
+{
+    JFG_WS(weakSelf);
+    
+    __block Pano720PhotoModel *panoModel = nil;
+    
+    if (![self.videoDownloadArr containsObject:model])
+    {
+        [self.videoDownloadArr addObject:model];
+    }
+    
+    [self.pano720VM downloadVideoWithModel:model state:^(SRDownloadState state) {
+        switch (state)
+        {
+            case SRDownloadStateCompleted:
+            {
+                model.downloadProgressStr = @"";
+                model.location = fileInBoth;
+                model.downLoadState = DownLoadStateFinished;
+                [weakSelf reloadTableView];
+                [weakSelf.videoDownloadArr removeObject:model];
+            }
+                break;
+            case SRDownloadStateFailed:
+            {
+                
+            }
+            default:
+                break;
+        }
+    } progress:^(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress) {
+        int progressShow = progress*100;
+        panoModel = [weakSelf currentDownloadVideoModel:model];
+        
+        panoModel.downloadProgressStr = [NSString stringWithFormat:@"%02d%%",progressShow];
+        [weakSelf reloadTableView];
+    } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
+        
+    }];
+}
+
+//  download thumbNail
+- (void)downloadThumbNailWithModel:(Pano720PhotoModel *)model
+{
+    JFG_WS(weakSelf);
+    
+    [self.pano720VM downloadThumbNailWhithModel:model state:^(SRDownloadState state) {
+        switch (state)
+        {
+            case SRDownloadStateFailed:
+            {
+                [weakSelf.thumbNailArr removeObject:model];
+                [weakSelf.thumbNailArr addObject:model];
+                
+                if (weakSelf.thumbNailArr.count > 0)
+                {
+                    [weakSelf downloadThumbNailWithModel:[weakSelf.thumbNailArr firstObject]];
+                }
+                
+            }
+                break;
+            case SRDownloadStateCompleted:
+            {
+                [weakSelf.thumbNailArr removeObject:model];
+                if (weakSelf.thumbNailArr.count > 0)
+                {
+                    [weakSelf downloadThumbNailWithModel:[weakSelf.thumbNailArr firstObject]];
+                }
+                
+                [weakSelf reloadTableView];
+            }
+            default:
+                break;
+        }
+    } progress:nil completion:nil];
+}
+
 #pragma mark
 #pragma mark action
 - (void)deletePicAction:(id)sender
@@ -371,27 +789,30 @@ typedef NS_ENUM(NSInteger, controlTag) {
     UIButton *senderBtn = (UIButton *)sender;
     senderBtn.selected = !senderBtn.selected;
     self.bottomBiew.deleteButton.enabled = NO;
+    self.bottomBiew.selectAllBtn.selected = NO;
 
     [senderBtn setImage:senderBtn.selected?nil:[UIImage imageNamed:@"album_icon_delete"] forState:UIControlStateNormal];
+    
     [self.panoTableView setAllowsMultipleSelectionDuringEditing:senderBtn.selected];
     [[NSNotificationCenter defaultCenter] postNotificationName:isEditingNotification object:@(senderBtn.selected)];
     [self.panoTableView setEditing:senderBtn.selected];
     
+    JFG_WS(weakSelf);
+    
     [UIView animateWithDuration:0.2 animations:^{
         if (senderBtn.selected)
         {
-            self.bottomBiew.frame = CGRectMake(0, kheight- 44, Kwidth, 44);
+            weakSelf.bottomBiew.frame = CGRectMake(0, kheight- 44, Kwidth, 44);
         }
         else
         {
-            self.bottomBiew.frame = CGRectMake(0, kheight, Kwidth, 44);
+            weakSelf.bottomBiew.frame = CGRectMake(0, kheight, Kwidth, 44);
         }
     }];
 }
 
 - (void)deleteButtonAction:(UIButton *)sender
 {
-    
     NSArray *allSeletedIndexPath = [self.panoTableView indexPathsForSelectedRows];
     NSMutableArray *selectedModels = [NSMutableArray arrayWithCapacity:5];
     
@@ -399,19 +820,73 @@ typedef NS_ENUM(NSInteger, controlTag) {
     {
         NSIndexPath *indexPath = [allSeletedIndexPath objectAtIndex:i];
         Pano720PhotoModel *panoModel = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
+        
         [selectedModels addObject:panoModel];
     }
     
-    [self.pano720VM deleteFileWithModels:selectedModels deleteModel:self.delModel success:^(NSURLSessionDataTask *task, id responseObject) {
-        
-        // delete already exist model
-        [self deleteAlreadyDeletedModels:selectedModels];
-        
-    } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tips_DeleteFail"]];
-    }];
+    JFG_WS(weakSelf);
     
-    [self deletePicAction:self.rightButton];
+    switch (self.pano720VM.fileExistType)
+    {
+        case FileExistTypeBoth:
+        {
+            if ([self isDownloading:selectedModels])
+            {
+                [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_DeleteDownloadingTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                    
+                } OKBlock:^{
+                    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_DeletedCameraNCellphoneFileTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
+                        
+                    } OKBlock:^{
+                        [weakSelf.pano720VM deleteFileWithModels:selectedModels deleteModel:weakSelf.delModel success:^(NSURLSessionDataTask *task, id responseObject) {
+                            
+                            // delete already exist model
+                            [weakSelf deleteAlreadyDeletedModels:selectedModels];
+                            
+                        } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tips_DeleteFail"]];
+                        }];
+                        [weakSelf deletePicAction:weakSelf.rightButton];
+                    }];
+                }];
+            }
+            else // 直接删除
+            {
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_DeletedCameraNCellphoneFileTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
+                    
+                } OKBlock:^{
+                    [weakSelf.pano720VM deleteFileWithModels:selectedModels deleteModel:weakSelf.delModel success:^(NSURLSessionDataTask *task, id responseObject) {
+                        
+                        // delete already exist model
+                        [weakSelf deleteAlreadyDeletedModels:selectedModels];
+                        
+                    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tips_DeleteFail"]];
+                    }];
+                    [weakSelf deletePicAction:weakSelf.rightButton];
+                }];
+            }
+        }
+            break;
+            
+        default:
+        {
+            [weakSelf.pano720VM deleteFileWithModels:selectedModels deleteModel:self.delModel success:^(NSURLSessionDataTask *task, id responseObject) {
+                
+                // delete already exist model
+                [weakSelf deleteAlreadyDeletedModels:selectedModels];
+                
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tips_DeleteFail"]];
+            }];
+            [weakSelf deletePicAction:weakSelf.rightButton];
+        }
+            break;
+    }
+    
+    
+    
+    
 }
 
 - (void)deleteAlreadyDeletedModels:(NSArray *)selectedModels
@@ -461,45 +936,57 @@ typedef NS_ENUM(NSInteger, controlTag) {
     }
     
     
-    [self.panoTableView reloadData];
+    [self reloadTableView];
 }
+
 
 - (void)selectAllBtnAction:(UIButton *)sender
 {
     self.delModel = DeleteModel_DeleteAll;
     self.bottomBiew.deleteButton.enabled = YES;
-    
+    sender.selected = !sender.selected;
+
     for (NSInteger i = 0; i < self.dataArray.count; i ++)
     {
         NSArray *rows = [self.dataArray objectAtIndex:i];
         
         for (NSInteger j = 0; j < rows.count; j ++)
         {
-            [self.panoTableView selectRowAtIndexPath:[NSIndexPath indexPathForRow:j inSection:i] animated:YES scrollPosition:UITableViewScrollPositionNone];
+            if (sender.selected)
+            {
+                [self.panoTableView selectRowAtIndexPath:[NSIndexPath indexPathForRow:j inSection:i] animated:YES scrollPosition:UITableViewScrollPositionNone];
+            }
+            else
+            {
+                [self.panoTableView deselectRowAtIndexPath:[NSIndexPath indexPathForRow:j inSection:i] animated:YES];
+            }
         }
     }
-    
+    self.bottomBiew.deleteButton.enabled = [self.panoTableView indexPathsForSelectedRows]>0;
 }
 
-- (void)showMenu:(UITapGestureRecognizer *)gueseture
-{
-    YBPopupMenu *popupMenu =  [YBPopupMenu showAtPoint:CGPointMake(Kwidth*0.5, 64.0) titles:self.titles icons:@[@"album_icon_album_gray",@"album_icon_720camera_gray",@"album_icon_iphone_gray"] menuWidth:200 delegate:nil];
-    popupMenu.tag = alertViewTag;
-    popupMenu.dismissOnSelected = YES;
-    popupMenu.textColor = [UIColor colorWithHexString:@"#4b9fd5"];
-    popupMenu.isShowShadow = YES;
-    popupMenu.delegate = self;
-    popupMenu.offset = 2;
-    popupMenu.isDisconnectted = !self.isConnectted;
-    popupMenu.type = YBPopupMenuTypeDefault;
-    
-    [self.titltView rotateAnimation:YES];
-}
+//- (void)showMenu:(UITapGestureRecognizer *)gueseture
+//{
+//    YBPopupMenu *popupMenu =  [YBPopupMenu showAtPoint:CGPointMake(Kwidth*0.5, 64.0) titles:self.titles icons:@[@"album_icon_album_gray",@"album_icon_720camera_gray",@"album_icon_iphone_gray"] menuWidth:200 delegate:nil];
+//    popupMenu.tag = alertViewTag;
+//    popupMenu.dismissOnSelected = YES;
+//    popupMenu.textColor = [UIColor colorWithHexString:@"#4b9fd5"];
+//    popupMenu.isShowShadow = YES;
+//    popupMenu.delegate = self;
+//    popupMenu.offset = 2;
+//    popupMenu.firstCellCanClicked = self.isConnectted;
+//    popupMenu.secondCellCanClicked = self.isConnectted;
+//    popupMenu.type = YBPopupMenuTypeDefault;
+//    
+//    JFGLog(@"____self.isConnect  [%d]", self.isConnectted);
+//    
+//    [self.titltView rotateAnimation:YES];
+//}
 
 - (void)setTitleLabelText:(NSString *)text
 {
-    self.titltView.titleLbel.text = text;
-    [self.titltView updateLayout];
+//    self.titltView.titleLbel.text = text;
+//    [self.titltView updateLayout];
 }
 
 
@@ -545,7 +1032,7 @@ typedef NS_ENUM(NSInteger, controlTag) {
             break;
     }
     
-    [self.panoTableView reloadData];
+    [self reloadTableView];
 }
 
 
@@ -559,12 +1046,129 @@ typedef NS_ENUM(NSInteger, controlTag) {
 }
 
 #pragma mark
+#pragma mark  watch Video&photo delegate
+- (void)donwloadWithModel:(Pano720PhotoModel *)model
+{
+    [self downloadVideoWithModel:model];
+}
+
+- (void)deleteModelInLocal:(Pano720PhotoModel *)model
+{
+    JFG_WS(weakSelf);
+    
+    [self.pano720VM deleteFileWithModels:@[model] deleteModel:DeleteModel_Delete success:^(NSURLSessionDataTask *task, id responseObject) {
+        [weakSelf deleteAlreadyDeletedModels:@[model]];
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        
+    }];
+}
+
+#pragma mark
 #pragma mark JFGSDK delegate
 - (void)jfgNetworkChanged:(JFGNetType)netType
 {
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"network changed %ld",netType]];
+    
+    if ([CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+    {
+        return;
+    }
+    
+    self.isConnectted = NO;
     [self setIsConnectted:NO];
     [self jfgFpingRequest];
+}
+
+-(void)jfgRobotSyncDataForPeer:(NSString *)peer fromDev:(BOOL)isDev msgList:(NSArray <DataPointSeg *> *)msgList
+{
+    JFG_WS(weakSelf);
+    
+    if ([peer isEqualToString:self.cid])
+    {
+        @try
+        {
+            for (DataPointSeg *seg in msgList)
+            {
+                NSError *error = nil;
+                id obj = [MPMessagePackReader readData:seg.value error:&error];
+                if (error == nil)
+                {
+                    switch (seg.msgId)
+                    {
+                        case dpMsgBase_SDCardInfoList:
+                        {
+                            if ([obj isKindOfClass:[NSArray class]])
+                            {
+                                BOOL isExistSDCard = [[obj objectAtIndex:0] boolValue];
+                                if (weakSelf.isConnectted == YES)
+                                {
+                                    [weakSelf setIsConnectted:isExistSDCard];
+                                }
+                                
+                                if (isExistSDCard == NO)
+                                {
+                                    [self showSDcardPulloutAlert];
+                                }
+                                
+                            }
+                        }
+                            break;
+                    }
+                }
+            }
+        } @catch (NSException *exception) {
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"Pano720PhotoVC exception: %@",exception]];
+        } @finally {
+            
+        }
+    }
+}
+
+// 720 专用
+-(void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
+                                               mSeq:(uint64_t)mSeq
+                                                cid:(NSString *)cid
+                                               type:(int)type
+                                       isInitiative:(BOOL)initiative
+                                           dpMsgArr:(NSArray *)dpMsgArr
+{
+    for (DataPointSeg *seg in dpMsgArr)
+    {
+        NSError *error = nil;
+        id obj = [MPMessagePackReader readData:seg.value error:&error];
+        if (error == nil)
+        {
+            switch (seg.msgId)
+            {
+                    // SDCard 插拔
+                case dpMsgBase_SDStatus:
+                {
+                    if ([obj isKindOfClass:[NSArray class]])
+                    {
+                        BOOL isExistSDCard = [[obj objectAtIndex:3] boolValue];
+                        if (self.isConnectted == YES)
+                        {
+                            [self setIsConnectted:isExistSDCard];
+                        }
+                        
+                        
+                        if (isExistSDCard == NO)
+                        {
+                            // sdCard was pulled out
+                            if (initiative)
+                            {
+                                [self showSDcardPulloutAlert];
+                            }
+                            
+                            [self fileExistTypeChanged:FileExistTypeLocal];
+                        }
+                        
+                    }
+                }
+                    break;
+            }
+        }
+    }
 }
 
 #pragma mark
@@ -578,13 +1182,16 @@ typedef NS_ENUM(NSInteger, controlTag) {
     if (!cell)
     {
         cell = [[Pano720TableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:panoIdentifier];
+        cell.selectedBackgroundView.backgroundColor = [UIColor whiteColor];
     }
-    UIImage *picImage = [UIImage imageWithContentsOfFile:dataModel.imageShowedPath];
-    picImage = (picImage == nil)?[UIImage imageNamed:@"album_pic_broken"]:picImage;
+    
+    UIImage *picImage = [UIImage imageWithContentsOfFile:dataModel.thumbNailFilePath];
+    picImage = (picImage == nil)?[UIImage imageNamed:@"album_pic_placeholder"]:picImage;
     cell.picImageView.image = picImage;
-    cell.progressLabel.hidden = (picImage != nil);
     BOOL isPic = (dataModel.panoFileType == FileTypePhoto);
+    cell.progressLabel.hidden = (dataModel.downLoadState == DownLoadStateFinished || dataModel.downLoadState == DownLoadStateFailed);
     cell.durationLabel.hidden = isPic;
+    cell.progressLabel.text = dataModel.downloadProgressStr;
     cell.durationLabel.text = dataModel.videoDurationStr;
     
     switch (self.pano720VM.fileExistType) {
@@ -598,18 +1205,41 @@ typedef NS_ENUM(NSInteger, controlTag) {
         {
             cell.phoneIconImgeView.hidden = NO;
             cell.deviceIconImgeView.hidden = YES;
+            cell.progressLabel.hidden = YES;
         }
             break;
         case FileExistTypeBoth:
         {
-            cell.phoneIconImgeView.hidden = NO;
-            cell.deviceIconImgeView.hidden = NO;
+            switch (dataModel.location)
+            {
+                case fileInLocal:
+                {
+                    cell.phoneIconImgeView.hidden = NO;
+                    cell.deviceIconImgeView.hidden = YES;
+                }
+                    break;
+                case fileInRemote:
+                {
+                    cell.phoneIconImgeView.hidden = YES;
+                    cell.deviceIconImgeView.hidden = YES;
+                }
+                    break;
+                case fileInBoth:
+                {
+                    cell.phoneIconImgeView.hidden = NO;
+                    cell.deviceIconImgeView.hidden = YES;
+                }
+                    break;
+                default:
+                    break;
+            }
         }
             break;
         default:
             break;
     }
     [cell updateIconImageViewLayout];
+    
     return cell;
 }
 
@@ -670,12 +1300,55 @@ typedef NS_ENUM(NSInteger, controlTag) {
 {
     // deleteCode
     Pano720PhotoModel *panoModel = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
+    JFG_WS(weakSelf);
     
-    [self.pano720VM deleteFileWithModels:@[panoModel] deleteModel:DeleteModel_Delete success:^(NSURLSessionDataTask *task, id responseObject) {
-        [self deleteAlreadyDeletedModels:@[panoModel]];
-    } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        
-    }];
+    switch (self.pano720VM.fileExistType)
+    {
+        case FileExistTypeBoth:
+        {
+            if ([self isDownloading:@[panoModel]])
+            {
+                [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_DeleteDownloadingTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                    
+                } OKBlock:^{
+                    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_DeletedCameraNCellphoneFileTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
+                        
+                    } OKBlock:^{
+                        [weakSelf.pano720VM deleteFileWithModels:@[panoModel] deleteModel:DeleteModel_Delete success:^(NSURLSessionDataTask *task, id responseObject) {
+                            [weakSelf deleteAlreadyDeletedModels:@[panoModel]];
+                        } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                            
+                        }];
+                    }];
+                }];
+            }
+            else // 直接删除
+            {
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_DeletedCameraNCellphoneFileTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
+                    
+                } OKBlock:^{
+                    [weakSelf.pano720VM deleteFileWithModels:@[panoModel] deleteModel:DeleteModel_Delete success:^(NSURLSessionDataTask *task, id responseObject) {
+                        [weakSelf deleteAlreadyDeletedModels:@[panoModel]];
+                    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                        
+                    }];
+                }];
+            }
+            
+        }
+            break;
+            
+        default:
+        {
+            [self.pano720VM deleteFileWithModels:@[panoModel] deleteModel:DeleteModel_Delete success:^(NSURLSessionDataTask *task, id responseObject) {
+                [weakSelf deleteAlreadyDeletedModels:@[panoModel]];
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                
+            }];
+        }
+            break;
+    }
+    
     
 }
 
@@ -690,9 +1363,19 @@ typedef NS_ENUM(NSInteger, controlTag) {
     Pano720PhotoModel *panoModel = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
     
     Watch720PhotoVC *watchVC = [[Watch720PhotoVC alloc] init];
+    watchVC.cid = self.cid;
+    watchVC.pType = self.pType;
+    watchVC.panoModel = panoModel;
+    watchVC.myDelegate = self;
+    watchVC.nickName = self.nickName;
     watchVC.panoMediaType = (panoModel.panoFileType == FileTypePhoto)?mediaTypePhoto:mediaTypeVideo;
+    watchVC.existType = self.pano720VM.fileExistType;
+    
+    watchVC.thumbNailImage = [UIImage imageWithContentsOfFile:panoModel.thumbNailFilePath];
     watchVC.panoMediaPath = panoModel.filePath;
+    watchVC.urlString = panoModel.urlString;
     watchVC.titleTime = panoModel.fileTime;
+    
     [self.navigationController pushViewController:watchVC animated:YES];
     
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
@@ -711,9 +1394,9 @@ typedef NS_ENUM(NSInteger, controlTag) {
     YBPopupMenu *popupMenu = (YBPopupMenu *)[self.view viewWithTag:alertViewTag];
     if (popupMenu != nil)
     {
-        popupMenu.isDisconnectted = !self.isConnectted;
+        popupMenu.firstCellCanClicked = _isConnectted;
+        popupMenu.secondCellCanClicked = _isConnectted;
     }
-    
 }
 
 - (Pano720PhotoViewModel *)pano720VM
@@ -738,7 +1421,6 @@ typedef NS_ENUM(NSInteger, controlTag) {
         _panoTableView.showsHorizontalScrollIndicator = NO;
         _panoTableView.backgroundColor = [UIColor whiteColor];
         _panoTableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-        _panoTableView.backgroundColor = [UIColor colorWithHexString:@"#f0f0f0"];
         _panoTableView.delegate = self;
         _panoTableView.dataSource = self;
         _panoTableView.mj_footer.hidden = NO;
@@ -760,7 +1442,7 @@ typedef NS_ENUM(NSInteger, controlTag) {
 {
     if (_titles == nil)
     {
-        _titles = [[NSArray alloc] initWithObjects:[JfgLanguage getLanTextStrByKey:@"Tap1_File_CameraNPhone"],[JfgLanguage getLanTextStrByKey:@"Tap1_File_Camera"],[JfgLanguage getLanTextStrByKey:@"Tap1_File_Phone"], nil];
+        _titles = [[NSArray alloc] initWithObjects:[JfgLanguage getLanTextStrByKey:@"photo"],[JfgLanguage getLanTextStrByKey:@"photo"],[JfgLanguage getLanTextStrByKey:@"Tap1_File_Phone"], nil];
     }
     return _titles;
 }
@@ -775,9 +1457,9 @@ typedef NS_ENUM(NSInteger, controlTag) {
         CGFloat height = 64;
         
         _titltView = [[PhotoTitleView alloc] initWithFrame:CGRectMake(x, y, width, height)];
-        _titltView.titleLbel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_File_CameraNPhone"];
-        UITapGestureRecognizer *tapGuesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(showMenu:)];
-        [_titltView addGestureRecognizer:tapGuesture];
+        _titltView.titleLbel.text = [JfgLanguage getLanTextStrByKey:@"photo"];
+//        UITapGestureRecognizer *tapGuesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(showMenu:)];
+//        [_titltView addGestureRecognizer:tapGuesture];
     }
     return _titltView;
 }
@@ -789,7 +1471,7 @@ typedef NS_ENUM(NSInteger, controlTag) {
         CGFloat width = self.noDataImgView.width;
         CGFloat height = self.noDataImgView.height + self.noDataLabel.height + 17.0f;
         CGFloat x = (Kwidth - width)*0.5;
-        CGFloat y = 172.0f;
+        CGFloat y = 172.0f + 64.0;
         
         _noDataView = [[UIView alloc] initWithFrame:CGRectMake(x, y, width, height)];
         _noDataView.hidden = NO;
@@ -841,4 +1523,30 @@ typedef NS_ENUM(NSInteger, controlTag) {
     return _bottomBiew;
 }
 
+- (NSMutableArray *)downloadArr
+{
+    if (_downloadArr == nil)
+    {
+        _downloadArr = [[NSMutableArray alloc] initWithCapacity:5];
+    }
+    return _downloadArr;
+}
+
+- (NSMutableArray *)thumbNailArr
+{
+    if (_thumbNailArr == nil)
+    {
+        _thumbNailArr = [[NSMutableArray alloc] initWithCapacity:5];
+    }
+    return _thumbNailArr;
+}
+
+- (NSMutableArray *)videoDownloadArr
+{
+    if (_videoDownloadArr == nil)
+    {
+        _videoDownloadArr = [[NSMutableArray alloc] initWithCapacity:5];
+    }
+    return _videoDownloadArr;
+}
 @end

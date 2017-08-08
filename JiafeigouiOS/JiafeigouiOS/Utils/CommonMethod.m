@@ -30,6 +30,9 @@
 #import <ifaddrs.h>
 #import <arpa/inet.h>
 #import <net/if.h>
+#import "LSAlertView.h"
+#import <SDWebImage/SDImageCache.h>
+
 
 #define HANZI_START 19968
 #define HANZI_COUNT 20902
@@ -164,6 +167,20 @@ NSString *const doorbellWifiPrefix = @"DOG-ML-";
     return phone;
 }
 
++(UIImage *)sdwebImageCacheForKey:(NSString *)key
+{
+    UIImage *image = [[SDImageCache sharedImageCache] imageFromMemoryCacheForKey:key];
+    if (!image) {
+        image = [[SDImageCache sharedImageCache] imageFromDiskCacheForKey:key];
+    }
+    return image;
+}
+
++(NSString *)sdwebImageDefauleCachePathForKey:(NSString *)key
+{
+    return [[SDImageCache sharedImageCache] defaultCachePathForKey:key];
+}
+
 + (NSMutableArray *)copyAddressBook
 {
     __block NSMutableArray *addressBookArray;
@@ -282,6 +299,7 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     NSString * ap;
     switch (productID) {
         case productType_DoorBell:
+        case productType_CatEye:
             ap = [NSString stringWithFormat:@"DOG-ML-%@",[cid substringFromIndex:6]];
             break;
         case productType_WIFI:
@@ -293,6 +311,11 @@ NSInteger nameSort(id mod1, id mod2,void*context)
             ap = [NSString stringWithFormat:@"DOG-5W-%@",[cid substringFromIndex:6]];
         }
             break;
+        case productType_IPCam:
+        {
+            ap = [NSString stringWithFormat:@"RS-CAM-%@", [cid substringFromIndex:6]];
+        }
+            break;
         default:
             break;
     }
@@ -302,7 +325,7 @@ NSInteger nameSort(id mod1, id mod2,void*context)
 {
     NSString *currentWifi = [CommonMethod currentConnecttedWifi];
     
-    if ([currentWifi hasPrefix:@"DOG"] || [currentWifi hasPrefix:@"RS"])
+    if ([currentWifi hasPrefix:@"DOG"] || [currentWifi hasPrefix:@"BELL"])
     {
         return YES;
     }
@@ -311,6 +334,7 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     {
         
         case productType_DoorBell:
+        case productType_CatEye:
         {
             if ([currentWifi hasPrefix:doorbellWifiPrefix] && currentWifi.length == 13) //门铃 ap
             {
@@ -342,9 +366,9 @@ NSInteger nameSort(id mod1, id mod2,void*context)
             if ([currentWifi hasPrefix:cameraWifiPrefix] && currentWifi.length == 10)
             {
                 return YES;
-            }
-            else
-            {
+                
+            }else{
+                
                 return NO;
             }
         }
@@ -616,6 +640,8 @@ NSInteger nameSort(id mod1, id mod2,void*context)
             headUrl = @"";
         }
     }
+    //[JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"hear url [%@]", headUrl]];
+    
     return headUrl;
 }
 
@@ -642,13 +668,15 @@ NSInteger nameSort(id mod1, id mod2,void*context)
         
         isShow = YES;
         
-        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:str delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
-        [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+        __weak UIViewController* weakvc = vc;
+        [LSAlertView showAlertWithTitle:nil Message:str CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
             
             isShow = NO;
-            [vc.navigationController popToRootViewControllerAnimated:YES];
+            [weakvc.navigationController popToRootViewControllerAnimated:YES];
             
-        } otherDelegate:nil];
+        } OKBlock:^{
+        
+        }];
         
     }
 }
@@ -706,7 +734,8 @@ NSInteger nameSort(id mod1, id mod2,void*context)
 {
     switch (type) {
         case JFG720DevLANReqUrlTypeSnapShot:{
-            return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=snapShot",ipAdd];
+            NSString *str = [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=snapShot",ipAdd];
+            return str;
         }
 
             break;
@@ -866,7 +895,9 @@ NSInteger nameSort(id mod1, id mod2,void*context)
         pType == productType_FreeCam ||
         pType == productType_Camera_GK ||
         pType == productType_Camera_HS ||
-        pType == productType_Camera_ZY
+        pType == productType_CesCamera ||
+        pType == productType_Camera_ZY ||
+        pType == productType_RS_180
         )
     {
         return YES;
@@ -879,6 +910,10 @@ NSInteger nameSort(id mod1, id mod2,void*context)
 {
     if (pType == productType_Camera_GK ||
         pType == productType_Camera_HS ||
+        pType == productType_720p   ||
+        pType == productType_720    ||
+        pType == productType_IPCam     ||
+        pType == productType_CesCamera ||
         pType == productType_Camera_ZY)
     {
         return YES;
@@ -887,15 +922,146 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     return NO;
 }
 
++ (BOOL)isDeviceHasBattery:(NSInteger)pType
+{
+    switch (pType)
+    {
+        case productType_3G:
+        case productType_3G_2X:
+        case productType_4G:
+        case productType_FreeCam:
+        {
+            return YES;
+        }
+            break;
+            
+        default:
+        {
+            return NO;
+        }
+            break;
+    }
+    
+
+    return NO;
+}
+
++ (BOOL)isDeviceBlockUpgrade:(NSInteger)pType
+{
+    switch (pType) {
+        case productType_720:
+        case productType_720p:
+        {
+            return YES;
+        }
+            break;
+            
+        default:
+            break;
+    }
+    
+    return NO;
+}
+
++(NSDictionary *)jfgConfigPlist
+{
+    NSString *plistPath = [[NSBundle mainBundle] pathForResource:@"jfgConfig" ofType:@"plist"];
+    NSDictionary *dict = [[NSDictionary alloc]initWithContentsOfFile:plistPath];
+    return dict;
+}
+
 +(JFGDevBigType)devBigTypeForOS:(NSString *)os
 {
-    //36  37  10  18   1091
-    if ([os isEqualToString:@"36"] || [os isEqualToString:@"10"] || [os isEqualToString:@"18"] || [os isEqualToString:@"1091"] || [os isEqualToString:@"1092"]) {
+    if (
+           [os isEqualToString:@"10"]
+        || [os isEqualToString:@"18"]
+        || [os isEqualToString:@"19"]
+        || [os isEqualToString:@"20"]
+        || [os isEqualToString:@"36"]
+        || [os isEqualToString:@"39"]
+        || [os isEqualToString:@"50"]
+        || [os isEqualToString:@"47"]
+        || [os isEqualToString:@"81"]
+        ) {
         return JFGDevBigTypeSinglefisheyeCamera;
     }else if ([os isEqualToString:@"21"] || [os isEqualToString:@"1089"]){
         return JFGDevBigTypeEyeCamera;
     }
     return JFGDevBigTypeUnknow;
+}
+
++(NSInteger)lenghtForString:(NSString *)string
+{
+    int j = 0;
+    for(int i =0; i < [string length]; i++)
+    {
+        NSString *temp = [string substringWithRange:NSMakeRange(i, 1)];
+        if ([temp isEqualToString:@""]) {
+            j = j+0;
+        }else if ([temp lengthOfBytesUsingEncoding:NSUTF8StringEncoding]>1){
+            j = j+2;
+        }else{
+            j = j+1;
+        }
+        
+    }
+    return j;
+}
+
++ (UIImage *)thumbnailWithImageWithoutScale:(UIImage *)image size:(CGSize)asize
+{
+    UIImage *newimage;
+    if (nil == image)
+    {
+        newimage = nil;
+    } else {
+        
+        CGSize oldsize = image.size;
+        
+        CGRect rect;
+        
+        if (asize.width/asize.height > oldsize.width/oldsize.height)
+            
+        {
+            
+            rect.size.width = asize.height*oldsize.width/oldsize.height;
+            
+            rect.size.height = asize.height;
+            
+            rect.origin.x = (asize.width - rect.size.width)/2;
+            
+            rect.origin.y = 0;
+            
+        } else {
+            
+            rect.size.width = asize.width;
+            
+            rect.size.height = asize.width*oldsize.height/oldsize.width;
+            
+            rect.origin.x = 0;
+            
+            rect.origin.y = (asize.height - rect.size.height)/2;
+            
+        }
+        
+        UIGraphicsBeginImageContext(asize);
+        
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        
+        CGContextSetFillColorWithColor(context, [[UIColor clearColor] CGColor]);
+        
+        UIRectFill(CGRectMake(0, 0, asize.width, asize.height));//clear background
+        
+        [image drawInRect:rect];
+        
+        newimage = UIGraphicsGetImageFromCurrentImageContext();
+        
+        UIGraphicsEndImageContext();
+        
+    }
+    
+    return newimage;
+    
 }
 
 @end

@@ -31,5 +31,6 @@ typedef NS_ENUM(NSInteger,SysMsgType){
 @property (nonatomic,assign)BOOL isBinded;
 @property (nonatomic,assign)BOOL isDelSelected;
 @property (nonatomic,assign)CGFloat cellHeight;
+@property (nonatomic,assign)int pid;
 
 @end

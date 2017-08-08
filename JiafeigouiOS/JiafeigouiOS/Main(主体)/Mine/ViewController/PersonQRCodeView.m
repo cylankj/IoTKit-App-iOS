@@ -36,7 +36,7 @@
     self.nameLabel.text = name;
     self.qrImageView.image = qrImage;
     
-    [self.headImageView jfg_setImageWithAccount:nil placeholderImage:nil  refreshCached:NO completed:nil];
+    [self.headImageView jfg_setImageWithAccount:nil placeholderImage:headImage  refreshCached:NO completed:nil];
     
     return self;
 }

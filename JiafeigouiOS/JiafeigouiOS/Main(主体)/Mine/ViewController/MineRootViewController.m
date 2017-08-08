@@ -43,19 +43,28 @@
 #import "UIAlertView+FLExtension.h"
 #import <Accelerate/Accelerate.h>
 #import <KVOController/KVOController.h>
+#import "ShareManagerMainVC.h"
+#import "BaseNavgationViewController.h"
+#import "JfgCacheManager.h"
+#import "LSChatDataManager.h"
+#import "UITabBar+badge.h"
+#import "JFGSettingViewController.h"
+#import "OemManager.h"
 
 #define HeadImageHeight 75
 #define HeadAndName 103
-
+#define ISSHOWFEEDBACKREDUSERDEFAULTKEY @"ISSHOWFEEDBACKREDUSERDEFAULTKEY"
 
 @interface MineRootViewController ()<LoginManagerDelegate,TimeChangeMonitorDelegate,UITableViewDelegate,UITableViewDataSource,JFGSDKCallbackDelegate>
 {
     UIImage *_headImage;
     NSString *account_name;
-    NSInteger unreadCount;
+    NSInteger unreadCount;  //系统通知未读数
+    NSInteger addFriendReqCount;
     BOOL hasBindPhone;
     BOOL hasBindEmail;
     BOOL isLoadedNetImage;
+    BOOL isNewFeedback;
     NSInteger headImageVersion;
     JFGSDKAcount *currentAccount;
     
@@ -80,12 +89,20 @@
 
 @implementation MineRootViewController
 
+-(instancetype)init
+{
+    self = [super init];
+    isNewFeedback = [[NSUserDefaults standardUserDefaults] boolForKey:ISSHOWFEEDBACKREDUSERDEFAULTKEY];
+    addFriendReqCount = 0;
+    return self;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     
     // Do any additional setup after loading the view.
     self.imageArray = @[@"image_myFriends",@"image_shareDevice",@"image_help&feedback",@"image_setting"];
-    self.titleArray = @[[JfgLanguage getLanTextStrByKey:@"Tap3_Friends"],[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice"],[JfgLanguage getLanTextStrByKey:@"Tap3_Feedback"],[JfgLanguage getLanTextStrByKey:@"SETTINGS"]];
+    self.titleArray = @[[JfgLanguage getLanTextStrByKey:@"Tap3_Friends"],[JfgLanguage getLanTextStrByKey:@"Sharing_Management"],[JfgLanguage getLanTextStrByKey:@"Tap3_Feedback"],[JfgLanguage getLanTextStrByKey:@"SETTINGS"]];
     headImageVersion = 0;
     isLoadedNetImage = NO;
     headGetCount = 0;
@@ -96,6 +113,9 @@
     [JFGSDK addDelegate:self];
     //头像改变通知
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(setheadImageView) name:account_headImage_changed object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(clearFeedbackCount) name:JFGClearFeedbackNotificationKey object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveUnreadFeedbackCount) name:UIApplicationDidEnterBackgroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveUnreadFeedbackCount) name:UIApplicationWillTerminateNotification object:nil];
     [self.view addSubview:self.myTableView];
     [self initHeaderView];
     //self.edgesForExtendedLayout = UIRectEdgeNone;
@@ -105,15 +125,19 @@
     {
         self.edgesForExtendedLayout = UIRectEdgeBottom;
     }
-    
     [self intiData];
-    
+}
+
+-(void)getUnreadCount
+{
+    [self unreadCountForBindMsg];
+    [self unreadCountForOther];
 }
 
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self unreadCountForBindMsg];
+    [self getUnreadCount];
 }
 
 
@@ -121,12 +145,6 @@
 {
     [super viewWillAppear:animated];
     [self.navigationController setNavigationBarHidden:YES animated:animated];
-//    if (headGetCount < 3 ) {
-//        if (headGetCount != 0) {
-//            [self intiData];
-//        }
-//        headGetCount ++;
-//    }
 }
 
 
@@ -150,34 +168,69 @@
     }
 }
 
-
+//获取系统未读消息数
 -(void)unreadCountForBindMsg
 {
+    __weak typeof(self) weakSelf = self;
     [[JFGSDKDataPoint sharedClient] robotCountDataWithPeer:@"" dpIDs:@[@(601),@(701)] success:^(NSString *identity, NSArray<DataPointCountSeg *> *dataList) {
         
         NSInteger count = 0;
-        
         for (DataPointCountSeg *seg in dataList) {
-
             if (seg.msgId == 601) {
                 count = seg.count + count;
             }else if(seg.msgId == 701){
                 count = seg.count + count;
             }
-
         }
+        unreadCount = count;
         if (count == 0) {
-            self.badgeLabel.hidden = YES;
+            weakSelf.badgeLabel.hidden = YES;
         }else{
-            self.badgeLabel.hidden = NO;
-            self.badgeLabel.newMessageCount = count;
-            
+            weakSelf.badgeLabel.hidden = NO;
+            weakSelf.badgeLabel.newMessageCount = count;
         }
-    } failure:^(RobotDataRequestErrorType type) {
+        [weakSelf isHasUnreadCount];
         
+    } failure:^(RobotDataRequestErrorType type) {
+        [weakSelf isHasUnreadCount];
     }];
 }
 
+//判断是否有未读数
+-(void)isHasUnreadCount
+{
+    BOOL isWebChatRedPoint = [[NSUserDefaults standardUserDefaults] boolForKey:JFGIsAlwaysShowWebchatRedPointKey];
+    if ([OemManager oemType] == oemTypeDoby) {
+        isWebChatRedPoint = YES;
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGIsAlwaysShowWebchatRedPointKey];
+    }
+    if (unreadCount == 0 && addFriendReqCount == 0 && !isNewFeedback && isWebChatRedPoint) {
+        [self.tabBarController.tabBar hideBadgeOnItemIndex:2];
+    }else{
+        [self.tabBarController.tabBar showBadgeOnItemIndex:2];
+    }
+}
+
+//获取未读好友请求，未读意见反馈数
+-(void)unreadCountForOther
+{
+    [JFGSDK getFriendRequestList];
+    [JFGSDK getFeedbackList];
+}
+
+//清除意见反馈未读数
+-(void)clearFeedbackCount
+{
+    isNewFeedback = NO;
+    [self.myTableView reloadData];
+}
+
+//保存意见反馈未读数到本地，防止重新启动重置
+-(void)saveUnreadFeedbackCount
+{
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:ISSHOWFEEDBACKREDUSERDEFAULTKEY];
+    [[NSUserDefaults standardUserDefaults] setBool:isNewFeedback forKey:ISSHOWFEEDBACKREDUSERDEFAULTKEY];
+}
 
 //获取用户头像
 -(void)setheadImageView
@@ -211,17 +264,43 @@
                 [self createBlurBackgroundImage:nil ImageView:self.topBgImageView blurRadius:40];
             }
         }];
-        
     }
-    
 }
-
 
 -(void)jfgAccountOnline:(BOOL)online
 {
     if (online) {
         [JFGSDK getAccount];
     }
+}
+
+
+//未读的回复消息
+-(void)jfgFeedBackWithInfoList:(NSArray <JFGSDKFeedBackInfo *> *)infoList errorType:(JFGErrorType)errorType {
+    
+    //NSLog(@"回复未读的消息列表打印：%@,错误信息：%d",infoList,errorType);
+    NSDateFormatter *matter =[[NSDateFormatter alloc] init];
+    [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
+    
+    for (JFGSDKFeedBackInfo * info in infoList) {
+        
+        LSChatModel *lastModel =[[LSChatDataManager shareChatDataManager].chatModelList lastObject];
+        LSChatModel *aModel =[LSChatModel new];
+        
+        aModel.msg = info.msg;
+        aModel.msgDate = [matter stringFromDate:[NSDate dateWithTimeIntervalSince1970:info.timestamp]];
+        aModel.timestamp = info.timestamp;
+        aModel.lastMsgDate = lastModel.msgDate;
+        aModel.modelType = LSModelTypeOther;
+        aModel.sendStatue = LSSendStatueSuccess;
+        
+        [[LSChatDataManager shareChatDataManager] addChatModel:aModel];
+        isNewFeedback = YES;
+        [self.myTableView reloadData];
+        
+    }
+    [self isHasUnreadCount];
+    
 }
 
 -(void)loginOut
@@ -235,8 +314,6 @@
     self.nameButton.width = size.width;
     self.nameButton.x = self.view.x;
 }
-
-
 
 -(void)jfgUpdateAccount:(JFGSDKAcount *)account
 {
@@ -278,7 +355,6 @@
                 }else{
                     account_name = currentAccount.email;
                 }
-                
             }
         }
         
@@ -318,6 +394,28 @@
     }
 }
 
+-(void)jfgFriendRequestList:(NSArray <JFGSDKFriendRequestInfo *>*)list error:(JFGErrorType)errorType
+{
+    NSUInteger _unreadCount = 0;
+    if (list.count) {
+        _unreadCount = list.count;
+        NSArray *readFriendReqAccountList = [JfgCacheManager getCacheReadAddFriendReqAccountList];
+        if (readFriendReqAccountList.count) {
+            for (JFGSDKFriendRequestInfo *info in list) {
+                for (NSString *acc in readFriendReqAccountList) {
+                    if ([info.account isEqualToString:acc]) {
+                        _unreadCount --;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    addFriendReqCount = _unreadCount;
+    [self.myTableView reloadData];
+    [self isHasUnreadCount];
+}
+
 -(void)intoPersonMsgView
 {
     if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusLoginOut) {
@@ -337,7 +435,7 @@
 {
     LoginRegisterViewController *loginRegister = [LoginRegisterViewController new];
     loginRegister.viewType = FristIntoViewTypeLogin;
-    UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:loginRegister];
+    BaseNavgationViewController *nav = [[BaseNavgationViewController alloc]initWithRootViewController:loginRegister];
     nav.navigationBarHidden = YES;
     [self presentViewController:nav animated:YES completion:^{
         
@@ -354,7 +452,8 @@
 
 #pragma mark - 表格相关
 #pragma mark -UITableViewDataSource
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
     return self.imageArray.count;
 }
 
@@ -366,6 +465,25 @@
         cell = [[UITableViewCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellID];
         cell.selectedBackgroundView = [[UIView alloc] initWithFrame:cell.frame];
         cell.selectedBackgroundView.backgroundColor = CellSelectedColor;
+        
+        BadgeLabel *badgeLabel = [[BadgeLabel alloc]init];
+        badgeLabel.bounds = CGRectMake(0, 0, 26, 16);//26表示规定长度加上左右偏移长度,多1是因为裁剪的圆角有问题,看起少了2像素
+        badgeLabel.right = Kwidth -35;
+        badgeLabel.y = 31;
+        badgeLabel.newMessageCount = 0;
+        badgeLabel.tag = 101023;
+        [cell.contentView addSubview:badgeLabel];
+        
+        UILabel *redLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, 8, 8)];
+        redLabel.backgroundColor = [UIColor redColor];
+        redLabel.right = badgeLabel.right;
+        redLabel.y = 31;
+        redLabel.hidden = YES;
+        redLabel.layer.masksToBounds = YES;
+        redLabel.layer.cornerRadius = 4;
+        redLabel.tag = 101024;
+        [cell.contentView addSubview:redLabel];
+
     }
 
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
@@ -375,6 +493,34 @@
     cell.textLabel.font = [UIFont systemFontOfSize:16];
     cell.textLabel.textColor = [UIColor colorWithHexString:@"#383838"];
 
+    BadgeLabel *badLa = [cell.contentView viewWithTag:101023];
+    if (indexPath.row == 0) {
+        badLa.newMessageCount = addFriendReqCount;
+    }else{
+        badLa.newMessageCount = 0;
+    }
+    UILabel *redLable = [cell.contentView viewWithTag:101024];
+    if (indexPath.row == 2) {
+        if (isNewFeedback) {
+            redLable.hidden = NO;
+        }else{
+            redLable.hidden = YES;
+        }
+    }else if(indexPath.row == 3){
+        BOOL isWebChatRedPoint = [[NSUserDefaults standardUserDefaults] boolForKey:JFGIsAlwaysShowWebchatRedPointKey];
+        if ([OemManager oemType] == oemTypeDoby) {
+            isWebChatRedPoint = YES;
+        }
+        if (isWebChatRedPoint) {
+            redLable.hidden = YES;
+        }else{
+            redLable.hidden = NO;
+        }
+    }else{
+        redLable.hidden = YES;
+    }
+    
+    
     return cell;
 }
 
@@ -402,9 +548,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    
     if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusLoginOut || [LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusLogining) {
         [self gotoLoginVC];
         return;
@@ -434,27 +578,23 @@
         case 0: //亲友
         {
             if (([LoginManager sharedManager].loginType != JFGSDKLoginTypeAccountLogin) && !hasBindPhone && !hasBindEmail) {
-    
-                UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap3_Friends_NoBindTips"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Tap2_Index_Open_NoDeviceOption"], nil];
-                [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+                
+                __weak typeof(self) weakSelf = self;
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap3_Friends_NoBindTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Tap2_Index_Open_NoDeviceOption"] CancelBlock:^{
                     
-                    if (buttonIndex == 1) {
-                        if ([JfgLanguage languageType] == 0) {
-                            ChangePhoneViewController * setNameVC = [ChangePhoneViewController new];
-                            setNameVC.actionType = actionTypeBingPhone;
-                            setNameVC.hidesBottomBarWhenPushed = YES;
-                            [self.navigationController pushViewController:setNameVC animated:YES];
-                        }else{
-                            SetDeviceNameVC * emailVC = [SetDeviceNameVC new];
-                            emailVC.jfgAccount = currentAccount;
-                            emailVC.deviceNameVCType = DeviceNameVCTypeBindEmail;
-                            [self.navigationController pushViewController:emailVC animated:YES];
-                        }
+                } OKBlock:^{
+                    if ([JfgLanguage languageType] == 0) {
+                        ChangePhoneViewController * setNameVC = [ChangePhoneViewController new];
+                        setNameVC.actionType = actionTypeBingPhone;
+                        setNameVC.hidesBottomBarWhenPushed = YES;
+                        [weakSelf.navigationController pushViewController:setNameVC animated:YES];
+                    }else{
+                        SetDeviceNameVC * emailVC = [SetDeviceNameVC new];
+                        emailVC.jfgAccount = currentAccount;
+                        emailVC.deviceNameVCType = DeviceNameVCTypeBindEmail;
+                        [weakSelf.navigationController pushViewController:emailVC animated:YES];
                     }
-                    
-                } otherDelegate:nil];
-                
-                
+                }];
                 return;
             }
             
@@ -466,31 +606,7 @@
             break;
         case 1:
         {
-            if (([LoginManager sharedManager].loginType != JFGSDKLoginTypeAccountLogin) && !hasBindPhone && !hasBindEmail) {
-                
-                UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap3_Share_NoBindTips"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Tap2_Index_Open_NoDeviceOption"], nil];
-                [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
-                    
-                    if (buttonIndex == 1) {
-                        if ([JfgLanguage languageType] == 0) {
-                            ChangePhoneViewController * setNameVC = [ChangePhoneViewController new];
-                            setNameVC.actionType = actionTypeBingPhone;
-                            setNameVC.hidesBottomBarWhenPushed = YES;
-                            [self.navigationController pushViewController:setNameVC animated:YES];
-                        }else{
-                            SetDeviceNameVC * emailVC = [SetDeviceNameVC new];
-                            emailVC.jfgAccount = currentAccount;
-                            emailVC.deviceNameVCType = DeviceNameVCTypeBindEmail;
-                            [self.navigationController pushViewController:emailVC animated:YES];
-                        }
-                    }
-                    
-                } otherDelegate:nil];
-                
-                
-                return;
-            }
-            ShareRootViewController *share = [ShareRootViewController new];
+            ShareManagerMainVC *share = [ShareManagerMainVC new];
             share.hidesBottomBarWhenPushed = YES;
             [self.navigationController pushViewController:share animated:YES];
         }
@@ -499,13 +615,14 @@
             JFGHelpViewController * help = [[JFGHelpViewController alloc]init];
             help.showRightBarItem = YES;
             help.hidesBottomBarWhenPushed = YES;
+            help.isShowRedPoint = isNewFeedback;
             [self.navigationController pushViewController:help animated:YES];
         }
             break;
         case 3:{
             
-            DeviceSettingVC * device = [[DeviceSettingVC alloc]init];
-            device.pType = productType_Mine;
+            
+            JFGSettingViewController * device = [[JFGSettingViewController alloc]init];
             device.hidesBottomBarWhenPushed = YES;
             [self.navigationController pushViewController:device animated:YES];
 
@@ -614,84 +731,6 @@
 }
 
 
-//- (UIImage *)accelerateBlurWithImage:(UIImage *)image
-//{
-//    NSInteger boxSize = (NSInteger)(10 * 5);
-//    boxSize = boxSize - (boxSize % 2) + 1;
-//    
-//    CGImageRef img = image.CGImage;
-//    
-//    vImage_Buffer inBuffer, outBuffer, rgbOutBuffer;
-//    vImage_Error error;
-//    
-//    void *pixelBuffer, *convertBuffer;
-//    
-//    CGDataProviderRef inProvider = CGImageGetDataProvider(img);
-//    CFDataRef inBitmapData = CGDataProviderCopyData(inProvider);
-//    
-//    convertBuffer = malloc( CGImageGetBytesPerRow(img) * CGImageGetHeight(img) );
-//    rgbOutBuffer.width = CGImageGetWidth(img);
-//    rgbOutBuffer.height = CGImageGetHeight(img);
-//    rgbOutBuffer.rowBytes = CGImageGetBytesPerRow(img);
-//    rgbOutBuffer.data = convertBuffer;
-//    
-//    inBuffer.width = CGImageGetWidth(img);
-//    inBuffer.height = CGImageGetHeight(img);
-//    inBuffer.rowBytes = CGImageGetBytesPerRow(img);
-//    inBuffer.data = (void *)CFDataGetBytePtr(inBitmapData);
-//    
-//    pixelBuffer = malloc( CGImageGetBytesPerRow(img) * CGImageGetHeight(img) );
-//    
-//    if (pixelBuffer == NULL) {
-//        NSLog(@"No pixelbuffer");
-//    }
-//    
-//    outBuffer.data = pixelBuffer;
-//    outBuffer.width = CGImageGetWidth(img);
-//    outBuffer.height = CGImageGetHeight(img);
-//    outBuffer.rowBytes = CGImageGetBytesPerRow(img);
-//    
-//    void *rgbConvertBuffer = malloc( CGImageGetBytesPerRow(img) * CGImageGetHeight(img) );
-//    vImage_Buffer outRGBBuffer;
-//    outRGBBuffer.width = CGImageGetWidth(img);
-//    outRGBBuffer.height = CGImageGetHeight(img);
-//    outRGBBuffer.rowBytes = 5;
-//    outRGBBuffer.data = rgbConvertBuffer;
-//    
-//    error = vImageBoxConvolve_ARGB8888(&inBuffer, &outBuffer, NULL, 0, 0, boxSize, boxSize, NULL, kvImageEdgeExtend);
-//    
-//    if (error) {
-//        NSLog(@"error from convolution %ld", error);
-//    }
-//    const uint8_t mask[] = {2, 1, 0, 3};
-//    
-//    vImagePermuteChannels_ARGB8888(&outBuffer, &rgbOutBuffer, mask, kvImageNoFlags);
-//    
-//    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-//    CGContextRef ctx = CGBitmapContextCreate(rgbOutBuffer.data,
-//                                             rgbOutBuffer.width,
-//                                             rgbOutBuffer.height,
-//                                             8,
-//                                             rgbOutBuffer.rowBytes,
-//                                             colorSpace,
-//                                             kCGImageAlphaNoneSkipLast);
-//    CGImageRef imageRef = CGBitmapContextCreateImage(ctx);
-//    UIImage *returnImage = [UIImage imageWithCGImage:imageRef];
-//    
-//    //clean up
-//    CGContextRelease(ctx);
-//    
-//    free(pixelBuffer);
-//    free(convertBuffer);
-//    free(rgbConvertBuffer);
-//    CFRelease(inBitmapData);
-//    
-//    CGColorSpaceRelease(colorSpace);
-//    CGImageRelease(imageRef);
-//    
-//    return returnImage;
-//}
-
 #pragma mark - Getter
 -(UIImageView *)topBgImageView{
     if (!_topBgImageView) {
@@ -701,15 +740,22 @@
         _topBgImageView.clipsToBounds = YES;
         _topBgImageView.image = [UIImage imageNamed:@"bgimage_top_default"];
         
+        UIView *broV = [[UIView alloc]initWithFrame:CGRectMake(0, 0, Kwidth, topBgViewHeight)];
+        broV.backgroundColor = [UIColor colorWithHexString:@"#000000"];
+        broV.alpha = 0.2;
+        [_topBgImageView addSubview:broV];
+        
         UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
         UIVisualEffectView *effectview = [[UIVisualEffectView alloc] initWithEffect:blur];
         effectview.frame = _topBgImageView.bounds;
         [_topBgImageView addSubview:effectview];
         
 
+        __weak typeof(self) weakSelf = self;
         [self.KVOController observe:self.topBgImageView keyPaths:@[@"bounds"] options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionInitial block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
             
-            effectview.frame = self.topBgImageView.bounds;
+            effectview.frame = weakSelf.topBgImageView.bounds;
+            broV.frame = weakSelf.topBgImageView.bounds;
             
         }];
         
@@ -737,8 +783,8 @@
 -(UIButton *)nameButton{
     if (!_nameButton) {
         _nameButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        _nameButton.frame =  CGRectMake((Kwidth-200)/2.0, self.headPhotoImageView.bottom+12.0, 200, 16);
-        _nameButton.titleLabel.font = [UIFont fontWithName:@"PingFangSC-regular" size:16];
+        _nameButton.frame =  CGRectMake((Kwidth-200)/2.0, self.headPhotoImageView.bottom+12.0, 200, 18);
+        _nameButton.titleLabel.font = [UIFont fontWithName:@"PingFangSC-regular" size:17];
         [_nameButton setTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_LogIn"] forState:UIControlStateNormal];
         _nameButton.titleLabel.font = [UIFont systemFontOfSize:17];
         _nameButton.titleLabel.textAlignment = NSTextAlignmentCenter;
@@ -813,6 +859,7 @@
     }
     return _badgeLabel;
 }
+
 -(UIView *)barView
 {
     if (!_barView) {
@@ -831,6 +878,7 @@
     }
     return _barView;
 }
+
 -(UIView *)coverView{
     if (!_coverView) {
         _coverView = [UIView new];
@@ -867,8 +915,7 @@
     if (!_dayGradient) {
         CAGradientLayer *gradient = [CAGradientLayer layer];
         gradient.frame = self.barView.bounds;
-        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#54b2d0"].CGColor,
-                           (id)[UIColor colorWithHexString:@"#439ac4"].CGColor,
+        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#17AFD1"].CGColor,(id)[UIColor colorWithHexString:@"#17AFD1"].CGColor,
                            nil];
         
         _dayGradient = gradient;
@@ -881,8 +928,7 @@
     if (!_nightGradient) {
         CAGradientLayer *gradient = [CAGradientLayer layer];
         gradient.frame = self.barView.bounds;
-        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#7590ae"].CGColor,
-                           (id)[UIColor colorWithHexString:@"#3a5170"].CGColor,
+        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#263954"].CGColor,(id)[UIColor colorWithHexString:@"#263954"].CGColor,
                            nil];
         _nightGradient = gradient;
     }

@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "JFGDatePickerCollectionViewCell.h"
 
 @interface DatePickerModel : NSObject
 
@@ -23,15 +24,22 @@
 
 @protocol JFGDatePickerDelegate <NSObject>
 
--(void)didSelectedRowForIndexPath:(NSIndexPath *)indexPath;
+-(NSInteger)datePickersCollectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section;
+
+-(UICollectionViewCell *)datePickersCollectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath;
+
+-(void)datePickersCollectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath;
 
 @end
 
 @interface JFGDatePickers : UIView
 
-@property (nonatomic,assign)id <JFGDatePickerDelegate>delegate;
+@property (nonatomic,weak)id <JFGDatePickerDelegate>delegate;
 @property (nonatomic,readonly)NSMutableArray *dataArray;
+@property (nonatomic,strong)UILabel *monthLabel;
+@property (nonatomic,strong)NSIndexPath *selectedIndexPath;
 
 -(void)reloadData;
+-(void)scrollToEndItem;
 
 @end

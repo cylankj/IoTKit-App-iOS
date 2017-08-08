@@ -23,6 +23,8 @@
 //视频URL
 @property (copy,nonatomic) NSString *videoUrl;
 @property (copy, nonatomic)NSString *alias;
-@property (nonatomic,assign)int64_t collectedTimestamp;
+@property (nonatomic,assign)int64_t collectedTimestamp;//收藏时间戳
+@property (nonatomic,copy)NSString *shareVideoUrl;
+@property (nonatomic,copy)NSString *ossUrl;
 
 @end

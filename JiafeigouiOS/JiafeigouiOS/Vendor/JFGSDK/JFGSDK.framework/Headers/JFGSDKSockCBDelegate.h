@@ -24,6 +24,7 @@
                                               mSeq:(uint64_t)mSeq
                                                cid:(NSString *)cid
                                               type:(int)type
+                                      isInitiative:(BOOL)initiative
                                            dpMsgArr:(NSArray *)dpMsgArr;
 
 @end

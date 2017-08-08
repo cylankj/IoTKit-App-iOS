@@ -16,14 +16,24 @@
 #import "JfgLanguage.h"
 #import "JfgConfig.h"
 #import "CommonMethod.h"
-#import "LSAlertView.h"
+#import "JFGPicAlertView.h"
+#import "JfgTimeFormat.h"
+#import "JfgGlobal.h"
 #import "HitTestScrollView.h"
 #import "JfgUserDefaultKey.h"
+#import "dataPointMsg.h"
+#import "JfgDataTool.h"
 #import <JFGSDK/JFGSDK.h>
 #import "OemManager.h"
+#import "LSAlertView.h"
+#import <KVOController.h>
+#import "jfgConfigManager.h"
 
 @interface VideoPlayViewController ()<TimeChangeMonitorDelegate,UIScrollViewDelegate,UIGestureRecognizerDelegate,JFGSDKCallbackDelegate,MessageVCDelegate>
-
+{
+    BOOL isDoorBell;
+    BOOL isHistoryJump;
+}
 @property (nonatomic,strong)UIView *topBarBgView;
 @property (nonatomic,strong)UIButton *backBtn;
 @property (nonatomic,strong)UIButton *videoTitleLabel;
@@ -33,18 +43,25 @@
 
 @property (nonatomic,strong)CAGradientLayer *dayGradient;
 @property (nonatomic,strong)CAGradientLayer *nightGradient;
-
 @property (nonatomic,strong)HitTestScrollView *bgScrollerView;
 @property (nonatomic,strong)videoPlay1ViewController *videoPlay;
 @property (nonatomic,strong)MessageViewController * messageVC;
-
 @property (nonatomic,assign)BOOL isClearCount;
-
+@property (nonatomic,assign)BOOL isDidAppear;
 @property (nonatomic, strong) UIImageView *redDotImageView;
+@property (nonatomic,assign)BOOL preferentialShowMsg;
+@property (nonatomic,strong)UILabel *redPoint;
 
 @end
 
 @implementation VideoPlayViewController
+
+-(instancetype)initWithMessage
+{
+    self = [super init];
+    self.preferentialShowMsg = YES;
+    return self;
+}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -55,21 +72,21 @@
     UIPanGestureRecognizer * pan = [[UIPanGestureRecognizer alloc]initWithTarget:traget action:nil];
     [self.view addGestureRecognizer:pan];
 
+    isDoorBell = [jfgConfigManager devIsDoorBellForPid:self.devModel.pid];
     [JFGSDK addDelegate:self];
     [self addNotificationDelegate];
     [self initTopBar];
     
-    if (self.devModel.shareState == DevShareStatuOther) {
+    if (self.devModel.shareState == DevShareStatuOther && !isDoorBell) {
         
         self.videoPlay.isShow = YES;
         [self.view addSubview:self.bgScrollerView];
         [self addChildViewController:self.videoPlay];
         [self.bgScrollerView addSubview:self.videoPlay.view];
-        
         self.bgScrollerView.contentSize = CGSizeMake(self.view.width, self.bgScrollerView.height);
-    }else{
         
-        self.videoPlay.isShow = YES;
+    }else{
+
         [self.view addSubview:self.bgScrollerView];
         [self addChildViewController:self.videoPlay];
         [self.bgScrollerView addSubview:self.videoPlay.view];
@@ -82,19 +99,27 @@
         self.bgScrollerView.interceptLimits = self.view.bounds.size.height*0.45;
         [self interceptContol];
     }
+    
+    if (self.devModel.unReadMsgCount > 0) {
+        [self transToMsgVC];
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
     
-    BOOL isShowRed = ([[NSUserDefaults standardUserDefaults] boolForKey:isShowSafeRedDot(self.cid)] || [[NSUserDefaults standardUserDefaults] boolForKey:isShowAutoPhotoRedDot(self.cid)] || [[NSUserDefaults standardUserDefaults] boolForKey:isShowDelayPhotoRedDot(self.cid)]);
+    BOOL isShowRed = [JfgDataTool isShowRedDotInSettingButton:self.cid pid:[self.devModel.pid integerValue]];
+    
     if (self.devModel.shareState == DevShareStatuOther)
     {
         isShowRed = NO;
     }
+    
     self.redDotImageView.hidden = !isShowRed;
 }
+
+
 
 - (void)viewDidAppear:(BOOL)animated
 {
@@ -106,6 +131,12 @@
     if (_videoTitleLabel.selected) {
         self.videoPlay.isShow = YES;
     }
+    self.isDidAppear = YES;
+    if ([CommonMethod isDeviceHasBattery:[self.devModel.pid intValue]])
+    {
+        [self checkDoorBattery];
+    }
+    
 }
 
 - (void)viewDidDisappear:(BOOL)animated
@@ -122,7 +153,7 @@
         [self.videoPlay removeAllNotification];
     }
     self.videoPlay.isShow = NO;
-    
+    self.isDidAppear = NO;
 }
 
 
@@ -136,10 +167,6 @@
     }
 }
 
--(void)delDeviceNotification:(NSNotification *)notification
-{
-    [CommonMethod delDeviceByOtherClientWithNotification:notification cid:self.cid superViweController:self];
-}
 
 //添加代理，通知等
 -(void)addNotificationDelegate
@@ -151,12 +178,40 @@
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(settingAction) name:JFGGotoSettingKey object:nil];
 }
 
+- (void)checkDoorBattery
+{
+    if (self.devModel.shareState == DevShareStatuOther)
+    {
+        return;
+    }
+    
+    if (self.devModel.netType == JFGNetTypeOffline)
+    {
+
+    }
+}
+
 #pragma mark- MessageVC delegate
 -(void)lookHistoryForTimestamp:(uint64_t)timestamp
 {
+    if (self.messageVC.editButton.selected == YES) {
+        [self.messageVC editButtonAction:self.messageVC.editButton];
+    }
+    if (self.messageVC.timeSelectButton.selected == YES) {
+        [self.messageVC selectDate:self.messageVC.timeSelectButton];
+    }
+    self.videoPlay.isShow = YES;
+    self.videoTitleLabel.selected = YES;
+    self.msgTitleLabel.selected = NO;
+    self.bgScrollerView.userInteractionEnabled = NO;
+    [UIView animateWithDuration:0.5 animations:^{
+        self.topTitleSelectedLine.x = self.videoTitleLabel.x;
+        [self.bgScrollerView setContentOffset:CGPointMake(0, 0)];
+    } completion:^(BOOL finished) {
+        self.bgScrollerView.userInteractionEnabled = YES;
+        [self interceptContol];
+    }];
     [self.videoPlay setHistoryVideoForTimestamp:timestamp];
-    [self.bgScrollerView setContentOffset:CGPointMake(0, 0) animated:YES];
-    [self scrollerContentOffset:0];
 }
 
 #pragma mark- JFGSDDelegate
@@ -169,7 +224,7 @@
             break;
         }
     }
-    if (!isExist) {
+    if (!isExist && self.isDidAppear) {
         
         NSArray *delCidArr =  [JFGBoundDevicesMsg sharedDeciceMsg].delDeviceList;
         for (NSString *cid in delCidArr) {
@@ -190,22 +245,65 @@
             str = [JfgLanguage getLanTextStrByKey:@"Tap1_device_deleted"];
         }
         
-        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:str delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
-        [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+        __weak typeof(self) weakSelf = self;
+        [LSAlertView showAlertWithTitle:nil Message:str  CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
             
-            [self.navigationController popToRootViewControllerAnimated:YES];
+        } OKBlock:^{
             
-        } otherDelegate:nil];
+            [weakSelf.navigationController popToRootViewControllerAnimated:YES];
+        }];
         
     }
 }
 
-#pragma mark --public
-- (void)setInnerScrollViewContentOffset:(BOOL)isOffset
+
+-(void)jfgRobotSyncDataForPeer:(NSString *)peer fromDev:(BOOL)isDev msgList:(NSArray<DataPointSeg *> *)msgList
 {
-    //[self.bgScrollerView setContentOffset:CGPointMake(isOffset?self.view.width:0, 0) animated:YES];
-    [self topTitleAction:isOffset?self.msgTitleLabel:self.videoTitleLabel];
+    if ([peer isEqualToString:self.devModel.uuid]) {
+        
+        for (DataPointSeg *seg in msgList) {
+            
+            if (seg.msgId == 505 || seg.msgId == 222){
+                
+                //被分享设备不处理报警消息
+                JiafeigouDevStatuModel *mode = self.devModel;
+                if (mode.shareState == DevShareStatuOther) {
+                    return;
+                }
+                
+                if (self.videoPlay.isShow) {
+                    self.redPoint.hidden = NO;
+                }else{
+                    self.redPoint.hidden = YES;
+                }
+            }
+        }
+    }
+}
+
+#pragma mark --public
+
+-(void)transToMsgVC
+{
+    self.msgTitleLabel.selected = YES;
+    self.videoTitleLabel.selected = NO;
+    self.topTitleSelectedLine.x = self.msgTitleLabel.x;
+    self.videoPlay.isShow = NO;
+    
+    if (self.bgScrollerView.contentOffset.x != self.view.width) {
+        [self.bgScrollerView setContentOffset:CGPointMake(self.view.width, 0) animated:NO];
+    }
+    if (self.isClearCount == NO) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"JFGClearUnReadCount" object:self.cid];
+        self.isClearCount = YES;
+    }
+    [[NSNotificationCenter defaultCenter]postNotificationName:VideoPlayViewDismissNotification object:nil];
     [self interceptContol];
+}
+
+- (void)setInnerScrollViewContentOffset
+{
+    
 }
 
 
@@ -224,7 +322,6 @@
     }else{
         //晚上
         [self setBarViewColor:NO];
-        
     }
 }
 
@@ -244,11 +341,9 @@
 -(void)scrollerContentOffset:(CGFloat)contentOffset
 {
     if (contentOffset == 0) {
-        
-        [self topTitleAction:_videoTitleLabel];
+        [self topTitleAction:self.videoTitleLabel];
     }else{
-        
-        [self topTitleAction:_msgTitleLabel];
+        [self topTitleAction:self.msgTitleLabel];
     }
 }
 
@@ -263,7 +358,7 @@
     [self.topBarBgView addSubview:self.backBtn];
     [self.topBarBgView addSubview:self.settingBtn];
     
-    if (self.devModel.shareState == DevShareStatuOther) {
+    if (self.devModel.shareState == DevShareStatuOther && !isDoorBell) {
         //被分享用户只显示视频页面
         [self.topBarBgView addSubview:self.videoTitleLabel];
         self.videoTitleLabel.x = self.topBarBgView.x;
@@ -271,8 +366,8 @@
         [self.topBarBgView addSubview:self.videoTitleLabel];
         [self.topBarBgView addSubview:self.msgTitleLabel];
         [self.topBarBgView addSubview:self.topTitleSelectedLine];
+        [self.topBarBgView addSubview:self.redPoint];
     }
-    
     
 }
 
@@ -289,13 +384,11 @@
     deviceSetting.isShare = (self.devModel.shareState == DevShareStatuOther);
     deviceSetting.devModel = self.devModel;
     deviceSetting.pType = (productType)[self.devModel.pid intValue];
-    
     if ([self.devModel.alias isEqualToString:@""]) {
         deviceSetting.alis = self.devModel.uuid;
     }else{
         deviceSetting.alis = self.devModel.alias;
     }
-    
     [self.navigationController pushViewController:deviceSetting animated:YES];
 }
 
@@ -326,19 +419,23 @@
 //顶部标题选择按钮事件
 -(void)topTitleAction:(UIButton *)sender
 {
-    if (sender == _videoTitleLabel) {
+    NSLog(@"toptitle");
+    
+    if (sender == self.videoTitleLabel) {
+        
         if (self.messageVC.editButton.selected == YES) {
-            [_messageVC editButtonAction:_messageVC.editButton];
+            [self.messageVC editButtonAction:self.messageVC.editButton];
         }
-        if (_messageVC.timeSelectButton.selected == YES) {
-            [_messageVC selectDate:_messageVC.timeSelectButton];
+        if (self.messageVC.timeSelectButton.selected == YES) {
+            [self.messageVC selectDate:self.messageVC.timeSelectButton];
         }
         self.videoPlay.isShow = YES;
-        if (_videoTitleLabel.selected) {
+        
+        if (self.videoTitleLabel.selected) {
             return ;
         }
-        _videoTitleLabel.selected = YES;
-        _msgTitleLabel.selected = NO;
+        self.videoTitleLabel.selected = YES;
+        self.msgTitleLabel.selected = NO;
         
         [UIView animateWithDuration:0.5 animations:^{
             self.topTitleSelectedLine.x = self.videoTitleLabel.x;
@@ -348,13 +445,18 @@
             }
 
         } completion:^(BOOL finished) {
-            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(postShowPlayView) object:nil];
-            [self performSelector:@selector(postShowPlayView) withObject:nil afterDelay:0.2];
+            if (isHistoryJump) {
+                isHistoryJump = NO;
+            }else{
+                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(postShowPlayView) object:nil];
+                [self performSelector:@selector(postShowPlayView) withObject:nil afterDelay:0.5];
+            }
             [self interceptContol];
         }];
         
     }else{
-        if (_msgTitleLabel.selected) {
+        
+        if (self.msgTitleLabel.selected) {
             return;
         }
         self.videoPlay.isShow = NO;
@@ -362,9 +464,9 @@
             [[NSNotificationCenter defaultCenter] postNotificationName:@"JFGClearUnReadCount" object:self.cid];
             self.isClearCount = YES;
         }
-        _msgTitleLabel.selected = YES;
-        _videoTitleLabel.selected = NO;
-        
+        self.msgTitleLabel.selected = YES;
+        self.videoTitleLabel.selected = NO;
+        self.redPoint.hidden = YES;
         [UIView animateWithDuration:0.5 animations:^{
             self.topTitleSelectedLine.x = self.msgTitleLabel.x;
             
@@ -377,8 +479,6 @@
         }];
         
     }
-   
-    
 }
 
 -(void)postShowPlayView
@@ -402,7 +502,6 @@
         }else{
             //晚上
             [self setBarViewColor:NO];
-            
         }
         _topBarBgView.userInteractionEnabled = YES;
     }
@@ -452,7 +551,6 @@
         CGSize size = [_msgTitleLabel.titleLabel sizeThatFits:CGSizeMake(MAXFLOAT, 16)];
         _msgTitleLabel.width = size.width;
         _msgTitleLabel.left = self.view.x+22.5;
-        //_msgTitleLabel.backgroundColor = [UIColor orangeColor];
     }
     return _msgTitleLabel;
 }
@@ -531,8 +629,7 @@
     if (!_dayGradient) {
         CAGradientLayer *gradient = [CAGradientLayer layer];
         gradient.frame = self.topBarBgView.bounds;
-        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#54b2d0"].CGColor,
-                           (id)[UIColor colorWithHexString:@"#439ac4"].CGColor,
+        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#17AFD1"].CGColor,(id)[UIColor colorWithHexString:@"#17AFD1"].CGColor,
                            nil];
         
         _dayGradient = gradient;
@@ -545,8 +642,7 @@
     if (!_nightGradient) {
         CAGradientLayer *gradient = [CAGradientLayer layer];
         gradient.frame = self.topBarBgView.bounds;
-        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#23344e"].CGColor,
-                           (id)[UIColor colorWithHexString:@"#2b3f5b"].CGColor,
+        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#263954"].CGColor,(id)[UIColor colorWithHexString:@"#263954"].CGColor,
                            nil];
         _nightGradient = gradient;
     }
@@ -562,6 +658,19 @@
         _redDotImageView.hidden = NO;
     }
     return _redDotImageView;
+}
+
+-(UILabel *)redPoint
+{
+    if (!_redPoint) {
+        _redPoint = [[UILabel alloc]initWithFrame:CGRectMake(0, 29, 8, 8)];
+        _redPoint.backgroundColor = [UIColor redColor];
+        _redPoint.layer.cornerRadius = 4;
+        _redPoint.layer.masksToBounds = YES;
+        _redPoint.left = self.msgTitleLabel.right;
+        _redPoint.hidden = YES;
+    }
+    return _redPoint;
 }
 
 -(void)dealloc

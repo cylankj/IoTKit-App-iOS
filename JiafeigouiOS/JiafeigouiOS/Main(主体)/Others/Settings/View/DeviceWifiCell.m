@@ -42,6 +42,8 @@
 
 - (void)initViewLayout
 {
+    JFG_WS(weakSelf);
+    
     [self.signalImageView mas_makeConstraints:^(MASConstraintMaker *make) {
         make.centerY.equalTo(self.contentView.mas_centerY);
         make.right.equalTo(self.contentView.mas_right);
@@ -56,6 +58,7 @@
     
     [self.cusTextLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.left.equalTo(self.contentView.mas_left).offset(44.0f);
+        make.right.equalTo(weakSelf.lockImageView.mas_left).with.offset(-5.0f);
         make.centerY.equalTo(self.contentView.mas_centerY);
     }];
     [self.cusImageView mas_makeConstraints:^(MASConstraintMaker *make) {

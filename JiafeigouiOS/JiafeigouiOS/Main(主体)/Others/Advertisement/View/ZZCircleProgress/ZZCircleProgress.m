@@ -226,7 +226,7 @@
     
     __weak typeof(self) weakSelf = self;
     
-    timer = [NSTimer scheduledTimerWithTimeInterval:0.03 block:^{
+    timer = [NSTimer scheduledTimerWithTimeInterval:0.02 block:^{
         __strong typeof(weakSelf)strongSelf = weakSelf;
         
         //反方向动画

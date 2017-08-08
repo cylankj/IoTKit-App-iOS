@@ -35,7 +35,7 @@
             break;
         case pickerViewModeSelected:{
             [UIView animateWithDuration:0.5 animations:^{
-                _contentLabel.backgroundColor = [UIColor colorWithHexString:@"#73a0ce"];
+                _contentLabel.backgroundColor = [UIColor colorWithHexString:@"#36bdff"];
                 _contentLabel.textColor = [UIColor whiteColor];
             }];
             

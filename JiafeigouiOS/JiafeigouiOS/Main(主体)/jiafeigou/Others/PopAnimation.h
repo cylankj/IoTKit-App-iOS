@@ -50,4 +50,7 @@
  *  @param alpha         要设置成的透明度
  */
 +(void)startSpringAlphaAnimationForView:(UIView *)animationView alpha:(CGFloat)alpha;
+
++(CATransition *)moveTopAnimation;
++(CATransition *)moveBottomAnimation;
 @end

@@ -34,9 +34,18 @@
     [self initNavigation];
     [self initView];
     [self initViewLayout];
-    
+}
+
+-(void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
     [JFGSDK addDelegate:self];
-    
+}
+
+-(void)viewDidDisappear:(BOOL)animated
+{
+    [super viewDidDisappear:animated];
+    [JFGSDK removeDelegate:self];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -98,6 +107,8 @@
     {
         self.ssid = [dataInfo objectForKey:cellTextKey];
         [JFGSDK fping:@"255.255.255.255"];
+        [JFGSDK fping:@"192.168.10.255"];
+        
         [ProgressHUD showProgress:nil];
     }
     else

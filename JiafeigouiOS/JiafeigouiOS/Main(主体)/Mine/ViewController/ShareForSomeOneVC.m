@@ -16,7 +16,7 @@
 #import "LoginManager.h"
 #import "jiafeigouTableView+Data.h"
 #import "CommonMethod.h"
-
+#import "jfgConfigManager.h"
 
 
 @implementation UserShareDeviceModel
@@ -32,6 +32,7 @@
 @property (nonatomic, strong) NSMutableArray *modelArray;
 @property (nonatomic, assign) NSInteger selectNum;
 @property (nonatomic, strong) NSMutableArray *selectedArray;
+@property (nonatomic, strong) NSArray *devList;
 @end
 
 @implementation ShareForSomeOneVC
@@ -62,6 +63,7 @@
             model.shareCount = m.shareCount;
             model._selected = NO;
             model.alias = m.alias;
+            model.pid = m.pid;
             [self.modelArray addObject:model];
         }
         
@@ -123,21 +125,31 @@
         cell.selectButton.image = [UIImage imageNamed:@"camera_icon_Select"] ;
     }
     
-    UIImage * image;
-    switch (m.deviceType) {
-        case JFGDeviceTypeCameraWifi:
-            image = [UIImage imageNamed:@"add_icon_camera"];
+    UIImage * image = [UIImage imageNamed:@"add_icon_camera"];
+    
+    BOOL isFinished = NO;
+    for (NSArray *subArr in self.devList) {
+        for (AddDevConfigModel *model in subArr) {
+            
+            for (NSNumber *os in model.osList) {
+                
+                if ([os integerValue] == [m.pid integerValue]) {
+                    image = [UIImage imageNamed:model.iconName];
+                    isFinished = YES;
+                    break;
+                }
+                
+            }
+            if (isFinished) {
+                break;
+            }
+            
+        }
+        if (isFinished) {
             break;
-        case JFGDeviceTypeDoorBell:
-            image = [UIImage imageNamed:@"add_icon_ring"];
-            break;
-        case JFGDeviceTypeEfamily:
-            image = [UIImage imageNamed:@"add_icon_photo"];
-            break;
-        default:
-            image = [UIImage imageNamed:@"add_icon_camera"];
-            break;
+        }
     }
+    
     cell.iconImageView.image = image;
     cell.shareNumLabel.text = [NSString stringWithFormat:@"%ld/5",(long)m.tempShareCount];
     return cell;
@@ -375,6 +387,14 @@
         [_friendsTableView registerClass:[ShareForFriendsCell class] forCellReuseIdentifier:@"fCell"];
     }
     return _friendsTableView;
+}
+
+-(NSArray *)devList
+{
+    if (!_devList) {
+        _devList = [[NSArray alloc]initWithArray:[jfgConfigManager getAllDevModel]];
+    }
+    return _devList;
 }
 
 - (void)didReceiveMemoryWarning {

@@ -34,10 +34,25 @@ typedef NS_ENUM(NSInteger, productType) {
     productType_Camera_GK,      // 国科
     productType_720p,           // 720
     productType_DoorBell2 = 25,      // 门铃 二代
-    productType_ColudCameraOs,  // 看家王 云相机
+    productType_ColudCameraOs = 26,  // 看家王 云相机
+    productType_CatEye = 27,        // 猫眼
     productType_RS_180 = 36,    // RS camera
     productType_RS_120 = 37,
     productType_IPCam = 38, // 睿视方案（doby）120°
+    productType_IPCam_V2,       // 睿视方案   39
+    
+    productType_KKS_DoorBell = 42,  // 康凯斯 门铃
+    productType_CesBell = 44,        // ces 门铃
+    productType_CesBell_V2 = 46,       // ces 门铃
+    
+    productType_CesCamera = 47,         // ces 鱼眼 摄像头
+    productType_CesCamera_V2,           // ces 摄像头
+    
+    productType_RSDoorBell = 50,        // RS 门铃
+    productType_RS_180_Panorama,        // RS 180 全景
+    productType_DoorBell3 = 52,  //门铃三代
+    
+    productType_RS_360_pano = 81,   // 全景？然而 又不是
     
 #pragma mark pid
     productType_3G = 1071,
@@ -49,8 +64,17 @@ typedef NS_ENUM(NSInteger, productType) {
     productType_newDoorBell,      // 门铃
     productType_newDoorBell_V2p,      // 门铃
     
-#pragma mark 别看我，看注释
-    productType_Mine, //此type 非 产品类型， 我的设置页面
+    productType_CatEye_V2 = 1160, //猫眼
+    productType_ColudCameraOs_V2 = 1188, //云相机
+    productType_DoorBell3_V2 = 1379,  //门铃三代
+};
+
+
+//   文件 所在位置 类型
+typedef NS_ENUM(NSInteger, FileExistType) {
+    FileExistTypeLocal,                 //本地 有
+    FileExistTypeRemote,                //远程 有
+    FileExistTypeBoth     //本地，远程 都有
 };
 
 // 设备 网络类型
@@ -61,7 +85,8 @@ typedef NS_ENUM(NSInteger, DeviceNetType) {
     DeviceNetType_2G,
     DeviceNetType_3G,
     DeviceNetType_4G,
-    DeviceNetType_5G
+    DeviceNetType_5G,
+    DeviceNetType_Wired = 10,   // 有线 模式
 };
 
 // 自动录像
@@ -79,6 +104,14 @@ typedef NS_ENUM(NSInteger, sensitiveType) {
     sensitiveTypeLow,       //低灵敏度
     sensitiveTypeNormal,    //中灵敏度
     sensitiveTypeHigh,      //高灵敏度
+};
+
+// AI 识别
+typedef NS_ENUM(NSInteger, AIRecType) {
+    AIRecType_Person = 1,
+    AIRecType_Cat,
+    AIRecType_Dog,
+    AIRecType_Car
 };
 
 // 设备提示音
@@ -102,6 +135,13 @@ typedef NS_ENUM(NSInteger, SDCardType) {
     SDCardType_Using,           // 正常使用
     SDCardType_Error,           // SDcard 错误
 };
+
+typedef NS_ENUM(NSInteger, DeviceDirectionType) {
+    DeviceDirectionTypePortrait,        // 竖屏
+    DeviceDirectionTypeLandScape,       // 支持横屏
+    DeviceDirectionTypeALL,             // 所有 方向
+};
+
 
 #pragma mark
 #pragma mark  === 设置wifi 跳转 添加页面

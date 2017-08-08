@@ -25,6 +25,8 @@
 #import "ProgressHUD.h"
 #import "FriendsInfoVC.h"
 #import "UIAlertView+FLExtension.h"
+#import "JfgCacheManager.h"
+#import "LSAlertView.h"
 
 typedef enum {
     dataTypeOnlyReq, //只有请求列表
@@ -67,13 +69,15 @@ typedef enum {
 {
     [super viewWillAppear:animated];
     [JFGSDK addDelegate:self];
-    
 }
+
 - (void)viewDidDisappear:(BOOL)animated
 {
     [super viewDidDisappear:animated];
     [JFGSDK removeDelegate:self];
+    [JfgCacheManager cacheReadAddFriendReqList:self.friendReqList];
 }
+
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
@@ -101,7 +105,7 @@ typedef enum {
 {
     [self.view addSubview:self.friendsTableView];
     [self.view addSubview:self.noDataView];
-    [self judgeHaveData];
+    
 }
 
 - (void)initNavigationView
@@ -140,6 +144,7 @@ typedef enum {
         UIImageView * iconImageView = [[UIImageView alloc]initWithFrame:CGRectMake((self.view.width-157)/2.0, 0.20*kheight, 140.0, 140.0)];
         iconImageView.image = [UIImage imageNamed:@"png—unmanned"];
         iconImageView.x = self.view.width*0.5;
+        _noDataView.hidden = YES;
         [_noDataView addSubview:iconImageView];
         
         UILabel * noShareLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, iconImageView.bottom+20, Kwidth, 15)];
@@ -153,7 +158,7 @@ typedef enum {
     return _noDataView;
 }
 
-- (UITableView *)friendsTableView
+-(UITableView *)friendsTableView
 {
     if (_friendsTableView == nil)
     {
@@ -169,7 +174,8 @@ typedef enum {
     }
     return _friendsTableView;
 }
-- (NSMutableArray *)dataArray
+
+-(NSMutableArray *)dataArray
 {
     if (_dataArray == nil)
     {
@@ -236,9 +242,10 @@ typedef enum {
     }
     
     //
-    [self judgeHaveData];
+    //[self judgeHaveData];
     //NSLog(@"好友请求列表：%@",list);
 }
+
 -(void)jfgFriendList:(NSArray *)list error:(JFGErrorType)errorType
 {
     self.friendList = [[NSMutableArray alloc]initWithArray:list];
@@ -285,22 +292,21 @@ typedef enum {
             [JFGSDK getFriendRequestList];
             [JFGSDK getFriendList];
             
-            UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap3_FriendsAdd_ExpiredTips"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"SEND"], nil];
-            
-            [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
-                if (buttonIndex == 1) {
-                    
-                    FriendsInfoVC * infoVC = [FriendsInfoVC new];
-                    infoVC.nickNameLabel.text = currentReqInfo.account;
-                    infoVC.nameLabel.text = currentReqInfo.account;
-                    infoVC.friendsInfoType = FriendsInfoUnFiens;
-                    infoVC.isVerifyFriends = NO;
-                    infoVC.account = currentReqInfo.account;
-                    infoVC.nickNameString = currentReqInfo.account;
-                    [self.navigationController pushViewController:infoVC animated:YES];
-                    
-                }
-            } otherDelegate:nil];
+            __weak typeof(self) weakSelf = self;
+            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap3_FriendsAdd_ExpiredTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"SEND"] CancelBlock:^{
+                
+            } OKBlock:^{
+                
+                FriendsInfoVC * infoVC = [FriendsInfoVC new];
+                infoVC.nickNameLabel.text = currentReqInfo.account;
+                infoVC.nameLabel.text = currentReqInfo.account;
+                infoVC.friendsInfoType = FriendsInfoUnFiens;
+                infoVC.isVerifyFriends = NO;
+                infoVC.account = currentReqInfo.account;
+                infoVC.nickNameString = currentReqInfo.account;
+                [weakSelf.navigationController pushViewController:infoVC animated:YES];
+                
+            }];
             
             
         }else{
@@ -317,7 +323,7 @@ typedef enum {
 {
     static NSString *friendsIdentifier = @"friendsCell";
     FriendsMainCell *cell = [tableView dequeueReusableCellWithIdentifier:friendsIdentifier];
-    
+    NSArray *readAddFriendReqList = [JfgCacheManager getCacheReadAddFriendReqAccountList];
     if (!cell)
     {
         cell = [[FriendsMainCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:friendsIdentifier];
@@ -335,6 +341,20 @@ typedef enum {
                 cell.cusTextLabel.text = reqInfo.alias;
                 if ([reqInfo.alias isEqualToString:@""]) {
                     cell.cusTextLabel.text = reqInfo.account;
+                }
+                BOOL isNewMsg = YES;
+                if (readAddFriendReqList.count) {
+                    for (NSString *acc in readAddFriendReqList) {
+                        if ([acc isEqualToString:reqInfo.account]) {
+                            isNewMsg = NO;
+                            break;
+                        }
+                    }
+                }
+                if (isNewMsg) {
+                    cell.contentView.backgroundColor = [UIColor colorWithHexString:@"#f6f6f6"];
+                }else{
+                    cell.contentView.backgroundColor = [UIColor whiteColor];
                 }
                 cell.cusDetailTextLabel.text = reqInfo.additionMsg;
                 
@@ -360,11 +380,8 @@ typedef enum {
                 }else{
                     cell.cusTextLabel.text = fInfo.alias;
                 }
-                
-                
                 cell.cusDetailTextLabel.text = fInfo.account;
                 cell.agreeButton.hidden = YES;
-                
                 [CommonMethod setHeadImageForImageView:cell.headImageView account:fInfo.account];
     
             }
@@ -387,9 +404,20 @@ typedef enum {
                 [JFGSDK getFriendList];
             }];
             cell.agreeButton.hidden = NO;
-            
-            
-            
+            BOOL isNewMsg = YES;
+            if (readAddFriendReqList.count) {
+                for (NSString *acc in readAddFriendReqList) {
+                    if ([acc isEqualToString:reqInfo.account]) {
+                        isNewMsg = NO;
+                        break;
+                    }
+                }
+            }
+            if (isNewMsg) {
+                cell.contentView.backgroundColor = [UIColor colorWithHexString:@"#f6f6f6"];
+            }else{
+                cell.contentView.backgroundColor = [UIColor whiteColor];
+            }
             [CommonMethod setHeadImageForImageView:cell.headImageView account:reqInfo.account];
             
         }
@@ -453,7 +481,6 @@ typedef enum {
             return headView;
             
         }
-            
             break;
         case dataTypeOnlyFriends: {
             FriendsHeadView *headView =[[FriendsHeadView alloc] init];

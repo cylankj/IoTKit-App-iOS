@@ -12,7 +12,11 @@
 #import "UIColor+HexColor.h"
 #import "JfgUserDefaultKey.h"
 #import "JfgConstKey.h"
+#import "CommonMethod.h"
+#import "JfgProductJduge.h"
+#import "SDImageCache.h"
 #import "JfgDataTool.h"
+#import "CommonMethod.h"
 #import "AuthorizedMethod.h"
 
 @implementation DeviceSettingModel
@@ -37,11 +41,20 @@
         _info = @"";
     }
     
+    if (self.pType != productType_720 && self.pType != productType_720p)
+    {
+        if (self.isShare)
+        {
+            _detailTextColor = [UIColor colorWithHexString:@"#888888"];
+            return _info;
+        }
+    }
+    
     
     if (self.sdCardError != 0 && self.isExistSDCard == YES)
     {
         _detailTextColor = [UIColor colorWithHexString:@"#ff3d32"];
-        _info = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"SD_INIT_ERR"],self.sdCardError];
+//        _info = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"SD_INIT_ERR"],self.sdCardError];
     }
     else
     {
@@ -51,6 +64,49 @@
     return _info;
 }
 
+/*
+ *  SD卡
+ */
+
+- (NSString *)SDCardInfo
+{
+    if (!self.isExistSDCard) // 不存在 SDCard
+    {
+        _SDCardInfo = [JfgLanguage getLanTextStrByKey:@"SD_NO"];
+    }
+    else if (self.sdCardError == 0) // 存在SDcard 正常使用
+    {
+        _SDCardInfo = [JfgLanguage getLanTextStrByKey:@"SD_NORMAL"];
+    }
+    else if (self.sdCardError != 0)
+    {
+        _SDCardInfo = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"SD_INIT_ERR"],self.sdCardError];
+    }
+    
+    return _SDCardInfo;
+}
+
+- (SDCardType)sdCardType
+{
+    
+    if (self.isExistSDCard)
+    {
+        if (self.sdCardError == 0)
+        {
+            _sdCardType = SDCardType_Using;
+        }
+        else
+        {
+            _sdCardType = SDCardType_Error;
+        }
+    }
+    else
+    {
+        _sdCardType = SDCardType_None;
+    }
+    
+    return _sdCardType;
+}
 
 - (NSString *)safe
 {
@@ -102,11 +158,27 @@
 
 - (NSString *)wifi
 {
-    if (_wifi == nil || (self.SIMCardType == SIMType_Using && self.isMobile == YES))
+    switch (self.pType)
     {
-        return @"";
+        case productType_720p:
+        case productType_720:
+        {
+            if (_wifi == nil || [_wifi isEqualToString:@""] || [CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+            {
+                return [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Unopened"];
+            }
+        }
+            break;
+            
+        default:
+        {
+            if (_wifi == nil || (self.SIMCardType == SIMType_Using && self.isMobile == YES) || self.deviceNetType ==  DeviceNetType_Wired)
+            {
+                return @"";
+            }
+        }
+            break;
     }
-    
     
     return _wifi;
 }
@@ -126,6 +198,26 @@
 
 - (NSString *)autoPhoto
 {
+    
+    if ([JfgProductJduge isAutoRecordSwitch:self.pType])
+    {
+        switch (self.pType)
+        {
+            case productType_CatEye:
+            {
+                return @"";
+            }
+                break;
+                
+            default:
+            {
+                return [JfgLanguage getLanTextStrByKey:(self.autoPhotoOrigin == MotionDetectAbnormal)?@"OPEN":@"MAGNETISM_OFF"];
+                
+            }
+                break;
+        }
+        
+    }
     switch (self.autoPhotoOrigin)
     {
         case MotionDetectNever:
@@ -201,7 +293,7 @@
 
 - (BOOL)isShowSafeRedDot
 {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:isShowSafeRedDot(self.cid)];
+    return [JfgDataTool isShowRedDotInSafeProColumn:self.cid pid:self.pType];
 }
 
 - (BOOL)isShowAutoPhotoRedDot
@@ -210,14 +302,18 @@
 }
 - (BOOL)isShowDelayPhotoRedDot
 {
-    return [[NSUserDefaults standardUserDefaults]boolForKey:isShowDelayPhotoRedDot(self.cid)];
+    return [[NSUserDefaults standardUserDefaults] boolForKey:isShowDelayPhotoRedDot(self.cid)];
+}
+
+- (BOOL)isShowWxRedDot
+{
+    return ![[NSUserDefaults standardUserDefaults] boolForKey:JFGIsAlwaysShowWebchatRedPointKey];;
 }
 
 - (BOOL)isShowOthersRedDot
 {
     return NO;
 }
-
 
 - (BOOL)isStandByCanClick
 {
@@ -242,6 +338,56 @@
     return [JfgDataTool deviceIsOnline:self.deviceNetType];
 }
 
+- (BOOL)isWifiConfigCanClick
+{
+    switch (self.pType) {
+        case productType_IPCam:
+        case productType_IPCam_V2:
+        {
+            if (self.isUsingWiredNet)
+            {
+                return NO;
+            }
+        }
+            break;
+            
+        default:
+            break;
+    }
+    
+    
+    return YES;
+}
+
+- (BOOL)isHotWiredCanClick
+{
+    if (self.isStandby) // 待机 不可点击
+    {
+        return NO;
+    }
+    
+    if ((self.isInLocalNet == YES && ![CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid]) || [JfgDataTool deviceIsOnline:self.deviceNetType])
+    {
+        return YES;
+    }
+    
+    return NO;
+}
+
+- (BOOL)isWiredNetAvailalbe
+{
+    if (self.isStandby) // 待机 不可点击
+    {
+        return NO;
+    }
+    
+    if (![JfgDataTool deviceIsOnline:self.deviceNetType])
+    {
+        return NO;
+    }
+    
+    return _isWiredNetAvailalbe;
+}
 
 // 所有的cell
 - (BOOL)isCellCanClick
@@ -252,6 +398,28 @@
     }
     
     return YES;
+}
+
+
+- (NSString *)outdoorString
+{
+    if ([CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+    {
+        return [JfgLanguage getLanTextStrByKey:@"OPEN"];
+    }
+    else
+    {
+        return [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Unopened"];
+    }
+
+}
+
+- (NSString *)cacheString
+{
+//    NSInteger diskSize = [[SDImageCache sharedImageCache] getSize];
+//    NSString *cacheStr = [NSString stringWithFormat:@"%.1fM",diskSize/1024.0/1024.0];
+    
+    return @"";
 }
 
 @end

@@ -11,6 +11,7 @@
 #import "UIView+FLExtensionForFrame.h"
 #import "UIColor+HexColor.h"
 #import <Masonry.h>
+
 @interface JFGBaseViewController ()<TimeChangeMonitorDelegate>
 
 
@@ -61,7 +62,6 @@
     }else{
         //晚上
         [self setBarViewColor:NO];
-        
     }
 }
 
@@ -119,7 +119,7 @@
             
             [self.topBarBgView addSubview:self.backBtn];
             [self.backBtn mas_makeConstraints:^(MASConstraintMaker *make) {
-                make.left.mas_equalTo(self.topBarBgView.mas_left).offset(5);
+                make.left.equalTo(@2);
                 make.centerY.mas_equalTo(self.topBarBgView.mas_bottom).offset(-22);
                 make.height.greaterThanOrEqualTo(@50);
                 make.width.greaterThanOrEqualTo(@50);
@@ -130,7 +130,7 @@
         
         [self.topBarBgView addSubview:self.backBtn];
         [self.backBtn mas_makeConstraints:^(MASConstraintMaker *make) {
-            make.left.mas_equalTo(self.topBarBgView.mas_left).offset(5);
+            make.left.equalTo(@2);
             make.centerY.mas_equalTo(self.topBarBgView.mas_bottom).offset(-22);
             make.height.greaterThanOrEqualTo(@50);
             make.width.greaterThanOrEqualTo(@50);
@@ -179,7 +179,6 @@
         _titleLabel.font = [UIFont systemFontOfSize:17];
         _titleLabel.textColor = [UIColor colorWithHexString:@"#ffffff"];
         _titleLabel.textAlignment = NSTextAlignmentCenter;
-        
     }
     return _titleLabel;
 }
@@ -190,8 +189,7 @@
     if (!_dayGradient) {
         CAGradientLayer *gradient = [CAGradientLayer layer];
         gradient.frame = self.topBarBgView.bounds;
-        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#54b2d0"].CGColor,
-                           (id)[UIColor colorWithHexString:@"#439ac4"].CGColor,
+        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#17AFD1"].CGColor,(id)[UIColor colorWithHexString:@"#17AFD1"].CGColor,
                            nil];
         
         _dayGradient = gradient;
@@ -204,8 +202,7 @@
     if (!_nightGradient) {
         CAGradientLayer *gradient = [CAGradientLayer layer];
         gradient.frame = self.topBarBgView.bounds;
-        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#7590ae"].CGColor,
-                           (id)[UIColor colorWithHexString:@"#3a5170"].CGColor,
+        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#263954"].CGColor,(id)[UIColor colorWithHexString:@"#263954"].CGColor,
                            nil];
         _nightGradient = gradient;
     }
@@ -220,7 +217,6 @@
     }else{
         [self dismissViewControllerAnimated:YES completion:nil];
     }
-    
 }
 
 - (void)didReceiveMemoryWarning {

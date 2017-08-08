@@ -11,5 +11,6 @@
 @interface ExploreImageView : UIImageView
 
 @property (nonatomic,copy)NSString *imageUrl;
+@property (nonatomic,assign)int msgID;
 
 @end

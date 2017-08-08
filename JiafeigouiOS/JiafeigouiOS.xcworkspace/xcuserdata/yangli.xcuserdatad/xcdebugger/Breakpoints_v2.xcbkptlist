@@ -14,28 +14,18 @@
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.ExceptionBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            scope = "0"
-            stopOnStyle = "0">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Mine/ViewController/AddFriendsInContactVC.m"
-            timestampString = "512462111.086617"
+            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/jiafeigou/ViewController/BellViewController.mm"
+            timestampString = "521557871.333884"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "298"
-            endingLineNumber = "298"
-            landmarkName = "-jfgCheckAccount:alias:isExist:errorType:"
+            startingLineNumber = "540"
+            endingLineNumber = "540"
+            landmarkName = "-jfgDeviceList:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -45,13 +35,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Others/RegisterLogin/ViewModel/LoginManager.m"
-            timestampString = "512647096.634703"
+            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/jiafeigou/ViewController/BellViewController.mm"
+            timestampString = "521557874.95057"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "165"
-            endingLineNumber = "165"
-            landmarkName = "-openLoginResultWithType:rspState:baseUser:error:"
+            startingLineNumber = "552"
+            endingLineNumber = "552"
+            landmarkName = "-jfgDeviceList:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -61,13 +51,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Others/RegisterLogin/ViewModel/LoginManager.m"
-            timestampString = "512647160.722986"
+            filePath = "JiafeigouiOS/Utils/CommonMethod.m"
+            timestampString = "523510612.605733"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "179"
-            endingLineNumber = "179"
-            landmarkName = "-openLoginResultWithType:rspState:baseUser:error:"
+            startingLineNumber = "650"
+            endingLineNumber = "650"
+            landmarkName = "+delDeviceByOtherClientWithNotification:cid:superViweController:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -77,13 +67,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Others/AddDevice/ViewController/QRViewController.m"
-            timestampString = "513048985.487639"
+            filePath = "JiafeigouiOS/Expend(&#x6269;&#x5c55;)/ShareSDKHelper/FLShareSDKHelper.m"
+            timestampString = "522663831.465277"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "194"
-            endingLineNumber = "194"
-            landmarkName = "-captureOutput:didOutputMetadataObjects:fromConnection:"
+            startingLineNumber = "448"
+            endingLineNumber = "448"
+            landmarkName = "+shareToTwitterWithContentText:title:image:url:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -93,13 +83,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Others/AddDevice/ViewController/QRViewController.m"
-            timestampString = "513049001.057956"
+            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/jiafeigou/ViewController/MessageViewController.m"
+            timestampString = "523507323.207325"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "206"
-            endingLineNumber = "206"
-            landmarkName = "-captureOutput:didOutputMetadataObjects:fromConnection:"
+            startingLineNumber = "225"
+            endingLineNumber = "225"
+            landmarkName = "-requestBellSuccess:forCid:refresh:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -109,13 +99,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Others/AddDevice/ViewModel/QRViewModel.m"
-            timestampString = "513049045.583531"
+            filePath = "JiafeigouiOS/Expend(&#x6269;&#x5c55;)/ShareSDKHelper/FLShareSDKHelper.m"
+            timestampString = "522665699.096811"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "48"
-            endingLineNumber = "48"
-            landmarkName = "-requestWithString:"
+            startingLineNumber = "607"
+            endingLineNumber = "607"
+            landmarkName = "+shareForSinaweibo:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -125,13 +115,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Others/AddDevice/ViewModel/QRViewModel.m"
-            timestampString = "513049076.329764"
+            filePath = "JiafeigouiOS/Expend(&#x6269;&#x5c55;)/ShareSDKHelper/FLShareSDKHelper.m"
+            timestampString = "522665699.096811"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "67"
-            endingLineNumber = "67"
-            landmarkName = "-requestWithString:"
+            startingLineNumber = "606"
+            endingLineNumber = "606"
+            landmarkName = "+shareForSinaweibo:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -141,60 +131,12 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Mine/ViewController/AddFriendsInContactVC.m"
-            timestampString = "513051566.565331"
+            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Mine/ViewController/ShareManagerVC.m"
+            timestampString = "523176851.485613"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "278"
-            endingLineNumber = "278"
-            landmarkName = "-shareButtonAction:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Mine/ViewController/AddFriendsInContactVC.m"
-            timestampString = "513051578.28637"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "283"
-            endingLineNumber = "283"
-            landmarkName = "-jfgResultIsRelatedToAccountWithType:error:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Mine/ViewController/AddFriendsInContactVC.m"
-            timestampString = "513051995.884794"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "275"
-            endingLineNumber = "275"
-            landmarkName = "-shareButtonAction:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Mine/ViewController/AddFriendsInContactVC.m"
-            timestampString = "513052024.995775"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "70"
-            endingLineNumber = "70"
+            startingLineNumber = "34"
+            endingLineNumber = "34"
             landmarkName = "-viewDidLoad"
             landmarkType = "7">
          </BreakpointContent>
@@ -205,13 +147,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Mine/ViewController/AddFriendsByScan.m"
-            timestampString = "513150604.921875"
+            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Others/AddDevice/ViewController/AddDeviceGuideViewController.m"
+            timestampString = "523276392.271591"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "215"
-            endingLineNumber = "215"
-            landmarkName = "-jfgCheckAccount:alias:isExist:errorType:"
+            startingLineNumber = "333"
+            endingLineNumber = "333"
+            landmarkName = "-leftButtonAction:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -221,13 +163,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Utils/CommonMethod.m"
-            timestampString = "513928471.020133"
+            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Mine/ViewController/PersonMsgViewController.m"
+            timestampString = "523345613.88874"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "461"
-            endingLineNumber = "461"
-            landmarkName = "+languaeKeyForLiveVideoErrorType:"
+            startingLineNumber = "664"
+            endingLineNumber = "664"
+            landmarkName = "-imagePickerController:didFinishPickingMediaWithInfo:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -237,13 +179,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Utils/CommonMethod.m"
-            timestampString = "513928471.020133"
+            filePath = "JiafeigouiOS/AppDelegate.m"
+            timestampString = "523873802.766522"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "501"
-            endingLineNumber = "501"
-            landmarkName = "+languageKeyForAddFriendErrorType:"
+            startingLineNumber = "374"
+            endingLineNumber = "374"
+            landmarkName = "-afNetWorkingTest"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -253,125 +195,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/Mine/ViewController/ShareWithAddrBookVC.m"
-            timestampString = "514890978.094669"
+            filePath = "JiafeigouiOS/AppDelegate.m"
+            timestampString = "523873803.478554"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "435"
-            endingLineNumber = "435"
-            landmarkName = "-shareBtnAction:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/jiafeigou/ViewController/VideoPlayFor720ViewController.m"
-            timestampString = "515640879.497538"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2539"
-            endingLineNumber = "2539"
-            landmarkName = "-dealloc"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/jiafeigou/ViewController/VideoPlayFor720ViewController.m"
-            timestampString = "515640879.497538"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1736"
-            endingLineNumber = "1736"
-            landmarkName = "-videoRecordingReqForLong:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/jiafeigou/ViewController/videoPlay1ViewController.m"
-            timestampString = "515639172.870951"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1629"
-            endingLineNumber = "1629"
-            landmarkName = "-snapBtnAction"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/jiafeigou/ViewController/VideoPlayViewController.m"
-            timestampString = "515638712.242038"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "124"
-            endingLineNumber = "124"
-            landmarkName = "-viewDidDisappear:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/jiafeigou/ViewController/VideoPlayViewController.m"
-            timestampString = "515638852.459272"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "122"
-            endingLineNumber = "122"
-            landmarkName = "-viewDidDisappear:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/jiafeigou/ViewController/videoPlay1ViewController.m"
-            timestampString = "515638866.97937"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "550"
-            endingLineNumber = "550"
-            landmarkName = "-removeAllNotification"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "JiafeigouiOS/Main(&#x4e3b;&#x4f53;)/jiafeigou/ViewController/videoPlay1ViewController.m"
-            timestampString = "515639204.769759"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "317"
-            endingLineNumber = "317"
-            landmarkName = "-startVideoAction"
+            startingLineNumber = "377"
+            endingLineNumber = "377"
+            landmarkName = "-afNetWorkingTest"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

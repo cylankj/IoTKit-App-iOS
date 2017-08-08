@@ -11,6 +11,8 @@
 #import "XMLDictionary.h"
 #import <JFGSDK/JFGSDK.h>
 #import "JfgTypeDefine.h"
+#import "JfgUserDefaultKey.h"
+#import "PropertyManager.h"
 #import "LoginManager.h"
 
 @implementation JfgDataTool
@@ -159,6 +161,54 @@ NSString *const timezoneValue = @"__text";
     return YES;
 }
 
++ (NSString *)aiRecognitionStr:(NSArray *)aiRecognitions
+{
+    NSString *resultStr = @" ";
+    
+    if (aiRecognitions.count > 0)
+    {
+        @try {
+            for (NSInteger i = 0; i < aiRecognitions.count; i ++)
+            {
+                int aiRecognitionType = [[aiRecognitions objectAtIndex:i] intValue];
+                
+                switch (aiRecognitionType)
+                {
+                    case AIRecType_Person:
+                    {
+                        resultStr = [resultStr stringByAppendingString:[NSString stringWithFormat:@"%@ ",[JfgLanguage getLanTextStrByKey:@"AI_HUMAN"]]];
+                    }
+                        break;
+                    case AIRecType_Cat:
+                    {
+                        resultStr = [resultStr stringByAppendingString:[NSString stringWithFormat:@"%@ ",[JfgLanguage getLanTextStrByKey:@"AI_CAT"]]];
+                    }
+                        break;
+                    case AIRecType_Dog:
+                    {
+                        resultStr = [resultStr stringByAppendingString:[NSString stringWithFormat:@"%@ ",[JfgLanguage getLanTextStrByKey:@"AI_DOG"]]];
+                    }
+                        break;
+                    case AIRecType_Car:
+                    {
+                        resultStr = [resultStr stringByAppendingString:[NSString stringWithFormat:@"%@ ",[JfgLanguage getLanTextStrByKey:@"AI_VEHICLE"]]];
+                    }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        } @catch (NSException *exception) {
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"jfgDataTool aiRecognitionStr %@", exception]];
+        } @finally {
+            resultStr = @"";
+        }
+        
+    }
+    return resultStr;
+}
+
+
 + (NSDictionary *)timeZoneDict
 {
     NSString *xmlPath = [[NSBundle mainBundle] pathForResource:[JfgLanguage languageType] == LANGUAGE_TYPE_CHINESE?@"timezones":@"timezones-en" ofType:@"xml"];
@@ -197,6 +247,9 @@ NSString *const timezoneValue = @"__text";
     ///cid/[vid]/[cid]/[timestamp]_[id].jpg   3.0
     ///[cid]/[timestamp]_[id].jpg   2.0
     NSString *filaName = [NSString stringWithFormat:@"/%@/%lld_%d.jpg",cid,timestamp,order];
+    if (order == 0) {
+        filaName = [NSString stringWithFormat:@"/%@/%lld.jpg",cid,timestamp];
+    }
     return [JFGSDK getCloudUrlWithFlag:flag fileName:filaName];
 
 //    return [JFGSDK getCloudUrlByType:JFGSDKGetCloudUrlTypeWarning flag:flag fileName:[NSString stringWithFormat:@"%lld_%d.jpg",timestamp,order] cid:cid];
@@ -221,5 +274,42 @@ NSString *const timezoneValue = @"__text";
     NSString *filaName = [JFGSDK getCloudUrlWithFlag:flag fileName:fileNm];
     return filaName;
 }
+
+#pragma mark 红点 显示
++ (BOOL)isShowRedDotInSettingButton:(NSString *)cid pid:(NSInteger)pType
+{
+    BOOL isShowSafeRedDot = NO;
+    BOOL isShowAutoPhotoRedDot = NO;
+    
+    if ([PropertyManager showPropertiesRowWithPid:pType key:pProtectionKey])
+    {
+        isShowSafeRedDot = [JfgDataTool isShowRedDotInSafeProColumn:cid pid:pType];
+    }
+    
+    if ([PropertyManager showPropertiesRowWithPid:pType key:pRecordSettingKey])
+    {
+        isShowAutoPhotoRedDot = [[NSUserDefaults standardUserDefaults] boolForKey:isShowAutoPhotoRedDot(cid)];
+    }
+    
+    return (
+            isShowSafeRedDot ||
+            isShowAutoPhotoRedDot ||
+            [[NSUserDefaults standardUserDefaults] boolForKey:isShowDelayPhotoRedDot(cid)]
+            );
+    
+}
+
++ (BOOL)isShowRedDotInSafeProColumn:(NSString *)cid pid:(NSInteger)pType
+{
+    BOOL isShowAIRedDot = NO;
+    
+    if ([PropertyManager showPropertiesRowWithPid:pType key:pAiRecognition] || [PropertyManager showSharePropertiesRowWithPid:pType key:pAiRecognition]) // 如果显示 AI识别 才 返回值，否则返回 NO
+    {
+        isShowAIRedDot = [[NSUserDefaults standardUserDefaults] boolForKey:isShowSafeAIRedDot(cid)];
+    }
+    
+    return  isShowAIRedDot;
+}
+
 
 @end

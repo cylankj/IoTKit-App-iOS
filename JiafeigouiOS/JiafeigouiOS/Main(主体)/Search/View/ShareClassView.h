@@ -10,17 +10,18 @@
 typedef enum{
     shareTypeVendor,//default
     shareTypeDevice,
-}shareType;
+}shareClassType;
+
 @interface ShareClassView : UIView
 
 @property (nonatomic,strong)id obj;
 //@property (nonatomic, assign)shareType type;
 
--(instancetype)initWithFrame:(CGRect)frame shareWithContent:(NSMutableDictionary *)content withType:(shareType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid;
+-(instancetype)initWithFrame:(CGRect)frame shareWithContent:(NSMutableDictionary *)content withType:(shareClassType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid;
 
-+(ShareClassView *)showShareViewWitnContent:(NSMutableDictionary *)dictionary withType:(shareType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid;
++(ShareClassView *)showShareViewWitnContent:(NSMutableDictionary *)dictionary withType:(shareClassType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid;
 
-+(void)showShareViewWithTitle:(NSString *)title content:(NSString *)content url:(NSString *)url image:(UIImage *)image imageUrl:(NSString *)imageUrl Type:(shareType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid;
++(void)showShareViewWithTitle:(NSString *)title content:(NSString *)content url:(NSString *)url image:(UIImage *)image imageUrl:(NSString *)imageUrl Type:(shareClassType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid;
 -(void)dismiss;
 
 @end

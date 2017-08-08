@@ -7,6 +7,7 @@
 //
 
 #import "LSAlertView.h"
+#import "JfgConstKey.h"
 
 #define ALERT_ALERT_COLOR  [UIColor whiteColor]
 #define ALERT_WINDOW_COLOR [UIColor colorWithRed:0 green:0 blue:0 alpha:0.3]
@@ -199,6 +200,52 @@ void (^OKBlock) (void) = nil;
     });
     
 }
+
++ (void)showAlerWithLandScape:(BOOL)isLandScape Title:(NSString *)title Message:(NSString *)msg CancelButtonTitle:(NSString *)cancelTitle OtherButtonTitle:(NSString *)otherTitle CancelBlock:(void(^)(void))cancel OKBlock:(void(^)(void))ok 
+{
+    if (isLandScape)
+    {
+        [self showAlertForTransformRotateWithTitle:title Message:msg CancelButtonTitle:cancelTitle OtherButtonTitle:otherTitle CancelBlock:^{
+            if (cancel)
+            {
+                cancel();
+            }
+            
+        } OKBlock:^{
+            if (ok)
+            {
+                ok();
+            }
+        }];
+    }
+    else
+    {
+        [self showAlertWithTitle:title Message:msg CancelButtonTitle:cancelTitle OtherButtonTitle:otherTitle CancelBlock:^{
+            if (cancel)
+            {
+                cancel();
+            }
+        } OKBlock:^{
+            if (ok)
+            {
+                ok();
+            }
+        }];
+    }
+}
+
++ (void)directionChanged:(BOOL)isLandScape
+{
+    if (isLandScape)
+    {
+        [self shared].alertView.transform = CGAffineTransformRotate([self shared].alertView.transform, 90 * (M_PI / 180.0f));
+    }
+    else
+    {
+        [self shared].alertView.transform = CGAffineTransformRotate([self shared].alertView.transform, -90 * (M_PI / 180.0f));
+    }
+}
+
 - (void)AlertWithTitle:(NSString *)title Message:(NSString *)msg Cancel:(NSString *)cancel Other:(NSString *)other {
     
     [self createAlertTitle:title==nil?NO:YES Message:msg==nil?NO:YES Cancel:cancel==nil?NO:YES Other:other==nil?NO:YES];
@@ -381,7 +428,9 @@ void (^OKBlock) (void) = nil;
     
     CGFloat heightKeyboard = 0;
     NSTimeInterval duration = 0;
-    if (notification != nil) {
+    
+    if (notification != nil)
+    {
         
         NSDictionary *info = [notification userInfo];
         CGRect keyboard = [[info valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
@@ -390,7 +439,11 @@ void (^OKBlock) (void) = nil;
             
             heightKeyboard = keyboard.size.height;
         }
-    }else heightKeyboard = [self keyboardHeight];
+    }
+    else
+    {
+        heightKeyboard = [self keyboardHeight];
+    }
 
     CGRect screen = [UIScreen mainScreen].bounds;
     CGPoint center = CGPointMake(screen.size.width/2, (screen.size.height-heightKeyboard)/2);

@@ -11,6 +11,8 @@
 
 @interface UILabel (FLExtension)
 
+@property (nonatomic,copy)NSString *verticalText;
+
 + (UILabel *)initWithFrame:(CGRect)frame
                       text:(NSString *)text
                       font:(FontName)fontName

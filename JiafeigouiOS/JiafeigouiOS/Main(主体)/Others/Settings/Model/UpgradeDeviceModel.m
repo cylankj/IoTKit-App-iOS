@@ -44,4 +44,24 @@
     return _binUrl;
 }
 
+- (NSMutableArray *)binUrls
+{
+    if (_binUrls == nil)
+    {
+        _binUrls = [[NSMutableArray alloc] initWithCapacity:5];
+    }
+    
+    return _binUrls;
+}
+
+- (NSMutableArray *)downLoadURLArr
+{
+    if (_downLoadURLArr == nil)
+    {
+        _downLoadURLArr = [[NSMutableArray alloc] init];
+    }
+    
+    return _downLoadURLArr;
+}
+
 @end

@@ -71,24 +71,137 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>fb107704292745179</string>
+				<string>fb1866682200216878</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.jfgou.push</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>cylan</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wx382033a16e5cc4a5</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wb1821035549</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tencent1104534926</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>QQ41D5DD8E</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tencent1104534926</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>QQ41D5DD8E</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wb2444488421</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wx292ae57e5ab2316d</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>QQ41F08F1E</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tencent1106284318</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb1698182270477390</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>3.2.0.1</string>
+	<string>3.2.2.100</string>
+	<key>FacebookAppID</key>
+	<string>444251309281886</string>
+	<key>FacebookDisplayName</key>
+	<string>加菲狗</string>
 	<key>Jfgsdk_ap_prefix</key>
 	<array>
+		<string>DOG</string>
+		<string>PSD</string>
+		<string>KKS</string>
+		<string>LS</string>
+		<string>DOORBELL</string>
 		<string>RS-</string>
+		<string>BELL</string>
 	</array>
 	<key>Jfgsdk_host</key>
-	<string>yf.jfgou.com</string>
+	<string>test1.jfgou.com</string>
 	<key>Jfgsdk_post</key>
 	<string>443</string>
 	<key>LSApplicationCategoryType</key>
 	<string></string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
+		<string>mqzone</string>
+		<string>mqzoneopensdkapiV2</string>
+		<string>mqzoneopensdkapi19</string>
+		<string>mqzoneopensdkapi</string>
+		<string>mqzoneopensdk</string>
 		<string>fbauth</string>
 		<string>fbshareextension</string>
 		<string>fbauth2</string>
@@ -113,15 +226,15 @@
 		<true/>
 	</dict>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>bluetoothDesciption</string>
+	<string>Bluetooth permissions required</string>
 	<key>NSCameraUsageDescription</key>
-	<string>cameraDesciption</string>
+	<string>Camera permissions required</string>
 	<key>NSContactsUsageDescription</key>
-	<string>contactsDesciption</string>
+	<string>Contacts permissions required</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>microphoneDesciption</string>
+	<string>Microphone permissions required</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>photoLibraryDesciption</string>
+	<string>PhotoLibrary permissions required</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
@@ -138,11 +251,13 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	<key>certType</key>
-	<string>jiafeigouAppstoreDev</string>
+	<string>com.jiafeigou.pushnew.dev</string>
 	<key>oemname</key>
 	<string>cylan</string>
 </dict>

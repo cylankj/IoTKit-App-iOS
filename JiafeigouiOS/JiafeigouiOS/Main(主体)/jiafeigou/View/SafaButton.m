@@ -7,6 +7,7 @@
 //
 
 #import "SafaButton.h"
+#import "JfgGlobal.h"
 
 #define kAngle(r) (r) * M_PI / 180
 @implementation SafaButton
@@ -34,15 +35,17 @@
 //翻转
 -(void)flipAnimation
 {
+    JFG_WS(weakSelf);
+    
     [UIView animateWithDuration:1 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
         
-        if (_isFace) {
-            self.imageView.layer.transform = CATransform3DIdentity;
+        if (weakSelf.isFace) {
+            weakSelf.imageView.layer.transform = CATransform3DIdentity;
         }else{
-            self.imageView.layer.transform = CATransform3DMakeRotation(kAngle(180), 0, 1, 0);
+            weakSelf.imageView.layer.transform = CATransform3DMakeRotation(kAngle(180), 0, 1, 0);
         }
     
-        [self performSelector:@selector(transImage) withObject:nil afterDelay:0.5];
+        [weakSelf performSelector:@selector(transImage) withObject:nil afterDelay:0.5];
         
     } completion:nil];
     

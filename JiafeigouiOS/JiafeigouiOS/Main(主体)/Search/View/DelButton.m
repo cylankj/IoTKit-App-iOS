@@ -23,6 +23,11 @@
     return CGRectContainsPoint(bounds, point);
 }
 
+-(void)dealloc
+{
+    NSLog(@"delloc");
+}
+
 /*
 // Only override drawRect: if you perform custom drawing.
 // An empty implementation adversely affects performance during animation.

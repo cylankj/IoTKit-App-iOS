@@ -28,11 +28,12 @@
     self.unreadRedPoint.layer.masksToBounds = YES;
     [self.contentView addSubview:self.shareImageView];
     //[self.contentView addSubview:self.lineLabel];
+    __weak typeof(self) weakSelf = self;
     [self.KVOController observe:self.deviceNickLabel keyPath:@"text" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionInitial block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
         
         //根据昵称文字设置分享图标位置
-        CGSize size = [self.deviceNickLabel sizeThatFits:CGSizeMake(self.width-22-85, 20)];
-        self.shareImageView.left = self.deviceNickLabel.left+size.width+7;
+        CGSize size = [weakSelf.deviceNickLabel sizeThatFits:CGSizeMake(weakSelf.width-22-85, 20)];
+        weakSelf.shareImageView.left = weakSelf.deviceNickLabel.left+size.width+7;
     }];
     
     // Initialization code

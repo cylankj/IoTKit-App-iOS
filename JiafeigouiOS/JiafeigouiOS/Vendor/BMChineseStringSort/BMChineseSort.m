@@ -36,12 +36,14 @@
     
     for (NSString* object in tempArray)
     {
-        NSString *pinyin = [((BMChineseSort*)object).pinYin substringToIndex:1];
-        //不同
-        if(![tempString isEqualToString:pinyin])
-        {
-            [A_Result addObject:pinyin];
-            tempString = pinyin;
+        if (((BMChineseSort*)object).pinYin.length) {
+            NSString *pinyin = [((BMChineseSort*)object).pinYin substringToIndex:1];
+            //不同
+            if(![tempString isEqualToString:pinyin])
+            {
+                [A_Result addObject:pinyin];
+                tempString = pinyin;
+            }
         }
     }
     return A_Result;
@@ -55,21 +57,24 @@
     //拼音分组
     for (NSString* object in tempArray) {
         
-        NSString *pinyin = [((BMChineseSort*)object).pinYin substringToIndex:1];
-        NSString *string = ((BMChineseSort*)object).string;
-        //不同
-        if(![tempString isEqualToString:pinyin])
-        {
-            //分组
-            item = [NSMutableArray array];
-            [item  addObject:string];
-            [LetterResult addObject:item];
-            //遍历
-            tempString = pinyin;
-        }else//相同
-        {
-            [item  addObject:string];
+        if (((BMChineseSort*)object).pinYin.length) {
+            NSString *pinyin = [((BMChineseSort*)object).pinYin substringToIndex:1];
+            NSString *string = ((BMChineseSort*)object).string;
+            //不同
+            if(![tempString isEqualToString:pinyin])
+            {
+                //分组
+                item = [NSMutableArray array];
+                [item  addObject:string];
+                [LetterResult addObject:item];
+                //遍历
+                tempString = pinyin;
+            }else//相同
+            {
+                [item  addObject:string];
+            }
         }
+        
     }
     return LetterResult;
 }
@@ -123,13 +128,16 @@
     
     for (NSString* object in tempArray)
     {
-        NSString *pinyin = [((BMChineseSort*)object).pinYin substringToIndex:1];
-        //不同
-        if(![tempString isEqualToString:pinyin])
-        {
-            [A_Result addObject:pinyin];
-            tempString = pinyin;
+        if (((BMChineseSort*)object).pinYin.length) {
+            NSString *pinyin = [((BMChineseSort*)object).pinYin substringToIndex:1];
+            //不同
+            if(![tempString isEqualToString:pinyin])
+            {
+                [A_Result addObject:pinyin];
+                tempString = pinyin;
+            }
         }
+        
     }
     return A_Result;
 }
@@ -145,21 +153,24 @@
     //拼音分组
     for (BMChineseSort* object in tempArray) {
         
-        NSString *pinyin = [object.pinYin substringToIndex:1];
-        id obj = object.object;
-        //不同
-        if(![tempString isEqualToString:pinyin])
-        {
-            //分组
-            item = [NSMutableArray array];
-            [item  addObject:obj];
-            [LetterResult addObject:item];
-            //遍历
-            tempString = pinyin;
-        }else//相同
-        {
-            [item  addObject:obj];
+        if (object.pinYin.length) {
+            NSString *pinyin = [object.pinYin substringToIndex:1];
+            id obj = object.object;
+            //不同
+            if(![tempString isEqualToString:pinyin])
+            {
+                //分组
+                item = [NSMutableArray array];
+                [item  addObject:obj];
+                [LetterResult addObject:item];
+                //遍历
+                tempString = pinyin;
+            }else//相同
+            {
+                [item  addObject:obj];
+            }
         }
+       
     }
     
     if (BMLog==1) {
@@ -193,6 +204,7 @@
         //判断首字符是否为字母
         NSString *regex = @"[A-Za-z]+";
         NSPredicate *predicate = [NSPredicate predicateWithFormat:@"SELF MATCHES %@",regex];
+        
         NSString *initialStr = [chineseString.string length]?[chineseString.string substringToIndex:1]:@"";
         if ([predicate evaluateWithObject:initialStr])
         {
@@ -251,7 +263,9 @@
     }
     NSMutableString *result = @"".mutableCopy;
     for (NSString *letter in letterArray) {
-        [result appendString:[letter substringToIndex:1]];
+        if (letter.length) {
+            [result appendString:[letter substringToIndex:1]];
+        }
     }
     result = [result uppercaseString].mutableCopy;
     //判断第一个字符是否为字母

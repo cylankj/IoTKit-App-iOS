@@ -73,8 +73,6 @@ typedef NS_ENUM(NSInteger, forgetPassControl) {
 -(void)textFiledTextDidChange:(NSNotification *)notification
 {
     UITextField *textFiled = notification.object;
-
-    
     if (textFiled == _accountTextFiled || textFiled == _codeTextFiled) {
         
         //验证码输入框未出现时候状态
@@ -162,29 +160,12 @@ typedef NS_ENUM(NSInteger, forgetPassControl) {
                 } else {
                     [JFGSDK verifySMSWithAccount:_accountTextFiled.text code:_codeTextFiled.text token:self.token];
                 }
-                
-                
             }
             [ProgressHUD showProgress:nil];
         }
         
     }else{
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"ACCOUNT_ERR"]];
-    }
-    
-}
-
-
-
--(void)jfgForgetPassByEmail:(NSString *)email errorType:(JFGErrorType)errorType
-{
-    if (errorType == JFGErrorTypeNone) {
-        [ProgressHUD dismiss];
-        ForgetEmailPasswordViewController *emailVC = [ForgetEmailPasswordViewController new];
-        emailVC.email = _accountTextFiled.text;
-        [self.navigationController pushViewController:emailVC animated:YES];
-    }else{
-        [ProgressHUD showText:[CommonMethod languageKeyForLoginErrorType:errorType]];
     }
     
 }
@@ -206,6 +187,20 @@ typedef NS_ENUM(NSInteger, forgetPassControl) {
 
 #pragma mark 
 #pragma mark == SDK Delegate ==
+
+-(void)jfgForgetPassByEmail:(NSString *)email errorType:(JFGErrorType)errorType
+{
+    if (errorType == JFGErrorTypeNone) {
+        [ProgressHUD dismiss];
+        ForgetEmailPasswordViewController *emailVC = [ForgetEmailPasswordViewController new];
+        emailVC.email = email;
+        [self.navigationController pushViewController:emailVC animated:YES];
+    }else{
+        [ProgressHUD showText:[CommonMethod languageKeyForLoginErrorType:errorType]];
+    }
+}
+
+
 -(void)jfgSendSMSResult:(JFGErrorType)errorType token:(NSString *)token
 {
     if (errorType == JFGErrorTypeNone) {
@@ -244,10 +239,7 @@ typedef NS_ENUM(NSInteger, forgetPassControl) {
         }else{
             [ProgressHUD showText:[CommonMethod languageKeyForLoginErrorType:errorType]];
         }
-        
-        
     }
-    
 }
 
 -(void)jfgVerifySMSResult:(JFGErrorType)errorType
@@ -263,12 +255,9 @@ typedef NS_ENUM(NSInteger, forgetPassControl) {
     }else{
         [ProgressHUD showText:[CommonMethod languageKeyForLoginErrorType:errorType]];
     }
-    
 }
 
 #pragma mark- TextField Delegate
-
-
 
 #pragma mark getter
 

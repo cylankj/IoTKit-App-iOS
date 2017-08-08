@@ -65,6 +65,7 @@
  *
  *  @return 返回压缩包的路径
  */
++(NSString *)appendAPNameWithPid:(int)productID Cid:(NSString *)cid;
 + (NSString *)logZipPath:(NSString *)fileName;
 
 /**
@@ -150,10 +151,10 @@
  */
 +(void)showNetDisconnectAlert;
 
-/**
- * 设备被其他端删除界面跳转处理
- */
-+(void)delDeviceByOtherClientWithNotification:(NSNotification *)notification cid:(NSString *)vcCid superViweController:(UIViewController *)vc;
+///**
+// * 设备被其他端删除界面跳转处理
+// */
+//+(void)delDeviceByOtherClientWithNotification:(NSNotification *)notification cid:(NSString *)vcCid superViweController:(UIViewController *)vc;
 
 /**
  * UIAlertSheetView 弹出动画时间
@@ -181,9 +182,24 @@
  */
 + (BOOL)isPanoCameraWithType:(NSInteger)pType;
 
++ (BOOL)isDeviceHasBattery:(NSInteger)pType;
+
++ (BOOL)isDeviceBlockUpgrade:(NSInteger)pType;
+
 +(NSString*)deviceType;// 需要#import "sys/utsname.h"
 
 +(JFGDevBigType)devBigTypeForOS:(NSString *)os;
 
+//全角占2个字符，半角占一个字符
++(NSInteger)lenghtForString:(NSString *)string;
+
++(UIImage *)thumbnailWithImageWithoutScale:(UIImage *)image size:(CGSize)asize;
+
+//获取配置plist
++(NSDictionary *)jfgConfigPlist;
+
++(UIImage *)sdwebImageCacheForKey:(NSString *)key;
+
++(NSString *)sdwebImageDefauleCachePathForKey:(NSString *)key;
 
 @end

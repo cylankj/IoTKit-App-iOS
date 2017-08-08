@@ -11,7 +11,7 @@
 
 @interface FullScreenHistoryDatePicker : UIView
 
-@property (nonatomic,assign)id <FullScreenHistoryDatePickerDelegate>delegate;
+@property (nonatomic,weak)id <FullScreenHistoryDatePickerDelegate>delegate;
 
 @property (nonatomic,strong)NSArray *dataArray;
 

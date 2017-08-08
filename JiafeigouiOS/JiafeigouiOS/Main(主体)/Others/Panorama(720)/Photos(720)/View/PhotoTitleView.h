@@ -15,6 +15,6 @@
 - (void)updateLayout;
 
 @property (nonatomic, strong) UILabel *titleLbel;
-@property (nonatomic, strong) UIImageView *arrowImgView;
+//@property (nonatomic, strong) UIImageView *arrowImgView;
 
 @end

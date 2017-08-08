@@ -16,6 +16,9 @@
 //缓存报警图片信息
 +(NSString *)warnPicMsgCachePathForCid:(NSString *)cid;
 
+//鱼眼配置路径
++(NSString *)sfcParamModelCachePath;
+
 //无网络状态下删除报警图片缓存
 +(NSString *)warnPicForDelCachePathForCid:(NSString *)cid;
 
@@ -27,6 +30,9 @@
 
 //本客户端自己删除的设备记录
 +(NSString *)delDeviceCachePath;
+
+//已读添加好友消息列表
++(NSString *)readAddFriendReqListCachePath;
 
 //主目录
 +(NSString *)cylanDic;

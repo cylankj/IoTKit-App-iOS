@@ -23,6 +23,9 @@
 #import "AddDeviceMainViewController.h"
 #import "JFGBoundDevicesMsg.h"
 #import "NSTimer+FLExtension.h"
+#import "VideoPlayFor720ViewController.h"
+#import "UIColor+HexColor.h"
+#import "LSAlertView.h"
 
 @interface BindDevProgressViewController ()<JFGSDKBindDeviceDelegate,UIAlertViewDelegate,JFGSDKCallbackDelegate>
 {
@@ -34,6 +37,7 @@
 @property (nonatomic,strong)UIButton *backBtn;
 @property (nonatomic,strong)BindProgressAnimationView *animationView;
 @property (nonatomic, strong) JFGSDKBindingDevice *bindingDeviceSDK;
+@property (nonatomic,strong)UILabel *detailLabel;
 
 @property (nonatomic, strong) DevicesViewModel *devicesVM;
 @property (nonatomic, strong) NSMutableArray *cacheCidList;
@@ -53,7 +57,7 @@ int const timeoutDuration = 90; // 90秒 超时
     self.navigationView.hidden = YES;
     [self.view addSubview:self.backBtn];
     [self.view addSubview:self.animationView];
-    
+    [self.view addSubview:self.detailLabel];
     //开启屏幕常亮
     [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
     
@@ -145,9 +149,26 @@ int const timeoutDuration = 90; // 90秒 超时
 
 -(void)back
 {
-    UIAlertView *alert = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_tips"] message:nil delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"OK"], nil];
-    alert.tag = 1024;
-    [alert show];
+    __weak typeof(self) weakSelf = self;
+    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_tips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+        
+    } OKBlock:^{
+        if (weakSelf.navigationController){
+            for (UIViewController *temp in weakSelf.navigationController.viewControllers)
+            {
+                if ([temp isKindOfClass:[AddDeviceMainViewController class]])
+                {
+                    [weakSelf.navigationController popToViewController:temp animated:YES];
+                }else if ([temp isKindOfClass:[VideoPlayFor720ViewController class]]){
+                    [weakSelf.navigationController popToViewController:temp animated:YES];
+                }
+            }
+            
+        }else{
+            [weakSelf dismissViewControllerAnimated:YES completion:nil];
+        }
+    }];
+    
 }
 
 -(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
@@ -159,6 +180,8 @@ int const timeoutDuration = 90; // 90秒 超时
             {
                 if ([temp isKindOfClass:[AddDeviceMainViewController class]])
                 {
+                    [self.navigationController popToViewController:temp animated:YES];
+                }else if ([temp isKindOfClass:[VideoPlayFor720ViewController class]]){
                     [self.navigationController popToViewController:temp animated:YES];
                 }
             }
@@ -184,6 +207,7 @@ int const timeoutDuration = 90; // 90秒 超时
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"bindError [%d]", errorType]];
     AddDeviceErrorVC *errorVC = [AddDeviceErrorVC new];
     errorVC.errorType = errorType;
+    errorVC.pType = self.pType;
     [self.navigationController pushViewController:errorVC animated:YES];
 }
 
@@ -213,9 +237,8 @@ int const timeoutDuration = 90; // 90秒 超时
                 blockSelf.isPushedToSuccess = YES;
             }];
         }
-    }
-    else
-    {
+        
+    }else{
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"already pushed to successVC [%d]",self.isPushedToSuccess]];
     }
 }
@@ -364,9 +387,8 @@ int const timeoutDuration = 90; // 90秒 超时
 - (void)setSettingsRedDot:(NSString *)peer
 {
     [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowAutoPhotoRedDot(peer)];
-    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowSafeRedDot(peer)];
-    
-//    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowDelayPhotoRedDot(peer)];
+    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowRecordRedDot(peer)];
+    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowSafeAIRedDot(peer)];
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -432,7 +454,7 @@ int const timeoutDuration = 90; // 90秒 超时
 -(BindProgressAnimationView *)animationView
 {
     if (!_animationView) {
-        _animationView = [[BindProgressAnimationView alloc]initWithFrame:CGRectMake(0, self.view.height*0.32-72, 0, 0)];
+        _animationView = [[BindProgressAnimationView alloc]initWithFrame:CGRectMake(0, self.view.height*0.28-25, 0, 0)];
         _animationView.x = self.view.x;
         __block id blockSelf = self;
         _animationView.bindResetBlock = ^(){
@@ -457,9 +479,22 @@ int const timeoutDuration = 90; // 90秒 超时
     if (_devicesVM == nil)
     {
         _devicesVM = [[DevicesViewModel alloc] init];
+        _devicesVM.pType = self.pType;
     }
     
     return _devicesVM;
+}
+
+-(UILabel *)detailLabel
+{
+    if (!_detailLabel) {
+        _detailLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, self.animationView.bottom, self.view.width, 19)];
+        _detailLabel.font = [UIFont systemFontOfSize:18];
+        _detailLabel.textColor = [UIColor colorWithHexString:@"#888888"];
+        _detailLabel.text = [JfgLanguage getLanTextStrByKey:@"PLEASE_WAIT_2"];
+        _detailLabel.textAlignment = NSTextAlignmentCenter;
+    }
+    return _detailLabel;
 }
 
 - (void)didReceiveMemoryWarning {

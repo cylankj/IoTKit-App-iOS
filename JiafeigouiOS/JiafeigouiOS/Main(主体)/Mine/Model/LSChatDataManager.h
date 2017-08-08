@@ -14,7 +14,7 @@
 @property (nonatomic,readonly)NSMutableArray <LSChatModel *> *chatModelList;
 
 +(instancetype)shareChatDataManager;
--(void)addChatModel:(LSChatModel *)chatModel;
+-(BOOL)addChatModel:(LSChatModel *)chatModel;
 -(void)replaceChatModel:(LSChatModel *)chatModel;
 -(void)removeChatModel:(LSChatModel *)chatModel;
 -(void)removeAllChatModel;

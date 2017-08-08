@@ -19,6 +19,7 @@
 #import "OLImageView.h"
 #import "OLImage.h"
 #import "PilotLampStateVC.h"
+#import "jfgConfigManager.h"
 
 @interface AddDeviceGuideViewController()<JFGSDKCallbackDelegate>
 
@@ -33,6 +34,7 @@
 @property (nonatomic, strong) CarameFor720AddAnimationView *carame720AddView;
 @property (nonatomic, strong) OLImageView * olImageView;
 @property (nonatomic, assign) JFGNetType netType;
+@property (nonatomic,strong)AddDevConfigModel *addModel;
 @end
 
 @implementation AddDeviceGuideViewController
@@ -42,17 +44,39 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    [self getAddModel];//如果获取失败，默认使用wifi绑定界面
     [self initView];
     [self initNavigation];
+}
+
+-(void)getAddModel
+{
+    NSArray *dataArr = [jfgConfigManager getAllDevModel];
+    for (NSArray *subArr in dataArr) {
+        for (AddDevConfigModel *model in subArr) {
+            
+            for (NSNumber *os in model.osList) {
+                
+                if ([os integerValue] == self.pType) {
+                    self.addModel = model;
+                    return;
+                }
+            }
+        }
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
     [JFGSDK addDelegate:self];
-    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault animated:YES];
 }
 
+-(void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault];
+}
 
 - (void)viewDidDisappear:(BOOL)animated
 {
@@ -63,15 +87,15 @@
 
 - (void)initView
 {
-    if ([CommonMethod isCameraWithType:self.pType]) {
+    if ([self.addModel.typeMark integerValue] == 1) {
         [self.view addSubview:self.cameraAddAnimationView];
-    }else if (self.pType == productType_720){
+    }else if ([self.addModel.typeMark integerValue] == 2){
         [self.view addSubview:self.carame720AddView];
         [self.view addSubview:self.declareBtn];
-    }else if (self.pType == productType_IPCam){
-        [self.view addSubview:self.olImageView];
-    }else {
+    }else if ([self.addModel.typeMark integerValue] == 3){
         [self.view addSubview:self.doorAddAnimationView];
+    }else{
+        [self.view addSubview:self.olImageView];
     }
     [self.view addSubview:self.topTipsLabel];
     [self.view addSubview:self.bottomTipLabel];
@@ -98,14 +122,16 @@
     if (_topTipsLabel == nil)
     {
         _topTipsLabel = [[UILabel alloc] initWithFrame:CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight)];
-        
-        if ([CommonMethod isCameraWithType:self.pType] || self.pType == productType_720) {
-            _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTipsTitle"];
-        }else if (self.pType == productType_IPCam){
-            _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"RuiShi_Guide"];
-        }else{
-            _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_DoorbellTipsTitle"];
-        }
+        _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:self.addModel.userActionTitle];
+//        if (self.pType == productType_720) {
+//            _topTipsLabel.text =
+//        }else if ([CommonMethod isCameraWithType:self.pType]){
+//            _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTipsTitle"];
+//        }else if (self.pType == productType_IPCam){
+//            _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"RuiShi_Guide"];
+//        }else{
+//            _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_DoorbellTipsTitle"];
+//        }
         _topTipsLabel.textAlignment = NSTextAlignmentCenter;
         _topTipsLabel.font = [UIFont systemFontOfSize:27.0f];
         _topTipsLabel.adjustsFontSizeToFitWidth = YES;
@@ -126,15 +152,14 @@
     {
         _bottomTipLabel = [[UILabel alloc] initWithFrame:CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight)];
         _bottomTipLabel.textAlignment = NSTextAlignmentCenter;
-       
-        
-        if ([CommonMethod isCameraWithType:self.pType] || self.pType == productType_720) {
-            _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTips"];
-        }else if (self.pType == productType_IPCam){
-            _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTips"];
-        }else{
-            _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_DoorbellTips"];
-        }
+       _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:self.addModel.ledTitle];
+//        if ([CommonMethod isCameraWithType:self.pType] || self.pType == productType_720) {
+//            _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTips"];
+//        }else if (self.pType == productType_IPCam){
+//            _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTips"];
+//        }else{
+//            _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_DoorbellTips"];
+//        }
         _bottomTipLabel.font = [UIFont systemFontOfSize:17.0f];
         _bottomTipLabel.textColor = [UIColor colorWithHexString:@"#333333"];
     }
@@ -154,16 +179,16 @@
         _nextButton = [UIButton buttonWithType:UIButtonTypeCustom];
         _nextButton.frame = CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight);
         _nextButton.titleLabel.font = [UIFont systemFontOfSize:17.0f];
-        
-        if ([CommonMethod isCameraWithType:self.pType] || self.pType == productType_720) {
-            [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"BLINKING"] forState:UIControlStateNormal];
-        }else if(self.pType == productType_IPCam){
-            
-            [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"BLINKING"] forState:UIControlStateNormal];
-            
-        }else{
-            [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"DOOR_BLINKING"] forState:UIControlStateNormal];
-        }
+        [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:self.addModel.ledState] forState:UIControlStateNormal];
+//        if ([CommonMethod isCameraWithType:self.pType] || self.pType == productType_720) {
+//            [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"BLINKING"] forState:UIControlStateNormal];
+//        }else if(self.pType == productType_IPCam){
+//            
+//            [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"BLINKING"] forState:UIControlStateNormal];
+//            
+//        }else{
+//            [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"DOOR_BLINKING"] forState:UIControlStateNormal];
+//        }
 
         [_nextButton setTitleColor:[UIColor colorWithHexString:@"#4b9fd5"] forState:UIControlStateNormal];
         [_nextButton setBackgroundImage:[UIImage imageNamed:@"add_btn_pressed"] forState:UIControlStateNormal];
@@ -188,7 +213,7 @@
 -(void)intoVC
 {
     PilotLampStateVC *lampVC = [PilotLampStateVC new];
-    [self.navigationController pushViewController:lampVC animated:YES];
+    [self presentViewController:lampVC animated:YES completion:nil];
 }
 
 - (DoorAddAnimationView *)doorAddAnimationView
@@ -242,10 +267,23 @@
 -(OLImageView *)olImageView{
     if (!_olImageView) {
         CGFloat widgetX = self.view.center.x;
-        CGFloat widgetY = self.bottomTipLabel.bottom + 50 * designHscale - 80;
-        _olImageView = [[OLImageView alloc]initWithFrame:CGRectMake(widgetX, widgetY, 750*0.5, 750*0.5)];
-        [_olImageView setImage:[OLImage imageNamed:@"ruishiyindao.gif"]];
+        CGFloat widgetY = self.bottomTipLabel.bottom + 50 * designHscale;
+        _olImageView = [[OLImageView alloc]initWithFrame:CGRectMake(widgetX, widgetY, self.view.width, self.view.width)];
+        _olImageView.backgroundColor = [UIColor orangeColor];
+        UIImage *image = nil;
+        if (self.addModel && self.addModel.gifName && self.addModel.gifName.length>3) {
+            image = [OLImage imageNamed:self.addModel.gifName];
+        }else{
+            image = [OLImage imageNamed:@"ruishiyindao.gif"];
+        }
+        
+        CGFloat scale = image.size.height/image.size.width;
+        CGFloat imageVcHeight = self.view.width*scale;
+        _olImageView.height = imageVcHeight;
+        [_olImageView setImage:image];
         _olImageView.x = self.view.x;
+        _olImageView.y = (self.nextButton.top - self.bottomTipLabel.bottom)*0.5+self.bottomTipLabel.bottom;
+        
     }
     return _olImageView;
 }
@@ -271,15 +309,23 @@
             if ([temp isKindOfClass:[AddDeviceMainViewController class]])
             {
                 isPop = YES;
-                [self.navigationController popToViewController:temp animated:YES];
+                if (![self.navigationController popToViewController:temp animated:YES]) {
+                    [self dismissViewControllerAnimated:YES completion:nil];
+                }
+                return;
             }
         }
         
         if (!isPop) {
-            [self.navigationController popViewControllerAnimated:YES];
+            if (![self.navigationController popViewControllerAnimated:YES]) {
+                [self dismissViewControllerAnimated:YES completion:nil];
+            }
         }
+        
+    }else{
+        
+        [self dismissViewControllerAnimated:YES completion:nil];
     }
-    //
 }
 
 - (void)leftButtonAction:(UIButton *)sender

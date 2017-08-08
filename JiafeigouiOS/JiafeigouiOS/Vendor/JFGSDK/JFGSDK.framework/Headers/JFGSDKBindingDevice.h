@@ -14,7 +14,7 @@
 /**
  *  绑定代理
  */
-@property (nonatomic,assign)id <JFGSDKBindDeviceDelegate> delegate;
+@property (nonatomic,weak)id <JFGSDKBindDeviceDelegate> delegate;
 
 
 /**

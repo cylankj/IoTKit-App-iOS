@@ -79,9 +79,11 @@
     [self changeTableViewContentOffSetToBottom];
 }
 
-- (void)viewDidDisappear:(BOOL)animated {
+- (void)viewDidDisappear:(BOOL)animated
+{
     [JFGSDK removeDelegate:self];
     [super viewDidDisappear:animated];
+    [[NSNotificationCenter defaultCenter] postNotificationName:JFGClearFeedbackNotificationKey object:nil];
 }
 
 
@@ -99,6 +101,7 @@
     [cell.headerImageSelf jfg_setImageWithAccount:nil placeholderImage:[UIImage imageNamed:@"image_defaultHead"] refreshCached:NO completed:nil];
     return cell;
 }
+
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
     LSChatModel * model = self.chatArray[indexPath.row];
     if (model.modelType == LSModelTypeMe) {
@@ -130,34 +133,33 @@
     //内容与界面底部的间隔
     CGFloat marginHeight =valiableSizeHeight -contentSizeHeight;
     
+    JFG_WS(weakSelf);
+    
     [UIView animateWithDuration:time animations:^{
 //        [self._tableView setFrame:CGRectMake(0, 64 -(kheight -endY), Kwidth, self.view.height-64-55)];
         
         if (keyBoardHeight <5.f) {
-            [self._tableView setFrame:CGRectMake(0, 64, Kwidth, valiableSizeHeight)];
+            [weakSelf._tableView setFrame:CGRectMake(0, 64, Kwidth, valiableSizeHeight)];
         }else{
             if (marginHeight <0.f) {
                 //内容的高度大于界面能显示的高度
-                [self._tableView setFrame:CGRectMake(0, 64 -keyBoardHeight, Kwidth, valiableSizeHeight)];
+                [weakSelf._tableView setFrame:CGRectMake(0, 64 -keyBoardHeight, Kwidth, valiableSizeHeight)];
             }else if (marginHeight >keyBoardHeight){
                 //留下间隔的高度大于键盘的高度
-                [self._tableView setFrame:CGRectMake(0, 64, Kwidth, valiableSizeHeight -keyBoardHeight)];
+                [weakSelf._tableView setFrame:CGRectMake(0, 64, Kwidth, valiableSizeHeight -keyBoardHeight)];
             }else{
                 //留下的间隔小于键盘的高度
-                [self._tableView setFrame:CGRectMake(0, 64 -(keyBoardHeight -marginHeight), Kwidth, valiableSizeHeight -marginHeight)];
+                [weakSelf._tableView setFrame:CGRectMake(0, 64 -(keyBoardHeight -marginHeight), Kwidth, valiableSizeHeight -marginHeight)];
             }
         }
         
-        [self.bottomView setFrame:CGRectMake(0, endY -55, Kwidth, 55)];
+        [weakSelf.bottomView setFrame:CGRectMake(0, endY -55, Kwidth, 55)];
     }];
     [self changeTableViewContentOffSetToBottom];
 }
 #pragma mark  - 滑到最底部
-- (void)changeTableViewContentOffSetToBottom{
-//        if (self._tableView.contentSize.height + 64 > self._tableView.frame.size.height) {
-//            [self._tableView setContentOffset:CGPointMake(0, self._tableView.contentSize.height - CGRectGetHeight(self._tableView.frame) ) animated:YES];
-//        }
-//
+- (void)changeTableViewContentOffSetToBottom
+{
     if (self.chatArray.count>0) {
         NSIndexPath *indexPath =[NSIndexPath indexPathForRow:[self.chatArray count] -1 inSection:0];
         
@@ -173,7 +175,7 @@
 - (void)autoAnswer {
     
     NSDateFormatter *matter =[[NSDateFormatter alloc] init];
-    [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
+    [matter setDateFormat:@"yyyy/MM/dd HH:mm"];
     
     LSChatModel *aModel =[[LSChatModel alloc]init];
     aModel.msgDate = [matter stringFromDate:[NSDate date]];
@@ -196,10 +198,6 @@
     [self.chatArray addObject:aModel];
     [[LSChatDataManager shareChatDataManager] addChatModel:aModel];
     
-//    CGPoint p =self._tableView.contentOffset;
-//    
-//    [self._tableView setContentOffset:CGPointMake(p.x, p.y +aModel.cellHeight +72) animated:YES];
-    
     [self._tableView reloadData];
     [self changeTableViewContentOffSetToBottom];
     
@@ -208,7 +206,9 @@
 - (void)leftButtonAction:(UIButton *)btn{
     [self.navigationController popViewControllerAnimated:YES];
 }
-- (void)rightButtonAction:(UIButton *)btn {
+
+- (void)rightButtonAction:(UIButton *)btn
+{
     if (self.chatArray.count > 0) {
         [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_Feedback_ClearTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_Feedback_Clear"] CancelBlock:^{
             
@@ -234,7 +234,7 @@
         //LSChatModel * lastSelfModel = [self lastSelfModel];
         
         NSDateFormatter *matter =[[NSDateFormatter alloc] init];
-        [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
+        [matter setDateFormat:@"yyyy/MM/dd HH:mm"];
 
         if(self.chatArray.count == 0) {
             lastModelDate = [matter stringFromDate:[NSDate date]];
@@ -259,6 +259,8 @@
             aModel.isUplog = YES;
         }else{
             aModel.isUplog = NO;
+            self.inputTextF.enabled = NO;
+
         }
         [self.chatArray addObject:aModel];
         [[LSChatDataManager shareChatDataManager] addChatModel:aModel];
@@ -271,11 +273,9 @@
         [self changeTableViewContentOffSetToBottom];
         //如果这一条的消息比最后一条我的消息大于五分钟，将发送自动回复
         self.inputTextF.text = @"";
-        self.inputTextF.enabled = NO;
-        if (!needReport) {
-            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(sendOvertime) object:nil];
-            [self performSelector:@selector(sendOvertime) withObject:nil afterDelay:30];
-        }
+        
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(sendOvertime) object:nil];
+        [self performSelector:@selector(sendOvertime) withObject:nil afterDelay:60];
         
     } else {
         
@@ -287,9 +287,14 @@
 -(void)sendOvertime
 {
     self.inputTextF.enabled = YES;
-    LSChatModel * lastSelfModel = [self lastSelfModel];
-    lastSelfModel.sendStatue = LSSendStatueSending;
-    [[LSChatDataManager shareChatDataManager] replaceChatModel:lastSelfModel];
+    for (LSChatModel * model in self.chatArray) {
+        if (model.sendStatue == LSSendStatueSending) {
+            model.sendStatue = LSSendStatueFailed;
+            [[LSChatDataManager shareChatDataManager] replaceChatModel:model];
+        }
+    }
+    [self._tableView reloadData];
+    
 }
 
 #pragma mark - JFGSDKCallBack
@@ -302,7 +307,7 @@
     [self._tableView reloadData];
     [[LSChatDataManager shareChatDataManager] replaceChatModel:lastSelfModel];
     NSDateFormatter *matter =[[NSDateFormatter alloc] init];
-    [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
+    [matter setDateFormat:@"yyyy/MM/dd HH:mm"];
     if (errorType == JFGErrorTypeNone && !lastSelfModel.isUplog) {
         if ([[NSDate date] timeIntervalSince1970] - showAutoTimestamp >= 300) {
             [self autoAnswer];
@@ -315,7 +320,7 @@
 {
     //NSLog(@"回复未读的消息列表打印：%@,错误信息：%d",infoList,errorType);
     NSDateFormatter *matter =[[NSDateFormatter alloc] init];
-    [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
+    [matter setDateFormat:@"yyyy/MM/dd HH:mm"];
     
     for (JFGSDKFeedBackInfo * info in infoList) {
         
@@ -333,10 +338,9 @@
         [[LSChatDataManager shareChatDataManager] addChatModel:aModel];
         [self._tableView reloadData];
         [self changeTableViewContentOffSetToBottom];
-
     }
-    
 }
+
 
 -(void)logUploadSuccessForTimestamp:(uint64_t)timestamp
 {

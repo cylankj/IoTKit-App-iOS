@@ -11,6 +11,7 @@
 #import "JFGBoundDevicesMsg.h"
 #import <JFGSDK/JFGSDKVideoView.h>
 #import "JFGSDKRenderView.h"
+#import "SFCParamModel.h"
 
 #define VideoPlayViewShowingNotification @"VideoPlayViewShowingNotification"
 #define VideoPlayViewDismissNotification @"VideoPlayViewDismissNotification"

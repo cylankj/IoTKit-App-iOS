@@ -82,4 +82,28 @@
     [animationView pop_addAnimation:animation forKey:@"alpha"];
 }
 
+//动画
++(CATransition *)moveTopAnimation
+{
+    CATransition *animation = [CATransition animation];
+    //animation.delegate = self;
+    animation.duration = 0.3f;
+    animation.timingFunction =  [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    animation.fillMode = kCAFillModeForwards;
+    animation.type = kCATransitionMoveIn;
+    animation.subtype = kCATransitionFromTop;
+    return animation;
+}
+
++(CATransition *)moveBottomAnimation
+{
+    CATransition *animation = [CATransition animation];
+    //animation.delegate = self;
+    animation.duration = 0.3f;
+    animation.timingFunction =  [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    animation.fillMode = kCAFillModeForwards;
+    animation.type = kCATransitionReveal;
+    animation.subtype = kCATransitionFromBottom;
+    return animation;
+}
 @end

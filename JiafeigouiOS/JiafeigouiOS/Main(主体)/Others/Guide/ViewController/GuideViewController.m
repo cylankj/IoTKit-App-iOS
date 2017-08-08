@@ -15,6 +15,8 @@
 #import "LoginRegisterViewController.h"
 #import <Masonry.h>
 #import "JfgLanguage.h"
+#import "BaseNavgationViewController.h"
+
 @interface GuideViewController ()
 
 @end
@@ -162,7 +164,7 @@
 {
     LoginRegisterViewController *loginRegisterVC = [[LoginRegisterViewController alloc]init];
     loginRegisterVC.viewType = FristIntoViewTypeRegister;
-    UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:loginRegisterVC];
+    BaseNavgationViewController *nav = [[BaseNavgationViewController alloc]initWithRootViewController:loginRegisterVC];
     nav.navigationBarHidden = YES;
     [self presentViewController:nav animated:YES completion:nil];
 }
@@ -171,7 +173,7 @@
 {
     LoginRegisterViewController *loginRegisterVC = [[LoginRegisterViewController alloc]init];
     loginRegisterVC.viewType = FristIntoViewTypeLogin;
-    UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:loginRegisterVC];
+    BaseNavgationViewController *nav = [[BaseNavgationViewController alloc]initWithRootViewController:loginRegisterVC];
     nav.navigationBarHidden = YES;
     [self presentViewController:nav animated:YES completion:nil];
 }

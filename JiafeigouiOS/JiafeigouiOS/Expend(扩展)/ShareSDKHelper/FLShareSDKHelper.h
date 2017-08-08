@@ -92,4 +92,11 @@
                              content:(NSString *)content;
 
 
++(void)shareToThirdpartyPlatform:(SSDKPlatformType)platformType
+                             url:(NSString *)url
+                           image:(UIImage *)image
+                           title:(NSString *)title
+                     contentType:(SSDKContentType)contentType;
+
+
 @end

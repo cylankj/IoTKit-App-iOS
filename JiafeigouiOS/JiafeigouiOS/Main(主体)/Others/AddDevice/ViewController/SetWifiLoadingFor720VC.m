@@ -17,6 +17,9 @@
 #import "WifiModeFor720CFResultVC.h"
 #import "dataPointMsg.h"
 #import "JfgMsgDefine.h"
+#import "VideoPlayFor720ViewController.h"
+#import "UIColor+HexColor.h"
+#import "LSAlertView.h"
 
 @interface SetWifiLoadingFor720VC ()<JFGSDKCallbackDelegate>
 {
@@ -24,9 +27,11 @@
     BOOL isShowOuttime;
     NSTimer *timeOutTimer;
     int timeCount;
+    BOOL isPushed;
 }
 @property (nonatomic,strong)UIButton *backBtn;
 @property (nonatomic,strong)BindProgressAnimationView *animationView;
+@property (nonatomic,strong)UILabel *detailLabel;
 @end
 
 @implementation SetWifiLoadingFor720VC
@@ -37,30 +42,53 @@
     self.automaticallyAdjustsScrollViewInsets = NO;
     [self.view addSubview:self.backBtn];
     [self.view addSubview:self.animationView];
+    [self.view addSubview:self.detailLabel];
     
     //开启屏幕常亮
     [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
     [self.animationView starAnimation];
     
     isShowOuttime = YES;
+    
     [JFGSDK appendStringToLogFile:@"startOuttimeCount"];
     
-    [JFGSDK addDelegate:self];
-    [JFGSDK fping:@"255.255.255.255"];
     
+    __weak typeof(self) weakSelf = self;
     timeCount = 0;
     timeOutTimer = [NSTimer bk_scheduledTimerWithTimeInterval:1 block:^(NSTimer *timer) {
         
         timeCount ++;
+        if (timeCount>5) {
+            
+            if (timeCount%2==0) {
+                [weakSelf checkDeviceNetStatue];
+            }
+            
+        }
         if (timeCount > 90) {
-            [self netConnectTimeout];
             [timeOutTimer invalidate];
             timeOutTimer = nil;
+            [weakSelf netConnectTimeout];
         }
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"setwifi:%d",timeCount]];
         
     } repeats:YES];
     // Do any additional setup after loading the view.
+}
+
+-(void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    isPushed = NO;
+    [JFGSDK addDelegate:self];
+    [JFGSDK fping:@"255.255.255.255"];
+    [JFGSDK fping:@"192.168.10.255"];
+}
+
+-(void)viewDidDisappear:(BOOL)animated
+{
+    [super viewDidDisappear:animated];
+    [JFGSDK removeDelegate:self];
 }
 
 -(void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
@@ -75,7 +103,14 @@
     if ([ask.cid isEqualToString:self.cid]) {
         //成功
         __block SetWifiLoadingFor720VC *blockself = self;
-        [blockself checkDeviceNetStatue];
+        int64_t delayInSeconds = 3.0;
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            
+            [blockself checkDeviceNetStatue];
+            
+        });
+        
     }
 }
 
@@ -84,51 +119,74 @@
     if (self.cid && ![self.cid isEqualToString:@""]) {
         
         __block SetWifiLoadingFor720VC *blockself = self;
-        [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgBase_Net)] withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic) {
-            NSArray *wifiArray = [dic objectForKey:msgBaseNetKey];
-            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"主动检测网络:%@",[wifiArray description]]];
+        [[JFGSDKDataPoint sharedClient] robotGetSingleDataWithPeer:self.cid msgIds:@[@(dpMsgBase_Net)] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
             
-            if (wifiArray.count >= 2)
-            {
-                switch ([[wifiArray objectAtIndex:0] integerValue])
-                {
-                    case DeviceNetType_2G:
-                    case DeviceNetType_3G:
-                    case DeviceNetType_4G:
-                    case DeviceNetType_5G:
-                    case DeviceNetType_Wifi:
-                    {
-                        [JFGSDK removeDelegate:blockself];
-                        [blockself.animationView successAnimationWithCompletionBlock:^{
-                
-                            WifiModeFor720CFResultVC *result = [WifiModeFor720CFResultVC new];
-                            result.isAPModeFinished = NO;
-                            [blockself.navigationController pushViewController:result animated:YES];
+            for (NSArray *subArr in idDataList) {
+                for (DataPointSeg *seg in subArr) {
+                    id obj = [MPMessagePackReader readData:seg.value error:nil];
+                    if ([obj isKindOfClass:[NSArray class]]) {
+                        NSArray *objArr = obj;
+                        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720主动网络检测，%@",obj]];
+                        if (objArr.count>0) {
                             
-                        }];
+                            int netType = [[objArr objectAtIndex:0] intValue];
+                            switch (netType)
+                            {
+                                case DeviceNetType_2G:
+                                case DeviceNetType_3G:
+                                case DeviceNetType_4G:
+                                case DeviceNetType_5G:
+                                case DeviceNetType_Wifi:
+                                {
+                                    [JFGSDK removeDelegate:blockself];
+                                    [blockself.animationView successAnimationWithCompletionBlock:^{
+                                        
+                                        if (timeOutTimer && timeOutTimer.isValid) {
+                                            [timeOutTimer invalidate];
+                                        }
+                                        timeOutTimer = nil;
+                                        if (!isPushed) {
+                                            WifiModeFor720CFResultVC *result = [WifiModeFor720CFResultVC new];
+                                            result.isAPModeFinished = NO;
+                                            [blockself.navigationController pushViewController:result animated:YES];
+                                            isPushed = YES;
+                                        }
+                                        
+                                        
+                                    }];
+                                }
+                                    break;
+                                    
+                                default:
+                                    break;
+                            }
+                        }
                     }
-                        break;
-                        
-                    default:
-                        break;
+                   
                 }
-            }else{
-                
-                
             }
-        } FailBlock:^(RobotDataRequestErrorType error) {
             
             
+        } failure:^(RobotDataRequestErrorType type) {
             
         }];
+       
+    }else{
+        [JFGSDK appendStringToLogFile:@"720网络检测，cid为空"];
+        
     }
     
 }
 
+-(void)jfgAccountOnline:(BOOL)online
+{
+    if (online) {
+        [self checkDeviceNetStatue];
+    }
+}
+
 - (void)pushToErrorVC
 {
-    //isShowOuttime = NO;
-    
     if (timeOutTimer && [timeOutTimer isValid]) {
         [timeOutTimer invalidate];
         timeOutTimer = nil;
@@ -136,6 +194,7 @@
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"setWfifError [%d]", 600]];
     AddDeviceErrorVC *errorVC = [AddDeviceErrorVC new];
     errorVC.errorType = 600;
+    errorVC.pType = productType_720;
     [self.navigationController pushViewController:errorVC animated:YES];
 }
 
@@ -150,7 +209,7 @@
             NSError *error = nil;
             __block SetWifiLoadingFor720VC *blockself = self;
             id obj = [MPMessagePackReader readData:seg.value error:&error];
-            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"被动网络推送:%@: %@",peer,[obj description]]];
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"网络推送:%@: %@",peer,[obj description]]];
             switch (seg.msgId)
             {
                 case dpMsgBase_Net:
@@ -172,12 +231,17 @@
                                     [JFGSDK removeDelegate:blockself];
                                     [blockself.animationView successAnimationWithCompletionBlock:^{
                                         
-                                        WifiModeFor720CFResultVC *result = [WifiModeFor720CFResultVC new];
-                                        result.isAPModeFinished = NO;
-                                        [blockself.navigationController pushViewController:result animated:YES];
+                                        if (!isPushed) {
+                                            WifiModeFor720CFResultVC *result = [WifiModeFor720CFResultVC new];
+                                            result.isAPModeFinished = NO;
+                                            [blockself.navigationController pushViewController:result animated:YES];
+                                            isPushed = YES;
+                                        }
+                                       
                                         
                                     }];
                                 }
+                                    break;
                                 default:
                                     break;
                             }
@@ -207,9 +271,27 @@
 
 -(void)back
 {
-    UIAlertView *alert = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_tips"] message:nil delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"OK"], nil];
-    alert.tag = 1024;
-    [alert show];
+    __weak typeof(self) weakSelf = self;
+    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_tips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+        
+    } OKBlock:^{
+        if (weakSelf.navigationController){
+            for (UIViewController *temp in weakSelf.navigationController.viewControllers)
+            {
+                if ([temp isKindOfClass:[AddDeviceMainViewController class]])
+                {
+                    [weakSelf.navigationController popToViewController:temp animated:YES];
+                }else if ([temp isKindOfClass:[VideoPlayFor720ViewController class]]){
+                    [weakSelf.navigationController popToViewController:temp animated:YES];
+                }
+            }
+            
+        }else{
+            [weakSelf dismissViewControllerAnimated:YES completion:nil];
+        }
+
+    }];
+    
 }
 
 -(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
@@ -221,6 +303,8 @@
             {
                 if ([temp isKindOfClass:[AddDeviceMainViewController class]])
                 {
+                    [self.navigationController popToViewController:temp animated:YES];
+                }else if ([temp isKindOfClass:[VideoPlayFor720ViewController class]]){
                     [self.navigationController popToViewController:temp animated:YES];
                 }
             }
@@ -248,13 +332,25 @@
 -(BindProgressAnimationView *)animationView
 {
     if (!_animationView) {
-        _animationView = [[BindProgressAnimationView alloc]initWithFrame:CGRectMake(0, self.view.height*0.32-72, 0, 0)];
+        _animationView = [[BindProgressAnimationView alloc]initWithFrame:CGRectMake(0, self.view.height*0.28-25, 0, 0)];
         _animationView.x = self.view.x;
         _animationView.bindResetBlock = ^(){
            
         };
     }
     return _animationView;
+}
+
+-(UILabel *)detailLabel
+{
+    if (!_detailLabel) {
+        _detailLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, self.animationView.bottom, self.view.width, 19)];
+        _detailLabel.font = [UIFont systemFontOfSize:18];
+        _detailLabel.textColor = [UIColor colorWithHexString:@"#888888"];
+        _detailLabel.text = [JfgLanguage getLanTextStrByKey:@"PLEASE_WAIT_2"];
+        _detailLabel.textAlignment = NSTextAlignmentCenter;
+    }
+    return _detailLabel;
 }
 
 

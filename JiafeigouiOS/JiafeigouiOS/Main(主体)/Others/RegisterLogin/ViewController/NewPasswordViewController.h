@@ -18,7 +18,7 @@ typedef NS_ENUM(NSInteger,SetPasswordType){
 @interface NewPasswordViewController : UIViewController
 
 @property (nonatomic,assign)SetPasswordType type;
-@property (nonatomic, assign) NSInteger registerType;
+@property (nonatomic, assign)NSInteger registerType;
 
 @property (nonatomic, copy) NSString *accountStr;
 @property (nonatomic, copy) NSString *registerToken;

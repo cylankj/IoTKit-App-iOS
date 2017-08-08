@@ -29,7 +29,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor whiteColor];
-    [self.view addSubview:self.exitBtn];
+    //[self.view addSubview:self.exitBtn];
     [self.view addSubview:self.tipImageView];
     [self.view addSubview:self.titleLabel];
     [self.view addSubview:self.lookBtn];
@@ -45,15 +45,12 @@
 {
     NSArray *vcArr = self.navigationController.viewControllers;
     for (UIViewController *vc in vcArr) {
-        
         if ([vc isKindOfClass:[VideoPlayFor720ViewController class]]) {
-            
             [self.navigationController popToViewController:vc animated:YES];
             return;
-            
         }
-        
     }
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 -(UIImageView *)tipImageView
@@ -74,9 +71,9 @@
         _titleLabel.font = [UIFont systemFontOfSize:17];
         _titleLabel.textColor = [UIColor colorWithHexString:@"#666666"];
         if (self.isAPModeFinished) {
-            _titleLabel.text = @"户外模式已开启";
+            _titleLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_OutdoorMode_Opened"];
         }else{
-            _titleLabel.text = @"家居模式已开启";
+            _titleLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_HomeMode_Opened"];
         }
     }
     return _titleLabel;

@@ -80,9 +80,9 @@
 {
     if ([SYSTEM_LANGUAGE hasPrefix:@"zh-Hans"])
     {
-        return [NSString stringWithFormat:@"%@_hans",picName];
+        return [NSString stringWithFormat:@"%@_hans.gif",picName];
     }
-    return [NSString stringWithFormat:@"%@_en",picName];
+    return [NSString stringWithFormat:@"%@_en.gif",picName];
 }
 
 

@@ -23,6 +23,13 @@
 #import <ShareSDKUI/ShareSDK+SSUI.h>
 #import <ShareSDKUI/SSUIShareActionSheetStyle.h>
 #import <FBSDKMessengerShareKit/FBSDKMessengerSharer.h>
+#import "OemManager.h"
+#import <ShareSDKUI/ShareSDKUI.h>
+#import <ShareSDKUI/SSUIEditorViewStyle.h>
+#import "ProgressHUD.h"
+#import "JfgLanguage.h"
+#import "LSAlertView.h"
+#import "CommonMethod.h"
 
 static BOOL isRegister = NO;
 #define ShareSDKOpenLoginPlatformTypeKey @"ShareSDKOpenLoginPlatformType"
@@ -90,32 +97,72 @@ static BOOL isRegister = NO;
               {
                   case SSDKPlatformTypeSinaWeibo:
                       //设置新浪微博应用信息,其中authType设置为使用SSO＋Web形式授权
-                      [appInfo SSDKSetupSinaWeiboByAppKey:@"1315129656"
-                                                appSecret:@"5feab23e093b43f220bccf7fbab8f6c5"
-                                              redirectUri:@"https://api.weibo.com/oauth2/default.html"
-                                                 authType:SSDKAuthTypeWeb];
+                      if ([OemManager oemType] == oemTypeDoby) {
+                          //1821035549
+                          [appInfo SSDKSetupSinaWeiboByAppKey:@"2444488421"
+                                                    appSecret:@"dfba216fe44f0d6613cdda1557790a31"
+                                                  redirectUri:@"https://api.weibo.com/oauth2/default.html"
+                                                     authType:SSDKAuthTypeWeb];
+                      }else{
+                          [appInfo SSDKSetupSinaWeiboByAppKey:@"1315129656"
+                                                    appSecret:@"5feab23e093b43f220bccf7fbab8f6c5"
+                                                  redirectUri:@"https://api.weibo.com/oauth2/default.html"
+                                                     authType:SSDKAuthTypeWeb];
+                      }
+                      
                       break;
                   
                   case SSDKPlatformTypeWechat:
                       //设置微信应用信息
-                      [appInfo SSDKSetupWeChatByAppId:@"wx3081bcdae8a842cf"
-                                            appSecret:@"d93676ab7db1876c06800dee3f33fbc2"];
+                      if ([OemManager oemType] == oemTypeDoby) {
+                          //
+                          [appInfo SSDKSetupWeChatByAppId:@"wx292ae57e5ab2316d"
+                                                appSecret:@"8d99286b4f23ca56fa60c5f1defd6116"];
+                          
+                      }else{
+                          [appInfo SSDKSetupWeChatByAppId:@"wx3081bcdae8a842cf"
+                                                appSecret:@"d93676ab7db1876c06800dee3f33fbc2"];
+                      }
+                      
                       break;
                   case SSDKPlatformTypeQQ:
                       //设置QQ应用信息
-                      [appInfo SSDKSetupQQByAppId:@"1103156296"
-                                           appKey:@"lfQJHRh8dDCJtwHu"
-                                         authType:SSDKAuthTypeBoth];
+                      //1104534926
+                      //eePT24ZjUbNtk15J
+                      if ([OemManager oemType] == oemTypeDoby){
+                          [appInfo SSDKSetupQQByAppId:@"1106284318"
+                                               appKey:@"SclSnTkp5NBWOhRi"
+                                             authType:SSDKAuthTypeBoth];
+                      }else{
+                          [appInfo SSDKSetupQQByAppId:@"1103156296"
+                                               appKey:@"lfQJHRh8dDCJtwHu"
+                                             authType:SSDKAuthTypeBoth];
+                      }
                       break;
                   case SSDKPlatformTypeFacebook:
+                      //107704292745179  38053202e1a5fe26c80c753071f0b573
+                      //1866682200216878  202470e7abebe2cd768432fa3e96914e
                       //设置Facebook应用信息，其中authType设置为只用SSO形式授权
-                      [appInfo SSDKSetupFacebookByApiKey:@"107704292745179" appSecret:@"38053202e1a5fe26c80c753071f0b573"  authType:SSDKAuthTypeBoth];
+                      //
+                      if ([OemManager oemType] == oemTypeDoby) {
+                          [appInfo SSDKSetupFacebookByApiKey:@"1698182270477391" appSecret:@"cdb4c9fafd8cb88baba5ad91ee9529fc"  authType:SSDKAuthTypeBoth];
+                      }else{
+                          [appInfo SSDKSetupFacebookByApiKey:@"1866682200216878" appSecret:@"202470e7abebe2cd768432fa3e96914e"  authType:SSDKAuthTypeBoth];
+                      }
+                      
                       break;
                       
                   case SSDKPlatformTypeTwitter:
-                      [appInfo SSDKSetupTwitterByConsumerKey:@"kCEeFDWzz5xHi8Ej9Wx6FWqRL" consumerSecret:@"Ih4rUwyhKreoHqzd9BeIseAKHoNRszi2rT2udlMz6ssq9LeXw5"
-                                                 redirectUri:@"http://www.jfgou.com"];
-                      break;
+                      
+                      if ([OemManager oemType] == oemTypeDoby) {
+                          [appInfo SSDKSetupTwitterByConsumerKey:@"P4mZddIEumAsk7OnzNWpcrQy8" consumerSecret:@"1T5Pg7UBRVkq6OSvOs9EBEGiMXVLYmAeOdW3HPTazuqjWyzRAm"
+                                                     redirectUri:@"http://www.cylan.com.cn"];
+                      }else{
+                          [appInfo SSDKSetupTwitterByConsumerKey:@"kCEeFDWzz5xHi8Ej9Wx6FWqRL" consumerSecret:@"Ih4rUwyhKreoHqzd9BeIseAKHoNRszi2rT2udlMz6ssq9LeXw5"
+                                                     redirectUri:@"http://www.jfgou.com"];
+                      }
+                    break;
+                      
                   default:
                       break;
               }
@@ -325,6 +372,243 @@ static BOOL isRegister = NO;
     }];
     
     return user;
+}
+
++(void)shareToFacebookWithContentText:(NSString *)text title:(NSString *)title image:(UIImage *)image url:(NSString *)url contentType:(SSDKContentType)contentType
+{
+    if (image) {
+        
+        [SSUIEditorViewStyle setTitle:@"Share To Facebook"];
+        
+        
+        NSMutableDictionary *shareParams = [NSMutableDictionary dictionary];
+        [shareParams SSDKSetupShareParamsByText:text
+                                         images:@[image]
+                                            url:[NSURL URLWithString:url]
+                                          title:title
+                                           type:SSDKContentTypeImage];
+        
+        [ShareSDK showShareEditor:SSDKPlatformTypeFacebook
+               otherPlatformTypes:nil
+                      shareParams:shareParams
+              onShareStateChanged:^(SSDKResponseState state, SSDKPlatformType platformType, NSDictionary *userData, SSDKContentEntity *contentEntity, NSError *error, BOOL end)
+         {
+             
+             if (error) {
+                 
+                 NSLog(@"faceBook分享错误：userInfo:%@",error);
+                 if (error.code == 0) {
+                     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_SuccessTips"]];
+                 }else{
+                     [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:nil OKBlock:nil];
+                 }
+                 
+                 
+             }
+             
+             switch (state) {
+                     
+                 case SSDKResponseStateBegin:
+                 {
+                     //[theController showLoadingView:YES];
+                     break;
+                 }
+                 case SSDKResponseStateSuccess:
+                 {
+                     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_SuccessTips"]];
+                     break;
+                 }
+                 case SSDKResponseStateFail:
+                 {
+                     //[LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:nil OKBlock:nil];
+                     break;
+                 }
+                 case SSDKResponseStateCancel:
+                 {
+                     //[LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_CanceldeTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:nil OKBlock:nil];
+                     break;
+                 }
+                 default:
+                     break;
+             }
+             
+             if (state != SSDKResponseStateBegin)
+             {
+                 
+             }
+         }];
+    }
+    
+}
+
++(void)shareToTwitterWithContentText:(NSString *)text title:(NSString *)title image:(UIImage *)image url:(NSString *)url
+{
+    if (image) {
+        
+        [SSUIEditorViewStyle setTitle:@"Share To Twitter"];
+        NSMutableDictionary *shareParams = [NSMutableDictionary dictionary];
+        [shareParams SSDKSetupShareParamsByText:text
+                                         images:@[image]
+                                            url:[NSURL URLWithString:url]
+                                          title:title
+                                           type:SSDKContentTypeImage];
+        
+        [ShareSDK showShareEditor:SSDKPlatformTypeTwitter
+               otherPlatformTypes:nil
+                      shareParams:shareParams
+              onShareStateChanged:^(SSDKResponseState state, SSDKPlatformType platformType, NSDictionary *userData, SSDKContentEntity *contentEntity, NSError *error, BOOL end)
+         {
+             
+             if (error) {
+                 if (error.code == 0) {
+                     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_SuccessTips"]];
+                 }else{
+                     [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:nil OKBlock:nil];
+                 }
+             }
+             
+             switch (state) {
+                     
+                 case SSDKResponseStateBegin:
+                 {
+                     break;
+                 }
+                 case SSDKResponseStateSuccess:
+                 {
+                     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_SuccessTips"]];
+                     break;
+                 }
+                 case SSDKResponseStateFail:
+                 {
+                     // [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:nil OKBlock:nil];
+                     break;
+                 }
+                 case SSDKResponseStateCancel:
+                 {
+                     // [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_CanceldeTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:nil OKBlock:nil];
+                     break;
+                 }
+                 default:
+                     break;
+             }
+             
+             if (state != SSDKResponseStateBegin)
+             {
+                 
+             }
+         }];
+    }
+    
+}
+
++(void)shareToThirdpartyPlatform:(SSDKPlatformType)platformType url:(NSString *)url image:(UIImage *)image title:(NSString *)title contentType:(SSDKContentType)contentType
+{
+    if (platformType == SSDKPlatformSubTypeWechatSession || platformType == SSDKPlatformSubTypeWechatTimeline) {
+        if (![ShareSDK isClientInstalled:platformType]) {
+            NSString *als = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap0_Login_NoInstalled"],[JfgLanguage getLanTextStrByKey:@"WeChat"]];
+            [ProgressHUD showText:als];
+            return;
+        }
+        
+    }else if (platformType == SSDKPlatformSubTypeQQFriend || platformType ==SSDKPlatformSubTypeQZone){
+        if (![ShareSDK isClientInstalled:SSDKPlatformSubTypeQQFriend]) {
+            NSString *als = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap0_Login_NoInstalled"],@"QQ"];
+            [ProgressHUD showText:als];
+            return;
+        }
+    }
+    
+    
+    NSMutableDictionary *parameters = [[NSMutableDictionary alloc]init];
+    SSDKPlatformType shareType = platformType;
+    
+    if (shareType ==SSDKPlatformSubTypeWechatTimeline || shareType ==SSDKPlatformSubTypeWechatSession) {
+        
+        //微信
+        if (contentType == SSDKContentTypeImage) {
+            [parameters SSDKSetupWeChatParamsByText:@"" title:title url:[NSURL URLWithString:url] thumbImage:nil image:image musicFileURL:nil extInfo:nil fileData:nil emoticonData:nil type:SSDKContentTypeImage forPlatformSubType:shareType];
+        }else{
+            [parameters SSDKSetupWeChatParamsByText:@"" title:[JfgLanguage getLanTextStrByKey:@"Tap1_Shared_Title"] url:[NSURL URLWithString:url] thumbImage:image image:nil musicFileURL:nil extInfo:nil fileData:nil emoticonData:nil type:SSDKContentTypeWebPage forPlatformSubType:shareType];
+        }
+        
+        
+    }else if (shareType == SSDKPlatformTypeSinaWeibo){
+    
+        //新浪微博
+        [parameters SSDKSetupSinaWeiboShareParamsByText:[OemManager appName] title:title image:image url:[NSURL URLWithString:url] latitude:0 longitude:0 objectID:nil type:SSDKContentTypeAuto];
+        //[[self class] shareForSinaweibo:image];
+        
+    }else if (shareType == SSDKPlatformSubTypeQQFriend || shareType == SSDKPlatformSubTypeQZone){
+        
+        //QQ
+        [parameters SSDKSetupQQParamsByText:@"" title:title url:[NSURL URLWithString:url] thumbImage:nil image:[CommonMethod thumbnailWithImageWithoutScale:image size:CGSizeMake(500, 500)] type:contentType forPlatformSubType:SSDKPlatformSubTypeQQFriend];
+        shareType = SSDKPlatformSubTypeQQFriend;
+        
+    }else if (shareType == SSDKPlatformTypeFacebook){
+        
+        //Facebook
+        //[parameters SSDKSetupFacebookParamsByText:@"" image:image url:[NSURL URLWithString:url] urlTitle:title urlName:@"" attachementUrl:nil type:contentType];
+        [[self class] shareToFacebookWithContentText:@"" title:title image:image url:url contentType:contentType];
+        return;
+        
+    }else if (shareType == SSDKPlatformTypeTwitter){
+        
+        NSString *text = [NSString stringWithFormat:@"%@\n%@",title,url];
+        [[self class] shareToTwitterWithContentText:text title:@"" image:image url:url];
+        return;
+        
+    }
+    
+    //__weak typeof(self) weakself = self
+    [ShareSDK share:shareType parameters:parameters onStateChanged:^(SSDKResponseState state, NSDictionary *userData, SSDKContentEntity *contentEntity, NSError *error)
+     {
+         if (error) {
+             if (error.code == 0) {
+                 [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_SuccessTips"]];
+             }else{
+                 [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"]];
+             }
+             NSLog(@"shareError:%@",error);
+         } else {
+             switch (state) {
+                 case SSDKResponseStateSuccess:
+                 {
+                     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_SuccessTips"]];
+                     break;
+                 }
+                 case SSDKResponseStateFail:
+                 {
+                     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"]];
+                     break;
+                 }
+                 case SSDKResponseStateCancel:
+                 {
+                     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"]];
+                     break;
+                 }
+                 default:
+                     break;
+             }
+         }
+         
+     }];
+}
+
+
++(void)shareForSinaweibo:(UIImage *)image
+{
+    NSMutableDictionary *sharePatam = [NSMutableDictionary dictionary];
+    //[sharePatam SSDKEnableUseClientShare];
+    [sharePatam SSDKSetupShareParamsByText:@"shareContent" images:[CommonMethod thumbnailWithImageWithoutScale:image size:CGSizeMake(500, 500)] url:[NSURL URLWithString:@"http://cylan.jfg.com"] title:@"title" type:SSDKContentTypeAuto];
+    
+    [ShareSDK share:SSDKPlatformTypeSinaWeibo parameters:sharePatam onStateChanged:^(SSDKResponseState state, NSDictionary *userData, SSDKContentEntity *contentEntity, NSError *error) {
+        
+        if (error) {
+            NSLog(@"%@",error);
+        }
+        NSLog(@"%lu",(unsigned long)state);
+        
+    }];
 }
 
 @end

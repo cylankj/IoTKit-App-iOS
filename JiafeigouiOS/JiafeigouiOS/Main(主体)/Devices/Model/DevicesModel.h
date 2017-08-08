@@ -13,6 +13,8 @@
 
 @interface DevicesModel : BaseDevicesModel
 
+@property (nonatomic, assign) productType pType;
+
 @property (nonatomic, strong) DeviceSettingModel *deviceSettingModel;
 
 @property (nonatomic, strong) SafeProtectModel *safeProtectModel;

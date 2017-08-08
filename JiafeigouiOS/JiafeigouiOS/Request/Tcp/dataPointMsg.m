@@ -33,6 +33,11 @@
 //获取单条dp
 - (void)packSingleDataPointMsg:(NSArray <NSNumber *>*)msgIdArr withCid:(NSString *)cid SuccessBlock:(aSuccessBlock)sBlock FailBlock:(aFailBlock)fBlock{
     
+    if (cid == nil)
+    {
+        [JFGSDK appendStringToLogFile:@"error: dp request cid is null"];
+        return;
+    }
     [[JFGSDKDataPoint sharedClient]robotGetSingleDataWithPeer:cid msgIds:msgIdArr success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
         
         NSMutableDictionary *dataDict = [NSMutableDictionary dictionary];
@@ -46,7 +51,7 @@
                 if (!error && obj)
                 {
                     [dataDict setValue:obj forKey:[self dpKeyWithMsgID:(NSInteger)seg.msgId]];
-                    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"  getdp cid:%@ dpID[%llu] “%@”   dpValue[%@]",cid,seg.msgId, [self dpKeyWithMsgID:seg.msgId], obj]];
+                    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"  getdp cid:%@ dpID[%llu] “%@”   dpValue[%@]",cid,seg.msgId, [self dpKeyWithMsgID:(NSInteger)seg.msgId], obj]];
                 }
                 else
                 {
@@ -66,6 +71,10 @@
 }
 //获取多条dp
 - (void)packMutableDataPointMsg:(NSArray <DataPointIDVerSeg *> *)msgIdArr withCid:(NSString *)cid isAsc:(BOOL)asc countLimit:(int)limit SuccessBlock:(aSuccessBlock)sBlock FailBlock:(aFailBlock)fBlock {
+    
+    if (cid == nil) {
+        return;
+    }
     [[JFGSDKDataPoint sharedClient]robotGetDataWithPeer:cid msgIds:msgIdArr asc:asc limit:limit success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
         int msgID = -1;
         NSMutableDictionary *dataDict = [NSMutableDictionary dictionary];
@@ -95,6 +104,9 @@
 
 - (void)packMutableDataPointMsg:(NSArray <DataPointIDVerSeg *> *)msgIdArr withCid:(NSString *)cid isAsc:(BOOL)asc countLimit:(int)limit SuccessArrBlock:(aSuccessArrBlock)sBlock FailBlock:(aFailBlock)fBlock
 {
+    if (cid == nil) {
+        return;
+    }
     [[JFGSDKDataPoint sharedClient] robotGetDataWithPeer:cid msgIds:msgIdArr asc:asc limit:limit success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList)
     {
         NSMutableArray *dataArr = [NSMutableArray array];
@@ -127,15 +139,14 @@
     } failure:^(RobotDataRequestErrorType type) {
         fBlock(type);
     }];
-    
-    
-    
-    
 }
 
 // 组合查询
 - (void)packMixDataPoint:(NSString *)cid version:(uint64_t)version dps:(NSArray<NSNumber *> *) dps asc:(BOOL)asc success:(aSuccessArrBlock)sBlock failed:(aFailBlock)fBlock
 {
+    if (cid == nil) {
+        return;
+    }
     [[JFGSDKDataPoint sharedClient] robotGetDataEx:cid version:version dpids:dps asc:asc success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
         
         NSMutableArray *dataArr = [NSMutableArray array];
@@ -169,6 +180,10 @@
 
 //获取多条dp cache
 - (void)packMutableDataCachePointMsg:(NSArray <DataPointIDVerSeg *> *)msgIdArr withCid:(NSString *)cid isAsc:(BOOL)asc countLimit:(int)limit SuccessBlock:(aSuccessBlock)sBlock {
+    
+    if (cid == nil) {
+        return;
+    }
     [[JFGSDKDataPoint sharedClient]robotGetDataForCacheWithPeer:cid msgIds:msgIdArr asc:asc limit:limit success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
         NSMutableDictionary *dataDict = [NSMutableDictionary dictionary];
         
@@ -180,7 +195,7 @@
                 id obj = [MPMessagePackReader readData:seg.value error:&error];
                 if (!error)
                 {
-                    [dataDict setValue:obj forKey:[self dpKeyWithMsgID:seg.msgId]];
+                    [dataDict setValue:obj forKey:[self dpKeyWithMsgID:(NSInteger)seg.msgId]];
                 }
             }
         }
@@ -190,9 +205,12 @@
 // 设置dp 数据
 - (void)setdpDataWithCid:(NSString *)cid dps:(NSArray <DataPointSeg *>*)dps success:(aSuccessBlock)success failed:(aFailBlock)failed
 {
+    if (cid == nil) {
+        return;
+    }
     for (DataPointSeg *seg in dps)
     {
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"  setdp cid:%@ dpID[%llu] “%@”  dpValue[%@]",cid, seg.msgId, [self dpKeyWithMsgID:seg.msgId], [MPMessagePackReader readData:seg.value error:nil]]];
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"  setdp cid:%@ dpID[%llu] “%@”  dpValue[%@]",cid, seg.msgId, [self dpKeyWithMsgID:(NSInteger)seg.msgId], [MPMessagePackReader readData:seg.value error:nil]]];
     }
     
     
@@ -202,13 +220,13 @@
         {
             if (seg.ret == 0)
             {
-                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"  setdp cid:%@ dpID[%llu] “%@” successful",cid, seg.msgId, [self dpKeyWithMsgID:seg.msgId]]];
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"  setdp cid:%@ dpID[%llu] “%@” successful",cid, seg.msgId, [self dpKeyWithMsgID:(NSInteger)seg.msgId]]];
                 success(nil);
             }
             else
             {
                 failed(RobotDataRequestErrorTypeRequestFailed);
-                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"  setdp cid:%@ dpID[%llu] “%@” failed retType:[%d]",cid, seg.msgId, [self dpKeyWithMsgID:seg.msgId], seg.ret]];
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"  setdp cid:%@ dpID[%llu] “%@” failed retType:[%d]",cid, seg.msgId, [self dpKeyWithMsgID:(NSInteger)seg.msgId], seg.ret]];
             }
         }
         
@@ -275,6 +293,11 @@
                          msgBaseCtrlLogKey,
                          msgBaseSDCardListKey,
                          msgBaseSIMInfoKey,
+                         msgBaseCtrlLogUploadKey,
+                         msgBaseWiredNetAvailableKey,
+                         msgBaseUsingWiredNetKey,
+                         msgBaseIpAdressKey,
+                         msgBaseUpgradeStatusKey,
                          nil];
     
     return [baseKeys objectAtIndex:msgID - dpBaseBegin];
@@ -289,6 +312,7 @@
                           dpMsgVideoSpeakerKey,
                           dpMsgVideoAutoRecordKey,
                           dpMsgVideoDiretionKey,
+                          dpMsgVideoRecordWhenWatchingKey,
                           nil];
     return [videoKeys objectAtIndex:msgID - dpVideoBegin];
 }
@@ -318,6 +342,12 @@
                            dpMsgCameraWonderKey,
                            dpMsgCameraisLiveKey,
                            dpMsgCameraAngleKey,
+                           dpMsgCameraCameraCoord,
+                           dpMsgCameraWarnAndWonder,
+                           dpMsgCameraWarnMSGV3,
+                           dpMsgCameraBitRateKey,
+                           dpMsgCameraWarnDurKey,
+                           dpMsgCameraAIRecgnitionKey,
                            nil];
     
     return [cameraKeys objectAtIndex:msgID - dpCameraBegin];

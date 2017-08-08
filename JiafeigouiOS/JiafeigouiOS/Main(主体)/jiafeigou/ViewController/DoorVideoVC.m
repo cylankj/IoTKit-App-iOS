@@ -156,11 +156,9 @@
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-//    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(delDeviceNotification:) name:JFGDeviceDelByOtherClientNotification object:nil];
     [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGDoorBellIsCallingKey];
     [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
     isDidApper = YES;
-    
     [self jfgFpingRequest];
 }
 
@@ -232,21 +230,6 @@
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationDidEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
 }
 
--(void)delDeviceNotification:(NSNotification *)notification
-{
-    NSDictionary *dict = notification.object;
-    NSString *cid = dict[@"cid"];
-    if ([cid isEqualToString:self.cid]) {
-        
-        [CommonMethod delDeviceByOtherClientWithNotification:notification cid:self.cid superViweController:self];
-        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(playOuttime) object:nil];
-        if (isConnected) {
-            [self videoCancel];
-        }
-        
-    }
-}
-
 #pragma mark view
 
 - (void)initView
@@ -280,7 +263,6 @@
         self.snapImageView.image = [UIImage imageNamed:@"camera_bg"];
         imageResetCount = 0;
         if (self.actionType == doorActionTypeActive) {
-            //[self resetHeadImageViewForUrl:[NSURL URLWithString:self.imageUrl]];
             UIImage *Image = [self cacheSnapImage];
             if (Image) {
                 self.snapImageView.image = Image;
@@ -288,7 +270,7 @@
             
         }else{
             
-            int64_t delayInSeconds = 3;
+            int64_t delayInSeconds = 2;
             dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
             dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
                 
@@ -326,7 +308,7 @@
 {
     //NSLog(@"%@",url);
     
-    [[SDWebImageManager sharedManager] downloadImageWithURL:url options:SDWebImageRefreshCached progress:^(NSInteger receivedSize, NSInteger expectedSize) {
+    [[SDWebImageManager sharedManager] downloadImageWithURL:url options:SDWebImageRetryFailed progress:^(NSInteger receivedSize, NSInteger expectedSize) {
         
     } completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) {
         
@@ -381,6 +363,8 @@
     }
     
     [self videoCall];
+    //[CylanJFGSDK setAudio:NO openMic:NO openSpeaker:NO]; // 对cid 存在 高耦合
+    [CylanJFGSDK setAudio:YES openMic:NO openSpeaker:NO]; // 为什么设置 两个 我也不明白
     [self startLodingAnimation];
     [self performSelector:@selector(playOuttime) withObject:nil afterDelay:30];
     isStartTimer = YES;
@@ -418,8 +402,16 @@
     {
         [self.view addSubview:self.litteRedDot];
     }
-    [self performSelector:@selector(callTimeout) withObject:nil afterDelay:30];
+    NSInteger timeOutCount = 30;
     
+    if (self.cid && [self.cid isKindOfClass:[NSString class]]) {
+        
+        NSRange range = [self.cid rangeOfString:@"6901"];
+        if (range.location != NSNotFound) {
+            timeOutCount = 20;
+        }
+    }
+    [self performSelector:@selector(callTimeout) withObject:nil afterDelay:timeOutCount];
 }
 
 -(void)callTimeout
@@ -705,8 +697,6 @@
     switch (paramSender.state)
     {
         case UIGestureRecognizerStateBegan:
-            [CylanJFGSDK setAudio:NO openMic:NO openSpeaker:NO];
-            [CylanJFGSDK setAudio:YES openMic:NO openSpeaker:NO];
         {
             self.litteRedDot.hidden = YES;
             self.litteGreenDot.hidden = YES;
@@ -789,6 +779,13 @@
     isConnected = NO;
     self.fullScreenButton.hidden = YES;
     [self saveSnapImage:Image];
+    
+    if (Image) {
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:Image forKey:@"snapImage"];
+        [dict setObject:self.cid forKey:@"cid"];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"DoorBellCallSnapImage" object:dict];
+    }
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(playOuttime) object:nil];
     
 }
@@ -801,8 +798,9 @@
     }else{
         return;
     }
-    [[NSUserDefaults standardUserDefaults] removeObjectForKey:[self snapImagePath]];
-    [[NSUserDefaults standardUserDefaults] setObject:imageData forKey:[self snapImagePath]];
+    
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:[NSString stringWithFormat:@"%@_%@",@"jiafeigouvideoSnapStotKey",self.cid]];
+    [[NSUserDefaults standardUserDefaults] setObject:imageData forKey:[NSString stringWithFormat:@"%@_%@",@"jiafeigouvideoSnapStotKey",self.cid]];
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -871,7 +869,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
             break;
         }
     }
-    if (!isExist) {
+    if (!isExist && isDidApper) {
         
         NSArray *delCidArr =  [JFGBoundDevicesMsg sharedDeciceMsg].delDeviceList;
         for (NSString *cid in delCidArr) {
@@ -883,12 +881,15 @@ NSString *sharkAnimationKey = @"sharkAnimation";
         JFGSDKDevice *_dev = [deviceList lastObject];
         self.cid = _dev.uuid;
         NSString *str = [JfgLanguage getLanTextStrByKey:@"Tap1_device_deleted"];
-        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:str delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
-        [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+        
+        __weak typeof(self) weakSelf = self;
+        [LSAlertView showAlertWithTitle:nil Message:str CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
             
-            [self.navigationController popToRootViewControllerAnimated:YES];
+        } OKBlock:^{
             
-        } otherDelegate:nil];
+           [weakSelf.navigationController popToRootViewControllerAnimated:YES];
+            
+        }];
         
     }
 }
@@ -1041,7 +1042,6 @@ NSString *sharkAnimationKey = @"sharkAnimation";
                 [JFGSDK appendStringToLogFile:@"DoorVideoVC显示无网络提示onRecvDisconnectForRemote"];
                 [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Item_ConnectionFail"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"TRY_AGAIN"] CancelBlock:^{
                     
-                    
                     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(rtcpLowAction) object:nil];
                     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(playOuttime) object:nil];
                     
@@ -1061,17 +1061,22 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 
 -(void)jfgOtherClientAnswerDoorbellForCid:(NSString *)cid
 {
-    if ([cid isEqualToString:self.cid] && isDidApper) {
+    if ([self.cid isEqualToString:cid] && isDidApper)
+    {
         [self stopSharkAnimation];
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OTHER_LISTENED"]];
         int64_t delayInSeconds = 1.5;
         dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
         dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-            
             [self leftButtonAction:nil];
-            
         });
     }
+    
+//    if ([cid isEqualToString:self.cid] && isDidApper) {
+//        
+//    }else{
+//        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"门铃被其他端接听%@",cid]];
+//    }
 }
 
 -(void)playOuttime
@@ -1187,6 +1192,8 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 {
     [JFGSDK fping:@"255.255.255.255"];
 }
+
+
 - (void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
 {
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cid in udp [%@]",ask.cid]];
@@ -1211,18 +1218,19 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (self.navigationController.visibleViewController == self)
     {
         dispatch_async(dispatch_get_main_queue(), ^{
-            
-            UIAlertView *aler = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Device_UpgradeTips"] message:nil delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"]  otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"OK"], nil];
-            [aler showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
-                if (buttonIndex == 1)
-                {
-                    UpgradeDeviceVC *upgradeDevice = [[UpgradeDeviceVC alloc] init];
-                    upgradeDevice.cid = self.cid;
-                    upgradeDevice.pType = self.pType;
-                    [self.navigationController pushViewController:upgradeDevice animated:YES];
-                }
+        
+            __weak typeof(self) weakSelf = self;
+            [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Device_UpgradeTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
                 
-            } otherDelegate:nil];
+            } OKBlock:^{
+                
+                UpgradeDeviceVC *upgradeDevice = [[UpgradeDeviceVC alloc] init];
+                upgradeDevice.cid = weakSelf.cid;
+                upgradeDevice.pType = weakSelf.pType;
+                [weakSelf.navigationController pushViewController:upgradeDevice animated:YES];
+                
+            }];
+            
         });
         
         /*

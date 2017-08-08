@@ -12,10 +12,12 @@
 #import "DeviceSettingVC.h"
 #import <JFGSDK/JFGSDKDataPoint.h>
 #import <POP.h>
+#import "JfgGlobal.h"
 #import <JFGSDK/CylanJFGSDK.h>
 #import "CommonMethod.h"
 #import "JfgLanguage.h"
 #import <KVOController.h>
+#import "JfgDataTool.h"
 #import "JfgMsgDefine.h"
 #import "JFGTakePhotoButton.h"
 #import "UIButton+Addition.h"
@@ -27,6 +29,7 @@
 #import <JFGSDK/JFGSDKSock.h>
 #import <JFGSDK/JFGSDK.h>
 #import "ProgressHUD.h"
+#import "PopAnimation.h"
 #import "JFGMsgForwardDataDownload.h"
 #import <commoncrypto/commondigest.h>
 #import "LoginManager.h"
@@ -35,9 +38,18 @@
 #import "WifiModeFor720CFResultVC.h"
 #import "JfgHttp.h"
 #import "XTimer.h"
-
+#import "JFGNetDeclareViewController.h"
+#import "FLTipsBaseView.h"
+#import "JFGEquipmentAuthority.h"
+#import "LSAlertView.h"
+#import "CommentFrameButton.h"
+#import "MsgFor720ViewController.h"
+#import "JFGDevOfflineFor720VC.h"
+#import "BaseNavgationViewController.h"
 
 #define VIEW_REMOTERENDE_VIEW_TAG  10023
+#define SHOW_CANNOT_LOAD_IMAGE_TIP_KEY @"showCantloadImageTipKey"
+#define FristIntoVideoPlayFor720VC @"FristIntoVideoPlayFor720VC"
 
 //录像状态
 typedef NS_ENUM(NSInteger,VideoRecordStatue) {
@@ -46,7 +58,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     VideoRecordStatueLongRecording,//长视频录制
 };
 
-@interface VideoPlayFor720ViewController ()<JFGTakePhotoTouchActionDelegate,JFGSDKCallbackDelegate,JFGMsgForwardDataDownloadDelegate,AddDeviceGuideVCNextActionDelegate>
+@interface VideoPlayFor720ViewController ()<JFGTakePhotoTouchActionDelegate,JFGSDKCallbackDelegate,AddDeviceGuideVCNextActionDelegate>
 {
     videoPlayState playState;//视频播放状态
     VideoRecordStatue recordState;//录像状态
@@ -57,6 +69,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     BOOL isCarameMode;//是否是拍照模式
     BOOL isShooting;//是否视频拍摄中
     BOOL isPrower;//充电中
+    BOOL isShowedLANAlert;//是否显示过低电量弹窗
     
     int shortVideoTimeCount;//短视频时间记录
     NSTimer *shortVideoTimer;//短视频录制计时器
@@ -67,9 +80,17 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     BOOL isSetHomeMode;
     BOOL isHaveSDCard;
     BOOL isDidAppear;
+    BOOL isAudio;
+    BOOL isTalkBack;
     NSString *devIpAddr;
+    BOOL isShowLanAleartForPhoto;//公网拍照是否显示无法下载提示
+    BOOL isUpdateing;//是否升级中
 }
+
+
+
 @property (nonatomic,strong)UIButton *settingBtn;
+@property (nonatomic, strong) UIImageView *redDotImageView;
 
 //底部一系类控件
 @property (nonatomic,strong)UIView *bottomBgView;
@@ -84,9 +105,9 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 @property (nonatomic,strong)UIButton *voiceBtn;
 
 @property (nonatomic,strong)UIView *speedModeBgView;
-@property (nonatomic,strong)UIButton *speedModeLeftBtn;
-@property (nonatomic,strong)UIButton *speedModeRightBtn;
-@property (nonatomic,strong)UILabel *speedModeLabel;
+//@property (nonatomic,strong)UIButton *speedModeLeftBtn;
+//@property (nonatomic,strong)UIButton *speedModeRightBtn;
+//@property (nonatomic,strong)UILabel *speedModeLabel;
 
 //底层视图
 @property (nonatomic,strong)UIImageView *videoBgImageView;
@@ -120,6 +141,14 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 @property (nonatomic,strong)UIView *netModeSwitchBgView;
 
+@property (nonatomic,strong)UILabel *offlineLabel;//一个坑爹的东西
+
+@property (nonatomic,strong)UIButton *msgBtn;
+
+@property (nonatomic,strong)UIView *cameraRedPoint;
+
+@property (nonatomic,strong)UIView *warnRedPoint;
+
 @end
 
 @implementation VideoPlayFor720ViewController
@@ -130,41 +159,193 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [self btnDisenableStatue];//设备状态显示
     [JFGSDK addDelegate:self];
     [self initView];
-    [self startFping];
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (!isAP) {
+        [self startFping];
+    }
+    //[self mnAI];
+}
+
+//显示升级页面
+-(void)showUpDataView
+{
+    if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
+        [self stopVideoPlay];
+    }
+    [self stopLoadingAnimation];
+    [self hiddenAgainView];
+    [self btnDisenableStatue];
+    [self stopTimeoutRequest];
+    self.rateLabel.hidden = YES;
+    self.albumsBtn.enabled = NO;
+    [self.albumsBtn setImage:[UIImage imageNamed:@"camera720_icon_album_disabled"] forState:UIControlStateNormal];
+    self.albumsBtn.layer.borderWidth = 0;
+    self.statusShowBgView.hidden = YES;
+    self.settingBtn.enabled = NO;
+    self.offlineLabel.hidden = YES;
+    self.statusShowBgView.hidden = YES;
+    
+    if (![self.videoBgImageView viewWithTag:12589]) {
+        UILabel *updateLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, self.view.width, 25)];
+        updateLabel.x = self.videoBgImageView.width*0.5;
+        updateLabel.y = self.videoBgImageView.height*0.5;
+        updateLabel.font = [UIFont systemFontOfSize:18];
+        updateLabel.textColor = [UIColor whiteColor];
+        updateLabel.text = [JfgLanguage getLanTextStrByKey:@"VIDEO_FirmwareUpdating"];
+        updateLabel.tag = 12589;
+        updateLabel.textAlignment = NSTextAlignmentCenter;
+        [self.videoBgImageView addSubview:updateLabel];
+    }
+    isUpdateing = YES;
+    
 }
 
 -(void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent];
+    
+    self.redDotImageView.hidden = ![JfgDataTool isShowRedDotInSettingButton:self.devModel.uuid pid:[self.devModel.pid integerValue]];
+    
 }
 
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
+    if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
+        self.navigationController.interactivePopGestureRecognizer.enabled = NO;
+    }
     isDidAppear = YES;
     //开启屏幕常亮
+    [self reqUpdateState];
     [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
     [self addVideoNotification];
     [self videoRecordstatusRequest];
-    [self workNetDecide];
-    //[self btnStatueForCarame];
+    [self workNetDecideForDelaySeconds:0];
+    
+}
+
+
+-(void)reqUpdateState
+{
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        
+        __weak typeof(self) weakSelf = self;
+        [self requestForUrl:[NSString stringWithFormat:@"http://192.168.10.2/cgi/ctrl.cgi?Msg=getUpgradeStatus"] success:^(id  _Nullable responseObject) {
+            if ([responseObject isKindOfClass:[NSDictionary class]]) {
+                
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720设备升级状态:%@",responseObject]];
+                NSDictionary *dict = responseObject;
+                int update = [dict[@"upgradeStatus"] intValue];
+                
+                if (update == 1) {
+                    [weakSelf showUpDataView];
+                }else{
+                    if (isUpdateing) {
+                        isUpdateing = NO;
+                        [self videoRecordstatusRequest];
+                        [self workNetDecideForDelaySeconds:0];
+                    }
+                }
+            }
+        } failure:^(NSError * _Nonnull) {
+            
+        }];
+        
+    }else{
+        
+        __weak typeof(self) weakSelf = self;
+        
+        [[JFGSDKDataPoint sharedClient] robotGetSingleDataWithPeer:self.devModel.uuid msgIds:@[@228] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+            
+            for (NSArray *subArr in idDataList) {
+                
+                for (DataPointSeg *seg in subArr) {
+                    id obj = [MPMessagePackReader readData:seg.value error:nil];
+                    if ([obj isKindOfClass:[NSNumber class]]) {
+                        
+                        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720设备升级状态:%@",obj]];
+                        int update = [obj intValue];
+                        if (update == 1) {
+                            [weakSelf showUpDataView];
+                        }else{
+                            if (isUpdateing) {
+                                isUpdateing = NO;
+                                [self videoRecordstatusRequest];
+                                [self workNetDecideForDelaySeconds:0];
+                            }
+                        }
+                        
+                    }
+                }
+                
+            }
+            
+        } failure:^(RobotDataRequestErrorType type) {
+            
+        }];
+    }
+}
+
+-(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    if (self.moreBtn.selected) {
+        [self moreAction:self.moreBtn];
+    }
 }
 
 
 -(void)viewDidDisappear:(BOOL)animated
 {
     [super viewDidDisappear:animated];
+    // 开启
+    if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
+        self.navigationController.interactivePopGestureRecognizer.enabled = YES;
+    }
     [self stopVideoPlay];
     [self stopFping];
     [self removeVideoDelegate];
     //关闭屏幕常亮
     [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     isDidAppear = NO;
+    [self releaseTimer];
+    
+    //返回首页，移除代理相关
+    if (self.navigationController.viewControllers.count<1) {
+        [JFGSDK removeDelegate:self];
+    }
+}
+
+
+-(void)didBecomeActive
+{
+    //开启屏幕常亮
+    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    [self videoRecordstatusRequest];
+    [self workNetDecideForDelaySeconds:2];
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (!isAP) {
+        [self startFping];
+    }
+}
+
+
+-(void)didEnterBackground
+{
+    [self stopVideoPlay];
+    [self stopFping];
+    //关闭屏幕常亮
+    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+    isDidAppear = NO;
 }
 
 //网络状态判断
--(void)workNetDecide
+-(void)workNetDecideForDelaySeconds:(int)second
 {
+    self.offlineLabel.hidden = YES;
+    self.statusShowBgView.hidden = NO;
+    
     BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
     
     if (isAP) {
@@ -173,54 +354,101 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         if (playState != videoPlayStatePlaying && playState != videoPlayStatePlayPreparing) {
            
             [self startLiveVideo];
+            self.micBtn.enabled = NO;
+            self.voiceBtn.enabled = NO;
+           
         }
+       
         
     }else{
         
+        self.micBtn.enabled = YES;
+        self.voiceBtn.enabled = YES;
+        
         if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess) {
             
-            if ([JFGSDK currentNetworkStatus] != JFGNetTypeOffline && [JFGSDK currentNetworkStatus] != JFGNetTypeWifi) {
+            int64_t delayInSeconds = second;
+            dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+            dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                if ([JFGSDK currentNetworkStatus] != JFGNetTypeOffline && [JFGSDK currentNetworkStatus] != JFGNetTypeWifi && !isShowedLANAlert) {
                 
-                //客户端移动网络在线
-                UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap1_Firmware_DataTips"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"CARRY_ON"], nil];
-                [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+                    //客户端移动网络在线
+                    __weak typeof(self) weakSelf = self;
+                    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_Firmware_DataTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"CARRY_ON"] CancelBlock:^{
+                        
+                        if ([JFGSDK currentNetworkStatus] == JFGNetTypeWifi) {
+                            if (playState != videoPlayStatePlaying && playState != videoPlayStatePlayPreparing) {
+                                [weakSelf startLiveVideo];
+                            }
+                        }else{
+                            
+                            if (playState == videoPlayStatePlaying) {
+                                [self stopVideoPlay];
+                            }
+                            [weakSelf showAgainView];
+                        }
+                        
+                    } OKBlock:^{
+                        
+                        if (playState != videoPlayStatePlaying && playState != videoPlayStatePlayPreparing) {
+                            [weakSelf startLiveVideo];
+                        }else{
+                            [weakSelf stopVideoPlay];
+                            int64_t delayInSeconds = 1.0;
+                            dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+                            dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                                
+                                [weakSelf startLiveVideo];
+                                
+                            });
+                            
+                        }
+                        isShowedLANAlert = YES;
+                    }];
+
+                    [self showStatusTipForWiFiMode:YES batteryCapacity:self.devModel.Battery];
                     
-                    if (buttonIndex == 1) {
+                }else{
+                    
+                    if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline) {
+                        //离线
+                        if (playState == videoPlayStatePlaying) {
+                            [self stopVideoPlay];
+                        }
+                        [self showTipView:[JfgLanguage getLanTextStrByKey:@"Tap1_DisconnectedPleaseCheck"]];
+                        [self showAgainView];
+                    }else{
+                        //客户端wifi连接
+                        [self showStatusTipForWiFiMode:YES batteryCapacity:self.devModel.Battery];
                         if (playState != videoPlayStatePlaying && playState != videoPlayStatePlayPreparing) {
                             [self startLiveVideo];
                         }
-                    }else{
-                        if ([JFGSDK currentNetworkStatus] == JFGNetTypeWifi) {
-                            if (playState != videoPlayStatePlaying && playState != videoPlayStatePlayPreparing) {
-                                [self startLiveVideo];
-                            }
-                        }else{
-                            [self showAgainView];
-                        }
-                        
                     }
                     
-                } otherDelegate:nil];
+                    
+                }
                 
+            });
+            
+        }else{
+            
+            
+            if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline) {
+                //离线
+                if (playState == videoPlayStatePlaying) {
+                    [self stopVideoPlay];
+                }
+                [self showTipView:[JfgLanguage getLanTextStrByKey:@"Tap1_DisconnectedPleaseCheck"]];
+                [self showAgainView];
             }else{
-                //客户端wifi连接
-                [self showStatusTipForWiFiMode:YES batteryCapacity:self.devModel.Battery];
                 if (playState != videoPlayStatePlaying && playState != videoPlayStatePlayPreparing) {
                     [self startLiveVideo];
                 }
-                
             }
-            [self reqForBattaryAndSDCard];
-            
-        }else{
-            //离线
-            //[self showTipView:[JfgLanguage getLanTextStrByKey:@"Tips_Device_TimeoutRetry"]];
-            if (playState != videoPlayStatePlaying && playState != videoPlayStatePlayPreparing) {
-                [self startLiveVideo];
-            }
+           
         }
     }
-    
+    [self reqForBattaryAndSDCard];
 }
 
 
@@ -258,17 +486,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [self.recordAnimationView stopAnimation];
 }
 
-#pragma mark- downloadDelegate
--(void)downloadFinishedForCid:(NSString *)cid fileName:(NSString *)fileName filePath:(NSString *)filePath
-{
-    UIImage *image = [UIImage imageWithContentsOfFile:filePath];
-    [self.albumsBtn setImage:image forState:UIControlStateNormal];
-}
-
--(void)downloadFailedForCid:(NSString *)cid fileName:(NSString *)fileName errorType:(JFGMsgFwDlFailedType)errorType
-{
-    
-}
 
 #pragma mark- JFGSDKDelegate
 -(void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
@@ -280,12 +497,14 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         
         [self stopFping];
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"ip:%@ cid:%@",ask.address,ask.cid]];
+        if (devIpAddr && [devIpAddr isEqualToString:ask.address]) {
+            return;
+        }
         devIpAddr = ask.address;
         NSLog(@"devIpAddr:%@",devIpAddr);
-        [ProgressHUD showText:@"局域网ip地址获取成功"];
+        //[ProgressHUD showText:@"局域网ip地址获取成功"];
         [self reqForBattaryAndSDCard];
         [self videoRecordstatusRequest];
-        
     }
 }
 
@@ -297,12 +516,9 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     NSLog(@"requestUrl:%@",url);
     [manager GET:url parameters:nil progress:^(NSProgress * _Nonnull downloadProgress) {
         
-         NSLog(@"total:%lld Unit:%lld",downloadProgress.totalUnitCount,downloadProgress.completedUnitCount);
         
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
         
-        NSLog(@"这里打印请求成功要做的事");
-        NSLog(@"%@",responseObject);
         if (success) {
             success(responseObject);
         }
@@ -316,48 +532,13 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     }];
 }
 
-
-- (void)downLoad{
-    
-    //1.创建管理者对象
-    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
-    //2.确定请求的URL地址
-    NSURL *url = [NSURL URLWithString:@"http://192.168.103.222/images/1492775924_584.mp4"];
-    
-    //3.创建请求对象
-    NSURLRequest *request = [NSURLRequest requestWithURL:url];
-    
-    //下载任务
-    NSURLSessionDownloadTask *task = [manager downloadTaskWithRequest:request progress:^(NSProgress * _Nonnull downloadProgress) {
-        //打印下下载进度
-        NSLog(@"下载进度:%lf",1.0 * downloadProgress.completedUnitCount / downloadProgress.totalUnitCount);
-        
-    } destination:^NSURL * _Nonnull(NSURL * _Nonnull targetPath, NSURLResponse * _Nonnull response) {
-        //下载地址
-        NSLog(@"默认下载地址:%@",targetPath);
-        
-        //设置下载路径，通过沙盒获取缓存地址，最后返回NSURL对象
-        NSString *filePath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
-        filePath = [filePath stringByAppendingPathComponent:@"1492769029_12.mp4"];
-        return [NSURL fileURLWithPath:filePath];
-        
-        
-    } completionHandler:^(NSURLResponse * _Nonnull response, NSURL * _Nullable filePath, NSError * _Nullable error) {
-        
-        //下载完成调用的方法
-       
-        if (error) {
-            NSLog(@"下载失败:%@",error);
-        }else{
-            NSLog(@"下载完成：");
-            NSLog(@"%@--%@",response,filePath);
+-(void)jfgAccountOnline:(BOOL)online
+{
+    if (online && isDidAppear) {
+        if ( [self.singularTipLabel.text isEqualToString:[JfgLanguage getLanTextStrByKey:@"Tap1_DisconnectedPleaseCheck"]]) {
+            [self workNetDecideForDelaySeconds:0];
         }
-        
-    }];
-    
-    //开始启动任务
-    [task resume];
-    
+    }
 }
 
 -(void)jfgNetworkChanged:(JFGNetType)netType
@@ -367,53 +548,70 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     }
     if (netType == JFGNetTypeOffline) {
         //断网
+        //离线
+        [self stopVideoPlay];
+        [self showTipView:[JfgLanguage getLanTextStrByKey:@"Tap1_DisconnectedPleaseCheck"]];
+        
     }else if(netType == JFGNetTypeWifi){
         //WiFi网络
         [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"Tap1_SwitchedWiFi"]];
+        
+        //切换网络会导致连接中的直播断开连接
+        [self stopVideoPlay];
+        [self showAgainView];
+        BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+        if (!isAP) {
+            [self startFping];
+        }
+        
     }else{
-        //移动网络
-        [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"Tap1_SwitchedNetwork"]];
+        if (isShowedLANAlert) {
+            //移动网络
+            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"Tap1_SwitchedNetwork"]];
+        }
+        devIpAddr = nil;
     }
+    
+    if (netType != JFGNetTypeOffline) {
+        //[self netModeViewCloseAction];
+    }
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    [self showStatusTipForWiFiMode:!isAP batteryCapacity:batteryRl];
 }
 
 //获取电池与sd卡状态(走公网)
 -(void)reqForBattaryAndSDCard
 {
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        devIpAddr = @"192.168.10.2";
+    }
     if (devIpAddr) {
         
         __weak typeof(self) weakSelf  = self;
     
         [self requestForUrl:[CommonMethod urlForLANFor720DevWithReqType:JFG720DevLANReqUrlTypeGetSDInfo ipAdd:devIpAddr] success:^(id  _Nullable responseObject) {
-            /*
-             "sdIsExist": 0,
-             "sdcard_recogntion": -22,
-             "storage": 0,
-             "storage_used": 0
-             
-             int sdcard;//sd卡是否存在
-             int sdcard_errno;//错误号。0 正常； 非0错误，需要格式化
-             long long storage;//卡容量 单位byte
-             long long storage_used;//已用空间 单位byte
-             */
+           
             if ([responseObject isKindOfClass:[NSDictionary class]]) {
                 NSDictionary *dict = responseObject;
                 int sdcard = [dict[@"sdIsExist"] intValue];
-//                int sdcard_errno = [dict[@"sdcard_recogntion"] intValue];
-//                long long storage = [dict[@"storage"] longLongValue];
-//                long long storage_used = [dict[@"storage_used"] longLongValue];
                 if (sdcard == 1) {
                     isHaveSDCard = YES;
                 }else{
                     isHaveSDCard = NO;
                 }
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720DevSDCard:[%@]",dict]];
             }
             
-        } failure:^(NSError * _Nonnull) {
+        } failure:^(NSError * _Nonnull error) {
+            
+            NSLog(@"%@",error);
             
         }];
         
         [self requestForUrl:[CommonMethod urlForLANFor720DevWithReqType:JFG720DevLANReqUrlTypeBattery ipAdd:devIpAddr] success:^(id  _Nullable responseObject) {
             
+            //电池电量
             if ([responseObject isKindOfClass:[NSDictionary class]]) {
                 NSDictionary *dict = responseObject;
                 int battery = [dict[@"battery"] intValue];
@@ -423,46 +621,45 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                 }else{
                     [weakSelf showStatusTipForWiFiMode:isWifi batteryCapacity:battery];
                 }
-                [weakSelf showStatusTipForWiFiMode:isWifi batteryCapacity:battery];
-                NSLog(@"barrty:%d",battery);
+                weakSelf.devModel.Battery = battery;
+                [[NSUserDefaults standardUserDefaults] setValue:[NSNumber numberWithInteger:battery] forKey:[NSString stringWithFormat:@"barrtyFor720_%@",self.devModel.uuid]];
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720Dev_Battery:[%@]",dict]];
+               // NSLog(@"devModel:%@ battery:%d %d",self.devModel,self.devModel.Battery,self.devModel.isPower);
             }
             
-        } failure:^(NSError * _Nonnull) {
-            
+        } failure:^(NSError * _Nonnull error) {
+            NSLog(@"%@",error);
         }];
         
         [self requestForUrl:[CommonMethod urlForLANFor720DevWithReqType:JFG720DevLANReqUrlTypeGetPowerLine ipAdd:devIpAddr] success:^(id  _Nullable responseObject) {
-            //powerline
+            //是否充电中
             if ([responseObject isKindOfClass:[NSDictionary class]]) {
                 NSDictionary *dict = responseObject;
                 int powerline = [dict[@"powerline"] intValue];
                 if (powerline == 1) {
                     isPrower = YES;
+                    weakSelf.devModel.isPower = YES;
                 }else{
                     isPrower = NO;
+                    weakSelf.devModel.isPower = NO;
                 }
             
+                [[NSUserDefaults standardUserDefaults] setBool:isPrower forKey:[NSString stringWithFormat:@"Perwor_%@",weakSelf.devModel.uuid]];
+                
                 if (isPrower) {
                     [weakSelf showStatusTipForWiFiMode:isWifi batteryCapacity:200];
                 }else{
-                    if (![self dayIsShowWindow] && batteryRl <= 20) {
-                        
-                        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"DOOR_LOW_BATTERY"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
-                        [alert show];
-                        NSString *lastDateKey = [NSString stringWithFormat:@"devBatteryKey_%@",self.devModel.uuid];
-                        [[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:lastDateKey];
-                    }
-                    
                     [weakSelf showStatusTipForWiFiMode:isWifi batteryCapacity:batteryRl];
                 }
-                
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720Dev_powerline:[%@]",dict]];
             }
-        } failure:^(NSError * _Nonnull) {
-            
+        } failure:^(NSError * _Nonnull error) {
+            NSLog(@"%@",error);
         }];
         
         [self requestForUrl:[CommonMethod urlForLANFor720DevWithReqType:JFG720DevLANReqUrlTypeGetRP ipAdd:devIpAddr] success:^(id  _Nullable responseObject) {
             
+            //清晰度模式
             NSLog(@"%@",responseObject);
             if ([responseObject isKindOfClass:[NSDictionary class]]) {
                
@@ -471,14 +668,12 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                 if ([obj isKindOfClass:[NSNumber class]] || [obj isKindOfClass:[NSString class]]) {
                     int resolution = [obj intValue];
                     [weakSelf videoRPModelViewDeal:resolution];
-                   
                 }
-                
-                
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720Dev_resolution:[%@]",dict]];
             }
             
-        } failure:^(NSError * _Nonnull) {
-            
+        } failure:^(NSError * _Nonnull error) {
+            NSLog(@"%@",error);
         }];
         
     }else{
@@ -501,65 +696,59 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         seg3.version = 0;
         
         [JFGSDK sendDPDataMsgForSockWithPeer:self.devModel.uuid dpMsgIDs:@[seg1,seg2,seg3]];
-        
         [JFGSDK sendMsgForTcpWithDst:@[self.devModel.uuid] isAck:YES fileType:21 msg:[NSData data]];
     }
-    
-    
-   
-    
-//        NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970];
-//        int time = (int)timestamp;
-//        
-//        NSData *da = [MPMessagePackWriter writeObject:@[@0,@(time),@100] error:nil];
-//        [JFGSDK sendMsgForTcpWithDst:@[self.devModel.uuid] isAck:YES fileType:5 msg:da];
-        
-//        NSData *da = [MPMessagePackWriter writeObject:@"" error:nil];
-//        [JFGSDK sendMsgForTcpWithDst:@[self.devModel.uuid] isAck:YES fileType:7 msg:da];
 }
 
-
--(void)speedLabelShowDealForHight:(BOOL)hight
-{
-    if (hight) {
-        
-    }
-}
 
 //视频录制情况
 -(void)videoRecordstatusRequest
 {
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        devIpAddr = @"192.168.10.2";
+    }
     if (devIpAddr) {
         
         __weak typeof(self) weakSelf  = self;
         
         [self requestForUrl:[CommonMethod urlForLANFor720DevWithReqType:JFG720DevLANReqUrlTypeGetRecStatue ipAdd:devIpAddr] success:^(id  _Nullable responseObject) {
             
+            if (isUpdateing) {
+                return ;
+            }
+            
             if ([responseObject isKindOfClass:[NSDictionary class]]) {
                 
                 NSDictionary *dict = responseObject;
-                /*
-                 {
-                 "ret": -1,
-                 "seconds": 0,
-                 "videoType": 0
-                 }
-                 */
+                
                 int ret = [dict[@"ret"] intValue];
                 int seconds = [dict[@"seconds"] intValue];
                 int videoType = [dict[@"videoType"] intValue];
                 if (ret != 0) {
+                    if (recordState != VideoRecordStatueNone ) {
+                        [self stopVideoViewRefresh];
+                        self.takePhotoBtn.selected = NO;
+                    }
+                    recordState = VideoRecordStatueNone;
+                    
+                    weakSelf.settingBtn.enabled = YES;
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"DevFor720VideoStatues" object:[NSDictionary dictionaryWithObjects:@[[NSNumber numberWithInt:-1],weakSelf.devModel.uuid] forKeys:@[@"videoType",@"uuid"]]];
                     return ;
                 }
                 if (videoType == -1) {
                     //没有录像
+                    if (recordState != VideoRecordStatueNone ) {
+                        [weakSelf stopVideoViewRefresh];
+                        weakSelf.takePhotoBtn.selected = NO;
+                    }
                     recordState = VideoRecordStatueNone;
                     weakSelf.settingBtn.enabled = YES;
                 }else if(videoType == 1){
                     //8s短视频
                     if (isCarameMode) {
-                        [self videoModelAction];
-                        self.takePhotoBtn.selected = YES;
+                        [weakSelf videoModelAction];
+                        weakSelf.takePhotoBtn.selected = YES;
                     }
                     recordState = VideoRecordStatue8SRecording;
                     if (playState == videoPlayStatePlaying) {
@@ -569,8 +758,8 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                 }else if (videoType == 2){
                     //长视频
                     if (isCarameMode) {
-                        [self videoModelAction];
-                        self.takePhotoBtn.selected = YES;
+                        [weakSelf videoModelAction];
+                        weakSelf.takePhotoBtn.selected = YES;
                     }
                     recordState = VideoRecordStatueLongRecording;
                     if (playState == videoPlayStatePlaying) {
@@ -578,7 +767,8 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     }
                     weakSelf.settingBtn.enabled = NO;
                 }
-                [[NSNotificationCenter defaultCenter] postNotificationName:@"DevFor720VideoStatues" object:[NSDictionary dictionaryWithObjects:@[[NSNumber numberWithInt:videoType],self.devModel.uuid] forKeys:@[@"videoType",@"uuid"]]];
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"DevFor720VideoStatues" object:[NSDictionary dictionaryWithObjects:@[[NSNumber numberWithInt:videoType],weakSelf.devModel.uuid] forKeys:@[@"videoType",@"uuid"]]];
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"videoRecordstatus:%@",dict]];
             }
             
         } failure:^(NSError * _Nonnull) {
@@ -587,25 +777,33 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         }];
         
     }else{
-        
+    
         [JFGSDK sendMsgForTcpWithDst:@[self.devModel.uuid] isAck:YES fileType:13 msg:[NSData data]];
         
     }
-    
+
 }
 
 
 
 #pragma mark- 20006
--(void)jfgMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID mSeq:(uint64_t)mSeq cid:(NSString *)cid type:(int)type msgData:(NSData *)msgData
+-(void)jfgMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
+                                             mSeq:(uint64_t)mSeq
+                                              cid:(NSString *)cid
+                                             type:(int)type
+                                     isInitiative:(BOOL)initiative
+                                          msgData:(NSData *)msgData
 {
     [self jfgMsgRobotForwardDataV2AckForSockWithMsgID:msgID mSeq:mSeq cid:cid type:type msgData:msgData];
 }
 
 -(void)jfgMsgRobotForwardDataV2AckForSockWithMsgID:(NSString *)msgID mSeq:(uint64_t)mSeq cid:(NSString *)cid type:(int)type msgData:(NSData *)msgData
 {
+    if (![cid isEqualToString:self.devModel.uuid] || isUpdateing) {
+        return;
+    }
     id obj = [MPMessagePackReader readData:msgData error:nil];
-    NSLog(@"Type:%d tcp:%@",type,obj);
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"jfgMsgRobotForward:%@ type:%d",obj,type]];
     if (type == 8) {
         //拍照请求回调
         [self carameDataDeal:msgData];
@@ -618,18 +816,31 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     }else if (type == 22){
         //视频分辨率
         [self videoRPGetDataDeal:msgData];
+    }else if (type == 18){
+        //清晰度
+        [self speedSetDataDeal:msgData];
+    }else if (type == 12){
+        //停止视频录制
+        [self stopVideoDataDeal:msgData];
     }
 }
 
 
-#pragma mark- 20006 dp
--(void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID mSeq:(uint64_t)mSeq cid:(NSString *)cid type:(int)type dpMsgArr:(NSArray *)dpMsgArr
-{
-    [self jfgDPMsgRobotForwardDataV2AckForSockWithMsgID:msgID mSeq:mSeq cid:cid type:type dpMsgArr:dpMsgArr];
-}
 
--(void)jfgDPMsgRobotForwardDataV2AckForSockWithMsgID:(NSString *)msgID mSeq:(uint64_t)mSeq cid:(NSString *)cid type:(int)type dpMsgArr:(NSArray *)dpMsgArr
+#pragma mark- 20006 dp
+-(void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
+                                               mSeq:(uint64_t)mSeq
+                                                cid:(NSString *)cid
+                                               type:(int)type
+                                       isInitiative:(BOOL)initiative
+                                           dpMsgArr:(NSArray *)dpMsgArr
 {
+    if (![cid isEqualToString:self.devModel.uuid]) {
+        return;
+    }
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"jfgDPMsgRobotForwardInitiative:%d type:%d",initiative,type]];
+    //JFG_WS(weakSelf);
+    
     for (DataPointSeg *seg in dpMsgArr) {
         id obj2 = [MPMessagePackReader readData:seg.value error:nil];
         NSLog(@"%@",obj2);
@@ -649,16 +860,58 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     id obj2 = sourArr[3];
                     if ([obj2 isKindOfClass:[NSNumber class]]) {
                         isHaveSDCard = [obj2 boolValue];
+                        if (initiative && !isHaveSDCard && isDidAppear) {
+                            //主动上报
+                            //MSG_SD_OFF
+                            //__weak typeof(self) weakSelf = self;
+                            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+
+                            } OKBlock:^{
+                                
+                            }];
+                           
+                        }
                     }
-                    
                 }
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720Dev_SDCard:[%@]",obj]];
             }
+            
         }else if (seg.msgId == 206 || seg.msgId == dpMsgBase_Power){
             [self baratyDeal:seg];
+        }else if (seg.msgId == 203){
+            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(sdCardForward) object:nil];
+            if ([obj2 isKindOfClass:[NSArray class]]) {
+                NSArray *sourArr = obj2;
+                if (sourArr.count>=3 ) {
+                    id obj = sourArr[2];
+                    if ([obj isKindOfClass:[NSNumber class]]) {
+                        
+                        int ret = [obj intValue];
+                        if (ret == 0) {
+                            //格式化成功
+                            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SD_INFO_3"]];
+                        }else{
+                            //格式化失败
+                            [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
+                        }
+                        return;
+                        
+                    }
+                }
+            }
+            //格式化失败
+            [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
         }
     }
 }
 
+
+
+-(void)sdCardForward
+{
+    //格式化失败
+    [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
+}
 
 #pragma mark- 720数据处理
 -(void)baratyDeal:(DataPointSeg *)seg
@@ -671,10 +924,12 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                 [self showStatusTipForWiFiMode:isWifi batteryCapacity:200];
                 batteryRl =  [obj intValue];
             }else{
-                 [self showStatusTipForWiFiMode:isWifi batteryCapacity:[obj intValue]];
+                [self showStatusTipForWiFiMode:isWifi batteryCapacity:[obj intValue]];
             }
-            [self showStatusTipForWiFiMode:isWifi batteryCapacity:[obj intValue]];
+            self.devModel.Battery = [obj intValue];
             NSLog(@"barrty:%d",[obj intValue]);
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720Dev_barrty:[%@]",obj]];
+            [[NSUserDefaults standardUserDefaults] setValue:obj forKey:[NSString stringWithFormat:@"barrtyFor720_%@",self.devModel.uuid]];
         }
         
     }else if (seg.msgId == dpMsgBase_Power){
@@ -683,14 +938,35 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         id obj = [MPMessagePackReader readData:seg.value error:nil];
         if (seg.msgId == dpMsgBase_Power){
             if ([obj isKindOfClass:[NSNumber class]]) {
-                BOOL isPower = [obj boolValue];
-                isPrower = isPower;
-                if (isPower) {
+                int power  = [obj intValue];
+                //BOOL isPower = [obj boolValue];
+                //isPrower = isPower;
+                if (power == 1) {
+                    isPrower = YES;
+                    self.devModel.isPower = YES;
                     [self showStatusTipForWiFiMode:isWifi batteryCapacity:200];
                 }else{
+                    isPrower = NO;
+                    self.devModel.isPower = NO;
                     [self showStatusTipForWiFiMode:isWifi batteryCapacity:batteryRl];
+                    if ([self isShowLowBattaryTip] && batteryRl<20 && isDidAppear) {
+                        
+                        //__weak typeof(self) weakSelf = self;
+                        [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"DOOR_LOW_BATTERY"] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+
+                        } OKBlock:^{
+ 
+                        }];
+                        
+                        NSString *lastDateKey = [NSString stringWithFormat:@"devBatteryKey_%@",self.devModel.uuid];
+                        [[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:lastDateKey];
+                    }
                 }
             }
+            NSLog(@"devModel:%@ battery:%d %d",self.devModel,self.devModel.Battery,self.devModel.isPower);
+            [[NSUserDefaults standardUserDefaults] setBool:isPrower forKey:[NSString stringWithFormat:@"Perwor_%@",self.devModel.uuid]];
+           
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720Dev_power:[%@]",obj]];
         }
     }
 }
@@ -698,6 +974,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 -(void)videoRecordDeal:(NSData *)msgData
 {
     id obj = [MPMessagePackReader readData:msgData error:nil];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"videoRecordDeal:%@",obj]];
     if ([obj isKindOfClass:[NSArray class]]) {
         
         NSArray *sourceArr = obj;
@@ -714,20 +991,32 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                 int videoType = [sourceArr[2] intValue];
                 
                 if (ret != 0) {
+                    //没有录像
+                    if (recordState != VideoRecordStatueNone ) {
+                        [self stopVideoViewRefresh];
+                        self.takePhotoBtn.selected = NO;
+                    }
+                    recordState = VideoRecordStatueNone;
+                    self.settingBtn.enabled = YES;
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"DevFor720VideoStatues" object:[NSDictionary dictionaryWithObjects:@[[NSNumber numberWithInt:-1],self.devModel.uuid] forKeys:@[@"videoType",@"uuid"]]];
                     return;
                 }
                 
                 
-                if (videoType == -1) {
+                if (videoType == -1 || videoType == 0) {
                     //没有录像
+                    if (recordState != VideoRecordStatueNone ) {
+                        [self stopVideoViewRefresh];
+                        self.takePhotoBtn.selected = NO;
+                    }
                     recordState = VideoRecordStatueNone;
                     self.settingBtn.enabled = YES;
                 }else if(videoType == 1){
-                    //8s短视频
+                    //8s短视频，视频录制开始回调
                     if (isCarameMode) {
                         [self videoModelAction];
-                        self.takePhotoBtn.selected = YES;
                     }
+                    self.takePhotoBtn.selected = YES;
                     recordState = VideoRecordStatue8SRecording;
                     if (playState == videoPlayStatePlaying) {
                         [self btnStatueForShortVideoWithRemainSe:8-secouds];
@@ -738,8 +1027,8 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     //长视频
                     if (isCarameMode) {
                         [self videoModelAction];
-                        self.takePhotoBtn.selected = YES;
                     }
+                    self.takePhotoBtn.selected = YES;
                     recordState = VideoRecordStatueLongRecording;
                     if (playState == videoPlayStatePlaying) {
                         [self btnStatueForLongVideoForSecounds:secouds];
@@ -747,30 +1036,45 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     self.settingBtn.enabled = NO;
                 }
                 
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"DevFor720VideoStatues" object:[NSDictionary dictionaryWithObjects:@[[NSNumber numberWithInt:videoType],self.devModel.uuid] forKeys:@[@"videoType",@"uuid"]]];
                 
             } @catch (NSException *exception) {
                 
             } @finally {
                 
             }
-            
-            
-            
         }
-        
     }
 }
 
 -(void)videoRPModelViewDeal:(int)hight
 {
+    UILabel *lb = [self.speedModeBgView viewWithTag:1000002];
     if (hight == 1) {
-        self.speedModeLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_Video_HD"];
-        self.speedModeLeftBtn.enabled = NO;
-        self.speedModeRightBtn.enabled = YES;
+        self.speedModeBgView.tag = 1;
+        lb.text = [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_Video_HD"];
     }else{
-        self.speedModeLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_Video_SD"];
-        self.speedModeLeftBtn.enabled = YES;
-        self.speedModeRightBtn.enabled = NO;
+        self.speedModeBgView.tag = 2;
+        lb.text = [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_Video_SD"];
+    }
+}
+
+
+
+-(void)speedSetDataDeal:(NSData *)msgData
+{
+    //int，     ret       错误码:  ret=-1 设置失败
+    id obj = [MPMessagePackReader readData:msgData error:nil];
+    if ([obj isKindOfClass:[NSNumber class]]) {
+        
+        int ret = [obj intValue];
+        if (ret == 0) {
+            if (self.speedModeBgView.tag == 1) {
+                [self videoRPModelViewDeal:2];
+            }else{
+                [self videoRPModelViewDeal:1];
+            }
+        }
     }
 }
 
@@ -796,22 +1100,21 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(void)stopVideoDataDeal:(NSData *)msgData
 {
-    
     id obj = [MPMessagePackReader readData:msgData error:nil];
     if ([obj isKindOfClass:[NSArray class]]) {
         
         NSArray *sourceArr = obj;
-        if (sourceArr.count >= 4) {
+        if (sourceArr.count) {
             
             @try {
                 /*
                  int，     ret       错误码
                  string，  fileName  文件名， 命名格式[timestamp].jpg 或 [timestamp]_[secends].avi， timestamp是文件生成时间的unix时间戳，secends是视频录制的时长,单位秒。根据后缀区分是图片或视频。
-                 int，     fileSize  文件大小, bit。
-                 string，  md5  文件的md5值
-                 */
+                */
                 int ret = [sourceArr[0] intValue];
-                NSString *fileName = sourceArr[1] ;
+                if (ret == -2) {
+                    [self videoOrPhotoFailedDealForVideo:YES ret:-2];
+                }
                 
                 
                 
@@ -831,6 +1134,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(void)carameDataDeal:(NSData *)msgData
 {
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(caremaReqOvertime) object:nil];
+    [self stopVideoViewRefresh];
+    [self btnStatueForCarame];
+    
     id obj = [MPMessagePackReader readData:msgData error:nil];
     if ([obj isKindOfClass:[NSArray class]]) {
         
@@ -841,39 +1148,24 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
          int，     fileSize  文件大小, bit。
          string，  md5  文件的md5值
          */
+       
         int ret = 0;
-        if (arr.count>=4 ) {
+        if (arr.count>0 ) {
             
             id obj1 = arr[0];
-            id obj2 = arr[1];
-            id obj3 = arr[2];
-            id obj4 = arr[3];
             if ([obj1 isKindOfClass:[NSNumber class]]) {
                 ret = [obj1 intValue];
             }
-            if (ret == 0) {
-                
-                NSString *fileName = obj2;
-                NSString *md5 = obj4;
-                
-                int fileSize = 0;
-                if ([obj3 isKindOfClass:[NSNumber class]]) {
-                    fileSize = [obj3 intValue];
-                }
-            
-                if (fileSize > 0) {
-                     [downloadManager downloadMsgForwardDataForCid:self.devModel.uuid fileName:fileName md5:md5 fileSize:fileSize];
-                }
-                NSLog(@"拍照成功fileName:%@",fileName);
-                [ProgressHUD showText:@"拍照成功"];
+            if (ret != 0) {
+                [self videoOrPhotoFailedDealForVideo:NO ret:ret];
             }else{
-                [ProgressHUD showText:@"拍照失败,请检查SD卡"];
-                NSLog(@"拍照失败");
+                self.devModel.unReadPhotoCount ++ ;
+                self.cameraRedPoint.hidden = NO;
+                [self carameAnimation];
+                [self showCantLoadImageTip];
             }
         }
     }
-    [self stopVideoViewRefresh];
-    [self btnStatueForCarame];
 }
 
 
@@ -885,23 +1177,119 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         int ret = [obj intValue];
         if (ret == 0) {
             NSLog(@"录像成功");
-            //[ProgressHUD showText:@"录像成功"];
-            if (recordState == VideoRecordStatue8SRecording) {
-                [self btnStatueForShortVideoWithRemainSe:8];
-            }else if (recordState == VideoRecordStatueLongRecording){
-                [self btnStatueForLongVideoForSecounds:0];
-            }
             self.settingBtn.enabled = NO;
-            
+            //公网模式下，无法加载图片提示
+            [self showCantLoadImageTip];
         }else{
             recordState = VideoRecordStatueNone;
             NSLog(@"录像失败");
             [self stopVideoViewRefresh];
             self.takePhotoBtn.selected = NO;
-            [ProgressHUD showText:@"录像失败,请检查SD卡"];
             self.settingBtn.enabled = YES;
+            [self videoOrPhotoFailedDealForVideo:YES ret:ret];
         }
     }
+}
+
+
+-(void)videoOrPhotoFailedDealForVideo:(BOOL)isVideo ret:(int)ret
+{
+    if (!isDidAppear) {
+        return;
+    }
+    //2003
+    if (ret == 2022) {
+        //初始化
+        __weak typeof(self) weakSelf = self;
+        [LSAlertView showAlertWithTitle:nil Message:[self videoOrPhotoError:ret forVideo:YES] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"SD_INIT"] CancelBlock:^{
+            
+        } OKBlock:^{
+            
+            [ProgressHUD showProgress:[JfgLanguage getLanTextStrByKey:@"SD_INFO_2"]];
+            [NSObject cancelPreviousPerformRequestsWithTarget:weakSelf selector:@selector(sdCardForward) object:nil];
+            [weakSelf performSelector:@selector(sdCardForward) withObject:nil afterDelay:10];
+            
+            BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:weakSelf.devModel.uuid];
+            if (isAP) {
+                devIpAddr = @"192.168.10.2";
+            }
+            if (devIpAddr) {
+                
+                [weakSelf requestForUrl:[CommonMethod urlForLANFor720DevWithReqType:JFG720DevLANReqUrlTypeSDFormat ipAdd:devIpAddr] success:^(id  _Nullable responseObject) {
+                    
+                    if ([responseObject isKindOfClass:[NSDictionary class]]) {
+                        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(sdCardForward) object:nil];
+                        NSDictionary *dict = responseObject;
+                        int sdcard = [dict[@"sdcard_recogntion"] intValue];
+                        if (sdcard == 0) {
+                            //格式化成功
+                            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SD_INFO_3"]];
+                        }else{
+                            //格式化失败
+                            [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
+                        }
+                        
+                    }
+                    
+                } failure:^(NSError * _Nonnull) {
+                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(sdCardForward) object:nil];
+                    //格式化失败
+                    [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
+                }];
+                
+            }else{
+                
+                DataPointSeg *seg1 = [DataPointSeg new];
+                seg1.msgId = 218;
+                seg1.value = [MPMessagePackWriter writeObject:[NSNumber numberWithInt:0] error:nil];
+                seg1.version = 0;
+                
+                [JFGSDK sendDPDataMsgForSockWithPeer:self.devModel.uuid dpMsgIDs:@[seg1]];
+                
+            }
+            
+        }];
+        
+        
+    }else if (ret == 150 || ret == 2003){
+        //低电量与sd卡已满
+        //__weak typeof(self) weakSelf = self;
+        [LSAlertView showAlertWithTitle:nil Message:[self videoOrPhotoError:ret forVideo:isVideo] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+            
+        } OKBlock:^{
+            
+        }];
+        
+    }else{
+        [ProgressHUD showText:[self videoOrPhotoError:ret forVideo:isVideo]];
+    }
+    
+}
+
+-(NSString *)videoOrPhotoError:(int)ret forVideo:(BOOL)video
+{
+    if (ret == -2) {
+        return [JfgLanguage getLanTextStrByKey:@"Tap1_LessThan3sTips"];
+    }else if (ret == 150){
+        return [JfgLanguage getLanTextStrByKey:@"Tap1_LowPower"];
+    }else if (ret == 2003){
+        return [JfgLanguage getLanTextStrByKey:@"Tap1_SDCardFullyTips"];
+    }else if (ret == 2004){
+        return [JfgLanguage getLanTextStrByKey:@"NO_SDCARD"];
+    }else if (ret == 2007){
+        [self videoRecordstatusRequest];
+        return [JfgLanguage getLanTextStrByKey:@"Record_Operate"];
+    }else if (ret == 2008){
+        return [JfgLanguage getLanTextStrByKey:@"Formatting"];
+    }else if (ret == 2022){
+        return [JfgLanguage getLanTextStrByKey:@"Tap1_NeedsInitializedTips"];
+    }
+    if (video) {//Fail_Record
+        return [NSString stringWithFormat:@"%@(%d)",[JfgLanguage getLanTextStrByKey:@"Fail_Record"],ret];
+    }else{
+        return [NSString stringWithFormat:@"%@(%d)",[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_RecordingFailed"],ret];
+    }
+    
 }
 
 -(void)initView
@@ -911,12 +1299,29 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     }else{
         self.titleLabel.text = self.devModel.uuid;
     }
+    [self.titleLabel mas_updateConstraints:^(MASConstraintMaker *make) {
+        CGFloat wid = self.view.width - 88*2;
+        make.height.equalTo(@(wid));
+    }];
     [self.topBarBgView addSubview:self.settingBtn];
+    
+   
+    
+    [self.topBarBgView addSubview:self.msgBtn];
+    [self.topBarBgView addSubview:self.warnRedPoint];
+    if (self.devModel.unReadMsgCount>0) {
+        self.warnRedPoint.hidden = NO;
+    }
     
     [self.view addSubview:self.bottomBgView];
     [self.bottomBgView addSubview:self.cameraModeBtn];
     [self.bottomBgView addSubview:self.videoModeBtn];
     [self.bottomBgView addSubview:self.albumsBtn];
+    [self.bottomBgView addSubview:self.cameraRedPoint];
+    if (self.devModel.unReadPhotoCount != 0) {
+        self.cameraRedPoint.hidden = NO;
+    }
+    
     [self.bottomBgView addSubview:self.takePhotoBtn];
     [self.bottomBgView addSubview:self.moreBtn];
     [self.bottomBgView addSubview:self.timepiceView];
@@ -927,12 +1332,12 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [self.videoBgImageView addSubview:self.loadingImageView];
     [self.videoBgImageView addSubview:self.rateLabel];
     [self.videoBgImageView addSubview:self.speedModeBgView];
-    [self.speedModeBgView addSubview:self.speedModeLeftBtn];
-    [self.speedModeBgView addSubview:self.speedModeLabel];
-    [self.speedModeBgView addSubview:self.speedModeRightBtn];
+//    [self.speedModeBgView addSubview:self.speedModeLeftBtn];
+//    [self.speedModeBgView addSubview:self.speedModeLabel];
+//    [self.speedModeBgView addSubview:self.speedModeRightBtn];
     [self.videoBgImageView addSubview:self.voiceBtn];
     [self.videoBgImageView addSubview:self.micBtn];
-    
+    [self.videoBgImageView addSubview:self.offlineLabel];
     NSLog(@"%@",NSStringFromCGRect(self.view.frame));
 }
 
@@ -940,15 +1345,25 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(void)initData
 {
+    isShowedLANAlert = NO;
+    isShowLanAleartForPhoto = YES;
     batteryRl = self.devModel.Battery;
     isHaveSDCard = YES;
+    isDidAppear = YES;
     timeoutRequestCount = 0;
     devIpAddr = nil;
     isCarameMode = YES;//初始化进入，默认拍照模式
     playState = videoPlayStatePause;
     recordState = VideoRecordStatueNone;
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(delAllPhoto) name:JFG720DevDelAllPhotoNotificationKey object:nil];
 }
 
+-(void)delAllPhoto
+{
+    [self.albumsBtn setImage:[UIImage imageNamed:@"camera720_icon_album_normal"] forState:UIControlStateNormal];
+    [self.albumsBtn setImage:[UIImage imageNamed:@"camera720_icon_album_disabled"] forState:UIControlStateDisabled];
+    self.albumsBtn.layer.borderWidth = 0;
+}
 
 #pragma mark- 视频播放
 -(void)startLiveVideo
@@ -963,10 +1378,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
      *  可以通过回调#jfgRTCPNotifyBitRate:videoRecved:frameRate:timesTamp: 查看视频加载情况
      长时间接收视频数据为0，则为网络状况差或者超时。
      */
-    
-    //isLiveVideo = YES;
+    isDevOffline = NO;
     [CylanJFGSDK connectCamera:self.devModel.uuid];
     self.rateLabel.hidden = NO;
+    [self startTimeoutRequestForDelay:30];
 }
 
 
@@ -991,6 +1406,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         [JFGSDK appendStringToLogFile:@"remoteRemoveFromSuperView"];
     }
     playState = videoPlayStatePause;
+    self.rateLabel.text = @"0k/s";
     [self stopVideoViewRefresh];
     [self btnDisenableStatue];
     [self stopLoadingAnimation];
@@ -1009,24 +1425,21 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(onRecvDisconnectForRemote:) name:@"JFGSDKOnRecvDisconnectNotification" object:nil];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(onNotifyResolution:) name:@"JFGSDKOnNotifyResolutionNotification" object:nil];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(onNotificatyRTCP:) name:@"JFGSDKOnNotifyRTCPNotification" object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didEnterBackground) name:@"applicationDidEnterBackgroundBeforeEnvchange" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didBecomeActive) name:UIApplicationDidBecomeActiveNotification object:nil];
     isAddNotification = YES;
 }
 
 -(void)removeVideoDelegate
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"applicationDidEnterBackgroundBeforeEnvchange" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnRecvDisconnectNotification" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnNotifyResolutionNotification" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnNotifyRTCPNotification" object:nil];
     isAddNotification = NO;
 }
 
--(void)didEnterBackground
-{
-    [self viewDidDisappear:YES];
-    [self releaseTimer];
-}
 
 #pragma mark- 视频直播代理
 -(void)onNotifyResolution:(NSNotification *)notification
@@ -1044,6 +1457,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         if (playState == videoPlayStatePlaying) {
             return;
         }
+        [JFGSDK appendStringToLogFile:@"onNotifyResolution remoteViewSizeFit"];
         
         UIView *remoteView = [self.videoBgImageView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
         if (remoteView) {
@@ -1061,7 +1475,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
          
         Panoramic720IosView * _remoteView = [[Panoramic720IosView alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, self.videoBgImageView.width, self.videoBgImageView.height)];
         [_remoteView configV720];
-        [_remoteView setDisplayMode:DM_Panorama];
+        [_remoteView setDisplayMode:DM_Fisheye];
         _remoteView.tag = VIEW_REMOTERENDE_VIEW_TAG;
         _remoteView.backgroundColor = [UIColor blackColor];
         _remoteView.layer.edgeAntialiasingMask = YES;
@@ -1069,11 +1483,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         [self.videoBgImageView sendSubviewToBack:_remoteView];
         
         [CylanJFGSDK startRenderRemoteView:_remoteView];
-        if (playState != videoPlayStatePlaying)
-        {
-            //[self voiceAndMicBtnNomalState];
-            //[self fullVideoAndMicBtnNomal];
-        }
         playState = videoPlayStatePlaying;
         [self stopLoadingAnimation];
         [self btnStatueForCarame];
@@ -1093,7 +1502,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     if (dict) {
         int bitRate = [dict[@"bit"] intValue];
         //int frameRate = [dict[@"frameRate"] intValue];
-        long long timesTamp = [dict[@"timestamp"] intValue];
+        //long long timesTamp = [dict[@"timestamp"] intValue];
         //int videorecved = [dict[@"videoRecved"] intValue];
         //historyLastestTimeStamp = timesTamp;
         
@@ -1103,7 +1512,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 //        }
 //        
         if (bitRate == 0) {
-            [self startTimeoutRequest];
+            [self startTimeoutRequestForDelay:10];
         }else{
             [self stopTimeoutRequest];
         }
@@ -1120,30 +1529,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             [self stopLoadingAnimation];
             isLowSpeed = NO;
         }
-        
-        
-//        NSMutableString *dat;
-//        
-//        if (isLiveVideo) {
-//            
-//            dat =  [NSMutableString stringWithString:[dateFormatter stringFromDate:[NSDate date]]];
-//            [dat insertString:@"直播| " atIndex:0];
-//            
-//            //保留播放控件
-//            if (windowMode == videoPlayModeSmallWindow) {
-//                self.playButton.selected = YES;
-//            }else{
-//                self.fullPlayBtn.selected = YES;
-//            }
-//            
-//        }else{
-//            
-//            
-//            dat =  [NSMutableString stringWithString:[dateFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:timesTamp]]];
-//            [dat insertString:@"录像| " atIndex:0];
-//            [self.historyView setHistoryTableViewOffsetByTimeStamp:timesTamp];
-//            
-//        }
 //        self.videoPlayTipLabel.text = dat;
 //        //CGFloat m = videoRecved/1024.0/1024.0;
         CGFloat kb = bitRate/8;
@@ -1173,25 +1558,39 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     
     if ([remoteID isEqualToString:self.devModel.uuid] || [remoteID isEqualToString:@"server"]) {
         
-        [self stopVideoPlay];
+        
         JFGErrorType errorType = (JFGErrorType)[dict[@"error"] intValue];
-        
-        if (errorType == JFGErrorTypeVideoPeerNotExist) {
-            isDevOffline = YES;
-        }else{
-            isDevOffline = NO;
-        }
-        
         if (errorType == JFGErrorTypeVideoPeerInConnect) {
             
-            __block VideoPlayFor720ViewController *blockSelf = self;
-            UIAlertView *aleart = [[UIAlertView alloc]initWithTitle:nil message:[CommonMethod languaeKeyForLiveVideoErrorType:errorType] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
-            [aleart showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
-                [blockSelf backAction];
-            } otherDelegate:nil];
+            [self stopVideoPlay];
+            __weak typeof(self) weakSelf = self;
+            if (isDidAppear) {
+                
+                //__weak typeof(self) weakSelf = self;
+                [LSAlertView showAlertWithTitle:nil Message:[CommonMethod languaeKeyForLiveVideoErrorType:errorType] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                    
+                } OKBlock:^{
+                    [weakSelf backAction];
+                }];
+                
+            }
+            //[self showTipView:[CommonMethod languaeKeyForLiveVideoErrorType:errorType]];
             
+        }else if (errorType == JFGErrorTypeVideoPeerNotExist){
+            //Tap1_Offline
+            BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+            if (isAP) {
+                return;
+            }
+            [self stopVideoPlay];
+            [self showTipView:[JfgLanguage getLanTextStrByKey:@"Tap1_Offline"]];
+            isDevOffline = YES;
+            
+        }else{
+            [self stopVideoPlay];
+            [self showTipView:[CommonMethod languaeKeyForLiveVideoErrorType:errorType]];
         }
-        [self showTipView:[CommonMethod languaeKeyForLiveVideoErrorType:errorType]];
+       
         playState = videoPlayStateDisconnectCamera;
         [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(rtcpLowAction) object:nil];
         
@@ -1200,10 +1599,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 }
 
 #pragma mark- 直播超时事件
--(void)startTimeoutRequest
+-(void)startTimeoutRequestForDelay:(NSInteger)delay
 {
     if (timeoutRequestCount == 0) {
-        [self performSelector:@selector(playRequestTimeoutDeal) withObject:nil afterDelay:30];
+        [self performSelector:@selector(playRequestTimeoutDeal) withObject:nil afterDelay:delay];
         timeoutRequestCount++;
     }
 }
@@ -1223,6 +1622,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     isDevOffline = NO;
     [self showTipView:[JfgLanguage getLanTextStrByKey:@"Tips_Device_TimeoutRetry"]];
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(rtcpLowAction) object:nil];
+    [self showAgainView];
 }
 
 -(void)rtcpLowAction
@@ -1230,7 +1630,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     if ([JFGSDK currentNetworkStatus] != JFGNetTypeOffline) {
         [self startLodingAnimation];
     }
-    
 }
 
 
@@ -1239,8 +1638,14 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     Pano720PhotoVC *panoPhotoVC = [[Pano720PhotoVC alloc] init];
     panoPhotoVC.cid = self.devModel.uuid;
+    panoPhotoVC.nickName = self.devModel.alias;
     panoPhotoVC.pType = (productType)[self.devModel.pid intValue];
-    [self.navigationController pushViewController:panoPhotoVC animated:YES];
+    
+    [self.navigationController.view.layer addAnimation:[PopAnimation moveTopAnimation] forKey:nil];
+    [self.navigationController pushViewController:panoPhotoVC animated:NO];
+    
+    self.devModel.unReadPhotoCount = 0 ;
+    self.cameraRedPoint.hidden = YES;
 }
 
 -(void)netModeSwitchTap:(UITapGestureRecognizer *)tap
@@ -1249,11 +1654,11 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     NSLog(@"%@",NSStringFromCGPoint(point));
     [self netModeViewCloseAction];
     if (point.y <self.view.height*0.5) {
-        //上半部，家居模式
+        //上半部，wifi模式
         isSetHomeMode = YES;
         NSLog(@"top");
     }else{
-        //下半部，户外模式
+        //下半部，直连
         NSLog(@"bottom");
         isSetHomeMode = NO;
     }
@@ -1276,6 +1681,11 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     if (isDevOffline) {
         [self showNetModeSwitchView];
     }
+    if ([self.singularTipLabel.text isEqualToString:[JfgLanguage getLanTextStrByKey:@"Tap1_DisconnectedPleaseCheck"]]) {
+        //无网络
+        JFGNetDeclareViewController *netDeclareVC = [JFGNetDeclareViewController new];
+        [self.navigationController pushViewController:netDeclareVC animated:YES];
+    }
 }
 
 #pragma mark- 按钮状态
@@ -1294,10 +1704,20 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     self.moreBtn.hidden = NO;
     self.albumsBtn.enabled = YES;
     self.albumsBtn.hidden = NO;
+    if (self.devModel.unReadPhotoCount !=0) {
+        self.cameraRedPoint.hidden = NO;
+    }
     self.takePhotoBtn.enabled = YES;
     self.takePhotoBtn.userInteractionEnabled = YES;
     self.takePhotoBtn.hidden = NO;
     self.settingBtn.enabled = YES;
+    [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_photograph_normal"] forState:UIControlStateNormal];
+    [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_photograph_normal"] forState:UIControlStateSelected];
+    self.takePhotoBtn.selected = NO;
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP){
+        //self.moreBtn.enabled = NO;
+    }
 }
 
 //不可点击状态
@@ -1308,6 +1728,9 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     self.moreBtn.enabled = NO;
     self.albumsBtn.enabled = YES;
     self.takePhotoBtn.enabled = NO;
+    if (self.moreBtn.selected) {
+        [self moreAction:self.moreBtn];
+    }
 }
 
 
@@ -1318,6 +1741,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     self.videoModeBtn.hidden = YES;
     self.moreBtn.hidden = YES;
     self.albumsBtn.hidden = YES;
+    self.cameraRedPoint.hidden = YES;
     self.takePhotoBtn.enabled = NO;
     if (self.takePhotoLoadingView.superview != self.takePhotoBtn) {
         [self.takePhotoLoadingView removeFromSuperview];
@@ -1334,6 +1758,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         self.cameraModeBtn.hidden = YES;
         self.videoModeBtn.hidden = YES;
         self.albumsBtn.hidden = YES;
+        self.cameraRedPoint.hidden = YES;
         self.moreBtn.hidden = YES;
     }];
     if (self.moreBtn.selected) {
@@ -1366,6 +1791,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         self.cameraModeBtn.hidden = YES;
         self.videoModeBtn.hidden = YES;
         self.albumsBtn.hidden = YES;
+        self.cameraRedPoint.hidden = YES;
         self.moreBtn.hidden = YES;
     }];
     if (self.moreBtn.selected) {
@@ -1391,6 +1817,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     self.moreBtn.enabled = YES;
     self.albumsBtn.enabled = YES;
     self.takePhotoBtn.enabled = YES;
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP){
+        //self.moreBtn.enabled = NO;
+    }
 }
 
 
@@ -1419,15 +1849,19 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         self.takePhotoBtn.selected = NO;
         [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_video_normal"] forState:UIControlStateNormal];
         [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_video_recording_nomal"] forState:UIControlStateSelected];
-        
         isCarameMode = NO;
         self.videoModeBtn.selected = YES;
         self.cameraModeBtn.selected = NO;
         
+        NSString *isfrist = [[NSUserDefaults standardUserDefaults] objectForKey:FristIntoVideoPlayFor720VC];
+        if (!isfrist) {
+            [self showLongVideoTip];
+        }
     }
-    
-    
 }
+
+
+
 
 -(void)cameraModeAction
 {
@@ -1453,21 +1887,12 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     sender.selected = !sender.selected;
 }
 
-//速率选择按钮
--(void)speedModeAction:(UIButton *)sender
-{
-    if (sender == self.speedModeLeftBtn) {
-        [self videoResolvingPowerForIsHight:YES];
-    }else if (sender == self.speedModeRightBtn){
-        [self videoResolvingPowerForIsHight:NO];
-    }
-}
 
 //重新加载按钮事件
 -(void)againAction
 {
     [self hiddenAgainView];
-    [self workNetDecide];
+    [self workNetDecideForDelaySeconds:0];
 }
 
 //点击按钮隐藏tip
@@ -1478,6 +1903,11 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     } completion:^(BOOL finished) {
         self.singularTipBgView.hidden = YES;
     }];
+    if (isDevOffline) {
+        self.offlineLabel.hidden = NO;
+        self.statusShowBgView.hidden = YES;
+        //[self showAgainView];
+    }
 }
 
 //拍照按钮
@@ -1490,46 +1920,33 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             if (controlEvents == JFGTakePhotoTouchLongTap) {
                 NSLog(@"long tap");
 #pragma mark- 长按开始短视频录制
-                if (isHaveSDCard) {
-                    recordState = VideoRecordStatue8SRecording;
-                    [self btnStatueForLoading];
-                    [self shortVideoRecoding];
-                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(videoReqOvertime) object:nil];
-                    [self performSelector:@selector(videoReqOvertime) withObject:nil afterDelay:10];
-                    btn.selected = !btn.selected;
-                }else{
-                    [self videoReqOvertime];
-                }
-                
-                
+                recordState = VideoRecordStatue8SRecording;
+                //[self btnStatueForLoading];
+                [self shortVideoRecoding];
+                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(videoReqOvertime) object:nil];
+                [self performSelector:@selector(videoReqOvertime) withObject:nil afterDelay:10];
+                btn.selected = !btn.selected;
+
             }else{
 #pragma mark- 单击开始长视频录制
-                if (isHaveSDCard) {
-                    recordState = VideoRecordStatueLongRecording;
-                    [self btnStatueForLoading];
-                    [self longVideoRecoding];
-                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(videoReqOvertime) object:nil];
-                    [self performSelector:@selector(videoReqOvertime) withObject:nil afterDelay:10];
-                    btn.selected = !btn.selected;
-                }else{
-                    [self videoReqOvertime];
-                }
-                
-                
+                recordState = VideoRecordStatueLongRecording;
+                [self btnStatueForLoading];
+                [self longVideoRecoding];
+                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(videoReqOvertime) object:nil];
+                [self performSelector:@selector(videoReqOvertime) withObject:nil afterDelay:10];
+                btn.selected = !btn.selected;
+
             }
         }else{
             //拍照模式下
-            if (isHaveSDCard) {
-                recordState = VideoRecordStatueNone;
-                [self btnStatueForLoading];
-                [self camarePhotoReq];
-                
-            }else{
-                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"NO_SDCARD"]];
-            }
-            
-            
+            recordState = VideoRecordStatueNone;
+            [self btnStatueForLoading];
+            [self camarePhotoReq];
+            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(caremaReqOvertime) object:nil];
+            [self performSelector:@selector(caremaReqOvertime) withObject:nil afterDelay:10];
+
         }
+        
     }else{
         
         if (!isCarameMode) {
@@ -1551,26 +1968,39 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             
         }else{
             //拍照模式下
-            if (isHaveSDCard) {
-                recordState = VideoRecordStatueNone;
-                [self btnStatueForLoading];
-                [self camarePhotoReq];
-                
-            }else{
-                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"NO_SDCARD"]];
-            }
+            recordState = VideoRecordStatueNone;
+            [self btnStatueForLoading];
+            [self camarePhotoReq];
         }
     }
     
 }
 
+//长按结束，停止短视频录制
+-(void)takePhotoTouchLongTapEnd
+{
+    if (!self.shortVideoTimeLabel.hidden) {
+        [self stopShortVideoRecode];
+        self.settingBtn.enabled = YES;
+        self.takePhotoBtn.selected = NO;
+        [self stopVideoViewRefresh];
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(videoReqOvertime) object:nil];
+    }
+}
+
 -(void)videoReqOvertime
 {
     recordState = VideoRecordStatueNone;
-    NSLog(@"录像失败");
     [self stopVideoViewRefresh];
     self.takePhotoBtn.selected = NO;
-    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"NO_SDCARD"]];
+    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Request_TimeOut"]];
+}
+
+-(void)caremaReqOvertime
+{
+    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Request_TimeOut"]];
+    [self stopVideoViewRefresh];
+    [self btnStatueForCarame];
 }
 
 -(void)stopVideoViewRefresh
@@ -1581,7 +2011,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     self.shortVideoTimeLabel.hidden = YES;
     self.shortVideoTimeLabel.text = @"8S";
     shortVideoTimeCount = 8;
-    if (shortVideoTimer) {
+    if (shortVideoTimer && shortVideoTimer.isValid) {
         [shortVideoTimer invalidate];
         shortVideoTimer = nil;
     }
@@ -1596,9 +2026,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         self.videoModeBtn.hidden = NO;
         self.albumsBtn.hidden = NO;
         self.moreBtn.hidden = NO;
+        if (self.devModel.unReadPhotoCount != 0) {
+            self.cameraRedPoint.hidden = NO;
+        }
     }];
-        
-    
 }
 
 -(void)shortVideoTimeShowAction
@@ -1624,7 +2055,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             self.moreBtn.hidden = NO;
             
         } completion:^(BOOL finished) {
-           
+            self.settingBtn.enabled = YES;
+            if (self.devModel.unReadPhotoCount != 0) {
+                self.cameraRedPoint.hidden = NO;
+            }
         }];
         
     }
@@ -1648,7 +2082,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [self videoRecordingReqForLong:NO];
 }
 
-
 -(void)stopShortVideoRecode
 {
     [self stopVideoRecordingReqForLong:NO];
@@ -1659,45 +2092,135 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     if (playState == videoPlayStatePlaying) {
 
+        BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+        if (isAP) {
+            devIpAddr = @"192.168.10.2";
+        }
+
         NSData *data = [MPMessagePackWriter writeObject:@[@""] error:nil];
         if (devIpAddr) {
             __weak typeof(self) weakSelf = self;
             [self requestForUrl:[CommonMethod urlForLANFor720DevWithReqType:JFG720DevLANReqUrlTypeSnapShot ipAdd:devIpAddr] success:^(id  _Nullable responseObject) {
-                [ProgressHUD showText:@"拍照成功"];
+                
+                if ([responseObject isKindOfClass:[NSDictionary class]]) {
+                    
+                    NSDictionary *dict = responseObject;
+                    int ret = [dict[@"ret"] intValue];
+                    if (ret == 0) {
+                        //[ProgressHUD showText:@"拍照成功"];
+                        weakSelf.devModel.unReadPhotoCount ++ ;
+                        weakSelf.cameraRedPoint.hidden = NO;
+                        [weakSelf showCantLoadImageTip];
+                        [weakSelf carameAnimation];
+                        
+                        
+                    }else{
+                        [weakSelf videoOrPhotoFailedDealForVideo:NO ret:ret];
+                    }
+                    
+                }
+                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(caremaReqOvertime) object:nil];
                 [weakSelf stopVideoViewRefresh];
                 [weakSelf btnStatueForCarame];
-            } failure:^(NSError * _Nonnull) {
-                [ProgressHUD showText:@"拍照失败"];
+                
+            } failure:^(NSError * _Nonnull error) {
+                
+                NSLog(@"%@",error);
+                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(caremaReqOvertime) object:nil];
+                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_RecordingFailed"]];
                 [weakSelf stopVideoViewRefresh];
                 [weakSelf btnStatueForCarame];
+                
             }];
+            
         }else{
-              [JFGSDK sendMsgForTcpWithDst:@[self.devModel.uuid] isAck:YES fileType:7 msg:data];
+            
+            [JFGSDK sendMsgForTcpWithDst:@[self.devModel.uuid] isAck:YES fileType:7 msg:data];
         }
     
-        UIView *remoteView = [self.videoBgImageView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
-        if (remoteView) {
-            
-            if ([remoteView isKindOfClass:[Panoramic720IosView class]]) {
-                
-                Panoramic720IosView *rvc = (Panoramic720IosView *)remoteView;
-                UIImage *image = [rvc takeSnapshot];
-                [self.albumsBtn setImage:image forState:UIControlStateNormal];
-            }
-        }
+       
             
        
     }
 }
 
+
+#pragma mark- 拍照图片放大动画
+-(void)carameAnimation
+{
+    UIView *remoteView = [self.videoBgImageView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+    if (remoteView) {
+        
+        if ([remoteView isKindOfClass:[Panoramic720IosView class]]) {
+            
+            Panoramic720IosView *rvc = (Panoramic720IosView *)remoteView;
+            UIImage *image = [rvc takeSnapshot];
+            if (image) {
+                self.albumsBtn.layer.borderWidth = 1;
+                [self.albumsBtn setImage:image forState:UIControlStateNormal];
+                NSData *imgData = UIImageJPEGRepresentation(image, 0.5);
+                [imgData writeToFile:[self snapImgDataFilePath] atomically:YES];
+            }
+        }
+    }
+    
+    self.cameraRedPoint.hidden = YES;
+    int64_t delayInSeconds = 0.6;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+        
+        self.cameraRedPoint.hidden = NO;
+        
+    });
+    CAKeyframeAnimation* animation = [CAKeyframeAnimation animationWithKeyPath:@"transform"];
+    
+    animation.duration = 0.4;// 动画时间
+    
+    NSMutableArray *values = [NSMutableArray array];
+    
+    [values addObject:[NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7, 0.7, 1.0)]];
+    
+    
+    [values addObject:[NSValue valueWithCATransform3D:CATransform3DMakeScale(1, 1, 1.0)]];
+    
+    // 这三个数字，我只研究了前两个，所以最后一个数字我还是按照它原来写1.0；前两个是控制view的大小的；
+    [values addObject:[NSValue valueWithCATransform3D:CATransform3DMakeScale(1.2, 1.2, 1.0)]];
+    //[values addObject:[NSValue valueWithCATransform3D:CATransform3DMakeScale(1.5, 1.5, 1.0)]];
+    //[values addObject:[NSValue valueWithCATransform3D:CATransform3DMakeScale(1.25, 1.25, 1.0)]];
+    [values addObject:[NSValue valueWithCATransform3D:CATransform3DMakeScale(1, 1, 1.0)]];
+    animation.values = values;
+    
+    [self.albumsBtn.layer addAnimation:animation forKey:nil];
+}
+
+-(NSString *)snapImgDataFilePath
+{
+    NSString *filePath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
+    filePath = [filePath stringByAppendingPathComponent:[NSString stringWithFormat:@"snapFor720_%@",self.devModel.uuid]];
+    return filePath;
+}
+
 -(void)videoResolvingPowerForIsHight:(BOOL)hight
 {
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        devIpAddr = @"192.168.10.2";
+    }
     if (devIpAddr) {
+        
+        __weak typeof(self) weakSelf = self;
         [self requestForUrl:[self videoRPIsHight:hight] success:^(id  _Nullable responseObject) {
             if ([responseObject isKindOfClass:[NSDictionary class]]) {
                 NSDictionary *dict = responseObject;
                 int ret = [dict[@"ret"] intValue];
                 if (ret == 0) {
+                    
+                    if (self.speedModeBgView.tag == 1) {
+                        [weakSelf videoRPModelViewDeal:2];
+                    }else{
+                        [weakSelf videoRPModelViewDeal:1];
+                    }
+                    
                     
                 }else{
                     
@@ -1707,7 +2230,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             
         }];
     }else{
-        NSData *data = [MPMessagePackWriter writeObject:@[@(hight?1:0)] error:nil];
+        NSData *data = [MPMessagePackWriter writeObject:@(hight?1:0) error:nil];
         [JFGSDK sendMsgForTcpWithDst:@[self.devModel.uuid] isAck:YES fileType:17 msg:data];
     }
 }
@@ -1715,6 +2238,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 -(void)videoRecordingReqForLong:(BOOL)isLong
 {
     //9 videoType 特征值定义： videoTypeShort = 1 8s短视频； videoTypeLong = 2 长视频
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        devIpAddr = @"192.168.10.2";
+    }
     if (devIpAddr) {
         __weak typeof(self) weakSelf = self;
         [self requestForUrl:[self startRecIsLongVideo:isLong] success:^(id  _Nullable responseObject) {
@@ -1726,21 +2253,26 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     
                     if (recordState == VideoRecordStatue8SRecording) {
                         [weakSelf btnStatueForShortVideoWithRemainSe:8];
-                    }else if (recordState == VideoRecordStatueLongRecording){
+                    }else{
                         [weakSelf btnStatueForLongVideoForSecounds:0];
                     }
                     weakSelf.settingBtn.enabled = NO;
+                    //公网模式下，无法加载图片提示
+                    [self showCantLoadImageTip];
                     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(videoReqOvertime) object:nil];
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"DevFor720VideoStatues" object:[NSDictionary dictionaryWithObjects:@[[NSNumber numberWithInt:isLong?2:1],weakSelf.devModel.uuid] forKeys:@[@"videoType",@"uuid"]]];
                     
                 }else{
                     recordState = VideoRecordStatueNone;
                     NSLog(@"录像失败");
-                    [weakSelf stopVideoViewRefresh];
                     weakSelf.takePhotoBtn.selected = NO;
-                    [ProgressHUD showText:@"录像失败,请检查SD卡"];
                     weakSelf.settingBtn.enabled = YES;
                     [NSObject cancelPreviousPerformRequestsWithTarget:weakSelf selector:@selector(videoReqOvertime) object:nil];
+                    [weakSelf videoOrPhotoFailedDealForVideo:YES ret:ret];
+                    [self stopVideoViewRefresh];
+                    
                 }
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"videoRecordingRsp:%@",dict]];
                 
             }
         } failure:^(NSError * _Nonnull) {
@@ -1748,7 +2280,8 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         }];
         
     }else{
-        NSData *data = [MPMessagePackWriter writeObject:@[@(isLong?2:1)] error:nil];
+        
+        NSData *data = [MPMessagePackWriter writeObject:@(isLong?2:1) error:nil];
         [JFGSDK sendMsgForTcpWithDst:@[self.devModel.uuid] isAck:YES fileType:9 msg:data];
     }
     
@@ -1756,16 +2289,13 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(void)stopVideoRecordingReqForLong:(BOOL)isLong
 {
-    
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        devIpAddr = @"192.168.10.2";
+    }
     if (devIpAddr) {
         [self requestForUrl:[self stopRecIsLongVideo:isLong] success:^(id  _Nullable responseObject) {
             
-            /*
-             {
-             "ret": -1,
-             "files": ""
-             }
-             */
             if ([responseObject isKindOfClass:[NSDictionary class]]) {
                 
                 NSDictionary *dict = responseObject;
@@ -1773,26 +2303,48 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                 if (ret == 0) {
                     
                 }else{
-                    
+                    [self videoOrPhotoFailedDealForVideo:YES ret:ret];
                 }
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"stopVideoRecordingRsp:%@",dict]];
                 
             }
-            
         } failure:^(NSError * _Nonnull) {
             
-            
-            
+    
         }];
+        
     }else{
-        NSData *data = [MPMessagePackWriter writeObject:@[@(isLong?2:1)] error:nil];
+        NSData *data = [MPMessagePackWriter writeObject:@(isLong?2:1) error:nil];
         [JFGSDK sendMsgForTcpWithDst:@[self.devModel.uuid] isAck:YES fileType:11 msg:data];
     }
+    
+    //显示视频截图
+    UIView *remoteView = [self.videoBgImageView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+    if (remoteView) {
+        
+        if ([remoteView isKindOfClass:[Panoramic720IosView class]]) {
+            
+            Panoramic720IosView *rvc = (Panoramic720IosView *)remoteView;
+            UIImage *image = [rvc takeSnapshot];
+            
+            
+            if (image) {
+                [self.albumsBtn setImage:image forState:UIControlStateNormal];
+                NSData *imgData = UIImageJPEGRepresentation(image, 0.5);
+                [imgData writeToFile:[self snapImgDataFilePath] atomically:YES];
+            }
+        }
+    }
+
     [[NSNotificationCenter defaultCenter] postNotificationName:@"DevFor720VideoStatues" object:[NSDictionary dictionaryWithObjects:@[[NSNumber numberWithInt:-1],self.devModel.uuid] forKeys:@[@"videoType",@"uuid"]]];
 }
 
 #pragma mark- 动画事件
 -(void)startLodingAnimation
 {
+    if (isUpdateing) {
+        return;
+    }
     if (self.loadingImageView.superview == nil) {
         [self.videoBgImageView addSubview:self.loadingImageView];
     }else{
@@ -1837,6 +2389,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         self.rateLabel.hidden = YES;
         self.singularTipBgView.top = -self.singularTipBgView.height;
         self.singularTipBgView.hidden = NO;
+        self.offlineLabel.hidden = YES;
         self.singularTipBgView.alpha = 1;
         if (self.singularTipBgView.superview == nil) {
             [self.videoBgImageView addSubview:self.singularTipBgView];
@@ -1883,15 +2436,22 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [self.againBgView removeFromSuperview];
 }
 
+
+#pragma mark- 设备离线点击事件
 -(void)showNetModeSwitchView
 {
-    if (self.netModeSwitchBgView.superview == nil) {
-        self.netModeSwitchBgView.alpha = 0;
-        [self.view addSubview:self.netModeSwitchBgView];
-        [UIView animateWithDuration:0.5 animations:^{
-            self.netModeSwitchBgView.alpha = 1;
-        }];
-    }
+//    if (self.netModeSwitchBgView.superview == nil) {
+//        self.netModeSwitchBgView.alpha = 0;
+//        [self.view addSubview:self.netModeSwitchBgView];
+//        [UIView animateWithDuration:0.5 animations:^{
+//            self.netModeSwitchBgView.alpha = 1;
+//        }];
+//    }
+    JFGDevOfflineFor720VC *offVC = [[JFGDevOfflineFor720VC alloc]init];
+    offVC.cid = self.devModel.uuid;
+    BaseNavgationViewController * nav = [[BaseNavgationViewController alloc] initWithRootViewController:offVC];
+    nav.navigationBarHidden = YES;
+    [self presentViewController:nav animated:YES completion:nil];
 }
 
 -(void)netModeViewCloseAction
@@ -1906,6 +2466,9 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 #pragma mark- 状态显示
 -(void)showStatusTipForWiFiMode:(BOOL)wifiMode batteryCapacity:(int)battery
 {
+    if (isUpdateing) {
+        return;
+    }
     isWifi = wifiMode;
     batteryRl = battery;
     if (self.statusShowBgView.superview == nil) {
@@ -1915,7 +2478,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         [self.statusShowBgView addSubview:self.statusBatteryIcon];
         [self.statusShowBgView addSubview:self.statusBatteryLabel];
     }
-    
+    self.statusShowBgView.hidden = NO;
     if (wifiMode) {
         self.statusNetIcon.image = [UIImage imageNamed:@"camera720_icon_wifi"];
         self.statusNetLabel.text = [NSString stringWithFormat:@"WiFi%@",[JfgLanguage getLanTextStrByKey:@"DOOR_CONNECT"]];
@@ -1926,33 +2489,116 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     
     if (battery > 100) {
         self.statusBatteryIcon.image = [UIImage imageNamed:@"camera720_icon_electricity_charge"];
-        self.statusBatteryLabel.text = @"充电中";
+        self.statusBatteryLabel.text = [JfgLanguage getLanTextStrByKey:@"CHARGING_One"];
     }else{
         if (battery >= 80) {
             self.statusBatteryIcon.image = [UIImage imageNamed:@"camera720_icon_electricity_charge_full"];
+            NSString *lastDateKey = [NSString stringWithFormat:@"devBatteryKey_%@",self.devModel.uuid];
+            [[NSUserDefaults standardUserDefaults] removeObjectForKey:lastDateKey];
         }else if (battery > 20){
             self.statusBatteryIcon.image = [UIImage imageNamed:@"camera720_icon_electricity_charge_half"];
+            NSString *lastDateKey = [NSString stringWithFormat:@"devBatteryKey_%@",self.devModel.uuid];
+            [[NSUserDefaults standardUserDefaults] removeObjectForKey:lastDateKey];
         }else{
             self.statusBatteryIcon.image = [UIImage imageNamed:@"camera720_icon_electricity_low_power"];
-            
             //电量低于20%
-           
+            if ([self isShowLowBattaryTip] && !isPrower && isDidAppear) {
+                
+                //__weak typeof(self) weakSelf = self;
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"DOOR_LOW_BATTERY"]  CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                    
+                } OKBlock:^{
+                    
+                }];
+                
+                NSString *lastDateKey = [NSString stringWithFormat:@"devBatteryKey_%@",self.devModel.uuid];
+                [[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:lastDateKey];
+            }
             
         }
         self.statusBatteryLabel.text =[NSString stringWithFormat:@"%d%%",battery];
     }
-    
-    
+}
+
+-(void)showLongVideoTip
+{
+    if (isDidAppear && playState == videoPlayStatePlaying && recordState == VideoRecordStatueNone) {
+        
+        FLTipsBaseView *tipBaseView = [FLTipsBaseView tipBaseView];
+        
+        NSString *text = [JfgLanguage getLanTextStrByKey:@"Tips_ShortVideo"];
+        UILabel *tipLabel = [[UILabel alloc]initWithFrame:CGRectMake(5, 5 , 10, 14)];
+        tipLabel.text = text;
+        tipLabel.textAlignment = NSTextAlignmentCenter;
+        tipLabel.textColor = [UIColor whiteColor];
+        tipLabel.font = [UIFont systemFontOfSize:13];
+        [tipLabel sizeToFit];
+        
+        UIView *tipBgView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, tipLabel.width+10, tipLabel.height+10+6)];
+        tipBgView.backgroundColor = [UIColor clearColor];
+        tipBgView.bottom = self.view.height - 140;
+        tipBgView.x = self.view.x+23*0.5+self.videoModeBtn.width*0.5;
+        
+        [tipBaseView addTipView:tipBgView];
+        
+        UIImageView *tipbgImageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, 0, tipBgView.width, tipLabel.height+10)];
+        tipbgImageView.image = [UIImage imageNamed:@"tip_bg2"];
+        
+        UIImageView *roleImageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, tipbgImageView.bottom, 12, 6)];
+        roleImageView.transform = CGAffineTransformMakeRotation(180 * (M_PI / 180.0f));
+        roleImageView.image = [UIImage imageNamed:@"tip_bg"];
+        roleImageView.x = tipbgImageView.x;
+        [tipBgView addSubview:roleImageView];
+        
+        
+        [tipbgImageView addSubview:tipLabel];
+        [tipBgView addSubview:tipbgImageView];
+        
+        [tipBaseView show];
+        
+        [[NSUserDefaults standardUserDefaults] setObject:@"mark" forKey:FristIntoVideoPlayFor720VC];
+    }
+}
+
+-(void)showCantLoadImageTip
+{
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (!isAP && !devIpAddr) {
+        
+        NSString *uKey = [NSString stringWithFormat:@"%@_%@",SHOW_CANNOT_LOAD_IMAGE_TIP_KEY,self.devModel.uuid];
+        BOOL isCantShow = [[NSUserDefaults standardUserDefaults] boolForKey:uKey];
+        if (!isCantShow && isShowLanAleartForPhoto) {
+            
+            isShowLanAleartForPhoto = NO;
+            
+            //__weak typeof(self) weakSelf = self;
+            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Switch_Mode_Pop"]  CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"SURE"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Dont_Show_Again"] CancelBlock:^{
+                
+            } OKBlock:^{
+                
+                [[NSUserDefaults standardUserDefaults] setBool:YES forKey:uKey];
+            }];
+            
+        }
+        
+        if (![[NSUserDefaults standardUserDefaults] objectForKey:SHOW_CANNOT_LOAD_IMAGE_TIP_KEY]) {
+            [[NSUserDefaults standardUserDefaults] setObject:@"mark" forKey:SHOW_CANNOT_LOAD_IMAGE_TIP_KEY];
+            
+           
+        }
+        
+        
+    }
 }
 
 
-//上次弹窗时间是否是今天
--(BOOL)dayIsShowWindow
+//电量弹窗控制
+-(BOOL)isShowLowBattaryTip
 {
     NSString *lastDateKey = [NSString stringWithFormat:@"devBatteryKey_%@",self.devModel.uuid];
     NSDate *lastDate = [[NSUserDefaults standardUserDefaults] objectForKey:lastDateKey];
     if (!lastDate) {
-        return NO;
+        return YES;
     }
     
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc]init];
@@ -1962,15 +2608,14 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     NSString *currentTime = [dateFormatter stringFromDate:currentDate];
     NSString *lastTime = [dateFormatter stringFromDate:lastDate];
     if ([currentTime isEqualToString:lastTime]) {
-        return YES;
+        return NO;
     }
     
-    return NO;
+    return YES;
 }
 
 
 #pragma mark- getter
-
 -(UIButton *)settingBtn
 {
     if (!_settingBtn) {
@@ -1978,8 +2623,31 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         _settingBtn.frame = CGRectMake(self.view.width-44-5, 20, 44, 44);
         [_settingBtn setImage:[UIImage imageNamed:@"camera_ico_install"] forState:UIControlStateNormal];
         [_settingBtn addTarget:self action:@selector(settingAction) forControlEvents:UIControlEventTouchUpInside];
+        [_settingBtn addSubview:self.redDotImageView];
+        
+        __weak typeof(self) weakSelf = self;
+        [self.KVOController observe:self.settingBtn keyPath:@"enabled" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionInitial block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
+            
+            //根据设置按钮的状态设置消息按钮状态
+            UIButton *btn = object;
+            if ([btn isKindOfClass:[UIButton class]]) {
+                weakSelf.msgBtn.enabled = btn.enabled;
+            }
+            
+        }];
     }
     return _settingBtn;
+}
+
+- (UIImageView *)redDotImageView
+{
+    if (_redDotImageView == nil)
+    {
+        _redDotImageView = [[UIImageView alloc] initWithFrame:CGRectMake(20, 5, 20, 20)];
+        _redDotImageView.image = [UIImage imageNamed:@"bell_red_dot"];
+        _redDotImageView.hidden = NO;
+    }
+    return _redDotImageView;
 }
 
 -(UIView *)bottomBgView
@@ -2003,8 +2671,18 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         _albumsBtn.bottom = self.bottomBgView.height - 33;
         _albumsBtn.layer.masksToBounds = YES;
         _albumsBtn.layer.cornerRadius = 45*0.5;
-        [_albumsBtn setImage:[UIImage imageNamed:@"camera720_icon_album_normal"] forState:UIControlStateNormal];
-        [_albumsBtn setImage:[UIImage imageNamed:@"camera720_icon_album_disabled"] forState:UIControlStateDisabled];
+        _albumsBtn.layer.borderColor = [UIColor colorWithHexString:@"#ffffff"].CGColor;
+        
+        NSData *imgData = [[NSData alloc]initWithContentsOfFile:[self snapImgDataFilePath]];
+        if (imgData) {
+            UIImage *img = [UIImage imageWithData:imgData];
+            [_albumsBtn setImage:img forState:UIControlStateNormal];
+            _albumsBtn.layer.borderWidth = 1;
+        }else{
+            [_albumsBtn setImage:[UIImage imageNamed:@"camera720_icon_album_normal"] forState:UIControlStateNormal];
+            [_albumsBtn setImage:[UIImage imageNamed:@"camera720_icon_album_disabled"] forState:UIControlStateDisabled];
+            _albumsBtn.layer.borderWidth = 0;
+        }
         [_albumsBtn addTarget:self action:@selector(albumsAction:) forControlEvents:UIControlEventTouchUpInside];
     }
     return _albumsBtn;
@@ -2047,7 +2725,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         _cameraModeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
         _cameraModeBtn.size = CGSizeMake(25, 25);
         _cameraModeBtn.top = 9;
-        _cameraModeBtn.right = self.view.x - 23;
+        _cameraModeBtn.right = self.view.x - 23*0.5;
         [_cameraModeBtn setImage:[UIImage imageNamed:@"camera720_icon_camera_normal"] forState:UIControlStateNormal];
         [_cameraModeBtn setImage:[UIImage imageNamed:@"camera720_icon_camera_selected"] forState:UIControlStateSelected];
         [_cameraModeBtn setImage:[UIImage imageNamed:@"camera720_icon_camera_disabled"] forState:UIControlStateDisabled];
@@ -2055,6 +2733,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         _cameraModeBtn.selected = YES;
         //camera720_icon_camera_selected_disabled
     }
+    
     return _cameraModeBtn;
 }
 
@@ -2064,7 +2743,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         _videoModeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
         _videoModeBtn.size = CGSizeMake(25, 25);
         _videoModeBtn.top = 9;
-        _videoModeBtn.left = self.view.x + 23;
+        _videoModeBtn.left = self.view.x + 23*0.5;
         [_videoModeBtn setImage:[UIImage imageNamed:@"camera720_icon_video_small_normal"] forState:UIControlStateNormal];
         [_videoModeBtn setImage:[UIImage imageNamed:@"camera720_icon_video_selected"] forState:UIControlStateSelected];
         [_videoModeBtn setImage:[UIImage imageNamed:@"camera720_icon_video_small_disabled"] forState:UIControlStateDisabled];
@@ -2096,9 +2775,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     }
     return _loadingImageView;
 }
-
-
-
 
 
 -(UIView *)singularTipBgView
@@ -2191,7 +2867,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     if (!_statusBatteryIcon) {
         _statusBatteryIcon = [[UIImageView alloc]initWithFrame:CGRectMake(0, 6, 18, 18)];
-        _statusBatteryIcon.right = self.view.width - 15 - 48;
+        _statusBatteryIcon.right = self.view.width - 15;
         _statusBatteryIcon.image = [UIImage imageNamed:@"camera720_icon_electricity_charge_full"];
     }
     return _statusBatteryIcon;
@@ -2201,10 +2877,11 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     if (!_statusBatteryLabel) {
         _statusBatteryLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 7, 40, 18)];
-        _statusBatteryLabel.right = self.view.width - 15;
+        _statusBatteryLabel.right = self.view.width - 10 - 30;
         _statusBatteryLabel.font = [UIFont systemFontOfSize:12];
         _statusBatteryLabel.textColor = [UIColor colorWithHexString:@"#ffffff"];
         _statusBatteryLabel.text = @"100%";
+        _statusBatteryLabel.textAlignment = NSTextAlignmentRight;
         
     }
     return _statusBatteryLabel;
@@ -2231,80 +2908,74 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     if (!_speedModeBgView) {
         
+        CGFloat btnWidth = 50 + 41 + 12;
         CGFloat top = self.view.height - 64 - self.bottomBgView.height-15-44;
-        _speedModeBgView = [[UIView alloc]initWithFrame:CGRectMake(self.view.width-144-15, top, 144, 44)];
+        _speedModeBgView = [[UIView alloc]initWithFrame:CGRectMake(self.view.width-144-15, top, btnWidth, 44)];
         _speedModeBgView.backgroundColor = [[UIColor colorWithHexString:@"#000000"] colorWithAlphaComponent:0.4];
         _speedModeBgView.layer.masksToBounds = YES;
         _speedModeBgView.layer.cornerRadius = 22;
         _speedModeBgView.right = self.videoBgImageView.width-15;
         _speedModeBgView.top = self.view.height - 64 - self.bottomBgView.height;
         _speedModeBgView.alpha = 0;
+        _speedModeBgView.tag = 1;
+        
+        UIImageView *leftImageView = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"btn_leftkey_nomal"]];
+        leftImageView.left = 10;
+        leftImageView.top = 10;
+        [_speedModeBgView addSubview:leftImageView];
+        
+        UILabel *textlabel = [[UILabel alloc]initWithFrame:CGRectMake(32+5, 12, 60, 20)];
+        textlabel.font = [UIFont systemFontOfSize:15];
+        textlabel.textColor  = [UIColor colorWithHexString:@"#ffffff"];
+        textlabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_Video_HD"];
+        textlabel.tag = 1000002;
+        [textlabel sizeToFit];
+        [_speedModeBgView addSubview:textlabel];
+        
+        btnWidth = textlabel.width + 41 + 12;
+        _speedModeBgView.width = btnWidth;
+        _speedModeBgView.right = self.view.width - 15;
+        __weak typeof(self) weakSelf = self;
+        [self.KVOController observe:textlabel keyPath:@"text" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionInitial block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
+            
+            UILabel *lb = [weakSelf.speedModeBgView viewWithTag:1000002];
+            //根据文字适配
+            [lb sizeToFit];
+            CGFloat allWidth = lb.width + 41 + 12;;
+            weakSelf.speedModeBgView.width = allWidth;
+            weakSelf.speedModeBgView.right = self.view.width - 15;
+            
+        }];
+        
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(speedTapAction)];
+        [_speedModeBgView addGestureRecognizer:tap];
        
     }
     return _speedModeBgView;
 }
 
--(UIButton *)speedModeLeftBtn
+-(void)speedTapAction
 {
-    if (!_speedModeLeftBtn) {
-        _speedModeLeftBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-        _speedModeLeftBtn.frame = CGRectMake(8, 10, 24, 24);
-        [_speedModeLeftBtn setImage:[UIImage imageNamed:@"btn_leftkey_nomal"] forState:UIControlStateNormal];
-        [_speedModeLeftBtn setImage:[UIImage imageNamed:@"btn_leftkey_disabled"] forState:UIControlStateDisabled];
-        _speedModeLeftBtn.enabled = NO;
-        [_speedModeLeftBtn addTarget:self action:@selector(speedModeAction:) forControlEvents:UIControlEventTouchUpInside];
+    if (self.speedModeBgView.tag == 1) {
+        [self videoResolvingPowerForIsHight:NO];
+    }else{
+        [self videoResolvingPowerForIsHight:YES];
     }
-    return _speedModeLeftBtn;
-}
-
--(UIButton *)speedModeRightBtn
-{
-    if (!_speedModeRightBtn) {
-        _speedModeRightBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-        _speedModeRightBtn.frame = CGRectMake(self.speedModeLabel.right+8, 10, 24, 24);
-        [_speedModeRightBtn setImage:[UIImage imageNamed:@"btn_rightkey_nomal"] forState:UIControlStateNormal];
-        [_speedModeRightBtn setImage:[UIImage imageNamed:@"btn_rightkey_disabled"] forState:UIControlStateDisabled];
-        _speedModeRightBtn.enabled = YES;
-        [_speedModeRightBtn addTarget:self action:@selector(speedModeAction:) forControlEvents:UIControlEventTouchUpInside];
-    }
-    return _speedModeRightBtn;
-}
-
--(UILabel *)speedModeLabel
-{
-    if (!_speedModeLabel) {
-        _speedModeLabel = [[UILabel alloc]initWithFrame:CGRectMake(16+24, 13, 144-16-24, 16)];
-        _speedModeLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_Video_HD"];
-        _speedModeLabel.font = [UIFont systemFontOfSize:15];
-        _speedModeLabel.textColor = [UIColor colorWithHexString:@"#ffffff"];
-        [self.KVOController observe:_speedModeLabel keyPath:@"text" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionInitial block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
-            
-            //根据文字适配
-            [_speedModeLabel sizeToFit];
-            CGSize size = _speedModeLabel.size;
-            CGFloat allWidth = size.width + (16+_speedModeLeftBtn.width)*2;
-            _speedModeBgView.width = allWidth;
-            _speedModeLabel.x = allWidth*0.5;
-            _speedModeLeftBtn.left = 8;
-            _speedModeRightBtn.left = _speedModeLabel.right+8;
-            _speedModeBgView.right = self.videoBgImageView.width-15;
-            
-        }];
-    }
-    return _speedModeLabel;
 }
 
 -(UIButton *)voiceBtn
 {
     if (!_voiceBtn) {
         _voiceBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-        _voiceBtn.frame = CGRectMake(0, 0, 44, 44);
-        _voiceBtn.bottom = self.speedModeBgView.top-15;
-        _voiceBtn.right = self.videoBgImageView.width-15;
-        [_voiceBtn setImage:[UIImage imageNamed:@"camera720_icon_no_voice_nomal"] forState:UIControlStateNormal];
-        [_voiceBtn setImage:[UIImage imageNamed:@"camera720_icon_no_voice_pressed"] forState:UIControlStateHighlighted];
-        _voiceBtn.top = self.view.height - 64 - self.bottomBgView.height;
-        _voiceBtn.alpha = 0;
+        _voiceBtn.frame = CGRectMake(0, 0, 0, 0);
+//        _voiceBtn.frame = CGRectMake(0, 0, 44, 44);
+//        _voiceBtn.bottom = self.speedModeBgView.top-15;
+//        _voiceBtn.right = self.videoBgImageView.width-15;
+//        [_voiceBtn setImage:[UIImage imageNamed:@"camera720_icon_no_voice_nomal"] forState:UIControlStateNormal];
+//        [_voiceBtn setImage:[UIImage imageNamed:@"camera720_icon_no_voice_pressed"] forState:UIControlStateHighlighted];
+//        _voiceBtn.top = self.view.height - 64 - self.bottomBgView.height;
+//        _voiceBtn.alpha = 0;
+//        [_voiceBtn addTarget:self action:@selector(voiceAction:) forControlEvents:UIControlEventTouchUpInside];
         //camera720_icon_voice_nomal
         //camera720_icon_voice_pressed
     }
@@ -2315,19 +2986,63 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     if (!_micBtn) {
         _micBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-        _micBtn.frame = CGRectMake(0, 0, 44, 44);
-        _micBtn.bottom = self.voiceBtn.top-15;
-        _micBtn.right = self.videoBgImageView.width-15;
-        _micBtn.top = self.view.height - 64 - self.bottomBgView.height;
-        [_micBtn setImage:[UIImage imageNamed:@"camera720_icon_notalk_nomal"] forState:UIControlStateNormal];
-        [_micBtn setImage:[UIImage imageNamed:@"camera720_icon_notalk_pressed"] forState:UIControlStateHighlighted];
-        _micBtn.alpha = 0;
+        _micBtn.frame = CGRectMake(0, 0, 0, 0);
+        
+        //音频功能恢复后，放开一下代码
+//        _micBtn.frame = CGRectMake(0, 0, 44, 44);
+//        _micBtn.bottom = self.voiceBtn.top-15;
+//        _micBtn.right = self.videoBgImageView.width-15;
+//        _micBtn.top = self.view.height - 64 - self.bottomBgView.height;
+//        [_micBtn setImage:[UIImage imageNamed:@"camera720_icon_notalk_nomal"] forState:UIControlStateNormal];
+//        [_micBtn setImage:[UIImage imageNamed:@"camera720_icon_notalk_pressed"] forState:UIControlStateHighlighted];
+//        _micBtn.alpha = 0;
+//        [_micBtn addTarget:self action:@selector(micAction:) forControlEvents:UIControlEventTouchUpInside];
         //camera720_icon_talk_nomal
         //camera720_icon_talk_pressed
     }
     return _micBtn;
 }
 
+-(void)micAction:(UIButton *)sender
+{
+    
+//    if (sender.selected) {
+//        
+//        //关闭麦克
+//        sender.selected = NO;
+//        [CylanJFGSDK setAudio:YES openMic:NO openSpeaker:isAudio];
+//        [CylanJFGSDK setAudio:NO openMic:YES openSpeaker:NO];
+//        isTalkBack = NO;
+//        
+//    }else{
+//        
+//        if ([JFGEquipmentAuthority canRecordPermission]) {
+//            sender.selected = YES;
+//            [CylanJFGSDK setAudio:YES openMic:YES openSpeaker:YES];
+//            [CylanJFGSDK setAudio:NO openMic:YES openSpeaker:YES];
+//            isTalkBack = YES;
+//        }
+//    }
+}
+
+-(void)voiceAction:(UIButton *)sender
+{
+//    if (sender.selected) {
+//        //打开
+//        if ([JFGEquipmentAuthority canRecordPermission]) {
+//            [CylanJFGSDK setAudio:NO openMic:YES openSpeaker:YES];
+//            [CylanJFGSDK setAudio:YES openMic:isTalkBack openSpeaker:YES];
+//            sender.selected = !sender.selected;
+//            isAudio = YES;
+//        }
+//        
+//    }else{
+//        [CylanJFGSDK setAudio:NO openMic:YES openSpeaker:NO];
+//        [CylanJFGSDK setAudio:YES openMic:isTalkBack openSpeaker:YES];
+//        sender.selected = !sender.selected;
+//        isAudio = NO;
+//    }
+}
 
 -(void)hideMoreBtn
 {
@@ -2367,6 +3082,15 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     } completion:^(BOOL finished) {
         
     }];
+}
+
+-(void)msgAction
+{
+    MsgFor720ViewController *msg = [MsgFor720ViewController new];
+    msg.cid = self.devModel.uuid;
+    msg.devModel = self.devModel;
+    [self.navigationController pushViewController:msg animated:YES];
+    self.warnRedPoint.hidden = YES;
 }
 
 -(JFGTimepieceView *)timepiceView
@@ -2416,7 +3140,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     if (!_againBgView) {
         _againBgView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 250*0.5, 250*0.5)];
-        _againBgView.center = CGPointMake(self.videoBgImageView.width*0.5, self.videoBgImageView.height*0.5);
+        _againBgView.center = CGPointMake(self.videoBgImageView.width*0.5, self.videoBgImageView.height*0.5+40);
         _againBgView.backgroundColor = [UIColor clearColor];
         _againBgView.hidden = YES;
         
@@ -2459,6 +3183,8 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         [closeBtn addTarget:self action:@selector(netModeViewCloseAction) forControlEvents:UIControlEventTouchUpInside];
         [_netModeSwitchBgView addSubview:closeBtn];
         
+        
+        
         for (int i=0; i<2; i++) {
             
             CGFloat startTop = 0;
@@ -2472,18 +3198,28 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             titleLable.font = [UIFont systemFontOfSize:16];
             titleLable.textAlignment = NSTextAlignmentCenter;
             
-            UILabel *detailLable = [[UILabel alloc]initWithFrame:CGRectMake(0, titleLable.bottom+100, bgImageView.width, 15)];
+            UILabel *detailLable = [[UILabel alloc]initWithFrame:CGRectMake(29, titleLable.bottom+100-10, bgImageView.width-58, 35)];
             detailLable.font = [UIFont systemFontOfSize:14];
+            detailLable.numberOfLines = 2;
             detailLable.textColor = [UIColor colorWithHexString:@"#666666"];
             detailLable.textAlignment = NSTextAlignmentCenter;
             
-            
             if (i == 0) {
                 titleLable.text = [JfgLanguage getLanTextStrByKey:@"Tap1_HomeMode"];
-                detailLable.text = [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_TCPconnected"];
+                
+                NSMutableAttributedString *str = [[NSMutableAttributedString alloc] initWithString:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_TCPconnected"]];
+                NSRange strRange = {0,[str length]};
+                [str addAttribute:NSUnderlineStyleAttributeName value:[NSNumber numberWithInteger:NSUnderlineStyleSingle] range:strRange];
+                detailLable.attributedText = str;
+                
+                
             }else{
                 titleLable.text = [JfgLanguage getLanTextStrByKey:@"Tap1_OutdoorMode"];
-                detailLable.text = [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_UDPconnected"];
+                NSMutableAttributedString *str = [[NSMutableAttributedString alloc] initWithString:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_UDPconnected"]];
+                NSRange strRange = {0,[str length]};
+                [str addAttribute:NSUnderlineStyleAttributeName value:[NSNumber numberWithInteger:NSUnderlineStyleSingle] range:strRange];
+                detailLable.attributedText = str;
+                detailLable.top = titleLable.bottom+95-10;
             }
             
             [bgImageView addSubview:titleLable];
@@ -2494,11 +3230,34 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     return _netModeSwitchBgView;
 }
 
+-(UILabel *)offlineLabel
+{
+    if (!_offlineLabel) {
+        _offlineLabel = [[UILabel alloc]initWithFrame:CGRectMake(15, 12, self.view.width*0.5, 20)];
+        _offlineLabel.textColor = [UIColor colorWithHexString:@"#ffffff"];
+        _offlineLabel.font = [UIFont systemFontOfSize:12];
+        _offlineLabel.text = [JfgLanguage getLanTextStrByKey:@"NOT_ONLINE"];
+        _offlineLabel.textAlignment = NSTextAlignmentLeft;
+        _offlineLabel.hidden = YES;
+    }
+    return _offlineLabel;
+}
+
 
 -(NSString *)startRecIsLongVideo:(BOOL)isLong
 {
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        devIpAddr = @"192.168.10.2";
+    }
     if (devIpAddr) {
-        return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=startRec&videoType=%d",devIpAddr,isLong?2:1];
+        int islon = 1;
+        if (isLong) {
+            islon = 2;
+        }else{
+            islon = 1;
+        }
+        return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=startRec&videoType=%d",devIpAddr,islon];
     }
     return @"";
     
@@ -2506,6 +3265,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(NSString *)videoRPIsHight:(BOOL)isHight
 {
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        devIpAddr = @"192.168.10.2";
+    }
     if (devIpAddr) {
         return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=setResolution&videoStandard=%d",devIpAddr,isHight?1:0];
     }
@@ -2514,6 +3277,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(NSString *)stopRecIsLongVideo:(BOOL)isLong
 {
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        devIpAddr = @"192.168.10.2";
+    }
     if (devIpAddr) {
         return [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=stopRec&videoType=%d",devIpAddr,isLong?2:1];
     }
@@ -2522,10 +3289,56 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(NSString *)downloadForFileName:(NSString *)fileName
 {
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        devIpAddr = @"192.168.10.2";
+    }
     if (devIpAddr) {
         return [NSString stringWithFormat:@"http://%@/images/%@",devIpAddr,fileName];
     }
     return @"";
+}
+
+-(UIButton *)msgBtn
+{
+    if (!_msgBtn) {
+        _msgBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _msgBtn.frame = CGRectMake(0, 0, 30, 30);
+        _msgBtn.right = self.view.width - 58;
+        _msgBtn.top = 26;
+        [_msgBtn setImage:[UIImage imageNamed:@"icon_imaggega"] forState:UIControlStateNormal];
+        [_msgBtn addTarget:self action:@selector(msgAction) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _msgBtn;
+}
+
+-(UIView *)cameraRedPoint
+{
+    if (!_cameraRedPoint) {
+        _cameraRedPoint = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 8, 8)];
+        _cameraRedPoint.backgroundColor = [UIColor redColor];
+        _cameraRedPoint.layer.masksToBounds = YES;
+        _cameraRedPoint.layer.cornerRadius = 4;
+        _cameraRedPoint.hidden = YES;
+        _cameraRedPoint.left = self.albumsBtn.left + 34;
+        _cameraRedPoint.bottom = self.albumsBtn.bottom -34;
+    }
+    return _cameraRedPoint;
+}
+
+-(UIView *)warnRedPoint
+{
+    if (!_warnRedPoint) {
+        _warnRedPoint = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 8, 8)];
+        _warnRedPoint.backgroundColor = [UIColor redColor];
+        _warnRedPoint.layer.masksToBounds = YES;
+        _warnRedPoint.layer.cornerRadius = 4;
+        _warnRedPoint.hidden = YES;
+        _warnRedPoint.left = self.msgBtn.left + 20;
+        _warnRedPoint.bottom = self.msgBtn.bottom - 18;
+    }
+    return _warnRedPoint;
+
 }
 
 - (void)didReceiveMemoryWarning {
@@ -2535,8 +3348,8 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(void)dealloc
 {
-    [JFGSDK removeDelegate:self];
-    NSLog(@"video720VC dealloc");
+    [JFGSDK appendStringToLogFile:@"video720VC dealloc"];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 /*

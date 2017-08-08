@@ -93,39 +93,43 @@
     ShareManagerCell * cell = [tableView dequeueReusableCellWithIdentifier:@"sCell" forIndexPath:indexPath];
     cell.selectedBackgroundView = [[UIView alloc] initWithFrame:cell.frame];
     cell.selectedBackgroundView.backgroundColor = CellSelectedColor;
-    JFGSDKFriendInfo * fInfo = [self.modelArray objectAtIndex:indexPath.row];
     
-    [CommonMethod setHeadImageForImageView:cell.headerImageView account:fInfo.account];
-    
-    if (fInfo.remarkName && ![fInfo.remarkName isEqualToString:@""]) {
-        cell.nameLabel.text = fInfo.remarkName;
-    }else{
-        cell.nameLabel.text = fInfo.alias;
-    }
-    
-    cell.phoneNumLabel.text = fInfo.account;
-    [cell.cancelShareBtn addTarget:self action:@selector(buttonBackGroundHighlighted:) forControlEvents:UIControlEventTouchDown];
-    [UIButton button:cell.cancelShareBtn touchUpInSideHander:^(UIButton *button) {
-    
-        if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
-            
-            [CommonMethod showNetDisconnectAlert];
-            return ;
+    if (self.modelArray.count>indexPath.row) {
+        JFGSDKFriendInfo * fInfo = [self.modelArray objectAtIndex:indexPath.row];
+        
+        [CommonMethod setHeadImageForImageView:cell.headerImageView account:fInfo.account];
+        
+        if (fInfo.remarkName && ![fInfo.remarkName isEqualToString:@""]) {
+            cell.nameLabel.text = fInfo.remarkName;
+        }else{
+            cell.nameLabel.text = fInfo.alias;
         }
         
-        [cell.cancelShareBtn setBackgroundColor:[UIColor clearColor]];
-    
-        [DJActionSheet showDJActionSheetWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_CancleShare"] buttonTitleArray:@[[JfgLanguage getLanTextStrByKey:@"DELETE"],[JfgLanguage getLanTextStrByKey:@"CANCEL"]] actionType:actionTypeDelete defaultIndex:0 didSelectedBlock:^(NSInteger index) {
+        cell.phoneNumLabel.text = fInfo.account;
+        [cell.cancelShareBtn addTarget:self action:@selector(buttonBackGroundHighlighted:) forControlEvents:UIControlEventTouchDown];
+        [UIButton button:cell.cancelShareBtn touchUpInSideHander:^(UIButton *button) {
             
-            if (index == 0) {
-                [JFGSDK unShareDevice:self.cid forFriend:fInfo.account];
+            if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+                
+                [CommonMethod showNetDisconnectAlert];
+                return ;
             }
             
+            [cell.cancelShareBtn setBackgroundColor:[UIColor clearColor]];
             
-        } didDismissBlock:^{
-            
+            [DJActionSheet showDJActionSheetWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_CancleShare"] buttonTitleArray:@[[JfgLanguage getLanTextStrByKey:@"DELETE"],[JfgLanguage getLanTextStrByKey:@"CANCEL"]] actionType:actionTypeDelete defaultIndex:0 didSelectedBlock:^(NSInteger index) {
+                
+                if (index == 0) {
+                    [JFGSDK unShareDevice:self.cid forFriend:fInfo.account];
+                }
+                
+                
+            } didDismissBlock:^{
+                
+            }];
         }];
-    }];
+    }
+    
     return cell;
 }
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath

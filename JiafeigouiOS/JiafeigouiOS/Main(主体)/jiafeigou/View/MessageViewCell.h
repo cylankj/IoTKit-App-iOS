@@ -22,6 +22,7 @@
 //label
 @property (strong,nonatomic) UILabel *label;
 
+
 //删除按钮
 @property (strong,nonatomic) DelButton *deleteBtn;
 

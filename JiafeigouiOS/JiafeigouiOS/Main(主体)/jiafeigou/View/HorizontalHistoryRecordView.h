@@ -30,6 +30,10 @@ static CGFloat markImageWidth = 3360/2;
 
 @property (nonatomic,assign)BOOL isSelectedHistory;
 
+@property (nonatomic,assign)BOOL isLoadHistoryData;
+
+@property (nonatomic,assign)BOOL isLoadingData;
+
 //滚动条指示所在历史视频
 @property (nonatomic,strong)historyVideoDurationTimeModel *currentHistoryVideoModel;
 
@@ -59,8 +63,11 @@ static CGFloat markImageWidth = 3360/2;
 
 @protocol HorizontalHistoryRecordViewDelegate <NSObject>
 
-//当前滚动条标记的历史视频
+//当前滚动条标记的历史视频(滚动停止)
 -(void)currentHistoryVideoModel:(historyVideoDurationTimeModel *)model;
+
+//滚动中
+-(void)scrollerDidScrollForHistoryVideoDate:(NSDate *)date;
 
 //所有历史视频范围（天数）
 -(void)historyVideoDateLimits:(NSArray <HistoryVideoDayModel *> *)limits;
@@ -70,6 +77,8 @@ static CGFloat markImageWidth = 3360/2;
 
 //视频直播，历史切换按钮回调
 -(void)transionHistoryVideo:(BOOL)isHistory;
+
+
 
 -(void)historyBarStartScroll;
 

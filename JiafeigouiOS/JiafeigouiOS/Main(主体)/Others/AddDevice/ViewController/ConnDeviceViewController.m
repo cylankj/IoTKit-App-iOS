@@ -20,6 +20,7 @@
 #import "BindDevProgressViewController.h"
 #import "PilotLampStateVC.h"
 #import "OemManager.h"
+#import "jfgConfigManager.h"
 
 #define SCREEN_SIZE   [[UIScreen mainScreen] bounds].size
 #define DEVICE_IPHONE4S CGSizeEqualToSize(CGSizeMake(320, 480), SCREEN_SIZE)
@@ -63,7 +64,7 @@
         [self.view addSubview:self.declareBtn];
     }
     
-    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(becomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(becomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -97,7 +98,10 @@
 - (void)becomeActive:(NSNotificationCenter *)notifi
 {
     [JFGSDK ping:@"192.168.10.255"];
-    if ([CommonMethod isConnecttedDeviceWifiWithPid:self.pType]) {
+    
+    BOOL isAPModel = [jfgConfigManager isAPModel];
+    
+    if (isAPModel) {
 //        ConfigWiFiViewController *configWifi = [ConfigWiFiViewController new];
 //        configWifi.cid = self.cidStr;
 //        configWifi.configType = self.configType;
@@ -191,8 +195,7 @@
 
 -(void)gotoSettingButtonAction
 {
-    isConnectAp = [CommonMethod isConnecttedDeviceWifiWithPid:self.pType];
-    
+    isConnectAp = [jfgConfigManager isAPModel];
     if (isConnectAp == NO)
     {
         if (IOS_SYSTEM_VERSION_EQUAL_OR_ABOVE(10.0)) {
@@ -239,8 +242,10 @@
         
         if (self.pType == productType_IPCam) {
             _label1.text = [JfgLanguage getLanTextStrByKey:@"WIFI_SET_RS"];
+        }else if([jfgConfigManager devIsCatEyeForPid:[NSString stringWithFormat:@"%ld",(long)self.pType]]){
+           _label1.text =[NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"WIFI_SET_VER"],@"BELL-******" ];
         }else{
-           _label1.text = [JfgLanguage getLanTextStrByKey:@"WIFI_SET_3"];
+            _label1.text = [JfgLanguage getLanTextStrByKey:@"WIFI_SET_3"];
         }
         CGSize size = [_label1 sizeThatFits:CGSizeMake(_label1.width, MAXFLOAT)];
         _label1.frame = CGRectMake(self.circle1.right+9, kTop-3, Width-self.circle1.width, size.height);
@@ -261,18 +266,39 @@
 }
 -(OLImageView *)olImageView{
     if (!_olImageView) {
-        _olImageView = [[OLImageView alloc]initWithFrame:CGRectMake(kLeft, self.label2.bottom+30*kScreen_Scale, 230*kScreen_Scale, 350*kScreen_Scale)];
-        if (self.pType == productType_IPCam) {
-            //ruishi
-            [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"ruishi"]]];
-        }else{
-            
-            if ([OemManager oemType] == oemTypeDoby) {
-                [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"doby"]]];
-            }else{
-                [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"connDevice"]]];
+        _olImageView = [[OLImageView alloc]initWithFrame:CGRectMake(kLeft, self.label2.bottom+30*kScreen_Scale, 750*0.5*kScreen_Scale, 704*0.5*kScreen_Scale)];
+        if ([OemManager oemType] == oemTypeDoby) {
+            NSString *name = [JfgLanguage getLanPicNameWithPicName:@"doby"];
+            BOOL isBell = NO;
+            BOOL isFinished = NO;
+            NSArray *dataArr = [jfgConfigManager getAllDevModel];
+            for (NSArray *subArr in dataArr) {
+                for (AddDevConfigModel *model in subArr) {
+                    for (NSNumber *os in model.osList) {
+                        if ([os integerValue] == self.pType) {
+                            if ([model.typeMark intValue] == 6) {
+                                isBell = YES;
+                            }
+                            isFinished = YES;
+                            break;
+                        }
+                    }
+                    if (isFinished) {
+                        break;
+                    }
+                }
+                if (isFinished) {
+                    break;
+                }
             }
             
+            if (isBell) {
+                name =[JfgLanguage getLanPicNameWithPicName:@"bell_doby"];
+            }
+            [_olImageView setImage:[OLImage imageNamed:name]];
+            
+        }else{
+            [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"connDevice"]]];
         }
         _olImageView.x = self.view.x;
     }
@@ -319,7 +345,7 @@
 -(void)intoVC
 {
     PilotLampStateVC *lampVC = [PilotLampStateVC new];
-    [self.navigationController pushViewController:lampVC animated:YES];
+    [self presentViewController:lampVC animated:YES completion:nil];
 }
 
 @end

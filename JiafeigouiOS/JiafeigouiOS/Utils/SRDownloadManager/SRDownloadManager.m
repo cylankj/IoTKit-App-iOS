@@ -6,6 +6,7 @@
 //
 
 #import "SRDownloadManager.h"
+#import <JFGSDK/JFGSDK.h>
 
 #define SRDownloadDirectory self.downloadedFilesDirectory ?: [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject] \
                                                                stringByAppendingPathComponent:NSStringFromClass([self class])]
@@ -279,6 +280,11 @@
 
 - (NSInteger)totalLength:(NSURL *)URL {
     
+    if (SRFilesTotalLengthPlistPath == nil || [SRDownloadDirectory isEqualToString:@""])
+    {
+        return 0;
+    }
+    
     NSDictionary *filesTotalLenth = [NSDictionary dictionaryWithContentsOfFile:SRFilesTotalLengthPlistPath];
     if (!filesTotalLenth) {
         return 0;
@@ -299,7 +305,9 @@
 
 - (BOOL)isDownloadFileCompleted:(NSURL *)URL {
     
-    if ([self totalLength:URL] != 0) {
+    if ([self totalLength:URL] != 0)
+    {
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"totalLength:[%ld]  hasDownloadLength:[%ld]",[self totalLength:URL], [self hasDownloadedLength:URL]]];
         if ([self totalLength:URL] == [self hasDownloadedLength:URL]) {
             return YES;
         }
@@ -357,8 +365,8 @@
     [filesTotalLenthDic writeToFile:SRFilesTotalLengthPlistPath atomically:YES];
 }
 
-- (void)deleteAllFiles {
-    
+- (void)deleteAllFiles
+{
     [self cancelAllDownloads];
     
     NSFileManager *fileManager = [NSFileManager defaultManager];

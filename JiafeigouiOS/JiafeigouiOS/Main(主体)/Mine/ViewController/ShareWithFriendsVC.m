@@ -13,7 +13,9 @@
 #import "ProgressHUD.h"
 #import "UIImageView+WebCache.h"
 #import "LSAlertView.h"
+#import "LoginManager.h"
 #import "CommonMethod.h"
+#import "AddFriendsVC.h"
 
 @interface ShareWithFriendsVC ()<UITableViewDelegate,UITableViewDataSource,JFGSDKCallbackDelegate>
 {
@@ -38,7 +40,6 @@
     self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_Friends"];
     self.modelArray = [NSMutableArray new];
     self.selectedArray = [NSMutableArray new];
-    self.titleLabel.text = @"分享给亲友";
     [self.leftButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     [self.rightButton addTarget:self action:@selector(rightButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     self.rightButton.hidden = NO;
@@ -171,6 +172,7 @@
 //    }
     
 }
+
 #pragma mark - UITableView
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
@@ -183,30 +185,28 @@
     }
     return self.modelArray.count;
 }
+
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     FriendsCell * cell = [tableView dequeueReusableCellWithIdentifier:@"fCell" forIndexPath:indexPath];
     cell.selectedBackgroundView = [[UIView alloc] initWithFrame:cell.frame];
     cell.selectedBackgroundView.backgroundColor = CellSelectedColor;
     friendInfo * reqInfo = [self.modelArray objectAtIndex:indexPath.row];
-    
     if (reqInfo.info.remarkName && ![reqInfo.info.remarkName isEqualToString:@""]) {
         cell.nameLabel.text = reqInfo.info.remarkName;
     }else{
         cell.nameLabel.text = reqInfo.info.alias;
     }
-    
     cell.phoneNumLabel.text = reqInfo.info.account;
-    
     if (reqInfo.isSelected) {
         cell.selectButton.image = [UIImage imageNamed:@"camera_icon_Selected"];
     }else{
         cell.selectButton.image = [UIImage imageNamed:@"camera_icon_Select"];
     }
-    
     [CommonMethod setHeadImageForImageView:cell.headerImageView account:reqInfo.info.account];
     return cell;
 }
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
@@ -233,13 +233,14 @@
         [self.selectedArray removeObject:info];
     }
     
-
     //更新右上角的按钮
     [self setRightButtonTitle];
 }
+
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
     return 70.f;
 }
+
 -(void)setRightButtonTitle{
     if (self.selectedArray.count == 0) {
         self.rightButton.enabled = NO;
@@ -250,8 +251,8 @@
     }
 
     [self setRightButtonImage:nil title:[NSString stringWithFormat:@"%@(%ld/5)",[JfgLanguage getLanTextStrByKey:@"FINISHED"],(long)(self.selectedArray.count+alwarysNum)] font:[UIFont systemFontOfSize:15]];
-
 }
+
 -(UITableView *)friendsTableView{
     if (!_friendsTableView) {
         _friendsTableView = [[UITableView alloc]initWithFrame:CGRectMake(0, 64, self.view.width, self.view.height-64) style:UITableViewStylePlain];
@@ -269,7 +270,8 @@
     return _friendsTableView;
 }
 
--(UIView *)noDataView{
+-(UIView *)noDataView
+{
     if (!_noDataView) {
         _noDataView = [[UIView alloc]initWithFrame:CGRectMake(0, 64, self.view.width, self.view.height-64)];
         UIImageView * iconImageView = [[UIImageView alloc]initWithFrame:CGRectMake((self.view.width-157)/2.0, 0.20*kheight, 140.0, 140.0)];
@@ -280,12 +282,37 @@
         UILabel * noShareLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, iconImageView.bottom+20, Kwidth, 15)];
         noShareLabel.font = [UIFont systemFontOfSize:15];
         noShareLabel.textColor = [UIColor colorWithHexString:@"#aaaaaa"];
-        noShareLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_NoneFriends"];
+        noShareLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_NoneShareFriends"];
         noShareLabel.textAlignment = NSTextAlignmentCenter;
         noShareLabel.x = self.view.width*0.5;
         [_noDataView addSubview:noShareLabel];
+        
+        UIButton *addFriend = [UIButton buttonWithType:UIButtonTypeCustom];
+        addFriend.frame = CGRectMake(0, 0, 280, 44);
+        addFriend.x = _noDataView.width*0.5;
+        addFriend.bottom = _noDataView.height - 30;
+        addFriend.layer.masksToBounds = YES;
+        addFriend.layer.cornerRadius = 22;
+        addFriend.backgroundColor = [UIColor colorWithHexString:@"#36bdff"];
+        [addFriend setTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_FriendsAdd"] forState:UIControlStateNormal];
+        [addFriend setTitleColor:[UIColor colorWithHexString:@"#ffffff"] forState:UIControlStateNormal];
+        addFriend.titleLabel.font = [UIFont systemFontOfSize:18];
+        [addFriend addTarget:self action:@selector(addFriendAction) forControlEvents:UIControlEventTouchUpInside];
+        [_noDataView addSubview:addFriend];
+        
     }
     return _noDataView;
+}
+
+-(void)addFriendAction
+{
+    if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+        
+        [CommonMethod showNetDisconnectAlert];
+        return;
+    }
+    AddFriendsVC *addFriends = [[AddFriendsVC alloc] init];
+    [self.navigationController pushViewController:addFriends animated:YES];
 }
 
 -(void)leftButtonAction:(UIButton *)btn
@@ -295,6 +322,11 @@
 
 -(void)rightButtonAction:(UIButton *)btn
 {
+    
+    if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+        return;
+    }
+    
     NSMutableArray *accList = [NSMutableArray new];
     
     for (int i=0; i<self.selectedArray.count; i++) {

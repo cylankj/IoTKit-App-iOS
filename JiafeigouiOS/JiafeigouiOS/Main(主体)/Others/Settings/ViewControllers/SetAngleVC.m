@@ -55,12 +55,9 @@
 {
     [super leftButtonAction:sender];
     
-    if (self.oldAngleType != self.angleType)
+    if ([self.angleDelegate respondsToSelector:@selector(angleChanged:)])
     {
-        if ([self.angleDelegate respondsToSelector:@selector(angleChanged:)])
-        {
-            [self.angleDelegate angleChanged:self.angleType];
-        }
+        [self.angleDelegate angleChanged:self.angleType];
     }
     
 }

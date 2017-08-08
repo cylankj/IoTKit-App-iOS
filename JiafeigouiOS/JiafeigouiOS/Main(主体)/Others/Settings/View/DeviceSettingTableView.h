@@ -41,4 +41,6 @@
 
 @property (assign, nonatomic) BOOL isShare;
 
+@property (nonatomic,copy)NSString *pid;
+
 @end

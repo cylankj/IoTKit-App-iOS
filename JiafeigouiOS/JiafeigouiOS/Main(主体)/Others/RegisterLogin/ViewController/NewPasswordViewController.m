@@ -18,12 +18,17 @@
 #import "AppDelegate.h"
 #import "ProgressHUD.h"
 #import "UIButton+Addition.h"
+#import "JfgConstKey.h"
 #import "UserAccountMsg.h"
 #import "NSString+FLExtension.h"
 #import "ForgetEmailPasswordViewController.h"
+#import "JfgTypeDefine.h"
+#import "LSAlertView.h"
 
 @interface NewPasswordViewController ()<UITextFieldDelegate, JFGSDKCallbackDelegate,UIAlertViewDelegate,LoginManagerDelegate>
-
+{
+    BOOL isPushed;
+}
 @property (nonatomic,strong)UIButton *exitBtn;
 @property (nonatomic,strong)UILabel *titleLabel;
 
@@ -36,6 +41,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
     self.view.backgroundColor = [UIColor whiteColor];
     [self.view addSubview:self.exitBtn];
     [self.view addSubview:self.titleLabel];
@@ -43,19 +49,21 @@
     [self.view addSubview:self.querenBtn];
     [JFGSDK addDelegate:self];
     
-    // Do any additional setup after loading the view.
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(viewDidDisappear:) name:@"loginVCDealloc" object:nil];
 }
 
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
     [[LoginManager sharedManager] addDelegate:self];
+    isPushed = NO;
 }
 
 -(void)viewDidDisappear:(BOOL)animated
 {
     [super viewDidDisappear:animated];
     [[LoginManager sharedManager] removeDelegate:self];
+    [JFGSDK removeDelegate:self];
     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent animated:YES];
 }
 
@@ -64,8 +72,6 @@
     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault animated:YES];
     [super viewWillAppear:animated];
 }
-
-
 
 -(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
@@ -88,7 +94,7 @@
 -(BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
     NSString * toBeString = [textField.text stringByReplacingCharactersInRange:range withString:string];
-    if (toBeString.length > 12) {
+    if (toBeString.length > pwMaxLength) {
         return NO;
     }
     
@@ -107,16 +113,19 @@
 
 -(void)exitAction
 {
-    UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap3_logout_tips"] delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_No"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Button_Yes"], nil];
-    alert.tag = 12345;
-    [alert show];
+    __weak typeof(self) weakSelf = self;
+    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap3_logout_tips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_No"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Yes"] CancelBlock:^{
+        
+    } OKBlock:^{
+        [weakSelf.navigationController popViewControllerAnimated:YES];
+    }];
+    
 }
 
 
 
 -(void)makeAction
 {
-    
     if (self.pwTextFiled.text.length<6) {
         
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"PASSWORD_LESSTHAN_SIX"]];
@@ -157,9 +166,9 @@
     if (self.navigationController.visibleViewController == self)
     {
         
-        if (errorType == JFGErrorTypeNone) {
+        if (errorType == JFGErrorTypeNone && !isPushed) {
             
-            if ([self.accountStr isEmail]) {
+            if (self.registerType == registerTypeEmail) {
                 
                 [ProgressHUD dismiss];
                 ForgetEmailPasswordViewController *em = [ForgetEmailPasswordViewController new];
@@ -167,13 +176,17 @@
                 em.email = self.accountStr;
                 [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(actionTimeOut) object:nil];
                 [self.navigationController pushViewController:em animated:YES];
+                isPushed = YES;
                 
             }else{
                 
-                [[LoginManager sharedManager] loginWithAccount:self.accountStr password:self.pwTextFiled.text];
-                //十秒超时处理
-                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(actionTimeOut) object:nil];
-                [self performSelector:@selector(actionTimeOut) withObject:nil afterDelay:30];
+                if ([self.accountStr isMobileNumber]) {
+                    [[LoginManager sharedManager] loginWithAccount:self.accountStr password:self.pwTextFiled.text];
+                    //十秒超时处理
+                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(actionTimeOut) object:nil];
+                    [self performSelector:@selector(actionTimeOut) withObject:nil afterDelay:30];
+                }
+                
             }
             JFGLog(@"注册 成功");
             
@@ -182,10 +195,16 @@
             if (errorType == JFGErrorTypeSMSCodeTimeout) {
                 
                 [ProgressHUD dismiss];
-                UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"INVALID_CODE"] delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"SURE"] otherButtonTitles:nil, nil];
-                alert.tag = 10001;
-                [alert show];
+                
+                __weak typeof(self) weakSelf = self;
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"INVALID_CODE"] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"SURE"] CancelBlock:^{
+                    
+                } OKBlock:^{
+                    [weakSelf.navigationController popToRootViewControllerAnimated:YES];
+                }];
                 [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(actionTimeOut) object:nil];
+                
+                
             }else{
                 [ProgressHUD showText:[CommonMethod languageKeyForLoginErrorType:errorType]];
                 [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(actionTimeOut) object:nil];

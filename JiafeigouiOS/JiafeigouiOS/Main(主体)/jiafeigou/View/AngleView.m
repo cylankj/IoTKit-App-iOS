@@ -31,7 +31,7 @@
     if (self)
     {
         self.backgroundColor = [UIColor colorWithHexString:@"#000000"];
-        self.alpha = 0.8;
+        self.alpha = 1;
         
         self.bgView.center = self.center;
     }

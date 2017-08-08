@@ -11,6 +11,7 @@
 #import <JFGSDK/JFGSDK.h>
 #import "JfgMsgDefine.h"
 #import "dataPointMsg.h"
+#import "JfgGlobal.h"
 
 @interface DevicesViewModel()
 
@@ -24,7 +25,10 @@
 
 - (void)setDevicesDefaultDataWithCid:(NSString *)cid
 {
-    if (cid != nil && ![cid isEqualToString:@""] )
+    JFG_WS(weakSelf);
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"set default property ,pType %ld", (long)self.pType]];
+    
+    if (cid != nil && ![cid isEqualToString:@""])
     {
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"set default property ,cid is %@",cid]];
         [[dataPointMsg shared] setdpDataWithCid:cid dps:self.dps success:^(NSMutableDictionary *dic) {
@@ -40,16 +44,34 @@
     
     [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgBase_SDStatus)] withCid:cid SuccessBlock:^(NSMutableDictionary *dic)
      {
+         
          NSArray *sdInfos = [dic objectForKey:msgBaseSDStatusKey];
          if (sdInfos.count >= 4)
          {
              int sdCardError = [[sdInfos objectAtIndex:2] intValue];
              BOOL isSDCardExist = [[sdInfos objectAtIndex:3] boolValue];
+             NSInteger autoMotion = MotionDetectAbnormal;
              if (isSDCardExist && sdCardError == 0)
              {
                  DataPointSeg *seg = [[DataPointSeg alloc] init];
                  seg.msgId = dpMsgVideo_autoRecord;
-                 seg.value = [MPMessagePackWriter writeObject:@(MotionDetectAbnormal) error:nil];
+                 switch (weakSelf.pType)
+                 {
+                     case productType_IPCam:
+                     case productType_IPCam_V2:
+                     {
+                         autoMotion = MotionDetectNever;
+                     }
+                         break;
+                         
+                     default:
+                     {
+                         
+                     }
+                         break;
+                 }
+                 
+                 seg.value = [MPMessagePackWriter writeObject:@(autoMotion) error:nil];
                  [[dataPointMsg shared] setdpDataWithCid:cid dps:@[seg] success:^(NSMutableDictionary *dic) {
                      [JFGSDK appendStringToLogFile:@"set auto abnormal"];
                  } failed:^(RobotDataRequestErrorType error) {
@@ -58,6 +80,8 @@
              }
              
          }
+         
+         
      } FailBlock:^(RobotDataRequestErrorType error) {
          
      }];
@@ -68,6 +92,7 @@
     if (_devicesModel == nil)
     {
         _devicesModel = [[DevicesModel alloc] init];
+        _devicesModel.pType = self.pType;
     }
     
     return _devicesModel;
@@ -89,6 +114,9 @@
                                                     @(dpMsgBase_Timezone),
                                                     @(dpMsgVideo_autoRecord),
                                                     @(dpMsgCamera_Angle),
+                                                    @(dpMsgVideo_recordWhenWatching),
+                                                    @(dpMsgCamera_WarnDuration),
+                                                    @(dpMsgCamera_AIRecgnition),
                            nil];
 
         
@@ -103,7 +131,21 @@
             {
                 case dpMsgCamera_WarnEnable:
                 {
-                    seg.value = [MPMessagePackWriter writeObject:@(self.devicesModel.safeProtectModel.isWarnEnable) error:nil];
+                    switch (self.pType)
+                    {
+                        case productType_RSDoorBell:
+                        {
+                            seg.value = [MPMessagePackWriter writeObject:@0 error:nil];
+                        }
+                            break;
+                            
+                        default:
+                        {
+                            seg.value = [MPMessagePackWriter writeObject:@(self.devicesModel.safeProtectModel.isWarnEnable) error:nil];
+                        }
+                            break;
+                    }
+                    
                 }
                     break;
                 case dpMsgCamera_WarnTime:
@@ -155,13 +197,42 @@
                     break;
                 case dpMsgVideo_autoRecord:
                 {
-                    seg.value = [MPMessagePackWriter writeObject:@(self.devicesModel.deviceSettingModel.autoPhotoOrigin) error:nil];
+                    NSInteger autoMotion = self.devicesModel.deviceSettingModel.autoPhotoOrigin;
+                    
+                    switch (self.pType)
+                    {
+                        case productType_IPCam_V2:
+                        case productType_IPCam:
+                        {
+                            autoMotion = MotionDetectNever;
+                        }
+                            break;
+                            
+                        default:
+                            break;
+                    }
+                    seg.value = [MPMessagePackWriter writeObject:@(autoMotion) error:nil];
                 }
                     break;
                 case dpMsgCamera_Angle:
                 {
                     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"dps______%d", self.devicesModel.deviceSettingModel.angleType]];
                     seg.value = [MPMessagePackWriter writeObject:[NSString stringWithFormat:@"%d",self.devicesModel.deviceSettingModel.angleType] error:nil];
+                }
+                    break;
+                case dpMsgVideo_recordWhenWatching:
+                {
+                    seg.value = [MPMessagePackWriter writeObject:@1 error:nil];
+                }
+                    break;
+                case dpMsgCamera_WarnDuration:
+                {
+                    seg.value = [MPMessagePackWriter writeObject:@60 error:nil];
+                }
+                    break;
+                case dpMsgCamera_AIRecgnition:
+                {
+                    seg.value = [MPMessagePackWriter writeObject:@[] error:nil];
                 }
                     break;
                 default:

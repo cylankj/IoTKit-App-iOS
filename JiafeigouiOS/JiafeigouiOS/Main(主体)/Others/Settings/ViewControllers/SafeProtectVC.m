@@ -11,10 +11,12 @@
 #import "HistoryDatePicker.h"
 #import "JfgTableViewCellKey.h"
 #import "JfgUserDefaultKey.h"
+#import "PropertyManager.h"
 #import "SafeProtectModel.h"
+#import "AIRecognitionVC.h"
 #import "subSafeProtectVC.h"
 
-@interface SafeProtectVC ()<subSafeProtectDelegate>
+@interface SafeProtectVC ()<subSafeProtectDelegate, AIRecognitionDelegate>
 
 @property (strong, nonatomic) SafeProtectTableView *protectTableView;
 
@@ -30,9 +32,13 @@
     [self initView];
     [self initNavigation];
     [self initViewLayout];
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
     
-    [[NSUserDefaults standardUserDefaults] setBool:NO forKey:isShowSafeRedDot(self.cid)];
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    [self.protectTableView reloadData]; //这里刷新 是 为了 清除 小红点
 }
 
 - (void)didReceiveMemoryWarning {
@@ -83,7 +89,6 @@
             [_delegate warnRelativeAutoPhoto:self.protectTableView.autoPhotoType];
         }
     }
-    
 }
 
 
@@ -97,6 +102,7 @@
         _protectTableView.pType = self.pType;
         _protectTableView.cid = self.cid;
     }
+    
     return _protectTableView;
 }
 #pragma mark VC Delegate
@@ -110,103 +116,53 @@
 - (void)updateRepeatDate:(int)repeatDate
 {
     [self.protectTableView.safeProtectVM updateRepeatDate:repeatDate];
-    
-//    if (_delegate != nil && [_delegate respondsToSelector:@selector(moveDectionChanged:repeatTime:begin:end:)])
-//    {
-//        [_delegate moveDectionChanged:self.protectTableView.safeProtectVM.isOpenMoveDection repeatTime:repeatDate begin:self.protectTableView.safeProtectVM.beginTime end:self.protectTableView.safeProtectVM.endTime];
-//    }
+}
+
+// 更新AI
+- (void)updateAIRecognition:(NSArray *)aiTypes
+{
+    [self.protectTableView.safeProtectVM updateAIRecgnition:aiTypes];
 }
 
 #pragma mark TableView Delegate
 - (void)tableViewDidSelect:(NSIndexPath *)indexPath withData:(NSDictionary *)dataInfo
 {
+    NSString *cellID = [dataInfo objectForKey:cellUniqueID];
+    
+    if ([cellID isEqualToString:idCellWarnSound])
     {
-        switch (indexPath.section)
-        {
-            case 0:
-            {
-                switch (indexPath.row)
-                {
-                    case 1:
-                    {
-                        
-                        
-                    }
-                        break;
-                        
-                    default:
-                        break;
-                }
-            }
-                break;
-            case 1:
-            {
-                if (self.pType != productType_FreeCam)
-                {
-                    SafeProtectModel *safeModel = [dataInfo objectForKey:cellHiddenText];
-                    
-                    subSafeProtectVC *deviceVoice = [[subSafeProtectVC alloc] init];
-                    deviceVoice.cid = self.cid;
-                    deviceVoice.myDelegate = self;
-                    deviceVoice.protectType = SafeProtectTypeDeviceVoice;
-                    deviceVoice.oldVoiceType = (soundType)safeModel.soundType;
-                    deviceVoice.oldRepeatTime = safeModel.soundTime;
-                    [self.navigationController pushViewController:deviceVoice animated:YES];
-                }
-                else
-                {
-                    switch (indexPath.row)
-                    {
-                        case 2:
-                        {
-                            [self pushSubSafeProtectVC:dataInfo];
-                        }
-                            break;
-                            
-                        default:
-                            break;
-                    }
-                }
-                
-            }
-                break;
-            case 2:
-            {
-                switch (indexPath.row)
-                {
-                    case 0:
-                    {
-                        
-                    }
-                        break;
-                    case 1:
-                        break;
-                    case 2:
-                    {
-                        [self pushSubSafeProtectVC:dataInfo];
-                    }
-                        break;
-                        
-                    default:
-                        break;
-                }
-            }
-                break;
-            default:
-                break;
-        }
+        [self pushSubSafeWarnSoundVC:dataInfo];
+    }
+    else if ([cellID isEqualToString:idCellRepeatTime])
+    {
+        [self pushSubSafeRepeatTimeVC:dataInfo];
+    }
+    else if ([cellID isEqualToString:idCellAIRecognition])
+    {
+        [self pushSubSafeAIRecogVC:dataInfo];
     }
 }
 
+
 - (void)moveDectionChanged:(BOOL)isOpen repeatTime:(int)repeat begin:(int)begin end:(int)end
 {
-//    if (_delegate != nil && [_delegate respondsToSelector:@selector(moveDectionChanged:repeatTime:begin:end:)])
-//    {
-//        [_delegate moveDectionChanged:isOpen repeatTime:repeat begin:begin end:end];
-//    }
+
 }
 
-- (void)pushSubSafeProtectVC:(NSDictionary *)dataInfo
+- (void)pushSubSafeWarnSoundVC:(NSDictionary *)dataInfo
+{
+    SafeProtectModel *safeModel = [dataInfo objectForKey:cellHiddenText];
+    
+    subSafeProtectVC *deviceVoice = [[subSafeProtectVC alloc] init];
+    deviceVoice.cid = self.cid;
+    deviceVoice.myDelegate = self;
+    deviceVoice.protectType = SafeProtectTypeDeviceVoice;
+    deviceVoice.oldVoiceType = (soundType)safeModel.soundType;
+    deviceVoice.oldRepeatTime = safeModel.soundTime;
+    [self.navigationController pushViewController:deviceVoice animated:YES];
+}
+
+- (void)pushSubSafeRepeatTimeVC:(NSDictionary *)dataInfo
 {
     subSafeProtectVC *reaptTime = [[subSafeProtectVC alloc] init];
     reaptTime.myDelegate = self;
@@ -216,5 +172,13 @@
     [self.navigationController pushViewController:reaptTime animated:YES];
 }
 
+- (void)pushSubSafeAIRecogVC:(NSDictionary *)dataInfo
+{
+    AIRecognitionVC *ai = [[AIRecognitionVC alloc] init];
+    ai.delegate = self;
+    ai.cid = self.cid;
+    ai.pType = self.pType;
+    [self.navigationController pushViewController:ai animated:YES];
+}
 
 @end

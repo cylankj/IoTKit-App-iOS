@@ -19,11 +19,15 @@
 
 -(NSMutableArray <JiafeigouDevStatuModel *>*)getDevicesList;
 
+- (JiafeigouDevStatuModel *)getDevModelWithCid:(NSString *)cid;
+
 -(NSArray *)getCacheDeviceList;
 
 //保存自己删除的设备的cid
 -(void)addDelDeviceCid:(NSString *)cid;
 
 -(void)removeDelDeviceCid:(NSString *)cid;
+
+-(void)clearDeviceList;
 
 @end

@@ -204,6 +204,7 @@
     {
         [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"GLOBAL_NO_NETWORK"]];
     }
+    
 }
 
 -(void)stopLoadingAnimation

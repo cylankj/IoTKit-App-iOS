@@ -10,10 +10,16 @@
 #import <UIKit/UIKit.h>
 @class JFGSDKPlayer;
 
+/*!
+ * 视频播放回调代理
+ */
 @protocol JFGSDKPlayerDelegate <NSObject>
 
 //视频解析成功，可以开始render
--(void)jfgSDKPlayerReady:(JFGSDKPlayer *)player width:(int)width height:(int)height;
+-(void)jfgSDKPlayerReady:(JFGSDKPlayer *)player width:(int)width height:(int)height durationTime:(int)duration;
+
+//视频播放，当前进度(视频总时间，见上面方法)
+-(void)jfgSDKPlayer:(JFGSDKPlayer *)player progress:(int)progress;
 
 //视频播放失败
 -(void)jfgSDKPlayerFailed:(JFGSDKPlayer *)player;
@@ -24,6 +30,9 @@
 @end
 
 
+/*!
+ * 视频类
+ */
 @interface JFGSDKPlayer : NSObject
 
 @property(nonatomic,weak)id <JFGSDKPlayerDelegate>delegate;
@@ -36,6 +45,24 @@
 * @param url 本地文件地址
 */
 -(void)playForUrl:(NSString *)url;
+
+
+/*!
+ * 暂停播放视频
+ */
+-(void)pause;
+
+
+/*!
+ * 恢复视频播放
+ */
+-(void)resume;
+
+
+/*!
+ * 跳转至某时刻播放
+ */
+-(void)seekToTime:(int)time;
 
 
 /*!

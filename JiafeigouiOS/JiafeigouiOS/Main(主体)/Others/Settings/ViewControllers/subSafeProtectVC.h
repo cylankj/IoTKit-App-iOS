@@ -17,8 +17,10 @@
 @protocol subSafeProtectDelegate <NSObject>
 
 @optional
+// 设备提示音
 - (void)updateDeviceVoice:(int)voiccType duration:(int)repeatTime;
 
+// 重复时间
 - (void)updateRepeatDate:(int)repeatDate;
 
 @end

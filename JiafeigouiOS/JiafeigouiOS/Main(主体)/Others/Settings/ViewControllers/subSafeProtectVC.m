@@ -26,6 +26,7 @@
 @property (assign, nonatomic) int repeatTime;
 @property (assign, nonatomic) SystemSoundID barkSound;
 @property (assign, nonatomic) SystemSoundID warningSound;
+
 #pragma mark
 #pragma mark  === 重复 变量====
 @property (assign, nonatomic) int repeatDate;
@@ -55,6 +56,7 @@
     // 顶部 导航设置
     [self.leftButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     NSString *titleStr = @"";
+    
     switch (self.protectType)
     {
         case SafeProtectTypeProtectTime:
@@ -89,7 +91,7 @@
             self.repeatTime = self.oldRepeatTime;
         }
             break;
-        case  SafeProtectTypeProtectTime:
+        case SafeProtectTypeProtectTime:
         {
             self.repeatDate = self.oldRepeatDate;
         }

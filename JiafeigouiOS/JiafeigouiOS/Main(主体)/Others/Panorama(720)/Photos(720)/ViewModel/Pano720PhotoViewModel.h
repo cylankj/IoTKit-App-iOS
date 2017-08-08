@@ -8,12 +8,7 @@
 
 #import "BaseViewModel.h"
 #import "Pano720PhotoModel.h"
-
-typedef NS_ENUM(NSInteger, FileExistType) {
-    FileExistTypeLocal,                 //本地 有
-    FileExistTypeRemote,                //远程 有
-    FileExistTypeBoth     //本地，远程 都有
-};
+#import "DownloadUtils.h"
 
 typedef NS_ENUM(NSInteger, DeleteModel) {
     DeleteModel_Keep = -1,
@@ -34,11 +29,39 @@ typedef NS_ENUM(NSInteger, DeleteModel) {
            success:(void (^)(NSURLSessionDataTask *task, NSMutableArray <Pano720PhotoModel *> *models))success
            failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure;
 
+- (void)requestMoreURL:(NSString *)urlString
+            parameters:(id)parameters
+              progress:(void (^)(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress))aProgress
+       downloadSuccess:(void (^)(Pano720PhotoModel *dlModel, int result))downloadTask
+               success:(void (^)(NSURLSessionDataTask *task, NSMutableArray <Pano720PhotoModel *> *models))success
+               failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure;
+
+
 - (void)getMoreLocalDataWithBeginTime:(long long)beginTime
                                 count:(int)count
                               success:(void (^)(NSURLSessionDataTask *task, NSMutableArray <Pano720PhotoModel *> *models))success
                               failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure;
 
+#pragma mark download
+// download image
+- (void)downloadImageWithModel:(Pano720PhotoModel *)model
+                        state:(void(^)(SRDownloadState state))aState
+                     progress:(void(^)(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress))aProgress
+                   completion:(void(^)(BOOL isSuccess, NSString *filePath, NSError *error))aCompletion;
+
+// download video
+- (void)downloadVideoWithModel:(Pano720PhotoModel *)model
+                         state:(void(^)(SRDownloadState state))aState
+                      progress:(void(^)(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress))aProgress
+                    completion:(void(^)(BOOL isSuccess, NSString *filePath, NSError *error))aCompletion;
+
+// download thumbnail in image's and video's
+- (void)downloadThumbNailWhithModel:(Pano720PhotoModel *)model
+                              state:(void(^)(SRDownloadState state))aState
+                           progress:(void(^)(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress))aProgress
+                         completion:(void(^)(BOOL isSuccess, NSString *filePath, NSError *error))aCompletion;
+
+- (BOOL)downloadIsCompleteWithURL:(NSString *)URLString;
 
 #pragma mark delete
 // delete file

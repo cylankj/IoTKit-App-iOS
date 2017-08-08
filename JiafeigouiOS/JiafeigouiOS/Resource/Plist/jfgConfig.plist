@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PorwerTip</key>
+	<array>
+		<dict>
+			<key>osList</key>
+			<array>
+				<integer>6</integer>
+				<integer>17</integer>
+				<integer>21</integer>
+				<integer>25</integer>
+				<integer>26</integer>
+				<integer>27</integer>
+				<integer>42</integer>
+				<integer>44</integer>
+				<integer>46</integer>
+				<integer>50</integer>
+			</array>
+			<key>porwer</key>
+			<real>0.2</real>
+		</dict>
+		<dict>
+			<key>osList</key>
+			<array>
+				<integer>4</integer>
+				<integer>1071</integer>
+			</array>
+			<key>porwer</key>
+			<real>0.5</real>
+		</dict>
+	</array>
+</dict>
+</plist>

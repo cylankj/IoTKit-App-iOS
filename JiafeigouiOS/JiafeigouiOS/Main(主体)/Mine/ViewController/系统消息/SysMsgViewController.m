@@ -17,6 +17,8 @@
 #import "LoginManager.h"
 #import "NSString+FLExtension.h"
 
+#define OFFLINEDELALL @"offlineDelAllDataKey"
+
 @interface SysMsgViewController ()<UITableViewDelegate,UITableViewDataSource,UIWebViewDelegate>
 {
     NSMutableArray *_selectArray; //选中的数组
@@ -39,7 +41,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     [[NSUserDefaults standardUserDefaults] setObject:@(self.view.bounds.size.width) forKey:SysViewWidth];
-    self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap3_UserMessage"];
+    self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap3_TitleName_Notice"];
     self.dataArray = [[NSMutableArray alloc]init];
     cellHeightDict = [NSMutableDictionary new];
     //[self simulantData];
@@ -54,7 +56,6 @@
         [[JFGSDKDataPoint sharedClient] robotCountDataClear:@"" dpIDs:@[@(601),@(701)] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {} failure:^(RobotDataRequestErrorType type) {}];
         [self getDataByTime:0];
     }
-    
     // Do any additional setup after loading the view.
 }
 
@@ -67,6 +68,8 @@
 
 -(void)getDataByTime:(uint64_t)timestamp
 {
+    
+    __weak typeof(self) weakSelf = self;
     [[JFGSDKDataPoint sharedClient] robotGetDataEx:@"" version:timestamp dpids:@[@601,@701] asc:NO success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
         @try {
             NSMutableArray *bindList = [NSMutableArray new];
@@ -89,7 +92,12 @@
                                 model.cid = arr[0];
                                 model.bindAccount = arr[2];
                                 model.cellHeight = 0;
-
+                                
+                                if (arr.count > 4) {
+                                    model.pid = [arr[4] intValue];
+                                }
+                                
+                                
                                 if ([arr[1] intValue] == 1) {
 
                                     model.isBinded = YES;
@@ -142,23 +150,23 @@
                 
             }
             
-            if (self.dataArray == nil) {
-                self.dataArray = [NSMutableArray new];
+            if (weakSelf.dataArray == nil) {
+                weakSelf.dataArray = [NSMutableArray new];
             }
             //过滤本地已删除缓存
             if (timestamp == 0) {
-                self.dataArray = [[NSMutableArray alloc]initWithArray:[self dealForServerData:bindList]];
+                weakSelf.dataArray = [[NSMutableArray alloc]initWithArray:[self dealForServerData:bindList]];
             }else{
-                [self.dataArray addObjectsFromArray:[self dealForServerData:bindList]];
-                [self.tableView.mj_footer endRefreshing];
+                [weakSelf.dataArray addObjectsFromArray:[self dealForServerData:bindList]];
+                [weakSelf.tableView.mj_footer endRefreshing];
                 if (bindList.count == 0) {
-                    [self.tableView.mj_footer endRefreshingWithNoMoreData];
+                    [weakSelf.tableView.mj_footer endRefreshingWithNoMoreData];
                 }
             }
-            
+        
 
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self.tableView reloadData];
+                [weakSelf.tableView reloadData];
             });
             
         } @catch (NSException *exception) {
@@ -251,6 +259,7 @@
 
 -(void)addFooter
 {
+    __weak
     MJRefreshAutoNormalFooter *footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
         
         if (self.dataArray.count && [LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess) {
@@ -265,6 +274,7 @@
     [footer setTitle:[JfgLanguage getLanTextStrByKey:@"RELEASE_TO_LOAD"] forState:MJRefreshStatePulling];
     [footer setTitle:[JfgLanguage getLanTextStrByKey:@"PULL_TO_LOAD"] forState:MJRefreshStateIdle];
     [footer setTitle:[JfgLanguage getLanTextStrByKey:@"LOADING"] forState:MJRefreshStateRefreshing];
+    footer.automaticallyHidden = YES;
     self.tableView.mj_footer = footer;
 }
 
@@ -275,39 +285,37 @@
     //得到删除的商品索引
     
     //全选删除
-    if (_selectArray.count == self.dataArray.count) {
-        
-        [self.dataArray removeObjectsInArray:_selectArray];
-        [_selectArray removeAllObjects];
-        [self clickEditBtn:nil];
-        [self saveSysMsg:self.dataArray isDel:NO];
-        
-        DataPointIDVerSeg *seg = [[DataPointIDVerSeg alloc]init];
-        seg.msgId = 601;
-        seg.version = -1;
-    
-//        DataPointIDVerSeg *seg2 = [[DataPointIDVerSeg alloc]init];
-//        seg2.msgId = 701;
-//        seg2.version = -1;
-        //网络正常直接删除
-        if ([JFGSDK currentNetworkStatus] != JFGNetTypeOffline) {
-            
-            [[JFGSDKDataPoint sharedClient] robotDelDataWithPeer:@"" queryDps:@[seg] success:^(NSString *identity, int ret) {
-                //NSLog(@"identity:%@  ret:%d",identity,ret);
-                
-                NSFileManager *fileManager = [NSFileManager defaultManager];
-                [fileManager removeItemAtPath:[self delCachePath] error:nil];
-                
-            } failure:^(RobotDataRequestErrorType type) {
-                
-            }];
-            
-            
-        }
-        
-        return;
-        
-    }
+//    if (_selectArray.count == self.dataArray.count) {
+//        
+//        [self.dataArray removeObjectsInArray:_selectArray];
+//        [_selectArray removeAllObjects];
+//        [self clickEditBtn:nil];
+//        [self saveSysMsg:self.dataArray isDel:NO];
+//        
+//        DataPointIDVerSeg *seg = [[DataPointIDVerSeg alloc]init];
+//        seg.msgId = 601;
+//        seg.version = -1;
+//    
+////        DataPointIDVerSeg *seg2 = [[DataPointIDVerSeg alloc]init];
+////        seg2.msgId = 701;
+////        seg2.version = -1;
+//        //网络正常直接删除
+//        if ([JFGSDK currentNetworkStatus] != JFGNetTypeOffline) {
+//            
+//            [[JFGSDKDataPoint sharedClient] robotDelDataWithPeer:@"" queryDps:@[seg] success:^(NSString *identity, int ret) {
+//                //NSLog(@"identity:%@  ret:%d",identity,ret);
+//                
+//                NSFileManager *fileManager = [NSFileManager defaultManager];
+//                [fileManager removeItemAtPath:[self delCachePath] error:nil];
+//                
+//            } failure:^(RobotDataRequestErrorType type) {
+//                
+//            }];
+//        }
+//        
+//        return;
+//        
+//    }
     
     [self deleteBindData:_selectArray];
     
@@ -366,6 +374,10 @@
                 
                 NSFileManager *fileManager = [NSFileManager defaultManager];
                 [fileManager removeItemAtPath:[self delCachePath] error:nil];
+                if (isSelectedAll) {
+                    self.tableView.mj_footer.hidden = YES;
+                    [self clickEditBtn:_editBtn];
+                }
                 
             } failure:^(RobotDataRequestErrorType type) {
                 
@@ -471,7 +483,10 @@
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     if (self.dataArray.count) {
+        self.tableView.mj_footer.hidden = NO;
         return self.dataArray.count;
+    }else{
+        self.tableView.mj_footer.hidden = YES;
     }
     return 0;
 }
@@ -534,21 +549,28 @@
     if (isEditing) {
         cell.isEditSelected = model.isDelSelected;
     }
-    if (model.cid) {
-        if ([[model.cid substringWithRange:NSMakeRange(0, 1)] isEqualToString:@"7"]) {
-            
-            //中控
-            cell.iconImageView.image = [UIImage imageNamed:@"ico_album_sysMsg"];
-            
-        }else if([[model.cid substringWithRange:NSMakeRange(0, 1)] isEqualToString:@"5"]){
-            
+    
+    
+    
+    if ([model.cid isKindOfClass:[NSString class]]&& model.cid.length>4) {
+        
+        NSString *ps = [model.cid substringWithRange:NSMakeRange(0, 4)];
+        if ([ps isEqualToString:@"5000"] || [ps isEqualToString:@"5100"] || [ps isEqualToString:@"6900"] || [ps isEqualToString:@"2101"] || [ps isEqualToString:@"2102"]) {
             //门铃
             cell.iconImageView.image = [UIImage imageNamed:@"ico_ring_disabled_sysMsg"];
-        }else{
             
+        }else if([ps isEqualToString:@"6006"] || [ps isEqualToString:@"6007"] || [ps isEqualToString:@"6008"] ){
+            //rs
+            cell.iconImageView.image = [UIImage imageNamed:@"me_icon_ruishi_camera"];
+        }else if([ps isEqualToString:@"2900"]){
+            //720
+            cell.iconImageView.image = [UIImage imageNamed:@"me_icon_720camera"];
+        }else if([ps isEqualToString:@"6901"]){
+            //猫眼
+            cell.iconImageView.image = [UIImage imageNamed:@"me_icon_intelligent_eye"];
+        }else{
             //摄像头
             cell.iconImageView.image = [UIImage imageNamed:@"image_jfg80_sysMsg"];
-            
         }
     }else{
         

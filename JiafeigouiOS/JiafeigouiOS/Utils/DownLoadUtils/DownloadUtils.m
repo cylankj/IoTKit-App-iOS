@@ -10,13 +10,15 @@
 #import "SRDownloadManager.h"
 #import <JFGSDK/JFGSDK.h>
 
-#define eTagUserDefaultKey(pid)  [NSString stringWithFormat:@"_eTagUserKey_%d",pid]
+#define eTagUserDefaultKey(fileName)  [NSString stringWithFormat:@"_eTagUserKey_%@",fileName]
 
 void (^downLoadBlock)(DownLoadModel *dlModel);
 
 @interface DownloadUtils()<NSURLSessionDataDelegate>
 
 @property (nonatomic, strong) NSURLSession *duSession;
+
+@property (nonatomic, strong) SRDownloadManager *downLoadManager;
 
 @property (nonatomic, copy) NSString *urlString;
 
@@ -46,7 +48,7 @@ NSString *const eTagKey = @"Etag";
 
 - (void)checkUrl:(NSString *)url downLoadAction:(downLoadFile)downLoadActionBlock
 {
-    _urlString = url;
+    self.urlString = url;
     
     NSURLSessionTask *task = [self.duSession dataTaskWithURL:[NSURL URLWithString:url]];
     [task resume];
@@ -60,13 +62,13 @@ NSString *const eTagKey = @"Etag";
                progress:(void(^)(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress))aProgress
              completion:(void(^)(BOOL isSuccess, NSString *filePath, NSError *error))aCompletion
 {
-    SRDownloadManager *downLoadManager = [SRDownloadManager sharedManager];
-    downLoadManager.downloadedFilesDirectory = directory;
+//    SRDownloadManager *downLoadManager = [SRDownloadManager sharedManager];
+    self.downLoadManager.downloadedFilesDirectory = directory;
     
     
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"download Url [%@]",urlString]];
     
-    [downLoadManager downloadFile:[NSURL URLWithString:urlString] state:^(SRDownloadState state) {
+    [self.downLoadManager downloadFile:[NSURL URLWithString:urlString] state:^(SRDownloadState state) {
         aState(state);
         if (state == SRDownloadStateCompleted)
         {
@@ -91,11 +93,16 @@ NSString *const eTagKey = @"Etag";
     
 }
 
+- (void)setDirectory:(NSString *)dirPath
+{
+    self.downLoadManager.downloadedFilesDirectory = dirPath;
+}
+
 - (BOOL)isDownloadFileCompleted:(NSString *)URLString
 {
     if (URLString != nil)
     {
-        return [[SRDownloadManager sharedManager] isDownloadFileCompleted:[NSURL URLWithString:URLString]];
+        return [self.downLoadManager isDownloadFileCompleted:[NSURL URLWithString:URLString]];
     }
     return NO;
 }
@@ -106,14 +113,14 @@ NSString *const eTagKey = @"Etag";
 {
     if (self.eTagString != nil && ![self.eTagString isEqualToString:@""])
     {
-        [[NSUserDefaults standardUserDefaults] setValue:self.eTagString forKey:eTagUserDefaultKey(self.pType)];
+        [[NSUserDefaults standardUserDefaults] setValue:self.eTagString forKey:eTagUserDefaultKey([[NSURL URLWithString:self.urlString] lastPathComponent])];
         [[NSUserDefaults standardUserDefaults] synchronize];
     }
 }
 
 - (void)removeEtagString
 {
-    [[NSUserDefaults standardUserDefaults] removeObjectForKey:eTagUserDefaultKey(self.pType)];
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:eTagUserDefaultKey([[NSURL URLWithString:self.urlString] lastPathComponent])];
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -126,7 +133,7 @@ NSString *const eTagKey = @"Etag";
     if (state != downloadStateDownloaded)
     {
         // 需要重新下载，则删除原来的包
-        [[SRDownloadManager sharedManager] deleteFile:[NSURL URLWithString:self.urlString]];
+        [self.downLoadManager deleteFile:[NSURL URLWithString:self.urlString]];
         [self removeEtagString];
     }
     
@@ -147,12 +154,21 @@ NSString *const eTagKey = @"Etag";
     return _duSession;
 }
 
+- (SRDownloadManager *)downLoadManager
+{
+    if (_downLoadManager == nil)
+    {
+        _downLoadManager = [[SRDownloadManager alloc] init];
+    }
+    return _downLoadManager;
+}
+
 #pragma mark delegate
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSHTTPURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition))completionHandler
 {
     
     NSUserDefaults *stdDefault = [NSUserDefaults standardUserDefaults];
-    NSString *eTag = [stdDefault valueForKey:eTagUserDefaultKey(self.pType)];
+    NSString *eTag = [stdDefault valueForKey:eTagUserDefaultKey([[NSURL URLWithString:self.urlString] lastPathComponent])];
     self.eTagString = [response.allHeaderFields objectForKey:eTagKey];
     
     

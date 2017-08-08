@@ -7,10 +7,15 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "ExploreModel.h"
+
+@interface exploreBtn : UIButton
+@property (nonatomic,strong)ExploreModel *model;
+@end
 
 @interface ShareDeviceCell : UITableViewCell
 @property (nonatomic, strong)UIImageView * iconImageView;
 @property (nonatomic, strong)UILabel * deviceNameLabel;
 @property (nonatomic, strong)UILabel * deviceNumLabel;
-@property (nonatomic, strong)UIButton * shareButton;
+@property (nonatomic, strong)exploreBtn * shareButton;
 @end

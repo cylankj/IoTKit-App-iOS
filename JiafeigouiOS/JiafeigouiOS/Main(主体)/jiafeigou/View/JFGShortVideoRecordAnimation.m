@@ -43,7 +43,9 @@
     timerCount = 40;
     animationView.width = self.width;
     animationView.left = 0;
+    [self stopAnimation];
     _timer = [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(timerAction) userInfo:nil repeats:YES];
+    [[NSRunLoop currentRunLoop] addTimer:_timer forMode:NSRunLoopCommonModes];
 }
 
 -(void)stopAnimation
@@ -64,9 +66,7 @@
         animationView.x = self.width * 0.5;
     }];
     if (timerCount == 0) {
-        if (_timer && [_timer isValid]) {
-            [_timer invalidate];
-        }
+        [self stopAnimation];
     }
 }
 

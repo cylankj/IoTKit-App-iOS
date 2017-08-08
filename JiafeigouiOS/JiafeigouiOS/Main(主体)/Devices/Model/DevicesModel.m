@@ -40,8 +40,23 @@
         _deviceSettingModel.isRotate = NO;
         _deviceSettingModel.isNTSC = NO;
         _deviceSettingModel.isMobile = NO;
-        _deviceSettingModel.autoPhotoOrigin = MotionDetectNone;
         _deviceSettingModel.angleType = angleType_Front;
+        
+        switch (self.pType)
+        {
+            case productType_IPCam_V2:
+            case productType_IPCam:
+            {
+                _deviceSettingModel.autoPhotoOrigin = MotionDetectNever;
+            }
+                break;
+                
+            default:
+            {
+                _deviceSettingModel.autoPhotoOrigin = MotionDetectNone;
+            }
+                break;
+        }
         
     }
     
@@ -54,11 +69,27 @@
     {
         _safeProtectModel = [[SafeProtectModel alloc] init];
         //        相同属性 赋值
-        _safeProtectModel.isWarnEnable = YES;
         _safeProtectModel.sensitive = sensitiveTypeNormal;
         _safeProtectModel.repeat = 127;
         _safeProtectModel.beginTime = 0;
         _safeProtectModel.endTime = 5947;
+        
+        switch (self.pType)
+        {
+            case productType_IPCam:
+            case productType_IPCam_V2:
+            {
+                _safeProtectModel.isWarnEnable = NO;
+            }
+                break;
+                
+            default:
+            {
+                _safeProtectModel.isWarnEnable = YES;
+            }
+                break;
+        }
+        
         
     }
     return _safeProtectModel;

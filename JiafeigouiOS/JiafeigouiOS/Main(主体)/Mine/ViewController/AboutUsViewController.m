@@ -81,9 +81,15 @@
     {
         rowNum ++;
     }
-    
+    if (rowNum == 0) {
+        tableView.hidden = YES;
+    }else{
+        tableView.hidden = NO;
+    }
     return rowNum;
 }
+
+
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
     static NSString * indentifier = @"auCell";
     UITableViewCell *cell = [[UITableViewCell alloc]initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:indentifier];

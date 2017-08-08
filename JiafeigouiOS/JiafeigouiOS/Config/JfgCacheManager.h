@@ -11,6 +11,7 @@
 #import "JfgCachePathManager.h"
 #import <JFGSDK/JFGSDKAcount.h>
 #import "BellModel.h"
+#import "SFCParamModel.h"
 
 @class MessageModel;
 @class ExploreModel;
@@ -51,6 +52,23 @@
 +(void)cacheDoorbellCallRecordMsgList:(NSArray <BellModel *> *)list forCid:(NSString *)cid;
 
 +(NSArray <BellModel *>*)getDoorbellCallRecordWithCid:(NSString *)cid;
+
+//获取全景设备直播视图属性
++(SFCParamModel *)getSfcPatamModelForCid:(NSString *)cid;
+
+//缓存直播视图属性
++(void)cachesfcParamModel:(SFCParamModel *)model;
+
+//删除直播视图属性
++(void)removeSfcPatamModelForCid:(NSString *)cid;
+
+
+#pragma mark- 好友相关
+//缓存已读添加好友消息
++(void)cacheReadAddFriendReqList:(NSArray <JFGSDKFriendRequestInfo *> *)list;
+
+//获取已读添加好友消息
++(NSArray <NSString *> *)getCacheReadAddFriendReqAccountList;
 
 #pragma mark- 每日精彩
 //每日精彩数据缓存

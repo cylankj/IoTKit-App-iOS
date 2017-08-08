@@ -24,6 +24,7 @@
 #import "OemManager.h"
 #import "FriendsInfoVC.h"
 #import "BMChineseSort.h"
+#import "OemManager.h"
 
 @interface AddFriendsInContactVC ()<UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate, MFMessageComposeViewControllerDelegate,JFGSDKCallbackDelegate>
 {
@@ -116,28 +117,20 @@
                     });
                 }else{
                     NSLog(@"jujue");
-                    NSString *titleName;
-                    if ([JfgLanguage languageType] == 0) {
-                        titleName = @"\"加菲狗\"";
-                    }else{
-                        titleName = @"\"Clever Dog\"";
-                    }
+                    NSString *titleName = [OemManager appName];
                     NSString *str = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_CONTACTS_C"],titleName];
                     //[JfgLanguage getLanTextStrByKey:@"Tap2_Index_OpenTimelapse"]
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
-                       UIAlertView *aler = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_CONTACTS"] message:str delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"]  otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"], nil];
-                        [aler showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+                        [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_CONTACTS"] Message:str CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"] CancelBlock:^{
                             
-                            //NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
-                            //NSString *rul = [NSString stringWithFormat:@"prefs:root=%@",identifier];
-                            if (buttonIndex == 1) {
-                                NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
-                                //NSURL *url = [NSURL URLWithString:rul];
-                                [[UIApplication sharedApplication]openURL:url];
-                            }
-                            
-                        } otherDelegate:nil];
+                        } OKBlock:^{
+                            NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                            //NSURL *url = [NSURL URLWithString:rul];
+                            [[UIApplication sharedApplication]openURL:url];
+                        }];
+                        
+                       
                     });
                     
                     
@@ -323,16 +316,13 @@
                     
                     //设置委托
                     mc.messageComposeDelegate=self;
-                    
-                    NSString *appName = @"";
-                    //
-                    if ([JfgLanguage languageType] == 0) {
-                        appName = @"加菲狗";
-                    }else{
-                        appName = @"Clever Dog";
-                    }
+
                     //短信内容
-                    NSString *body = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_share_tips"],[dict objectForKey:oemRecommendUrl],appName];
+                    NSString *downUrl = [dict objectForKey:oemRecommendUrl];
+//                    if ([OemManager oemType] == oemTypeDoby) {
+//                        downUrl = [dict objectForKey:oemRecommendDobyUrl];
+//                    }
+                    NSString *body = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_share_tips"],downUrl,[OemManager appName]];
                     mc.body=body;
                     
                     //设置短信收件方
@@ -388,7 +378,7 @@
             JFGLog(@"Result: SMS not sent");
             break;
     }
-    sleep(1.0);
+    //sleep(1.0);
     [self dismissViewControllerAnimated:YES completion:^{
         
     }];

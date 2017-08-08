@@ -24,6 +24,16 @@
     // Do any additional setup after loading the view.
 }
 
+- (BOOL)shouldAutorotate
+{
+    return NO;
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskPortrait;
+}
+
 -(void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
@@ -34,7 +44,7 @@
 -(void)viewDidDisappear:(BOOL)animated
 {
     [super viewDidDisappear:animated];
-     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent];
+     //[[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent];
 }
 
 -(void)initView
@@ -121,7 +131,7 @@
 
 -(void)close:(UIButton *)sender
 {
-    [self.navigationController popViewControllerAnimated:YES];
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 -(UIScrollView *)bgScrollerView

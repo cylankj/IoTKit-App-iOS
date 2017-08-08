@@ -58,13 +58,18 @@ NSString *const msgBaseSdkVersionKey = @"_sdkVersionKey"; // 220
 NSString *const msgBaseCtrlLogKey = @"_ctrlLog";
 NSString *const msgBaseSDCardListKey = @"_sdCardInfoList";
 NSString *const msgBaseSIMInfoKey = @"_SIMInfo";
+NSString *const msgBaseCtrlLogUploadKey = @"_CtrlLogUpload";
+NSString *const msgBaseWiredNetAvailableKey = @"_wiredNetAvailable";
+NSString *const msgBaseUsingWiredNetKey = @"_usingWiredNet";
+NSString *const msgBaseIpAdressKey = @"_ipAdrss";
+NSString *const msgBaseUpgradeStatusKey = @"_upgradeStatus";
 
 typedef NS_ENUM(NSInteger, dpMsgBase){
     dpMsgBase_Begin = dpBaseBegin,            //基础功能定义 开始 不使用  200
     dpMsgBase_Net,                            //网络类型
     dpMsgBase_Mac,                            //MAC地址
     dpMsgBase_SDCardFomat,                    // SDCard 格式化 push消息
-    dpMsgBase_SDStatus = 204,                       //SD卡容量信息,是否接入SD卡
+    dpMsgBase_SDStatus = 204,                       //SD卡容量信息
     dpMsgBase_Power = dpBaseBegin + 5,            //是否连接电源线
     dpMsgBase_Battery,                        //剩余电量
     dpMsgBase_Version,                        //软件版本号
@@ -75,16 +80,20 @@ typedef NS_ENUM(NSInteger, dpMsgBase){
     dpMsgBase_CidLog,                         //设备上报日志消息
     dpMsgBase_P2PVersion,                     //设备P2P版本号
     dpMsgBase_Timezone,                       //设备时区配置
-    dpMsgBase_PushFlow = dpBaseBegin + 15,         //设备推流配置
-    dpMsgBase_NTSC,                           //设备电流频率配置
-    dpMsgBase_Mobile,                         //设备优先使用移动网络配置
-    dpMsgBase_FormatSD,                        //格式化SD卡
+    dpMsgBase_PushFlow = dpBaseBegin + 15,      //设备推流配置
+    dpMsgBase_NTSC,                             //设备电流频率配置
+    dpMsgBase_Mobile,                           //设备优先使用移动网络配置
+    dpMsgBase_FormatSD,                         //格式化SD卡
     dpMsgBase_Bind,                             // 绑定，解绑
     dpMsgBase_sdkVersion = dpBaseBegin + 20,                       // SDK version
     dpMsgBase_CtrlLog,                          // 客户端，设备端 日志
-    dpMsgBase_SDCardInfoList,                       // SD卡信息 列表
+    dpMsgBase_SDCardInfoList,                       // SD卡信息 插拔
     dpMsgBase_SIMInfo,                          // SIM 卡信息
-    
+    dpMsgBase_CtrlLogUpload,                    // 日志上传
+    dpMsgBase_isWiredNetAvailable = dpBaseBegin + 25,              // 有线网 可用？
+    dpMsgBase_isUsingWiredNet,                  // 正在用 有线网
+    dpMsgBase_ipAdress,                         // 私有 ip
+    dpMsgBase_upgradeStatus,                    // 升级 状态
 };
 
 #pragma mark
@@ -95,12 +104,14 @@ NSString *const dpMsgVideoMicKey = @"_mic";
 NSString *const dpMsgVideoSpeakerKey = @"_speaker";
 NSString *const dpMsgVideoAutoRecordKey = @"_autoRecord";
 NSString *const dpMsgVideoDiretionKey = @"_diretion";
+NSString *const dpMsgVideoRecordWhenWatchingKey = @"_recordWhenWatching";
 
 typedef NS_ENUM(NSInteger, dpMsgVideo) {
-    dpMsgVideo_mic = dpVideoBegin + 1,      //控制设备麦克风 300
-    dpMsgVideo_speaker,                     //控制设备喇叭
-    dpMsgVideo_autoRecord,                  //自动录像配置
-    dpMsgVideo_diretion                     //控制设备画面翻转
+    dpMsgVideo_mic = dpVideoBegin + 1,          //控制设备麦克风 300
+    dpMsgVideo_speaker,                         //控制设备喇叭
+    dpMsgVideo_autoRecord,                      //自动录像配置
+    dpMsgVideo_diretion,                        //控制设备画面翻转
+    dpMsgVideo_recordWhenWatching,              // 查看时 录像
 };
 
 #pragma mark
@@ -129,6 +140,13 @@ NSString *const dpMsgCameraWonderKey = @"_wonder";
 NSString *const dpMsgCameraisLiveKey = @"_isLive";
 NSString *const dpMsgCameraAngleKey = @"_cameraAngle";
 
+NSString *const dpMsgCameraCameraCoord = @"_CameraCoord";
+NSString *const dpMsgCameraWarnAndWonder = @"_WarnAndWonder";
+NSString *const dpMsgCameraWarnMSGV3 = @"_warnMsg_v3";
+NSString *const dpMsgCameraBitRateKey = @"_bitRate";
+NSString *const dpMsgCameraWarnDurKey = @"_warnDuration";
+NSString *const dpMsgCameraAIRecgnitionKey = @"_aiRecognition";
+
 typedef NS_ENUM(NSInteger, dpMsgCamera){
     dpMsgCamera_Begin = dpCameraBegin,          //摄像头功能定义 开始 不使用 500
     dpMsgCamera_WarnEnable,                     //报警开关配置
@@ -140,7 +158,12 @@ typedef NS_ENUM(NSInteger, dpMsgCamera){
     dpMsgCamera_Wonder,                         //前每日精彩 废弃不用了
     dpMsgCamera_isLive,                         //待机
     dpMsgCamera_Angle,                          //全景 平视、俯视
+    dpMsgCamera_CameraCoord,
+    dpMsgCamera_WarnAndWonder,
     dpMsgCamera_WarnMsgV3 = 512,                //报警消息3.0版
+    dpMsgCamera_BitRate,                        //速率.分辨率
+    dpMsgCamera_WarnDuration,                   // 报警 时间间隔
+    dpMsgCamera_AIRecgnition,                   // AI 识别
 };
 
 #pragma mark
@@ -151,7 +174,7 @@ NSString *const dpMsgAccountBindKey = @"_accountBind";
 NSString *const dpMsgAccountWonderKey = @"_accountWonder";
 typedef NS_ENUM(NSInteger, dpMsgAccount)
 {
-    dpMsgAccount_Begin = dpAccountBegin,  // 600
+    dpMsgAccount_Begin = dpAccountBegin,    // 600
     dpMsgAccount_Bind,                      // 强制绑定账号，解绑消息
     dpMsgAccount_Wonder,                    // 每日精彩消息 (3.0 新增)
 };

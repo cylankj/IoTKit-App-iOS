@@ -23,7 +23,7 @@
 @interface JFGLogUploadManager()<JFGSDKCallbackDelegate>
 {
     NSHashTable *obsevers;
-    BOOL uploadCount;
+    NSInteger uploadCount;
 }
 @property (nonatomic,assign)BOOL isUploading;
 @property (nonatomic,assign)uint64_t curTimestamp;
@@ -118,7 +118,7 @@ static JFGLogUploadManager *_instance;
 
 -(void)uploadFile
 {
-    uploadCount ++;
+    uploadCount = uploadCount+1;
     NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
     NSString *path1 = [path stringByAppendingPathComponent:@"jfgworkdic"];
     NSString *path2 = [path1 stringByAppendingPathComponent:@"smartCall_t.txt"];
@@ -193,7 +193,7 @@ static JFGLogUploadManager *_instance;
                 JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
                 NSString *key = [NSString stringWithFormat:@"JFGLogUploadLastTimeKey_%@",account.account?account.account:@"namal"];
                 [[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:key];
-                [JFGSDK resetLog];
+                //[JFGSDK resetLog];
                 [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"uploadLogSuccessForSeq:%lld",[va longLongValue]]];
                 
                 
@@ -207,11 +207,11 @@ static JFGLogUploadManager *_instance;
                             [delegate logUploadFailedForTimestamp:[va longLongValue] errorType:JFGLogUploadErrorTypeUnKnow];
                         }
                     }
-                    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"uploadLogFailedForSeq:%lld",[va longLongValue]]];
                 }else{
+                    [JFGSDK appendStringToLogFile:@"重复发送"];
                     [self uploadFile];
                 }
-               
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"uploadLogFailedForSeq:%lld %@",[va longLongValue],result]];
             }
         }
     }

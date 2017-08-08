@@ -13,6 +13,9 @@
 #import <JFGSDK/JFGSDKBindingDevice.h>
 #import <JFGSDK/JFGSDK.h>
 #import "JfgLanguage.h"
+#import "CommonMethod.h"
+#import "jfgConfigManager.h"
+
 void (^aSelectedBlock) (NSString *wifiNameString) =nil;
 
 static WifiListView *wifi =nil;
@@ -88,12 +91,12 @@ static WifiListView *wifi =nil;
         [self removeFromSuperview];
         [self.wifiArray removeAllObjects];
     }];
-    aSelectedBlock =nil;
+    aSelectedBlock = nil;
 }
 
 - (void)updateWifiTableView:(NSString *)wifiName
 {
-    if (![self.wifiArray containsObject:wifiName])
+    if (wifiName && ![self.wifiArray containsObject:wifiName])
     {
         [self.wifiArray addObject:wifiName];
         [_wifiTableView insertRowsAtIndexPaths:[NSArray arrayWithObject:[NSIndexPath indexPathForRow:self.wifiArray.count-1 inSection:0]] withRowAnimation:UITableViewRowAnimationFade];
@@ -177,9 +180,20 @@ static WifiListView *wifi =nil;
 -(void)jfgScanWifiRespose:(JFGSDKUDPResposeScanWifi *)ask
 {
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"scanWifiRsp:%@",ask.ssid]];
-    if ([ask.ssid containsString:@"DOG"] ||[ask.ssid containsString:@"Dog"]) {
-        return;
+    NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
+    NSArray *aps = [infoDictionary objectForKey:@"Jfgsdk_ap_prefix"];
+    if ([aps isKindOfClass:[NSArray class]]) {
+        for (NSString *ap in aps) {
+            if ([ap isKindOfClass:[NSString class]]) {
+                if ([[ask.ssid lowercaseString] hasPrefix:[ap lowercaseString]]) {
+                    return;
+                }
+            }
+        }
     }
+//    if ([ask.ssid containsString:@"DOG"] ||[ask.ssid containsString:@"Dog"]) {
+//        return;
+//    }
     [self updateWifiTableView:ask.ssid];
 }
 

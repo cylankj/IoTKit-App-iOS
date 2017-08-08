@@ -49,6 +49,7 @@
     [self.redDot mas_makeConstraints:^(MASConstraintMaker *make) {
         make.centerY.equalTo(self);
         make.right.equalTo(self.mas_right).with.offset(-18.0f);
+        make.size.mas_equalTo(CGSizeMake(22, 22));
     }];
 }
 

@@ -38,13 +38,19 @@
 #import "JFGBoundDevicesMsg.h"
 #import "LSChatModel.h"
 #import "LSBookManager.h"
-#import "LSChatDataManager.h"
 #import "JFGLogUploadManager.h"
 #import "ShareVideoViewController.h"
+#import "JFGNetDeclareViewController.h"
+#import "WXApiObject.h"
+#import "WXApi.h"
+#import "BaseNavgationViewController.h"
+#import "WebChatBindViewController.h"
+#import <pop/POP.h>
 
 @interface JiafeigouRootViewController ()<TimeChangeMonitorDelegate,LoginManagerDelegate,JFGSDKCallbackDelegate>
 {
     NSMutableArray *dataArray;
+    BOOL stopAnimation;
 }
 //昵称Lable
 @property (nonatomic,strong)UILabel *nickNameLabel;
@@ -92,6 +98,18 @@
         //刷新设备列表，防止列表回复过早导致信息丢失
        // [JFGSDK refreshDeviceList];
     }
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"ssessid:%@",[JFGSDK getSession]]];
+    
+    NSString *version = [[NSUserDefaults standardUserDefaults] objectForKey:@"addAnimationKey"];
+    NSString *ver = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+    
+    if (!version ) {
+        [self showTipView];
+        [self startAddBtnAnimation];
+        [[NSUserDefaults standardUserDefaults] setObject:ver forKey:@"addAnimationKey"];
+    }
+    
+   
 }
 
 
@@ -126,7 +144,7 @@
     
     NSString *devName = [NSString stringWithUTF8String:object_getClassName(self)];
     NSLog(@"vcName:%@",devName);
-    [JFGSDK refreshDeviceList];
+    //[JFGSDK refreshDeviceList];
     [super viewDidAppear:animated];
 }
 
@@ -172,6 +190,16 @@
     if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
         self._tableView.refreshView.hidden = YES;
     }
+}
+
+-(BOOL)shouldAutorotate
+{
+    return NO;
+}
+
+-(UIInterfaceOrientationMask)supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskPortrait;
 }
 
 #pragma mark receive push_msg 
@@ -234,6 +262,7 @@
                                      {
                                          DeviceSettingViewModel *settingVM = [[DeviceSettingViewModel alloc] init];
                                          settingVM.cid = peer;
+                                         settingVM.fwVC = self;
                                          [settingVM updateMotionDection:MotionDetectAbnormal tipShow:NO];
                                      }
                                      
@@ -255,31 +284,29 @@
     }
 }
 
+
+
 #pragma mark- timeChange Delegate
 -(void)timeChangeWithCurrentYear:(NSInteger)year month:(NSInteger)month day:(NSInteger)day hour:(NSInteger)hour minute:(NSInteger)minute
 {
     NSString *reminderText;
-//    if (![LoginManager sharedManager].isLogined) {
-//        reminderText = @"美好的一天开始了";
-//    }else{
-        if (hour>=6 && hour<18) {
-            //白天
-            reminderText = [JfgLanguage getLanTextStrByKey:@"Tap1_Index_DayGreetings"];
-                    }else{
-            //晚上
-            reminderText = [JfgLanguage getLanTextStrByKey:@"Tap1_Index_NightGreetings"];
-           
-        }
-//    }
+
+    if (hour>=6 && hour<18) {
+        //白天
+        reminderText = [JfgLanguage getLanTextStrByKey:@"Tap1_Index_DayGreetings"];
+        
+    }else{
+        //晚上
+        reminderText = [JfgLanguage getLanTextStrByKey:@"Tap1_Index_NightGreetings"];
+       
+    }
     
     if (hour>=6 && hour<18) {
         //白天
-       
         self.topBackgroundImageView.image = [UIImage imageNamed:@"header_bg"];
         [self._tableView setBarViewColor:YES];
     }else{
         //晚上
-        
         self.topBackgroundImageView.image = [UIImage imageNamed:@"bg_top_夜晚"];
         [self._tableView setBarViewColor:NO];
     }
@@ -325,39 +352,47 @@
         
         if (account.alias && ![account.alias isEqualToString:@""]) {
             
-            if (account.alias.length>8) {
-                
-                NSString *newAlias = [account.alias substringToIndex:8];
-                self.nickNameLabel.text = [NSString stringWithFormat:@"Hi,%@...",newAlias];
-                
-            }else{
-                
-                if (![account.alias isEqualToString:@""]) {
-                    self.nickNameLabel.text = [NSString stringWithFormat:@"Hi,%@",account.alias];
+            NSMutableString *newStr = [NSMutableString new];
+            int j=0;
+            for(int i =0; i < [account.alias length]; i++)
+            {
+                NSString *temp = [account.alias substringWithRange:NSMakeRange(i, 1)];
+                if ([temp lengthOfBytesUsingEncoding:NSUTF8StringEncoding]>1) {
+                    j = j+2;
+                }else{
+                    j++;
                 }
-                
+                if (j<=16) {
+                    [newStr appendString:temp];
+                }else{
+                    [newStr appendString:@"..."];
+                    break;
+                }
             }
+
+            
+            self.nickNameLabel.text = [NSString stringWithFormat:@"Hi,%@...",newStr];
             
         }else{
             
-            if (account.account) {
-                if (account.account.length>8) {
-                    
-                    NSString *newAlias = [account.account substringToIndex:8];
-                    self.nickNameLabel.text = [NSString stringWithFormat:@"Hi,%@...",newAlias];
-                    
+            NSMutableString *newStr = [NSMutableString new];
+            int j=0;
+            for(int i =0; i < [account.account length]; i++)
+            {
+                NSString *temp = [account.account substringWithRange:NSMakeRange(i, 1)];
+                if ([temp lengthOfBytesUsingEncoding:NSUTF8StringEncoding]>1) {
+                    j = j+2;
                 }else{
-                    
-                    if (![account.account isEqualToString:@""]) {
-                        self.nickNameLabel.text = [NSString stringWithFormat:@"Hi,%@",account.account];
-                    }
-                    
+                    j++;
                 }
-
+                if (j<=16) {
+                    [newStr appendString:temp];
+                }else{
+                    [newStr appendString:@"..."];
+                    break;
+                }
             }
-            
-            
-            
+            self.nickNameLabel.text = [NSString stringWithFormat:@"Hi,%@...",newStr];
         }
         
         [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"JFGAccountIsOpnePush"];
@@ -396,7 +431,6 @@
     
     NSString *playingCid = [[NSUserDefaults standardUserDefaults] objectForKey:JFGDoorBellIsPlayingCid];
     
-    
     if (playingCid && [playingCid isEqualToString:call.cid]) {
         return;
     }
@@ -422,8 +456,8 @@
             UIWindow * window = [UIApplication sharedApplication].keyWindow;
             UITabBarController * barCon = (UITabBarController *)window.rootViewController;
             if ([barCon isKindOfClass:[UITabBarController class]]) {
-                barCon.selectedIndex = 0;
-                UINavigationController * nav = barCon.viewControllers[0];
+                
+                UINavigationController * nav = barCon.viewControllers[barCon.selectedIndex];
                 doorVideo.hidesBottomBarWhenPushed = YES;
                 [nav pushViewController:doorVideo animated:YES];
             }
@@ -432,34 +466,6 @@
         }
     }
 }
-
-
-//未读的回复消息
--(void)jfgFeedBackWithInfoList:(NSArray <JFGSDKFeedBackInfo *> *)infoList errorType:(JFGErrorType)errorType {
-    
-    //NSLog(@"回复未读的消息列表打印：%@,错误信息：%d",infoList,errorType);
-    NSDateFormatter *matter =[[NSDateFormatter alloc] init];
-    [matter setDateFormat:@"yyyy/MM/dd hh:mm"];
-    
-    for (JFGSDKFeedBackInfo * info in infoList) {
-        
-        LSChatModel *lastModel =[[LSChatDataManager shareChatDataManager].chatModelList lastObject];
-        LSChatModel *aModel =[LSChatModel new];
-        
-        aModel.msg = info.msg;
-        aModel.msgDate = [matter stringFromDate:[NSDate dateWithTimeIntervalSince1970:info.timestamp]];
-        aModel.timestamp = info.timestamp;
-        aModel.lastMsgDate = lastModel.msgDate;
-        aModel.modelType = LSModelTypeOther;
-        aModel.sendStatue = LSSendStatueSuccess;
-        
-        [[LSChatDataManager shareChatDataManager] addChatModel:aModel];
-    
-    }
-
-    
-}
-
 
 -(void)resetDoorBellCallStatues
 {
@@ -475,7 +481,7 @@
     {
         LoginRegisterViewController *loginRegister = [LoginRegisterViewController new];
         loginRegister.viewType = FristIntoViewTypeLogin;
-        UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:loginRegister];
+        BaseNavgationViewController *nav = [[BaseNavgationViewController alloc]initWithRootViewController:loginRegister];
         nav.navigationBarHidden = YES;
         [self presentViewController:nav animated:YES completion:^{
             
@@ -484,20 +490,14 @@
     else
     {
         AddDeviceMainViewController *addDevice = [AddDeviceMainViewController new];
-//        ShareVideoViewController *addDevice = [ShareVideoViewController new];
-//        
-//        NSString *filePath = [[NSBundle mainBundle] pathForResource:@"1493969112_8" ofType:@"mp4"];
-//        addDevice.filePath = filePath;
-//        addDevice.cid = @"290000000031";
-//        addDevice.devAlias = @"720测试视频";
-        
-//        UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:addDevice];
-//        nav.navigationBarHidden = YES;
+        UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:addDevice];
+        nav.navigationBarHidden = YES;
         addDevice.hidesBottomBarWhenPushed = YES;
         [self.navigationController pushViewController:addDevice animated:YES];
         
     }
-    
+    [self.addButton setImage:[UIImage imageNamed:@"btn_addto"] forState:UIControlStateNormal];
+    [self stopAddBtnAnimation];
     
 }
 
@@ -568,12 +568,86 @@
     if (!_addButton) {
         CGFloat width = 35+4;
         UIButton *addBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-        [addBtn setImage:[UIImage imageNamed:@"btn_add-to"] forState:UIControlStateNormal];
+        NSString *version = [[NSUserDefaults standardUserDefaults] objectForKey:@"addAnimationKey"];
+//        NSString *ver = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+        
+        if (!version) {
+            [addBtn setImage:[UIImage imageNamed:@"btn_add-to"] forState:UIControlStateNormal];
+        }else{
+            [addBtn setImage:[UIImage imageNamed:@"btn_addto"] forState:UIControlStateNormal];
+        }
         addBtn.frame = CGRectMake(self.view.width-width-15+5, 30-5-2, width, width);
+        addBtn.right = self.view.width - 10;
+        addBtn.top = 64-39;
         [addBtn addTarget:self action:@selector(addBtnAction) forControlEvents:UIControlEventTouchUpInside];
         _addButton = addBtn;
+        
     }
     return _addButton;
+}
+
+-(void)startAddBtnAnimation
+{
+    __weak typeof(self) weakself = self;
+    [self popAnimationForScaleXY:CGSizeMake(1.2, 1.2) completionBlock:^{
+       
+        [weakself popAnimationForScaleXY:CGSizeMake(1, 1) completionBlock:^{
+            if (!stopAnimation) {
+                [weakself startAddBtnAnimation];
+            }else{
+                [self.addButton pop_removeAnimationForKey:@"AlphaUp"];
+                [self.addButton pop_removeAnimationForKey:@"scalingUp"];
+            }
+            
+        }];
+    }];
+    
+    [self popAnimationForAlpha:0.5 completionBlock:^{
+       [weakself popAnimationForAlpha:1 completionBlock:^{
+           
+       }];
+    }];
+}
+
+-(void)popAnimationForAlpha:(CGFloat)alpha
+                     completionBlock:(void(^)(void))completionBlock
+{
+    [self.addButton pop_removeAnimationForKey:@"AlphaUp"];
+    POPBasicAnimation *_scaleAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPViewAlpha];
+    _scaleAnimation.duration = 1;
+    _scaleAnimation.toValue = @(alpha);
+    [self.addButton pop_addAnimation:_scaleAnimation forKey:@"AlphaUp"];
+    _scaleAnimation.completionBlock = ^(POPAnimation *anim, BOOL finished){
+        
+        if (completionBlock) {
+            completionBlock();
+        }
+        
+    };
+    
+}
+
+-(void)popAnimationForScaleXY:(CGSize)size
+                     completionBlock:(void(^)(void))completionBlock
+{
+    [self.addButton pop_removeAnimationForKey:@"scalingUp"];
+    POPBasicAnimation *_scaleAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPViewScaleXY];
+    _scaleAnimation.duration = 1;
+    _scaleAnimation.toValue = [NSValue valueWithCGSize:size];
+    [self.addButton pop_addAnimation:_scaleAnimation forKey:@"scalingUp"];
+    _scaleAnimation.completionBlock = ^(POPAnimation *anim, BOOL finished){
+        
+        if (completionBlock) {
+            completionBlock();
+        }
+        
+    };
+    
+}
+
+-(void)stopAddBtnAnimation
+{
+    stopAnimation = YES;
 }
 
 -(UITableView *)_tableView

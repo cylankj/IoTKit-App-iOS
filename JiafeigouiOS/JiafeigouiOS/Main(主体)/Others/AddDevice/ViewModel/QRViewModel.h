@@ -17,14 +17,16 @@ typedef NS_ENUM(NSUInteger, QRReustType)
     QRReustTypeUnSupport, // 不支持 扫码设备
     QRReustTypeBinded, // 已绑定
     QRReustTypeOthersBinded, // 被他人绑定
-    QRReustTypeError,   // 无效的二维码
+    QRReustTypeError,   // 你的设备不支持扫码添加
+    QRReustTypeInvalidQRCode,  //无效二维码
     QRReustTypeFailed, //绑定失败
+    QRReustTypePUshGuideIPCam,//睿视
 };
 
 @protocol QRVMDelegate <NSObject>
 
 @optional
-- (void)QRScanDidFinished:(QRReustType)resultType;
+- (void)QRScanDidFinished:(QRReustType)resultType forPid:(NSString *)pid;
 
 @end
 

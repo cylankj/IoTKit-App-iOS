@@ -47,4 +47,14 @@
 @property (nonatomic,assign)int deviceVersion;
 
 @property (nonatomic,copy)NSString *tly;
+
+//门铃信息相关
+@property (nonatomic,assign)int isAnswer;//是否接听
+@property (nonatomic,assign)int timeDuration;//结束时间点，单位秒
+@property (nonatomic,assign)BOOL is_record;//是否在录像中
+
+@property (nonatomic,strong)NSArray *objects;//检测到的物体类型。人1，猫2，狗3，车辆4。例子，检测到人和猫：[1,2]。
+
+@property (nonatomic,assign)int manNum;
+
 @end

@@ -27,7 +27,7 @@ typedef void(^TapItemBlock)(NSInteger index);
 @property (nonatomic,copy)NSString *userInfo;
 
 /**代理*/
-@property (nonatomic,assign)id <FLCycAdViewDelegate> delegate;
+@property (nonatomic,weak)id <FLCycAdViewDelegate> delegate;
 
 
 /**点击广告栏block回调*/

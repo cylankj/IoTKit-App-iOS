@@ -22,20 +22,27 @@ typedef NS_ENUM(NSInteger, DownLoadState)
     DownLoadStateFailed,
 };
 
+typedef NS_ENUM(NSInteger, fileLocaiton) {
+    fileInLocal,
+    fileInRemote,
+    fileInBoth
+};
+
 @interface Pano720PhotoModel : BaseModel
 
 @property (nonatomic, copy) NSString *fileName; // 文件名
-
 @property (nonatomic, assign, readonly) FileType panoFileType;     // 文件类型
 
-@property (nonatomic, assign) int fileZise; // 总大小 字节
-
-@property (nonatomic, copy) NSString *filePath;
-@property (nonatomic, copy) NSString *imageShowedPath; // video's first picture path or image Path
+@property (nonatomic, copy) NSString *urlString; // file url
+@property (nonatomic, copy, readonly) NSString *filePath;
+@property (nonatomic, copy, readonly) NSString *thumbNailFilePath; // thumbNail
 
 @property (nonatomic, assign) DownLoadState downLoadState;
-
 @property (nonatomic, assign) long long  fileTime;
 @property (nonatomic, copy, readonly) NSString *videoDurationStr;
 @property (nonatomic, copy) NSString *headerString;
+
+@property (nonatomic, copy) NSString *downloadProgressStr;
+
+@property (nonatomic, assign) fileLocaiton location;
 @end

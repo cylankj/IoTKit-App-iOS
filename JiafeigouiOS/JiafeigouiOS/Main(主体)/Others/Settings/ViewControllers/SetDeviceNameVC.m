@@ -17,6 +17,7 @@
 #import "JfgConstKey.h"
 #import "JfgConfig.h"
 #import "AddFriendsVC.h"
+#import "UITextField+FLExtension.h"
 #import "CommonMethod.h"
 #import "SetPwForOpenLoginViewController.h"
 #import "CheckingEmailViewController.h"
@@ -110,7 +111,10 @@
             titleStr = [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_NAME"];
             break;
         case DeviceNameVCTypeWifiPassword:
+        {
             titleStr = [JfgLanguage getLanTextStrByKey:@"ENTER_PWD_1"];
+            self.deviceNameTextFiled.maxLength = 63;
+        }
             break;
         case DeviceNameVCTypeFriendsRemarkName:
             titleStr = [JfgLanguage getLanTextStrByKey:@"Tap3_Friends_UserInfo_ModName"];
@@ -188,15 +192,15 @@
 }
 
 #pragma mark- TextFiled Delegate
-int maxLength = 12;
+int maxLength = 24;
 -(BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
     //note：键盘智能输入不会触发此代理方法，这是一个bug吗
     NSString *str = [textField.text stringByReplacingCharactersInRange:range withString:string];
     //不能输入空字符
-    if ([string isEqualToString:@" "]) {
-        return NO;
-    }
+//    if ([string isEqualToString:@" "]) {
+//        return NO;
+//    }
     //禁止输入表情
     if ([[[UITextInputMode currentInputMode] primaryLanguage] isEqualToString:@"emoji"]) {
         return NO;
@@ -206,7 +210,7 @@ int maxLength = 12;
     if (self.deviceNameVCType == DeviceNameVCTypeNickName || self.deviceNameVCType == DeviceNameVCTypeFriendsRemarkName || self.deviceNameVCType == DeviceNameVCTypeSelf)
     {
         
-        if (textField.markedTextRange == nil && textField.text.length > maxLength)
+        if ([CommonMethod lenghtForString:textField.text] > maxLength)
         {
             return NO;
         }
@@ -223,7 +227,6 @@ int maxLength = 12;
     if (self.deviceNameVCType == DeviceNameVCTypeSetHelloWorld) {
         if (str.length>20) {
             return  NO;
-            
         }
     }
     
@@ -254,27 +257,55 @@ int maxLength = 12;
             self.rightButton.enabled = YES;
         }
         
-     //   NSString *lang = [[UITextInputMode currentInputMode]primaryLanguage];//键盘输入模式
-//        if ([lang hasPrefix:@"zh-Hans"]) {// 简体中文输入，包括简体拼音，健体五笔，简体手写
-//                    }
-//        // 中文输入法以外的直接对其统计限制即可，不考虑其他语种情况
-//        else{
-//            if (textField.text.length >= maxLength) {
-//                textField.text = [textField.text substringToIndex:maxLength];
-//            }
-//        }
-        UITextRange *selectedRange = [textField markedTextRange];
-        //获取高亮部分
-        UITextPosition *position = [textField positionFromPosition:selectedRange.start offset:0];
-        //没有高亮选择的字，则对已输入的文字进行字数统计和限制
-        if (!position) {
-            if (textField.text.length >= maxLength) {
-                textField.text = [textField.text substringToIndex:maxLength];
+        NSString *lang = [[UITextInputMode currentInputMode]primaryLanguage];//键盘输入模式
+        NSString *string = textField.text;
+        if ([lang isEqualToString:@"zh-Hans"]) {
+            // 简体中文输入，包括简体拼音，健体五笔，简体手写
+            UITextRange *selectedRange = [textField markedTextRange];
+            //获取高亮部分
+            UITextPosition *position = [textField positionFromPosition:selectedRange.start offset:0];
+            
+            //没有高亮选择的字，则对已输入的文字进行字数统计和限制
+            if (!position) {
+                int j=0;
+                for(int i =0; i < [string length]; i++)
+                {
+                    NSString *temp = [string substringWithRange:NSMakeRange(i, 1)];
+                    if ([temp lengthOfBytesUsingEncoding:NSUTF8StringEncoding]>1) {
+                        j = j+2;
+                    }else{
+                        j++;
+                    }
+                    if (j>=24) {
+                        NSString *subString = [string substringToIndex:i+1];
+                        textField.text = subString;
+                        break;
+                    }
+                }
+                
+            }
+            //有高亮选择的字符串，则暂不对文字进行统计和限制
+            else{
+                
             }
         }
-        //有高亮选择的字符串，则暂不对文字进行统计和限制
+        // 中文输入法以外的直接对其统计限制即可，不考虑其他语种情况
         else{
-            
+            int j=0;
+            for(int i =0; i < [string length]; i++)
+            {
+                NSString *temp = [string substringWithRange:NSMakeRange(i, 1)];
+                if ([temp lengthOfBytesUsingEncoding:NSUTF8StringEncoding]>1) {
+                    j = j+2;
+                }else{
+                    j++;
+                }
+                if (j>=24) {
+                    NSString *subString = [string substringToIndex:i+1];
+                    textField.text = subString;
+                    break;
+                }
+            }
         }
 
         
@@ -439,15 +470,6 @@ int maxLength = 12;
                     
                     [ProgressHUD showProgress:nil];
                     [JFGSDK resetAccountEmail:_deviceNameTextFiled.text orAlias:nil];
-//                    JFGSDKAcount *acc = [[LoginManager sharedManager] accountCache];
-//                    if (([acc.phone isEqualToString:@""] || acc.phone == nil) && ([acc.email isEqualToString:@""] || acc.email == nil)) {
-//                        SetPwForOpenLoginViewController *setPw = [[SetPwForOpenLoginViewController alloc]init];
-//                        setPw.isPhoneNumber = NO;
-//                        [self.navigationController pushViewController:setPw animated:YES];
-//                    }else{
-//                       
-//                    }
-                    
                     
                 }
             } else {
@@ -581,7 +603,7 @@ int maxLength = 12;
 {
     if (type == JFGAccountResultTypeUpdataAccount) {
         if (errorType == 0) {
-            if (_deviceNameVCType == DeviceNameVCTypeChangeEmail || _deviceNameVCType == DeviceNameVCTypeNickName) {
+            if ( _deviceNameVCType == DeviceNameVCTypeNickName) {
                 [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
             } else if (_deviceNameVCType == DeviceNameVCTypeBindEmail) {
                 
@@ -593,10 +615,13 @@ int maxLength = 12;
                     [self.navigationController pushViewController:setPw animated:YES];
                     return;
                 }else{
-                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Added_successfully"]];
+                    //[ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Added_successfully"]];
+                    [ProgressHUD dismiss];
                 }
                 
                 
+            }else if (_deviceNameVCType == DeviceNameVCTypeChangeEmail){
+                [ProgressHUD dismiss];
             }
             [[NSNotificationCenter defaultCenter] postNotificationName:JFGAccountMsgChangedKey object:nil];
             [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGAccountMsgChangedKey];
@@ -623,27 +648,10 @@ int maxLength = 12;
             }
             
         }
-        int64_t delayInSeconds = 1.5;
-        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
-        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-            
-            [ProgressHUD dismiss];
-            
-        });
     }
 }
 
 
-//fping
--(void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask {
-    if (ask != nil)
-    {
-        if ([ask.cid isEqualToString:self.cid])
-        {
-            
-        }
-    }
-}
 //设置WiFi密码
 -(void)jfgSetWifiRespose:(JFGSDKUDPResposeSetWifi *)ask {
     /*if(ask.success) {

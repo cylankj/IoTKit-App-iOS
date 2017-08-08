@@ -41,8 +41,6 @@
     [_shareButton setTitleColor:[UIColor colorWithHexString:@"#909090"] forState:UIControlStateNormal];
      _shareButton.titleLabel.font = [UIFont systemFontOfSize:12];
     [_shareButton setImage:[UIImage imageNamed:@"btn_share"] forState:UIControlStateNormal];
-
-
 }
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {
@@ -65,5 +63,9 @@
 {
     return CGRectMake(20, 0, contentRect.size.width-16, contentRect.size.height);
 }
+
+@end
+
+@implementation ExploreVideoButton
 
 @end

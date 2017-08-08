@@ -14,12 +14,16 @@
 #import "AddDeviceGuideViewController.h"
 #import "BindDevProgressViewController.h"
 #import "OemManager.h"
+#import "jfgConfigManager.h"
+#import "CommentFrameButton.h"
+#import "UIView+FLExtensionForFrame.h"
+#import "SnScanViewController.h"
 
 @interface AddDeviceMainViewController()
 
 @property (strong, nonatomic) UITableView *addDeviceTableView;
-@property (strong, nonatomic) NSArray *imageGroupArray;
-@property (strong, nonatomic) NSArray *dataGroupArray;
+@property (strong, nonatomic)NSArray *dataArray;
+@property (strong, nonatomic)UIView *tableHeaderView;
 
 @end
 
@@ -29,7 +33,6 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    
     [self initView];
 }
 
@@ -46,7 +49,7 @@
 -(void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent animated:YES];
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent animated:YES];
 }
 
 
@@ -65,68 +68,67 @@
         _addDeviceTableView.delegate = self;
         _addDeviceTableView.backgroundColor = [UIColor colorWithHexString:@"#f0f0f0"];
         _addDeviceTableView.separatorColor = [UIColor colorWithHexString:@"#e1e1e1"];
+        _addDeviceTableView.tableHeaderView = self.tableHeaderView;
+        _addDeviceTableView.tableFooterView = [UIView new];
     }
     return _addDeviceTableView;
 }
 
 
 #pragma mark  data
-
-- (NSArray *)dataGroupArray
+-(NSArray *)dataArray
 {
-    if (_dataGroupArray == nil)
-    {
-        NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
-        NSString *appCurVersionNum = [infoDictionary objectForKey:@"CFBundleVersion"];
-        if ([appCurVersionNum hasPrefix:@"3.1"]) {
-            
-            if ([OemManager oemType] == oemTypeDoby) {
-                _dataGroupArray = [[NSArray alloc] initWithObjects: @[[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR"]], @[[JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"], [JfgLanguage getLanTextStrByKey:@"IPCam"],[JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"]], nil];
-            }else{
-                _dataGroupArray = [[NSArray alloc] initWithObjects: @[[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR"]], @[[JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"], [JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"]], nil];
-            }
-            
-
-        }else{
-            
-            if ([OemManager oemType] == oemTypeDoby) {
-                _dataGroupArray = [[NSArray alloc] initWithObjects: @[[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR"]], @[[JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"], [JfgLanguage getLanTextStrByKey:@"_720PanoramicCamera"],[JfgLanguage getLanTextStrByKey:@"IPCam"],[JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"]], nil];
-            }else{
-                _dataGroupArray = [[NSArray alloc] initWithObjects: @[[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR"]], @[[JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"], [JfgLanguage getLanTextStrByKey:@"_720PanoramicCamera"],[JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"]], nil];
-            }
-        }
-        
-        
+    if (!_dataArray) {
+        NSArray *configData = [jfgConfigManager getAddDevModel];
+        _dataArray = [[NSArray alloc]initWithArray:configData];
     }
-    return _dataGroupArray;
+    return _dataArray;
 }
 
-- (NSArray *)imageGroupArray
+-(UIView *)tableHeaderView
 {
-    if (_imageGroupArray == nil)
-    {
-        NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
-        NSString *appCurVersionNum = [infoDictionary objectForKey:@"CFBundleVersion"];
-        if ([appCurVersionNum hasPrefix:@"3.1"]){
+    if (!_tableHeaderView) {
+        _tableHeaderView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 117+30)];
+        _tableHeaderView.backgroundColor = [UIColor colorWithHexString:@"##f0f0f0"];
         
-            if ([OemManager oemType] == oemTypeDoby) {
-                _imageGroupArray = [[NSArray alloc] initWithObjects:@[@"add_icon_scancode"], @[@"add_icon_camera",@"icon_ruishi1_carame", @"add_icon_ring"], nil];
-            }else{
-                _imageGroupArray = [[NSArray alloc] initWithObjects:@[@"add_icon_scancode"], @[@"add_icon_camera", @"add_icon_ring"], nil];
-            }
-            
-        }else{
-            if ([OemManager oemType] == oemTypeDoby) {
-                _imageGroupArray = [[NSArray alloc] initWithObjects:@[@"add_icon_scancode"], @[@"add_icon_camera",@"home_icon_720camera",@"icon_ruishi1_carame", @"add_icon_ring"], nil];
-            }else{
-                _imageGroupArray = [[NSArray alloc] initWithObjects:@[@"add_icon_scancode"], @[@"add_icon_camera",@"home_icon_720camera", @"add_icon_ring"], nil];
-            }
-        }
+        UIView *bgView = [[UIView alloc]initWithFrame:CGRectMake(0, 15, self.view.width, 117)];
+        bgView.backgroundColor = [UIColor whiteColor];
+        [_tableHeaderView addSubview:bgView];
+        
+        UIButton *sBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        sBtn.frame = CGRectMake(0, 20+15, 50, 50);
+        sBtn.x = self.view.width*0.25;
+        [sBtn setImage:[UIImage imageNamed:@"icon_scan"] forState:UIControlStateNormal];
+        sBtn.tag = 1002;
+        [sBtn addTarget:self action:@selector(headerBtnAction:) forControlEvents:UIControlEventTouchUpInside];
+        
+        UILabel *sLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, sBtn.bottom+8, self.view.width*0.5, 19)];
+        sLabel.textAlignment = NSTextAlignmentCenter;
+        sLabel.textColor = [UIColor colorWithHexString:@"#333333"];
+        sLabel.font = [UIFont systemFontOfSize:17];
+        sLabel.text = [JfgLanguage getLanTextStrByKey:@"Add_Device_Scan_QR"];
+        
+        UIButton *nBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        nBtn.frame = CGRectMake(0, 20+15, 50, 50);
+        nBtn.x = self.view.width*0.75;
+        [nBtn setImage:[UIImage imageNamed:@"icon_sn"] forState:UIControlStateNormal];
+        nBtn.tag = 1003;
+        [nBtn addTarget:self action:@selector(headerBtnAction:) forControlEvents:UIControlEventTouchUpInside];
+        
+        UILabel *nLabel = [[UILabel alloc]initWithFrame:CGRectMake(self.view.width*0.5, sBtn.bottom+8, self.view.width*0.5, 19)];
+        nLabel.textAlignment = NSTextAlignmentCenter;
+        nLabel.textColor = [UIColor colorWithHexString:@"#333333"];
+        nLabel.font = [UIFont systemFontOfSize:17];
+        nLabel.text = [JfgLanguage getLanTextStrByKey:@"Add_Device_S/N"];
+        
+        [_tableHeaderView addSubview:sBtn];
+        [_tableHeaderView addSubview:sLabel];
+        [_tableHeaderView addSubview:nBtn];
+        [_tableHeaderView addSubview:nLabel];
         
     }
-    return _imageGroupArray;
+    return _tableHeaderView;
 }
-
 
 #pragma mark  action
 - (void)leftButtonAction:(UIButton *)sender
@@ -134,16 +136,32 @@
     [super leftButtonAction:sender];
 }
 
+-(void)headerBtnAction:(UIButton *)sender
+{
+    if (sender.tag == 1002) {
+        //扫一扫
+        QRViewController *qr = [QRViewController new];
+        qr.hidesBottomBarWhenPushed = YES;
+        [self.navigationController pushViewController:qr animated:YES];
+        
+    }else if (sender.tag == 1003){
+        //cid添加
+        SnScanViewController *sn = [SnScanViewController new];
+        sn.hidesBottomBarWhenPushed = YES;
+        [self.navigationController pushViewController:sn animated:YES];
+    }
+}
+
 #pragma mark tableView datasource
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    NSArray *rows = [self.dataGroupArray objectAtIndex:section];
+    NSArray *rows = [self.dataArray objectAtIndex:section];
     return [rows count];
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-    return self.dataGroupArray.count;
+    return self.dataArray.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -161,12 +179,13 @@
         
         UIView *selectedView = [[UIView alloc] init];
         selectedView.backgroundColor = [UIColor colorWithHexString:@"#dfdfdf"];
-        
         cell.selectedBackgroundView = selectedView;
     }
     
-    cell.textLabel.text = [[self.dataGroupArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
-    cell.imageView.image = [UIImage imageNamed:[[self.imageGroupArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+    AddDevConfigModel *model = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
+    
+    cell.textLabel.text = [JfgLanguage getLanTextStrByKey:model.title];
+    cell.imageView.image = [UIImage imageNamed:model.iconName];
     
     return cell;
 }
@@ -177,93 +196,94 @@
     return 70.0f;
 }
 
-- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
+//-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+//{
+//    
+//}
+
+//- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
+//{
+//    if (section < self.dataArray.count - 1)
+//    {
+//        return 12.0f;
+//    }
+//    return 1.0f;
+//}
+
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
 {
-    if (section < self.dataGroupArray.count - 1)
-    {
-        return 12.0f;
-    }
-    return 1.0f;
+    return 0.0f;
 }
+
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
+    AddDevConfigModel *model = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
     
-    switch (indexPath.section)
-    {
-        case 0: //扫一扫
-        {
+    switch ([model.typeMark intValue]) {
+        case 0:{
             QRViewController *qr = [QRViewController new];
             qr.hidesBottomBarWhenPushed = YES;
             [self.navigationController pushViewController:qr animated:YES];
         }
-            break;
-        case 1:
-        {
-            AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
-            switch (indexPath.row)
-            {
-                case 0:
-                {
-                    addDeviceGuide.pType = productType_WIFI;
-                }
-                    break;
-                case 1:
-                {
-                    NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
-                    NSString *appCurVersionNum = [infoDictionary objectForKey:@"CFBundleVersion"];
-                    if ([appCurVersionNum hasPrefix:@"3.1"]){
-                        
-                        if ([OemManager oemType] == oemTypeDoby) {
-                            addDeviceGuide.pType = productType_IPCam;
-                        }else{
-                            addDeviceGuide.pType = productType_DoorBell;
-                        }
-                        
-                       
-                    }else{
-                        
-                       addDeviceGuide.pType = productType_720;
-                        
-                    }
-                    
-                }
-                    break;
-                case 2:
-                {
-                    
-                    NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
-                    NSString *appCurVersionNum = [infoDictionary objectForKey:@"CFBundleVersion"];
-                    if ([appCurVersionNum hasPrefix:@"3.1"]){
-                        
-                        addDeviceGuide.pType = productType_DoorBell;
-                        
-                    }else{
-                        if ([OemManager oemType] == oemTypeDoby) {
-                            addDeviceGuide.pType = productType_IPCam;
-                        }else{
-                            addDeviceGuide.pType = productType_DoorBell;
-                        }
-                    }
-                }
-                    break;
-                case 3:
-                {
-                    addDeviceGuide.pType = productType_DoorBell;
-                }
-                    break;
-                default:
-                    break;
-            }
             
+            break;
+        case 1:{
+            AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+            addDeviceGuide.pType = productType_WIFI;
             [self.navigationController pushViewController:addDeviceGuide animated:YES];
         }
+            
             break;
+        case 2:{
+            AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+            addDeviceGuide.pType = productType_720;
+            [self.navigationController pushViewController:addDeviceGuide animated:YES];
+        }
+            
+            break;
+        case 3:{
+            AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+            addDeviceGuide.pType = productType_DoorBell;
+            [self.navigationController pushViewController:addDeviceGuide animated:YES];
+        }
+            
+            break;
+        case 4:{
+            AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+            addDeviceGuide.pType = productType_IPCam;
+            [self.navigationController pushViewController:addDeviceGuide animated:YES];
+        }
+            
+            break;
+        case 5:{
+            
+            AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+            addDeviceGuide.pType = productType_ColudCameraOs;
+            [self.navigationController pushViewController:addDeviceGuide animated:YES];
+        }
+            
+            break;
+            
+        case 6:{
+            AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+            addDeviceGuide.pType = productType_CatEye;
+            [self.navigationController pushViewController:addDeviceGuide animated:YES];
+        }
+            
+            break;
+        case 7:{
+            AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+            addDeviceGuide.pType = productType_DoorBell3;
+            [self.navigationController pushViewController:addDeviceGuide animated:YES];
+        }
+            
+            break;
+            
         default:
             break;
     }
-    
 }
 
 

@@ -45,6 +45,8 @@
 #import "JfgTimeFormat.h"
 #import "LoginManager.h"
 #import "JFGBoundDevicesMsg.h"
+#import "MSRefreshAutoNormalFooter.h"
+#import "LSAlertView.h"
 
 #define Edit_CancelBtnTag 233
 #define Edit_SelAllBtnTag 234
@@ -56,6 +58,7 @@
 {
     CGFloat topHeight;
     BOOL isEnableRefresh;
+    BOOL isAppear;
 }
 @property (strong, nonatomic) UILabel * titleLabel;
 @property (strong, nonatomic) DelButton * exitBtn;
@@ -96,7 +99,7 @@
         self.bellTableView.tableModelArray = [[NSMutableArray alloc]initWithArray:arr];
         [self judgeHaveData];
     }else{
-        self.bellTableView.tableModelArray= [NSMutableArray new];
+        self.bellTableView.tableModelArray = [NSMutableArray new];
     }
 }
 
@@ -141,7 +144,7 @@
     [[NSNotificationCenter defaultCenter] postNotificationName:@"JFGClearUnReadCount" object:self.cid];
     
     [self checkDoorBattery];
-    
+    isAppear = YES;
 }
 
 -(void)viewDidDisappear:(BOOL)animated
@@ -153,20 +156,25 @@
     if (self.navigationController.viewControllers.count <=2 ) {
         [JFGSDK removeDelegate:self];
     }
-    
+    isAppear = NO;
 }
 -(void)initData
 {
     if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
         return;
     }
+    
+    [self.bellTableView.mj_footer resetNoMoreData];
+    
     DataPointIDVerSeg * seg = [[DataPointIDVerSeg alloc]init];
     seg.msgId = dpMsgBell_callMsg;
+    seg.version = 0;
     
     DataPointIDVerSeg * seg2 = [[DataPointIDVerSeg alloc]init];
     seg2.msgId = dpMsgBell_callMsgV3;
+    seg2.version = 0;
     
-    [[dataPointMsg shared] packMutableDataPointMsg:@[seg,seg2] withCid:self.cid isAsc:NO countLimit:100 SuccessArrBlock:^(NSMutableArray *arr) {
+    [[dataPointMsg shared] packMutableDataPointMsg:@[seg,seg2] withCid:self.cid isAsc:NO countLimit:15 SuccessArrBlock:^(NSMutableArray *arr) {
         if (arr.count > 0)
         {
             [self.bellTableView.tableModelArray removeAllObjects];
@@ -236,11 +244,12 @@
     seg2.msgId = dpMsgBell_callMsgV3;
     seg2.version = time;
     
-    [[dataPointMsg shared] packMutableDataPointMsg:@[seg,seg2] withCid:self.cid isAsc:NO countLimit:100 SuccessArrBlock:^(NSMutableArray *arr) {
+    [[dataPointMsg shared] packMutableDataPointMsg:@[seg,seg2] withCid:self.cid isAsc:NO countLimit:15 SuccessArrBlock:^(NSMutableArray *arr) {
         
+        [self.bellTableView.mj_footer endRefreshing];
         if (arr.count > 0)
         {
-
+            NSMutableArray *tempArr = [NSMutableArray new];
             for (NSArray * msgArr in arr) {
                 for (NSDictionary * dic in msgArr) {
                     NSArray * vauleArr = [dic objectForKey:dpValueKey];
@@ -276,19 +285,25 @@
                     }else{
                         bell.headUrl = nil;
                     }
-                    
-                    [self.bellTableView.tableModelArray addObject:bell];
+                    [tempArr addObject:bell];
+                   
                 }
             }
-            
+            if (tempArr.count) {
+                [self.bellTableView.tableModelArray addObjectsFromArray:tempArr];
+            }else{
+                [self.bellTableView.mj_footer endRefreshingWithNoMoreData];
+            }
             [self judgeHaveData];
-            [self.refreshView endRefresh];
-            [self clearUnReadCount];
+    
+        }else{
+            [self.bellTableView.mj_footer endRefreshingWithNoMoreData];
         }
         
     } FailBlock:^(RobotDataRequestErrorType error) {
         NSLog(@"门铃记录获取失败：%ld",(long)error);
         [self.refreshView endRefresh];
+        [self.bellTableView.mj_footer endRefreshing];
     }];
 }
 
@@ -330,7 +345,29 @@
     [self judgeHaveData];
     [self.bellTableView addSubview:self.refreshView];
     [self.refreshView setRefreshingTarget:self refreshingAction:@selector(headerRereshing)];
+    
+    MSRefreshAutoNormalFooter *footer = [MSRefreshAutoNormalFooter footerWithRefreshingTarget:self refreshingAction:@selector(footerAction)];
+    [footer setTitle:@"" forState:MJRefreshStateIdle];
+    footer.triggerAutomaticallyRefreshPercent = 0.2;
+    footer.refreshingTitleHidden = YES;
+    self.bellTableView.mj_footer = footer;
+    
 }
+
+-(void)footerAction
+{
+    BellModel * bell = [self.bellTableView.tableModelArray lastObject];
+    [self getMoreMessageForTime:[bell.version longLongValue]];
+    
+//    int64_t delayInSeconds = 1.0;
+//    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+//    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+//        
+//        [self.bellTableView.mj_footer endRefreshing];
+//        
+//    });
+}
+
 //刷新事件
 -(void)headerRereshing
 {
@@ -376,7 +413,7 @@
              
              if (!isToday)
              {
-                 if (battery < 20)
+                 if (battery < 20 )
                  {
                      [JFGPicAlertView showAlertWithImage:[UIImage imageNamed:@"doorbell_lowpower"] Title:[JfgLanguage getLanTextStrByKey:@"DOOR_LOWBETTERY"] Message:[JfgLanguage getLanTextStrByKey:@"DOOR_BETTERYMESG"] cofirmButtonTitle:[JfgLanguage getLanTextStrByKey:@"SURE"] didDismissBlock:^{
                          
@@ -391,8 +428,6 @@
              
          }];
     }
-    
-    
 }
 
 #pragma mark - JFGSDK
@@ -429,7 +464,7 @@
 }
 
 #pragma mark -JFGSDK
-- (void)jfgOtherClientAnswerDoorbellCall
+-(void)jfgOtherClientAnswerDoorbellForCid:(NSString *)cid
 {
     [self initData];
 }
@@ -493,7 +528,7 @@
             break;
         }
     }
-    if (!isExist) {
+    if (!isExist && isAppear) {
         
         NSArray *delCidArr =  [JFGBoundDevicesMsg sharedDeciceMsg].delDeviceList;
         for (NSString *cid in delCidArr) {
@@ -517,12 +552,15 @@
         JFGSDKDevice *_dev = [deviceList lastObject];
         self.cid = _dev.uuid;
         
-        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:str delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
-        [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+        
+        __weak typeof(self) weakSelf = self;
+        [LSAlertView showAlertWithTitle:nil Message:str CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
             
-            [self.navigationController popToRootViewControllerAnimated:YES];
+            [weakSelf.navigationController popToRootViewControllerAnimated:YES];
             
-        } otherDelegate:nil];
+        } OKBlock:^{
+            
+        }];
         
     }
 }
@@ -617,7 +655,7 @@
                     [delIndexSets addIndex:path];
                     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:path inSection:0];
                     [delIndexs addObject:indexPath];
-                    [delVersions addObject:model.version];
+                    [delVersions addObject:model];
                 }
             }
 
@@ -627,17 +665,24 @@
             //删除服务器的
             NSMutableArray * segs = [NSMutableArray array];
             for (int i = 0; i<delVersions.count; i++) {
+                BellModel *md = delVersions[i];
                 DataPointIDVerSeg * seg = [[DataPointIDVerSeg alloc]init];
                 seg.msgId = dpMsgBell_callMsg;
-                seg.version = (int64_t)[[delVersions objectAtIndex:i] longLongValue];
+                if (md.deviceVersion == 3) {
+                    seg.msgId = dpMsgBell_callMsgV3;
+                }
+                seg.version = (int64_t)[md.version longLongValue];
                 [segs addObject:seg];
             }
 
             [[JFGSDKDataPoint sharedClient]robotDelDataWithPeer:self.cid queryDps:segs success:^(NSString *identity, int ret) {
                 if (ret == 0) {
                     [self judgeHaveData];
+                }else{
+                    [JFGSDK appendStringToLogFile:@"门铃呼叫记录删除失败"];
                 }
             } failure:^(RobotDataRequestErrorType type) {
+                [JFGSDK appendStringToLogFile:@"门铃呼叫记录删除失败"];
             }];
             
             UIButton *cancelBtn = [self.editToolView viewWithTag:Edit_CancelBtnTag];
@@ -667,7 +712,6 @@
     if (self.bellTableView.tableModelArray.count <= indexPath.row) {
         return cell;
     }
-    
     cell.bell.isShared = self.isShare;
     
     BellModel * model = [self.bellTableView.tableModelArray objectAtIndex:indexPath.row];
@@ -742,16 +786,11 @@
     bro.imagesUrl = [[NSMutableArray alloc]initWithObjects:model.headUrl, nil];
     bro.cid = self.cid;
     bro.deviceVersion = model.deviceVersion;
-//    ImageBrowser *bro = [[ImageBrowser alloc]initAllAnglePicViewWithImageView:@[imageView] Title:title currentImageIndex:0];
     bro.imageNumber = 1;
     bro.cid = self.cid;
     bro.fileName = model.fileName;
     bro.url = model.headUrl;
     bro.regionType = model.flag;
-    
-//    NSRange range = [model.fileName rangeOfString:@".jpg"];
-//    NSString *times = [model.fileName substringToIndex:range.location];
-
     bro.timestamp = timestamp;
     [bro showCurrentImageViewIndex:0];//调用方法
 }
@@ -795,6 +834,7 @@
     }
     return _noDataView;
 }
+
 -(doorBellTableView *)bellTableView
 {
     if (!_bellTableView) {
@@ -807,6 +847,7 @@
     }
     return _bellTableView;
 }
+
 -(UILabel *)titleLabel{
     if (!_titleLabel) {
         _titleLabel = [UILabel initWithFrame:CGRectMake((self.view.width-200.0)/2.0, 34*designHscale, 200, 17) text:self.alias font:FontNameHelvetica size:17.0 color:[UIColor whiteColor] alignment:NSTextAlignmentCenter lines:1];
@@ -814,6 +855,7 @@
     }
     return _titleLabel;
 }
+
 -(DelButton *)exitBtn{
     if (!_exitBtn) {
         _exitBtn = [UIButton initWithFrame:CGRectMake(10, 27*designHscale, 30, 30) image:[UIImage imageNamed:@"qr_backbutton_normal"] highlightedImage:nil cornerRadius:0 handerForTouchUpInside:^(UIButton *button) {
@@ -822,11 +864,13 @@
     }
     return _exitBtn;
 }
+
+
 -(UIButton *)settingBtn{
     if (!_settingBtn) {
         _settingBtn = [UIButton initWithFrame:CGRectMake(self.view.width-44-5, 20*designHscale, 44, 44) image:[UIImage imageNamed:@"camera_ico_install"] highlightedImage:nil cornerRadius:0 handerForTouchUpInside:^(UIButton *button) {
             DeviceSettingVC *deviceSetting = [DeviceSettingVC new];
-            deviceSetting.pType = productType_DoorBell;
+            deviceSetting.pType = (productType)[self.devModel.pid intValue];
             deviceSetting.cid = self.cid;
             deviceSetting.alis = self.alias;
             deviceSetting.isShare = self.isShare;
@@ -835,7 +879,10 @@
     }
     return _settingBtn;
 }
--(UIImageView *)bellImageView{
+
+
+-(UIImageView *)bellImageView
+{
     if (!_bellImageView) {
         UIImage * image = [UIImage imageNamed:@"doorbell"];
         _bellImageView = [[UIImageView alloc]initWithFrame:CGRectMake((self.view.width-190*designHscale)/2.0, 66*designHscale, 190*designHscale, 190*designHscale)];
@@ -843,7 +890,10 @@
     }
     return _bellImageView;
 }
--(UIImageView *)bgImageView{
+
+
+-(UIImageView *)bgImageView
+{
     if (!_bgImageView) {
         _bgImageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, 0, self.view.width, topHeight)];
         [_bgImageView setImage:[UIImage imageNamed:@"doorbell_offline_top-bar"]];
@@ -862,7 +912,10 @@
     }
     return _bgImageView;
 }
--(UIButton *)seeButton{
+
+
+-(UIButton *)seeButton
+{
     if (!_seeButton) {
         _seeButton = [UIButton initWithFrame:CGRectMake((self.view.width-106.0*designHscale)/2.0, self.bellImageView.bottom-41*designHscale, 106.0*designHscale, 46*designHscale) backgroundImage:[UIImage imageNamed:@"doorbell_look_btn"] highlightedImage:[UIImage imageNamed:@"doorbell_look_btn-press"] title:[JfgLanguage getLanTextStrByKey:@"DOOR_BELL_LOOK"] font:[UIFont systemFontOfSize:15*designHscale] titleColor:[UIColor colorWithHexString:@"#788291"] cornerRadius:0 handerForTouchUpInside:^(UIButton *button)
         {

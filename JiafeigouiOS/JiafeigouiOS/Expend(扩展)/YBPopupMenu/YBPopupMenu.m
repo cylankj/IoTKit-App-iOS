@@ -74,7 +74,7 @@
 {
     [super setHighlighted:highlighted animated:animated];
     
-    self.iconTitleLabel.textColor = [UIColor colorWithHexString:highlighted?@"#4b9fd5":@"#666666"];
+    //self.iconTitleLabel.textColor = [UIColor colorWithHexString:highlighted?@"#4b9fd5":@"#666666"];
 }
 
 - (void)setCanClicked:(BOOL)canClicked
@@ -201,6 +201,8 @@ UITableViewDataSource
         _contentView.backgroundColor = [UIColor clearColor];
         _contentView.delegate = self;
         _contentView.dataSource= self;
+        _contentView.showsVerticalScrollIndicator = NO;
+        _contentView.scrollEnabled = NO;
         _contentView.bounces = titles.count > 5 ? YES : NO;
         _contentView.tableFooterView = [UIView new];
         _contentView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
@@ -289,30 +291,23 @@ UITableViewDataSource
     cell.iconTitleLabel.text = _titles[indexPath.row];
     cell.separatorColor = _separatorColor;
     
-    if (self.isDisconnectted)
+    switch (indexPath.row)
     {
-        switch (indexPath.row)
+        case 0:
         {
-            case 0:
-            {
-                cell.canClicked = NO;
-            }
-                break;
-            case 1:
-            {
-                cell.canClicked = NO;
-            }
-                break;
-            default:
-            {
-                cell.canClicked = YES;
-            }
-                break;
+            cell.canClicked = self.firstCellCanClicked;
         }
-    }
-    else
-    {
-        cell.canClicked = YES;
+            break;
+        case 1:
+        {
+            cell.canClicked = self.secondCellCanClicked;
+        }
+            break;
+        default:
+        {
+            cell.canClicked = YES;
+        }
+            break;
     }
     
     if (_icons.count >= indexPath.row + 1)
@@ -378,7 +373,8 @@ UITableViewDataSource
         case YBPopupMenuTypeDark:
         {
             _textColor = [UIColor lightGrayColor];
-            _contentColor = [UIColor colorWithRed:0.25 green:0.27 blue:0.29 alpha:1];
+//            _contentColor = [UIColor colorWithRed:0.25 green:0.27 blue:0.29 alpha:1];
+            _contentColor = [UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:.6];
             _separatorColor = [UIColor lightGrayColor];
         }
             break;
@@ -407,9 +403,22 @@ UITableViewDataSource
     [_contentView reloadData];
 }
 
-- (void)setIsDisconnectted:(BOOL)isDisconnectted
+- (void)setFirstCellCanClicked:(BOOL)firstCellCanClicked
 {
-    _isDisconnectted = isDisconnectted;
+    _firstCellCanClicked = firstCellCanClicked;
+    [_contentView reloadData];
+}
+
+- (void)setSecondCellCanClicked:(BOOL)secondCellCanClicked
+{
+    _secondCellCanClicked = secondCellCanClicked;
+    [_contentView reloadData];
+}
+
+- (void)setRows:(NSArray *)rows
+{
+    _titles = rows;
+    
     [_contentView reloadData];
 }
 

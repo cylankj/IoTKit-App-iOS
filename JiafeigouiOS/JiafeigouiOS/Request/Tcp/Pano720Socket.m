@@ -292,7 +292,12 @@ typedef NS_ENUM(NSInteger, socketConnectType){
     [self receivePanoDataMsg:msgID sequence:mSeq cid:cid responseType:type msgData:msgData];
 }
 //tcp dp callback used in push and response
-- (void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID mSeq:(uint64_t)mSeq cid:(NSString *)cid type:(int)type dpMsgArr:(NSArray *)dpMsgArr
+-(void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
+                                               mSeq:(uint64_t)mSeq
+                                                cid:(NSString *)cid
+                                               type:(int)type
+                                       isInitiative:(BOOL)initiative
+                                           dpMsgArr:(NSArray *)dpMsgArr
 {
     [self receivePanoDataPointDpID:msgID sequence:mSeq cid:cid type:type dpMsgArr:dpMsgArr];
 }

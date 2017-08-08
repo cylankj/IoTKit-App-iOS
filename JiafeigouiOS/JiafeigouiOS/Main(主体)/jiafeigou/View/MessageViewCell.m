@@ -14,25 +14,40 @@
 #import "UIColor+FLExtension.h"
 #import "FLGlobal.h"
 #import "JfgLanguage.h"
+#import "UIButton+Addition.h"
+
 @implementation MessageViewCell
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {
     [super setSelected:selected animated:animated];
     //修改编辑模式下,选中的按钮图片
     if (self.isEditing && self.isSelected) {
-        UIControl *control = [self.subviews lastObject];
-        if ([control subviews].count>0) {
-            UIImageView * imgView = [[control subviews] objectAtIndex:0];
-            imgView.image = [UIImage imageNamed:@"camera_icon_Selected"];
+        for (UIView *subview in self.subviews) {
+            if ([subview isKindOfClass:NSClassFromString(@"UITableViewCellEditControl")]) {
+                UIControl *control = (UIControl *)subview;
+                if ([control subviews].count>0) {
+                    UIImageView * imgView = [[control subviews] objectAtIndex:0];
+                    imgView.image = [UIImage imageNamed:@"camera_icon_Selected"];
+                }
+            }
         }
+        
+       
         
     }//编辑模式下,取消选中的图片
     else if(self.isEditing && !self.isSelected){
-        UIControl *control = [self.subviews lastObject];
-        if ([control subviews].count>0) {
-            UIImageView * imgView = [[control subviews] objectAtIndex:0];
-            imgView.image = [UIImage imageNamed:@"camera_icon_Select"];
+        
+        for (UIView *subview in self.subviews) {
+            if ([subview isKindOfClass:NSClassFromString(@"UITableViewCellEditControl")]) {
+                UIControl *control = (UIControl *)subview;
+                if ([control subviews].count>0) {
+                    UIImageView * imgView = [[control subviews] objectAtIndex:0];
+                    imgView.image = [UIImage imageNamed:@"camera_icon_Select"];
+                }
+            }
         }
+
+        
     }
     [self setSelectionStyle:UITableViewCellSelectionStyleNone];
 }
@@ -158,6 +173,7 @@
         make.centerY.equalTo(_deleteBtn.mas_centerY);
     }];
 }
+
 #pragma mark - 公共控件
 -(TimeLineView *)line{
     if (!_line) {
@@ -166,6 +182,7 @@
     }
     return _line;
 }
+
 -(UIImageView *)tip{
     if (!_tip) {
         _tip =[[UIImageView alloc] init];
@@ -173,6 +190,7 @@
     }
     return _tip;
 }
+
 -(UILabel *)label{
     if (!_label) {
         _label =[[UILabel alloc] init];
@@ -182,6 +200,7 @@
     }
     return _label;
 }
+
 -(DelButton *)deleteBtn{
     if (!_deleteBtn) {
         _deleteBtn =[DelButton buttonWithType:UIButtonTypeCustom];
@@ -192,6 +211,7 @@
     }
     return _deleteBtn;
 }
+
 -(UIButton *)avBtn{
     if (!_avBtn) {
         _avBtn =[UIButton buttonWithType:UIButtonTypeCustom];
@@ -203,6 +223,7 @@
         [_avBtn setImage:[UIImage imageNamed:@"camera_icon_look"] forState:UIControlStateNormal];
         [_avBtn setTitleEdgeInsets:UIEdgeInsetsMake(0, 0, 0, -3)];
         [_avBtn setImageEdgeInsets:UIEdgeInsetsMake(0, -3, 0, 0)];
+        
     }
     return _avBtn;
 }

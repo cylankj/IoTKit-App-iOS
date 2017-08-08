@@ -7,9 +7,11 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+#import "BaseModel.h"
 #import "JfgTypeDefine.h"
 
-@interface DeviceInfoModel : NSObject
+@interface DeviceInfoModel : BaseModel
 /**
  *  设备名称
  */
@@ -33,6 +35,8 @@
 
 @property (nonatomic, assign) SDCardType sdCardType; // 是否需要 格式化 SD卡
 
+@property (nonatomic, strong) UIColor *detailTextColor;
+
 /**
  *  移动网络
  */
@@ -44,13 +48,13 @@
 @property (nonatomic, copy) NSString * wifi;
 @property (nonatomic, copy) NSString *mobileNet;
 /**
- *  CID编号
- */
-@property (nonatomic, copy) NSString * cid;
-/**
  *  MAC
  */
 @property (nonatomic, copy) NSString * MAC;
+/*
+ *  ip
+ */
+@property (nonatomic, copy) NSString *ipAddress;
 /**
  *  系统版本
  */
@@ -58,7 +62,7 @@
 /**
  *  软件版本
  */
-@property (nonatomic, copy) NSString * version;
+@property (nonatomic, copy) NSString *softVersion;
 /**
  *  电池电量
  */
@@ -80,5 +84,5 @@
  * 新固件
  */
 @property (nonatomic, assign) BOOL hasNewPackage;
-@property (nonatomic, copy) NSString *newPackageStr;
+//@property (nonatomic, copy) NSString *newPackageStr;
 @end

@@ -137,7 +137,12 @@
 
 }
 
--(void)jfgMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID mSeq:(uint64_t)mSeq cid:(NSString *)cid type:(int)type msgData:(NSData *)msgData
+-(void)jfgMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
+                                             mSeq:(uint64_t)mSeq
+                                              cid:(NSString *)cid
+                                             type:(int)type
+                                     isInitiative:(BOOL)initiative
+                                          msgData:(NSData *)msgData
 {
     if (type == 2) {
         [self robotForwardDataDealForCid:cid msgData:msgData];

@@ -147,9 +147,9 @@
 -(BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
     //不能输入空字符
-    if ([string isEqualToString:@" "]) {
-        return NO;
-    }
+//    if ([string isEqualToString:@" "]) {
+//        return NO;
+//    }
     //禁止输入表情
     if ([[[UITextInputMode currentInputMode] primaryLanguage]         isEqualToString:@"emoji"]) {
         return NO;

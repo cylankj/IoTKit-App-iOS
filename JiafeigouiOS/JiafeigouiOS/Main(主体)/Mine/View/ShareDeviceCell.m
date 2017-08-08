@@ -26,20 +26,20 @@
 -(void)initView
 {
     
-    [self addSubview:self.shareButton];
+    [self.contentView addSubview:self.shareButton];
     [_shareButton mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.right.mas_equalTo(self.mas_right).offset(-15);
+        make.right.mas_equalTo(self.contentView.mas_right).offset(-15);
         make.size.mas_equalTo(CGSizeMake(50, 28));
-        make.centerY.mas_equalTo(self.mas_centerY);
+        make.centerY.mas_equalTo(self.contentView.mas_centerY);
     }];
     
-    [self addSubview:self.iconImageView];
+    [self.contentView addSubview:self.iconImageView];
     [_iconImageView mas_makeConstraints:^(MASConstraintMaker *make) {
         make.left.equalTo(@19);
         make.size.mas_equalTo(CGSizeMake(34, 40));
-        make.centerY.mas_equalTo(self.mas_centerY);
+        make.centerY.mas_equalTo(self.contentView.mas_centerY);
     }];
-    [self addSubview:self.deviceNameLabel];
+    [self.contentView addSubview:self.deviceNameLabel];
     [_deviceNameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.left.mas_equalTo(self.iconImageView.mas_right).offset(19);
         make.top.mas_equalTo(self.iconImageView.mas_top);
@@ -47,7 +47,7 @@
         make.height.equalTo(@19);
     }];
     
-    [self addSubview:self.deviceNumLabel];
+    [self.contentView addSubview:self.deviceNumLabel];
     [_deviceNumLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.top.mas_equalTo(self.deviceNameLabel.mas_bottom).offset(8);
         make.left.mas_equalTo(self.deviceNameLabel.mas_left);
@@ -82,11 +82,11 @@
 }
 -(UIButton *)shareButton{
     if (!_shareButton) {
-        _shareButton = [UIButton buttonWithType:UIButtonTypeCustom];
+        _shareButton = [exploreBtn buttonWithType:UIButtonTypeCustom];
         [_shareButton setTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_Button"] forState:UIControlStateNormal];
         _shareButton.showsTouchWhenHighlighted = NO;
         [_shareButton.titleLabel setFont:[UIFont systemFontOfSize:14]];
-        _shareButton.layer.cornerRadius = 4;
+        _shareButton.layer.cornerRadius = 14;
         _shareButton.layer.borderWidth = 0.5;
         [_shareButton setBackgroundColor:[UIColor clearColor]];
     }
@@ -103,5 +103,9 @@
 
     // Configure the view for the selected state
 }
+
+@end
+
+@implementation exploreBtn
 
 @end

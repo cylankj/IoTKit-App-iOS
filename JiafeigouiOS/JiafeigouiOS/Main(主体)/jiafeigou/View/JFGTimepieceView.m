@@ -20,6 +20,7 @@
     int min;
     int sec;
     UILabel *_label;
+    UIView *redView;
 }
 @end
 
@@ -37,7 +38,7 @@
 
 -(void)initView
 {
-    UIView *redView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 8, 8)];
+    redView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 8, 8)];
     redView.y = self.bounds.size.height*0.5;
     redView.backgroundColor = [UIColor colorWithHexString:@"#ff3b30"];
     redView.layer.masksToBounds = YES;
@@ -56,6 +57,7 @@
     hour = _hour;
     min = _min;
     sec = _sec;
+    redView.alpha = 1;
     [self startTimer];
 }
 
@@ -67,6 +69,7 @@
     }
     _timer = [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(timerAction) userInfo:nil repeats:YES];
     [[NSRunLoop currentRunLoop] addTimer:_timer forMode:NSRunLoopCommonModes];
+    
 }
 
 -(void)timerAction
@@ -82,7 +85,17 @@
     }
     _label.text = [NSString stringWithFormat:@"%02d:%02d:%02d",hour,min,sec];
     NSLog(@"JFGTimepieceView_timer:%@",_label.text);
+    
+    [UIView animateWithDuration:0.5 animations:^{
+        redView.alpha = 0;
+    } completion:^(BOOL finished) {
+        [UIView animateWithDuration:0.5 animations:^{
+            redView.alpha = 1;
+        }];
+    }];
 }
+
+
 
 -(void)stopTimer
 {

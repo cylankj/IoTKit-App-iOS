@@ -19,6 +19,9 @@
 #import "JfgConfig.h"
 #import "JfgConstKey.h"
 #import "JFGBoundDevicesMsg.h"
+#import "FileManager.h"
+#import "LSAlertView.h"
+#import "JfgCacheManager.h"
 
 ////设置门磁推送开关
 //class MsgClientSetMagWarnReq:public MsgHeader{
@@ -70,24 +73,6 @@
 }
 
 #pragma mark- 设置门磁 主动推送开关 状态
--(void)setMagWarn
-{
-   // BOOL currentStatue = [[NSUserDefaults standardUserDefaults] boolForKey:@"JFGMagWarnStatue"];
-    
-//    //服务器主动推送的
-//    MsgClientSetMagWarnReq req1;
-//    req1.mId = 16920;
-//    req1.mCallee = [self.cid UTF8String];
-//    req1.mCaller = "";
-//    req1.warn = currentStatue?0:1;
-    
-   // std::string reqData1 = getBuff(req1);
-   // NSData *data1 = [NSData dataWithBytes:reqData1.c_str() length:reqData1.length()];
-   // [JFGSDK sendEfamilyMsgData:data1];
-    
-   // [ProgressHUD showProgress:nil];
-}
-
 
 -(void)jfgEfamilyMsg:(id)msg
 {
@@ -136,28 +121,7 @@
 
 - (void)initView
 {
-    if(self.pType == productType_Mag || self.pType == productType_Mine)
-    {
-        self.tableFooterView = nil;
-        
-        if (self.pType == productType_Mine) {
-            dispatch_async(dispatch_get_global_queue(0, 0), ^{
-                
-                NSInteger diskSize = [[SDImageCache sharedImageCache] getSize];
-                NSString *cacheStr = [NSString stringWithFormat:@"%.1fM",diskSize/1024.0/1024.0];
-                fileSize = cacheStr;
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self reloadData];
-                });
-                
-            });
-        }
-        
-    }
-    else
-    {
-        self.tableFooterView = self.footView;
-    }
+   self.tableFooterView = self.footView;
 }
 
 - (void)initViewLayout
@@ -167,16 +131,15 @@
 
 -(void)refreshData
 {
-    dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        
-        NSInteger diskSize = [[SDImageCache sharedImageCache] getSize];
+    __weak typeof(self) weakSelf = self;
+    [[SDImageCache sharedImageCache] calculateSizeWithCompletionBlock:^(NSUInteger fileCount, NSUInteger  totalSize) {
+        NSInteger diskSize = totalSize;
         NSString *cacheStr = [NSString stringWithFormat:@"%.1fM",diskSize/1024.0/1024.0];
         fileSize = cacheStr;
         dispatch_async(dispatch_get_main_queue(), ^{
-            [self reloadData];
+            [weakSelf reloadData];
         });
-    });
-    
+    }];
     [self.deviceSettingVM updateSettingsWithType:self.pType cid:self.cid];
 }
 
@@ -206,6 +169,7 @@
         _deviceSettingVM.isShare = self.isShare;
         _deviceSettingVM.cid = self.cid;
         _deviceSettingVM.alias = self.alias;
+        _deviceSettingVM.fwVC = [CommonMethod viewControllerForView:self];
     }
     
     return _deviceSettingVM;
@@ -237,9 +201,19 @@
         message = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"SURE_DELETE_1"],self.alias];
     }
     
-    UIAlertView *alert = [[UIAlertView alloc]initWithTitle:message message:@"" delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"OK"], nil];
-    alert.tag = 12352;
-    [alert show];
+    __weak typeof(self) weakSelf = self;
+    [LSAlertView showAlertWithTitle:message Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+    } OKBlock:^{
+        
+        if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+            [CommonMethod showNetDisconnectAlert];
+            return;
+        }
+        [[JFGBoundDevicesMsg sharedDeciceMsg] addDelDeviceCid:weakSelf.cid];
+        [ProgressHUD showProgress:nil];
+        [JFGSDK unBindDev:weakSelf.cid];
+        
+    }];
 }
 
 -(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
@@ -261,6 +235,10 @@
 -(void)jfgDeviceUnBind:(JFGErrorType)errorType
 {
     if (errorType == JFGErrorTypeNone) {
+        if (!self.isShare)
+        {
+            [self.deviceSettingVM sendOpenHotWireMsg];
+        }
         
         [ProgressHUD dismiss];
         UIViewController *vc = [CommonMethod viewControllerForView:self];
@@ -270,6 +248,18 @@
             [[NSNotificationCenter defaultCenter] postNotificationName:deleteDeviceNotification object:self.cid];
         }
         [JFGSDK refreshDeviceList];
+        
+        //删除720设备
+        NSString *filePath1 = [FileManager jfgPano720PhotoDirPath:self.cid];
+        NSString *filePath2 = [FileManager jfgPano720PhotoThumbnailsPath:self.cid];
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        if ([fileManager fileExistsAtPath:filePath1]) {
+            [fileManager removeItemAtPath:filePath1 error:nil];
+        }
+        if ([fileManager fileExistsAtPath:filePath2]) {
+            [fileManager removeItemAtPath:filePath2 error:nil];
+        }
+        [JfgCacheManager removeSfcPatamModelForCid:self.cid];
        
     }else{
         [[JFGBoundDevicesMsg sharedDeciceMsg] removeDelDeviceCid:self.cid];
@@ -316,18 +306,9 @@
     if (isShowSwitch == YES)
     {
         
-        if (self.pType == productType_Mine) {
-            BOOL isOpen = [[NSUserDefaults standardUserDefaults] boolForKey:@"JFGAccountIsOpnePush"];
-            UIUserNotificationSettings *setting = [[UIApplication sharedApplication] currentUserNotificationSettings];
-            if (UIUserNotificationTypeNone == setting.types) {
-                isOpen = NO;
-            }
-            cell.settingSwitch.on = isOpen;
-        }else{
-            
-            cell.settingSwitch.on = [[dataDict objectForKey:isCellSwitchOn] boolValue];
-        }
+         cell.settingSwitch.on = [[dataDict objectForKey:isCellSwitchOn] boolValue];
         
+        __weak typeof(self) weakSelf = self;
        
         [cell.settingSwitch addValueChangedBlockAcion:^(UISwitch *_switch) {
             
@@ -337,12 +318,10 @@
                 _switch.on = !_switch.on;
                 return ;
             }
-            if (self.pType == productType_Mag) {
-                [self setMagWarn];
-            }else{
-               [self.deviceSettingVM updateDataWithIndexPath:indexPath changedValue:@(_switch.on)]; 
-            }
             
+            [weakSelf.deviceSettingVM updateDataWithCelluuid:[dataDict objectForKey:cellUniqueID] changedValue:@(_switch.on)];
+            
+//            [weakSelf.deviceSettingVM updateDataWithIndexPath:indexPath changedValue:@(_switch.on)];
         }];
     }
     
@@ -360,14 +339,7 @@
         cell.cusDetailLabel.textColor = detailTextColor;
     }
     
-    if (self.pType == productType_Mine && fileSize && indexPath.section==1 && indexPath.row == 0) {
-        
-        cell.cusDetailLabel.text = fileSize;
-        
-    }else{
-        
-        cell.cusDetailLabel.text = (cell.settingSwitch.hidden == YES)?[dataDict objectForKey:cellDetailTextKey]:nil;
-    }
+    cell.cusDetailLabel.text = (cell.settingSwitch.hidden == YES)?[dataDict objectForKey:cellDetailTextKey]:nil;
     
     cell.cusImageVIew.image = [UIImage imageNamed:[dataDict objectForKey:cellIconImageKey]];
     cell.redDot.hidden = ![[dataDict objectForKey:cellRedDotInRight] boolValue];
@@ -400,8 +372,14 @@
     
     if ([[dataInfo allKeys] containsObject:cellFootViewTextKey])
     {
-        CGSize labelSize = CGSizeOfString([dataInfo objectForKey:cellFootViewTextKey], CGSizeMake(footLabelWidth, kheight), [UIFont systemFontOfSize:14.0f]);
-        return labelSize.height + stanrdSpace;
+        CGSize labelSize = CGSizeOfString([dataInfo objectForKey:cellFootViewTextKey], CGSizeMake(footLabelWidth, kheight), [UIFont systemFontOfSize:footLabelFontSize]);
+//         + stanrdSpace
+        if (section == [self.dataArray count] - 1)
+        {
+            return labelSize.height + stanrdSpace;
+        }
+        
+        return labelSize.height>stanrdSpace?labelSize.height:stanrdSpace;
     }
     
     if (section == [self.dataArray count] - 1)
@@ -420,7 +398,7 @@
     {
         DeviceInfoFootView *footView =[[DeviceInfoFootView alloc] init];
         footView.footLabel.text = [dataInfo objectForKey:cellFootViewTextKey];
-        footView.footLabel.font = [UIFont systemFontOfSize:12.0f];
+        footView.footLabel.font = [UIFont systemFontOfSize:footLabelFontSize];
         return footView;
     }
     
@@ -439,12 +417,7 @@
         [self.settingDelegate deviceSettingTableViewDidSelect:indexPath withData:dataInfo];
     }
     
-    if (self.pType == productType_Mine) {
-        if (indexPath.section ==1 && indexPath.row == 0) {
-            [self reloadData];
-        }
-    }
-    
+
 }
 
 - (void)fetchDataArray:(NSArray *)fetchArray

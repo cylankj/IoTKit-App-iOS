@@ -17,7 +17,7 @@
 #import "JfgTypeDefine.h"
 #import "ShareForSomeOneVC.h"
 #import "CommonMethod.h"
-
+#import "jfgConfigManager.h"
 
 @interface ShareRootViewController ()<UITableViewDelegate,UITableViewDataSource,JFGSDKCallbackDelegate>
 @property (nonatomic, strong)UITableView * devicesTableView;
@@ -25,6 +25,7 @@
 @property (nonatomic, strong)NSMutableArray * dataArray;
 @property (nonatomic, strong)UIView * noDataView;
 @property (nonatomic,strong)NSMutableDictionary *myFriendListDict;
+@property (nonatomic,strong)NSArray *devList;
 @end
 
 @implementation ShareRootViewController
@@ -102,13 +103,16 @@
     return _dataArray.count;
 }
 
--(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
     
     static NSString *IDCell = @"shareCell";
     ShareDeviceCell * cell = [tableView dequeueReusableCellWithIdentifier:IDCell];
     if (!cell) {
         cell = [[ShareDeviceCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:IDCell];
+        
     }
+    
     cell.selectedBackgroundView = [[UIView alloc] initWithFrame:cell.frame];
     cell.selectedBackgroundView.backgroundColor = CellSelectedColor;
     
@@ -153,23 +157,38 @@
     
     
     JiafeigouDevStatuModel * m = [self.dataArray objectAtIndex:indexPath.row];
-    UIImage * image;
-    switch (m.deviceType) {
-        case JFGDeviceTypeCameraWifi:
-            image = [UIImage imageNamed:@"add_icon_camera"];
+    UIImage * image = [UIImage imageNamed:@"add_icon_camera"];
+    
+    BOOL isFinished = NO;
+    for (NSArray *subArr in self.devList) {
+        for (AddDevConfigModel *model in subArr) {
+            
+            for (NSNumber *os in model.osList) {
+                
+                if ([os integerValue] == [m.pid integerValue]) {
+                    image = [UIImage imageNamed:model.iconName];
+                    isFinished = YES;
+                    break;
+                }
+                
+            }
+            if (isFinished) {
+                break;
+            }
+            
+        }
+        if (isFinished) {
             break;
-        case JFGDeviceTypeDoorBell:
-            image = [UIImage imageNamed:@"add_icon_ring"];
-            break;
-        case JFGDeviceTypeEfamily:
-            image = [UIImage imageNamed:@"add_icon_photo"];
-            break;
-        default:
-            image = [UIImage imageNamed:@"add_icon_camera"];
-            break;
+        }
     }
+    
     [cell.iconImageView setImage:image];
-    [cell.deviceNameLabel setText:m.alias];
+    
+    if (m.alias && ![m.alias isEqualToString:@""]) {
+        cell.deviceNameLabel.text = m.alias;
+    }else{
+        cell.deviceNameLabel.text = m.uuid;
+    }
     [cell.deviceNumLabel setText:[NSString stringWithFormat:@"%d/5",m.shareCount]];
     if (m.shareCount >= 5) {
         cell.shareButton.layer.borderColor = [UIColor colorWithHexString:@"#cecece"].CGColor;
@@ -264,6 +283,14 @@
         [_noDataView addSubview:noShareLabel];
     }
     return _noDataView;
+}
+
+-(NSArray *)devList
+{
+    if (!_devList) {
+        _devList = [[NSArray alloc]initWithArray:[jfgConfigManager getAllDevModel]];
+    }
+    return _devList;
 }
 
 -(void)buttonBackGroundHighlighted:(UIButton *)btn{

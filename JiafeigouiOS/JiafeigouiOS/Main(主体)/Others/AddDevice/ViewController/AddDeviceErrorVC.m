@@ -10,11 +10,15 @@
 #import "AddDeviceGuideViewController.h"
 #import "JfgGlobal.h"
 #import "UIButton+Addition.h"
+#import "PilotLampStateVC.h"
+
 
 @interface AddDeviceErrorVC()
 
 @property (nonatomic, strong) UILabel *errorLabel;
 @property (nonatomic, strong) UIButton *reTryButton;
+@property (nonatomic,strong) UIButton *declareBtn;
+@property (nonatomic,strong) UIButton *backBtn;
 
 @end
 
@@ -32,7 +36,10 @@
 {
     [self.view addSubview:self.errorLabel];
     [self.view addSubview:self.reTryButton];
-    
+    if (self.pType == productType_720) {
+        [self.view addSubview:self.declareBtn];
+        [self.view addSubview:self.backBtn];
+    }
     self.errorLabel.text = [self errorStringWithErrorType:self.errorType];
 }
 
@@ -49,7 +56,9 @@
     if (self.errorType == BindResultType_Success)
     {
         [self.navigationController popToRootViewControllerAnimated:YES];
+        
     }else if (self.errorType == 600){
+        
         for (UIViewController *temp in self.navigationController.viewControllers)
         {
             if ([temp isKindOfClass:[AddDeviceGuideViewController class]])
@@ -141,11 +150,44 @@
         [_reTryButton setTitleColor:[UIColor colorWithHexString:@"#4b9fd5"] forState:UIControlStateNormal];
         [_reTryButton setTitle:[JfgLanguage getLanTextStrByKey:@"TRY_AGAIN"] forState:UIControlStateNormal];
         _reTryButton.titleLabel.font = [UIFont systemFontOfSize:18];
-        _reTryButton.isRelatingNetwork = YES;
+        _reTryButton.isRelatingNetwork = NO;
         [_reTryButton addTarget:self action:@selector(reTryButtonAction) forControlEvents:UIControlEventTouchUpInside];
     }
     
     return _reTryButton;
+}
+
+-(UIButton *)declareBtn
+{
+    if (!_declareBtn) {
+        _declareBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _declareBtn.frame = CGRectMake(self.view.width-15-25, 40, 25, 25);
+        [_declareBtn setImage:[UIImage imageNamed:@"icon_explain_gray"] forState:UIControlStateNormal];
+        [_declareBtn addTarget:self action:@selector(intoVC) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _declareBtn;
+}
+
+-(void)intoVC
+{
+    PilotLampStateVC *lampVC = [PilotLampStateVC new];
+    [self presentViewController:lampVC animated:YES completion:nil];
+}
+
+-(UIButton *)backBtn
+{
+    if (!_backBtn) {
+        _backBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _backBtn.frame = CGRectMake(10, 37, 30, 30);
+        [_backBtn setImage:[UIImage imageNamed:@"btn_return"] forState:UIControlStateNormal];
+        [_backBtn addTarget:self action:@selector(backAction) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _backBtn;
+}
+
+-(void)backAction
+{
+    [self reTryButtonAction];
 }
 
 @end

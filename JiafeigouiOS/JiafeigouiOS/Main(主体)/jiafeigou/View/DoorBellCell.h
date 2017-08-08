@@ -17,7 +17,7 @@
 
 @interface DoorBellCell : UITableViewCell
 
-@property (nonatomic,assign)id <DoorBellCellTapDelegate> delegate;
+@property (nonatomic,weak)id <DoorBellCellTapDelegate> delegate;
 @property(strong, nonatomic)BellView * bell;
 @property(nonatomic,strong)NSIndexPath *indexPath;
 

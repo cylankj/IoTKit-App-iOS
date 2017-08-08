@@ -12,7 +12,7 @@
 
 @interface PickerGroupViewController : JFGBaseViewController
 
-@property (nonatomic,assign)id <PickerGroupViewControllerDelegate> delegate;
+@property (nonatomic,weak)id <PickerGroupViewControllerDelegate> delegate;
 
 @end
 

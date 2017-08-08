@@ -11,6 +11,7 @@
 #import "JFGAlbumManager.h"
 #import "JfgLanguage.h"
 #import "ProgressHUD.h"
+#import "LSAlertView.h"
 
 #define MaxScale 2.0
 #define MinScale 1.0
@@ -222,16 +223,18 @@
 {
     if(gesture.state == UIGestureRecognizerStateBegan)
     {
-        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[NSString stringWithFormat:@"%@?",[JfgLanguage getLanTextStrByKey:@"Tap3_SavePic"]] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"WELL_OK"], nil];
-        [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+        
+        __weak typeof(self) weakSelf = self;
+        [LSAlertView showAlertWithTitle:nil Message:[NSString stringWithFormat:@"%@?",[JfgLanguage getLanTextStrByKey:@"Tap3_SavePic"]] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"WELL_OK"] CancelBlock:^{
             
-            if (buttonIndex == 1) {
-                [JFGAlbumManager jfgWriteImage:self.showImageView.image toPhotosAlbum:nil completionHandler:^(UIImage *image, NSError *error) {
-                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SAVED_PHOTOS"]];
-                }];
-            }
+        } OKBlock:^{
             
-        } otherDelegate:nil];
+            [JFGAlbumManager jfgWriteImage:weakSelf.showImageView.image toPhotosAlbum:nil completionHandler:^(UIImage *image, NSError *error) {
+                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SAVED_PHOTOS"]];
+            }];
+            
+        }];
+        
     
     }
 }

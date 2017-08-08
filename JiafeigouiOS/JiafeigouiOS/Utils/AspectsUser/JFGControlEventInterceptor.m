@@ -49,18 +49,18 @@
 //        } error:NULL];
         
         //退出页面时候，取消当前ProgressHUD的加载显示
-        [UIViewController aspect_hookSelector:@selector(viewDidDisappear:) withOptions:AspectPositionBefore usingBlock:^(id<AspectInfo> aspectInfo, BOOL animated){
-            
-            //UIViewController * vc = [aspectInfo instance];
-            //[vc.view endEditing:YES];
-            //NSInvocation *invocation = aspectInfo.originalInvocation;
-            //[invocation invoke];执行原始方法
-            [ProgressHUD dismiss];
-            id obj = [aspectInfo instance];
-            NSString *devName = [NSString stringWithUTF8String:object_getClassName(obj)];
-            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"%@:viewDidDisappear",devName]];
-            
-        } error:NULL];
+//        [UIViewController aspect_hookSelector:@selector(viewDidDisappear:) withOptions:AspectPositionBefore usingBlock:^(id<AspectInfo> aspectInfo, BOOL animated){
+//            
+//            //UIViewController * vc = [aspectInfo instance];
+//            //[vc.view endEditing:YES];
+//            //NSInvocation *invocation = aspectInfo.originalInvocation;
+//            //[invocation invoke];执行原始方法
+//            //[ProgressHUD dismiss];
+////            id obj = [aspectInfo instance];
+////            NSString *devName = [NSString stringWithUTF8String:object_getClassName(obj)];
+////            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"%@:viewDidDisappear",devName]];
+//            
+//        } error:NULL];
         
         
         

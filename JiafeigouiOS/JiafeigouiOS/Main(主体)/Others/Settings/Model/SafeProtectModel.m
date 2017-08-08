@@ -9,6 +9,7 @@
 #import "SafeProtectModel.h"
 #import "JfgTypeDefine.h"
 #import "JfgDataTool.h"
+#import "JfgUserDefaultKey.h"
 #import "JfgLanguage.h"
 
 @implementation SafeProtectModel
@@ -35,6 +36,24 @@
     return @"";
 }
 
+- (NSArray *)aiRecognitions
+{
+    if (_aiRecognitions == nil)
+    {
+        _aiRecognitions = [[NSArray alloc] init];
+    }
+    return _aiRecognitions;
+}
+
+- (NSString *)aiRecognitionStr
+{
+    return [JfgDataTool aiRecognitionStr:self.aiRecognitions];
+}
+
+- (BOOL)isShowAIRedDot
+{
+    return [[NSUserDefaults standardUserDefaults] boolForKey:isShowSafeAIRedDot(self.cid)];
+}
 
 /**
  *  设备 提示音
@@ -57,6 +76,27 @@
             break;
     }
     return @"";
+}
+
+/*
+ *  报警时间 间隔
+ */
+- (NSString *)alramDurStr
+{
+    if (self.alramDuration == 0)
+    {
+        return [JfgLanguage getLanTextStrByKey:@"1 分钟"];
+    }
+    else if (self.alramDuration == 30)
+    {
+        return [JfgLanguage getLanTextStrByKey:@"30 秒"];
+    }
+    else if (self.alramDuration >= 60)
+    {
+        return [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"%d 分钟"],self.alramDuration/60];
+    }
+    
+    return _alramDurStr;
 }
 
 /**
@@ -196,7 +236,7 @@
     return NO;
 }
 
-
 @end
+
 
 

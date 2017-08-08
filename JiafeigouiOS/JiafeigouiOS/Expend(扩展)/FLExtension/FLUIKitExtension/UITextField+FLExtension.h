@@ -27,4 +27,6 @@
             autoCorrectionType:(UITextAutocorrectionType)autoCorrectionType
                       delegate:(id<UITextFieldDelegate>)delegate;
 
+@property (assign, nonatomic) NSInteger maxLength;
+
 @end

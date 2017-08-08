@@ -24,6 +24,11 @@
 //旋转90度
 + (void)showAlertForTransformRotateWithTitle:(NSString *)title Message:(NSString *)msg CancelButtonTitle:(NSString *)cancelTitle OtherButtonTitle:(NSString *)otherTitle CancelBlock:(void(^)(void))cancel OKBlock:(void(^)(void))ok;
 
+// 传入参数判断 是否旋转
++ (void)showAlerWithLandScape:(BOOL)isLandScape Title:(NSString *)title Message:(NSString *)msg CancelButtonTitle:(NSString *)cancelTitle OtherButtonTitle:(NSString *)otherTitle CancelBlock:(void(^)(void))cancel OKBlock:(void(^)(void))ok;
+
++ (void)directionChanged:(BOOL)isLandScape;
+
 + (LSAlertView *)shared;
 
 + (void)disMiss;

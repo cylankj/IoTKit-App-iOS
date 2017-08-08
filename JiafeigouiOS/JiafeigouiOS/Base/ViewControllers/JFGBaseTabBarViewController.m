@@ -9,12 +9,16 @@
 
 #import "JFGBaseTabBarViewController.h"
 #import "JfgConfig.h"
+#import "JfgTypeDefine.h"
 
 @interface JFGBaseTabBarViewController ()
 
 @end
 
 @implementation JFGBaseTabBarViewController
+
+NSInteger supportDirection = DeviceDirectionTypePortrait;
+
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -28,9 +32,7 @@
     if ([number isKindOfClass:[NSNumber class]]) {
         int select = [number intValue];
         if (self.viewControllers.count>select) {
-            
             self.selectedIndex = select;
-            
         }
     }
 }
@@ -40,10 +42,47 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-- (void)didReceiveMemoryWarning {
+- (void)didReceiveMemoryWarning
+{
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
+
+#pragma mark  屏幕旋转
+
+- (BOOL)shouldAutorotate
+{
+//    self.selectedViewController.shouldAutorotate
+    return YES;
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
+{   
+    switch (supportDirection)
+    {
+        case DeviceDirectionTypePortrait:
+        {
+            return UIInterfaceOrientationMaskPortrait;
+        }
+            break;
+        case DeviceDirectionTypeLandScape:
+        {
+            return UIInterfaceOrientationMaskLandscape;
+        }
+            break;
+        case DeviceDirectionTypeALL:
+        {
+            return UIInterfaceOrientationMaskAll;
+        }
+            break;
+        default:
+        {
+            return UIInterfaceOrientationMaskPortrait;
+        }
+            break;
+    }
+}
+
 
 /*
 #pragma mark - Navigation

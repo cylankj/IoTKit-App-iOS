@@ -21,8 +21,6 @@ typedef void (^downLoadFile)(DownLoadModel *dlModel);
 
 
 
-
-
 @interface DownloadUtils : NSObject
 
 @property (nonatomic, assign) int pType;
@@ -38,13 +36,9 @@ typedef void (^downLoadFile)(DownLoadModel *dlModel);
 
 - (BOOL)isDownloadFileCompleted:(NSString *)URLString;
 
+- (void)setDirectory:(NSString *)dirPath;
+
 @end
-
-
-
-
-
-
 
 @interface DownLoadModel : NSObject
 

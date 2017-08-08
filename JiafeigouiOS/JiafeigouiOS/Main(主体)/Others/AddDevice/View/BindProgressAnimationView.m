@@ -31,16 +31,16 @@
 
 -(void)initView
 {
-    loadingImageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, 0, 202, 202)];
+    loadingImageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, 0, 200, 200)];
     loadingImageView.center = CGPointMake(self.bounds.size.width*0.5, self.bounds.size.height*0.5);
-    loadingImageView.image = [UIImage imageNamed:@"add_login_loading"];
+    loadingImageView.image = [UIImage imageNamed:@"add_login_loading-1"];
     [self addSubview:loadingImageView];
     
     progressLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, 200, 200)];
-    progressLabel.font = [UIFont systemFontOfSize:60];
+    progressLabel.font = [UIFont systemFontOfSize:49];
     progressLabel.center = loadingImageView.center;
     progressLabel.textColor = [UIColor colorWithHexString:@"#36bdff"];
-    progressLabel.text = @"0";
+    progressLabel.text = @"0%";
     progressLabel.textAlignment = NSTextAlignmentCenter;
     [self addSubview:progressLabel];
     
@@ -92,7 +92,7 @@
 
 -(void)starAnimation
 {
-    [self startRotationAnimation];
+    //[self startRotationAnimation];
     
     [self progressAnimationWithStartProgress:0 stopProgress:50 duration:15 completionBlock:^{
        [self progressAnimationWithStartProgress:50 stopProgress:90 duration:45 completionBlock:^{
@@ -109,7 +109,7 @@
     POPAnimatableProperty *prop = [POPAnimatableProperty propertyWithName:@"countdown" initializer:^(POPMutableAnimatableProperty *prop) {
         prop.writeBlock = ^(id obj, const CGFloat values[]) {
             UILabel *lable = (UILabel*)obj;
-            lable.text = [NSString stringWithFormat:@"%d",(int)values[0]];
+            lable.text = [NSString stringWithFormat:@"%d%%",(int)values[0]];
         };
         prop.threshold = 0.01f;
     }];
@@ -130,7 +130,7 @@
 
 -(void)failedAnimation
 {
-    [self stopRotationAnimation];
+    //[self stopRotationAnimation];
     [progressLabel pop_removeAllAnimations];
     [progressLabel pop_removeAnimationForKey:@"countdown"];
     
@@ -139,7 +139,7 @@
         progressLabel.alpha = 0;
     } completion:^(BOOL finished) {
         
-        progressLabel.text= @"0";
+        progressLabel.text= @"0%";
         loadingImageView.transform = CGAffineTransformIdentity;
         [UIView animateWithDuration:0.5 animations:^{
             tipLabel.alpha = 1;

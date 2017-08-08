@@ -9,7 +9,9 @@
 #import "DeviceInfoModel.h"
 #import "JfgDataTool.h"
 #import "JfgLanguage.h"
+#import "CommonMethod.h"
 #import "JfgTypeDefine.h"
+#import "JfgGlobal.h"
 #import <JFGSDK/JFGSDK.h>
 
 @implementation DeviceInfoModel
@@ -24,27 +26,69 @@
 }
 
 /*
+ * ipAddress
+ */
+- (NSString *)ipAddress
+{
+    if ([JfgDataTool deviceIsOnline:(DeviceNetType)self.netType])
+    {
+        return _ipAddress;
+    }
+    
+    return @"";
+}
+/*
  * 电量
  */
 - (NSString *)battery
 {
     NSString *retStr = @"";
     
-    if (self.netType == DeviceNetType_Offline || self.netType == DeviceNetType_Connetct)
+    switch (self.pType)
     {
-        retStr = @"";
-    }
-    else if (self.isCharging)
-    {
-        retStr = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"CHARGING"],[_battery intValue]];
-    }
-    else
-    {
-        if (_battery != nil)
+        case productType_720p:
+        case productType_720:
         {
-            retStr = [NSString stringWithFormat:@"%@%%",_battery];
+            if ([JfgDataTool deviceIsOnline:(DeviceNetType)self.netType] || [CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+            {
+                if (self.isCharging)
+                {
+                    retStr = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"CHARGING"],[_battery intValue]];
+                }
+                else
+                {
+                    if (_battery != nil)
+                    {
+                        retStr = [NSString stringWithFormat:@"%@%%",_battery];
+                    }
+                }
+            }
+            
         }
+            break;
+            
+        default:
+        {
+            if (self.netType == DeviceNetType_Offline || self.netType == DeviceNetType_Connetct)
+            {
+                retStr = @"";
+            }
+            else if (self.isCharging)
+            {
+                retStr = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"CHARGING"],[_battery intValue]];
+            }
+            else
+            {
+                if (_battery != nil)
+                {
+                    retStr = [NSString stringWithFormat:@"%@%%",_battery];
+                }
+            }
+        }
+            break;
     }
+    
+    
     
     return retStr;
 }
@@ -141,27 +185,6 @@
     return _mobileNet;
 }
 
-/*
- *  SD卡
- */
-
-- (NSString *)SDCardInfo
-{
-    if (!self.isSDCardExist) // 不存在 SDCard
-    {
-        _SDCardInfo = [JfgLanguage getLanTextStrByKey:@"SD_NO"];
-    }
-    else if (self.sdCardError == 0) // 存在SDcard 正常使用
-    {
-        _SDCardInfo = [JfgLanguage getLanTextStrByKey:@"SD_NORMAL"];
-    }
-    else if (self.sdCardError != 0)
-    {
-        _SDCardInfo = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"SD_INIT_ERR"],self.sdCardError];
-    }
-    
-    return _SDCardInfo;
-}
 
 - (NSString *)SDCardSpace
 {
@@ -207,6 +230,20 @@
     return _sdCardType;
 }
 
+- (UIColor *)detailTextColor
+{
+    if (self.isSDCardExist && self.sdCardError != 0)
+    {
+        _detailTextColor = [UIColor colorWithHexString:@"#ff3d32"];
+    }
+    else
+    {
+        _detailTextColor = [UIColor colorWithHexString:@"#888888"];
+    }
+    
+    return _detailTextColor;
+}
+
 /*
  *
  */
@@ -228,17 +265,17 @@
 /*
  *  新固件
  */
-- (NSString *)newPackageStr
-{
-    if (self.hasNewPackage == YES)
-    {
-        _newPackageStr = [JfgLanguage getLanTextStrByKey:@"Tap1_NewFirmware"];
-    }
-    else
-    {
-        _newPackageStr = @"";
-    }
-    return _newPackageStr;
-}
+//- (NSString *)newPackageStr
+//{
+//    if (self.hasNewPackage == YES)
+//    {
+//        _newPackageStr = [JfgLanguage getLanTextStrByKey:@"Tap1_NewFirmware"];
+//    }
+//    else
+//    {
+//        _newPackageStr = @"";
+//    }
+//    return self.softVersion;
+//}
 
 @end

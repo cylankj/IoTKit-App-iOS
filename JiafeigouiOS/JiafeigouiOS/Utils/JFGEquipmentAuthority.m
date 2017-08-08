@@ -12,6 +12,8 @@
 #import <AssetsLibrary/AssetsLibrary.h>
 #import "JfgLanguage.h"
 #import "UIAlertView+FLExtension.h"
+#import "OemManager.h"
+#import "LSAlertView.h"
 
 @implementation JFGEquipmentAuthority
 
@@ -29,30 +31,19 @@
                 }
                 else {
                     bCanRecord = NO;//
-                    NSString *titleName;
-                    if ([JfgLanguage languageType] == 0) {
-                        titleName = @"\"加菲狗\"";
-                    }else{
-                        titleName = @"\"Clever Dog\"";
-                    }
+                    NSString *titleName = [OemManager appName];
                     NSString *str = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_MICROPHONE_C"],titleName];
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
-                        UIAlertView *aler = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_MICROPHONE"] message:str delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"], nil];
-                        [aler showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+                        //__weak typeof(self) weakSelf = self;
+                        [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_MICROPHONE"] Message:str CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"] CancelBlock:^{
                             
-//                            NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
-//                            NSString *rul = [NSString stringWithFormat:@"prefs:root=%@",identifier];
-                            if (buttonIndex == 1) {
-                                NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
-                                //NSURL *url = [NSURL URLWithString:rul];
-                                [[UIApplication sharedApplication]openURL:url];
-                            }
+                        } OKBlock:^{
                             
-                        } otherDelegate:nil];
-                        
-                        
-                        
+                            NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                            [[UIApplication sharedApplication]openURL:url];
+                        }];
+
                     });
 
                 }
@@ -68,27 +59,19 @@
     if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0) {
         AVAuthorizationStatus authStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
         if (authStatus == AVAuthorizationStatusDenied || authStatus == AVAuthorizationStatusRestricted) {
-            NSString *titleName;
-            if ([JfgLanguage languageType] == 0) {
-                titleName = @"\"加菲狗\"";
-            }else{
-                titleName = @"\"Clever Dog\"";
-            }
+            NSString *titleName = [OemManager appName];
             NSString *str = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_CAMERA_C"],titleName];
             dispatch_async(dispatch_get_main_queue(), ^{
                 
-                UIAlertView *aler = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_CAMERA"] message:str delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"], nil];
-                [aler showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+                //__weak typeof(self) weakSelf = self;
+                [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_CAMERA"] Message:str CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"] CancelBlock:^{
                     
-//                    NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
-//                    NSString *rul = [NSString stringWithFormat:@"prefs:root=%@",identifier];
-                    if (buttonIndex == 1) {
-                        NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
-                        //NSURL *url = [NSURL URLWithString:rul];
-                        [[UIApplication sharedApplication]openURL:url];
-                    }
+                } OKBlock:^{
                     
-                } otherDelegate:nil];
+                    NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                    [[UIApplication sharedApplication]openURL:url];
+                }];
+                
                 
             });
             return NO;
@@ -104,27 +87,19 @@
     if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0) {
         ALAuthorizationStatus authStatus = [ALAssetsLibrary authorizationStatus];
         if (authStatus == ALAuthorizationStatusDenied || authStatus ==  ALAuthorizationStatusRestricted) {
-            NSString *titleName;
-            if ([JfgLanguage languageType] == 0) {
-                titleName = @"\"加菲狗\"";
-            }else{
-                titleName = @"\"Clever Dog\"";
-            }
+            NSString *titleName = [OemManager appName];
             NSString *str = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_PHOTOS_C"],titleName];
             dispatch_async(dispatch_get_main_queue(), ^{
                 
-                UIAlertView *aler = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_PHOTOS"] message:str delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"], nil];
-                [aler showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+                //__weak typeof(self) weakSelf = self;
+                [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_PHOTOS"] Message:str CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"] CancelBlock:^{
                     
-//                    NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
-//                    NSString *rul = [NSString stringWithFormat:@"prefs:root=%@",identifier];
-                    if (buttonIndex == 1) {
-                        NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
-                        //NSURL *url = [NSURL URLWithString:rul];
-                        [[UIApplication sharedApplication]openURL:url];
-                    }
+                } OKBlock:^{
                     
-                } otherDelegate:nil];
+                    NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                    [[UIApplication sharedApplication]openURL:url];
+                }];
+                
             });
             return NO;
         }
@@ -139,27 +114,19 @@
     if (UIUserNotificationTypeNone != setting.types) {
         return YES;
     }else{
-        NSString *titleName;
-        if ([JfgLanguage languageType] == 0) {
-            titleName = @"\"加菲狗\"";
-        }else{
-            titleName = @"\"Clever Dog\"";
-        }
+        NSString *titleName = [OemManager appName];
         NSString *str = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"LOCAL_NOTIFICATION_MSG"],titleName];
         dispatch_async(dispatch_get_main_queue(), ^{
             
-            UIAlertView *aler = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_NOTIFICATIONS"] message:str delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"], nil];
-            [aler showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+            //__weak typeof(self) weakSelf = self;
+            [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_NOTIFICATIONS"] Message:str CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"] CancelBlock:^{
                 
-                //                    NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
-                //                    NSString *rul = [NSString stringWithFormat:@"prefs:root=%@",identifier];
-                if (buttonIndex == 1) {
-                    NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
-                    //NSURL *url = [NSURL URLWithString:rul];
-                    [[UIApplication sharedApplication]openURL:url];
-                }
+            } OKBlock:^{
                 
-            } otherDelegate:nil];
+                NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                [[UIApplication sharedApplication]openURL:url];
+            }];
+            
         });
     }
     return NO;

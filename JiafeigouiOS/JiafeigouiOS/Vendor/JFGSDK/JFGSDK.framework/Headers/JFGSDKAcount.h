@@ -50,6 +50,16 @@
 
 @property (nonatomic,assign)int photoVersion;
 
+/**
+ * 用户账户绑定的微信openid ,有openid 则表示用户已经绑定微信，空表示未绑定微信
+ */
+@property (nonatomic,copy)NSString *wxopenid;
+
+/**
+ *  微信推送开关标志 0 关闭 1开启
+ */
+@property (nonatomic,assign)int wx_push;
+
 @end
 
 

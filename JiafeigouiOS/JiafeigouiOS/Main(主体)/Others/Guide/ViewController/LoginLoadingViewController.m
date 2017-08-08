@@ -11,7 +11,11 @@
 #import "LoginRegisterViewController.h"
 #import "AppDelegate.h"
 #import "JfgLanguage.h"
+#import "UIAlertView+FLExtension.h"
+#import "OemManager.h"
+#import "JfgUserDefaultKey.h"
 #import "LoginManager.h"
+#import "BaseNavgationViewController.h"
 
 @interface LoginLoadingViewController ()
 
@@ -36,14 +40,102 @@
     [self.view addSubview:self.anylookButton];
     //进入欢迎页，此时必须处于退出登录状态
     [LoginManager sharedManager].loginStatus = JFGSDKCurrentLoginStatusLoginOut;
+    //[self interfaceOrientation:UIInterfaceOrientationPortrait];
     // Do any additional setup after loading the view.
+    
+    
+    
+#ifdef DEBUG
+    [self addChangeIpGesture];
+#else
+    NSString *ipAddressString = [[[NSBundle mainBundle] infoDictionary] objectForKey:domainKey];
+    if (![ipAddressString hasPrefix:@"yun.jfgou.com"])
+    {
+        [self addChangeIpGesture];
+    }
+#endif
 }
+
+//强制转屏
+- (void)interfaceOrientation:(UIInterfaceOrientation)orientation
+{
+    if ([[UIDevice currentDevice] respondsToSelector:@selector(setOrientation:)]) {
+        SEL selector  = NSSelectorFromString(@"setOrientation:");
+        NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[UIDevice instanceMethodSignatureForSelector:selector]];
+        [invocation setSelector:selector];
+        [invocation setTarget:[UIDevice currentDevice]];
+        int val = orientation;
+        // 从2开始是因为0 1 两个参数已经被selector和target占用
+        [invocation setArgument:&val atIndex:2];
+        [invocation invoke];
+    }
+}
+
+-(void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    [self.navigationController setNavigationBarHidden:YES animated:animated];
+}
+
+- (BOOL)shouldAutorotate
+{
+    return NO;
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskPortrait;
+}
+
+#pragma mark
+#pragma mark  ---- 切换平台 手势---------
+- (void)addChangeIpGesture
+{
+    UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(changeServerAddress:)];
+    tapGesture.numberOfTapsRequired = 10;
+    tapGesture.numberOfTouchesRequired = 1;
+    [self.topImageView addGestureRecognizer:tapGesture];
+    self.topImageView.userInteractionEnabled = YES;
+}
+
+- (void)changeServerAddress:(UITapGestureRecognizer *)gesture
+{
+//    NSString *domainURLString = [[NSUserDefaults standardUserDefaults] objectForKey:jfgDomianURL];
+    UIAlertView *changeIpAlertView = [[UIAlertView alloc] initWithTitle:@"" message:@"更改ip地址及端口号" delegate:self cancelButtonTitle:@"取消" otherButtonTitles:@"更改", nil];
+    changeIpAlertView.alertViewStyle = UIAlertViewStylePlainTextInput;
+    UITextField *ipTextField = [changeIpAlertView textFieldAtIndex:0];
+    ipTextField.placeholder = @"eg: yun.jfgou.com:443";
+    ipTextField.text = [NSString stringWithFormat:@"%@:%@",[OemManager getdomainURLString],[OemManager getPort]];
+//    UITextField *portTextField = [changeIpAlertView textFieldAtIndex:1];
+//    portTextField.placeholder = @"请输入端口号，若不变可不输";
+//    portTextField.text = [NSString stringWithFormat:@"%@",[serverInfo objectForKey:@"port"]];
+//    portTextField.secureTextEntry = NO;
+    [changeIpAlertView showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+        
+        if (buttonIndex == 1)
+        {
+            NSString *newDomainURL = [ipTextField.text stringByReplacingOccurrencesOfString:@" " withString:@""];
+            if (![newDomainURL isEqualToString:@""] && newDomainURL != nil)
+            {
+                [[NSUserDefaults standardUserDefaults] setObject:newDomainURL forKey:jfgDomianURL];
+                [[NSUserDefaults standardUserDefaults] synchronize];
+            }
+            
+        }
+        
+        
+    } otherDelegate:nil];
+    
+}
+
+#pragma mark
+#pragma mark  getter
 
 -(void)registerButtonAction
 {
     LoginRegisterViewController *loginRegisterVC = [[LoginRegisterViewController alloc]init];
     loginRegisterVC.viewType = FristIntoViewTypeRegister;
-    UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:loginRegisterVC];
+    BaseNavgationViewController*nav = [[BaseNavgationViewController alloc]initWithRootViewController:loginRegisterVC];
     nav.navigationBarHidden = YES;
     [self presentViewController:nav animated:YES completion:nil];
 }
@@ -52,7 +144,7 @@
 {
     LoginRegisterViewController *loginRegisterVC = [[LoginRegisterViewController alloc]init];
     loginRegisterVC.viewType = FristIntoViewTypeLogin;
-    UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:loginRegisterVC];
+    BaseNavgationViewController *nav = [[BaseNavgationViewController alloc]initWithRootViewController:loginRegisterVC];
     nav.navigationBarHidden = YES;
     [self presentViewController:nav animated:YES completion:nil];
 

@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #import "BaseViewModel.h"
 #import "JfgTypeDefine.h"
 
@@ -25,9 +26,12 @@
 
 @property (copy, nonatomic) NSString * alias;
 
+@property (weak,nonatomic)UIViewController *fwVC;
+
 - (NSArray *)dataArrayFromViewModelWithProductType:(productType)type Cid:(NSString *)cid;
 
 - (void)updateDataWithIndexPath:(NSIndexPath *)indexPath changedValue:(id)changedValue;
+- (void)updateDataWithCelluuid:(NSString *)cellUniqueID changedValue:(id)changedValue;
 
 - (void)updateMotionDection:(NSInteger)dectionType;
 - (void)updateMotionDection:(NSInteger)dectionType tipShow:(BOOL)isShow;
@@ -46,5 +50,12 @@
 
 // 更新 全景视角
 - (void)updatePanoAngle:(int)angleType;
+// 开启 热点
+- (void)openHotWired;
+- (void)sendOpenHotWireMsg;
 
+// 清空 SDcard
+- (void)clearSDCard;
+- (void)clearSDCardFinish;
+- (BOOL)isClearingSDCard;
 @end

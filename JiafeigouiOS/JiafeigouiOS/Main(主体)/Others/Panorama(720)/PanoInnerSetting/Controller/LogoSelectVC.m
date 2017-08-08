@@ -9,6 +9,8 @@
 #import "LogoSelectVC.h"
 #import "JfgHttp.h"
 #import "JfgGlobal.h"
+#import "LoginManager.h"
+#import "CommonMethod.h"
 
 #define logoIconNum 4.0  //每行 显示logo 个数
 
@@ -46,7 +48,8 @@ typedef NS_ENUM(NSInteger, ViewTag) {
     [self.view addSubview:self.bottomScrolView];
     [self initButtons];
     [self.view addSubview:self.pano720View];
-    [self.pano720View loadUIImage:[UIImage imageNamed:@"bgimage_top_default"]];
+    //photoLogoSample
+    [self.pano720View loadUIImage:[UIImage imageNamed:@"photoLogoSample.jpg"]];
 }
 
 - (void)initButtons
@@ -71,7 +74,7 @@ typedef NS_ENUM(NSInteger, ViewTag) {
         {
             case 0: // 这个 需要 特殊处理
             {
-                [btn setTitle:[JfgLanguage getLanTextStrByKey:@"无"] forState:UIControlStateNormal];
+                [btn setTitle:[JfgLanguage getLanTextStrByKey:@"Logo_Selection"] forState:UIControlStateNormal];
             }
                 break;
                 
@@ -86,7 +89,7 @@ typedef NS_ENUM(NSInteger, ViewTag) {
 
 - (void)initNavigation
 {
-    self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"LOGO 选择"];
+    self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_LogoSelect"];
     [self.leftButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
 }
 
@@ -120,6 +123,13 @@ typedef NS_ENUM(NSInteger, ViewTag) {
 #pragma mark action
 - (void)logoButtonAction:(UIButton *)sender
 {
+    if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess)
+    {
+        [CommonMethod showNetDisconnectAlert];
+        
+        return;
+    }
+    
     for (NSInteger i = 0; i < self.buttons.count; i ++)
     {
         if ([self.buttons objectAtIndex:i] == sender)

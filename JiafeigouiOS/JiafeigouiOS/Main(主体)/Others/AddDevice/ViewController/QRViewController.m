@@ -221,45 +221,10 @@
 }
 
 #pragma mark VMDelegate
-- (void)QRScanDidFinished:(QRReustType)resultType
+- (void)QRScanDidFinished:(QRReustType)resultType forPid:(NSString *)pid
 {
     switch (resultType)
     {
-        case QRReustTypePUshGuideCamera:
-        {
-            if (!isPushed) {
-                isPushed = YES;
-                AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
-                addDeviceGuide.pType = productType_WIFI;
-                addDeviceGuide.hidesBottomBarWhenPushed = YES;
-                [self.navigationController pushViewController:addDeviceGuide animated:YES];
-            }
-           
-        }
-            break;
-        case QRReustTypePUshGuideCameraFor720:
-        {
-            if (!isPushed) {
-                isPushed = YES;
-                AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
-                addDeviceGuide.pType = productType_720;
-                addDeviceGuide.hidesBottomBarWhenPushed = YES;
-                [self.navigationController pushViewController:addDeviceGuide animated:YES];
-            }
-            
-        }
-            break;
-        case QRReustTypePushGuideDoor:
-        {
-            if (!isPushed) {
-                isPushed = YES;
-                AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
-                addDeviceGuide.pType = productType_DoorBell;
-                addDeviceGuide.hidesBottomBarWhenPushed = YES;
-                [self.navigationController pushViewController:addDeviceGuide animated:YES];
-            }
-        }
-            break;
         case QRReustTypeSuccess:
         {
             [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Added_successfully"]];
@@ -276,8 +241,14 @@
             
         case QRReustTypeError:
         {
-            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"EFAMILY_INVALID_DEVICE"]];
+            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR_Fail"]];
             [self performSelector:@selector(backButtonAction:) withObject:nil afterDelay:1.0];
+        }
+            break;
+        case QRReustTypeInvalidQRCode:
+        {
+            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"EFAMILY_INVALID_DEVICE"]];
+            [self performSelector:@selector(backButtonAction:) withObject:nil afterDelay:2.0];
         }
             break;
             
@@ -291,7 +262,38 @@
             [self performSelector:@selector(backButtonAction:) withObject:nil afterDelay:2.0];
         }
             break;
-        default:
+        default:{
+            
+            AddDevConfigModel *model = nil;
+            NSArray *cofigArr = [jfgConfigManager getAllDevModel];
+            
+            for (NSArray *subArr in cofigArr) {
+                for (AddDevConfigModel *m in subArr) {
+                    
+                    for (NSNumber *_pid in m.osList) {
+                        
+                        if ([_pid integerValue] == [pid integerValue]) {
+                            model = m;
+                            break;
+                        }
+                        
+                    }
+                    
+                }
+            }
+            
+            if (model && !isPushed) {
+                
+                isPushed = YES;
+                AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+                addDeviceGuide.pType = (productType)[pid intValue];
+                addDeviceGuide.hidesBottomBarWhenPushed = YES;
+                [self.navigationController pushViewController:addDeviceGuide animated:YES];
+            
+            }
+            
+            
+        }
             break;
     }
     

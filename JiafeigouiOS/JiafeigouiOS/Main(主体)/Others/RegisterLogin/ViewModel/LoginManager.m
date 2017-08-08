@@ -23,6 +23,8 @@
 #import "CheckVersionHelper.h"
 #import "UIAlertView+FLExtension.h"
 #import "LoginRegisterViewController.h"
+#import "BaseNavgationViewController.h"
+#import "LSAlertView.h"
 
 static NSString * const JFGLoginStatuRecodeKey = @"JFGLOGINMARKFORUSERDEFAULT";
 static NSString * const JFGLoginSessionKey = @"JFGLoginSessionKey";
@@ -84,6 +86,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     self.loginType = JFGSDKLoginTypeAccountLogin;
     isAutoLogin = NO;
     JFGErrorType error = [JFGSDK userLogin:account keyword:password cerType:[ApnsManger certType]];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"userLoginForSelf:%@",account]];
     NSLog(@"LoginReqResult:%lu",(unsigned long)error);
     [UserAccountMsg saveAccount:account withPw:password];
     currentAccount = account;
@@ -281,9 +284,32 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
                 currentAccount = lastAccount;
                 isAutoLogin = YES;
                 [JFGSDK userLogin:lastAccount keyword:key cerType:[ApnsManger certType]];
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"userLoginForSelf:%@",lastAccount]];
+            }
+            
+        }else{
+            
+            // @"ICAM_CURRENT_PASSWORD"
+            //@"ICAM_CURRENT_ACCOUNT"//当前账号
+            NSString *account = [[NSUserDefaults standardUserDefaults] objectForKey:@"ICAM_CURRENT_ACCOUNT"];
+            NSString *pw = [[NSUserDefaults standardUserDefaults] objectForKey:@"ICAM_PASSWORD_SHOW"];
+            
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"LoginForAccount:%@ pw:%@",account,pw]];
+            
+            if (account && [account isKindOfClass:[NSString class]] && pw && [pw isKindOfClass:[NSString class]] && ![account isEqualToString:@""]) {
+                
+                currentAccount = account;
+                isAutoLogin = YES;
+                
+                [JFGSDK userLogin:account keywordForMD5:pw cerType:[ApnsManger certType]];
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"use2.0LoginForAccount:%@",account]];
+                
             }
             
         }
+        
+        
+        
     }else{
         
         NSString *linkID = [[NSUserDefaults standardUserDefaults] objectForKey:JFGCurrentLoginedAccountKey];
@@ -397,24 +423,18 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
         if (isAutoLogin && errorType == JFGErrorTypeLoginInvalidPass) {
             
             LoginLoadingViewController *lo = [LoginLoadingViewController new];
-            UINavigationController * nav = [[UINavigationController alloc]initWithRootViewController:lo];
+            BaseNavgationViewController * nav = [[BaseNavgationViewController alloc]initWithRootViewController:lo];
             UIWindow *keyWindows = [UIApplication sharedApplication].keyWindow;
             keyWindows.rootViewController = nav;
             
+            //__weak typeof(self) weakSelf = self;
+            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"PWD_CHANGED"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
+                
+            } OKBlock:^{
+
+            }];
             
-            UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"PWD_CHANGED"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
-            [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
-                
-                
-                //        for (id<LoginManagerDelegate>delegate in _hashTable) {
-                //
-                //            if ([delegate respondsToSelector:@selector(loginOutForServer:)]) {
-                //                [delegate loginOutForServer:errorType];
-                //            }
-                //            
-                //        }
-                
-            } otherDelegate:nil];
+           
             
         }
         
@@ -486,26 +506,17 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
 //    }];
     
     LoginLoadingViewController *lo = [LoginLoadingViewController new];
-    UINavigationController * nav = [[UINavigationController alloc]initWithRootViewController:lo];
+    BaseNavgationViewController * nav = [[BaseNavgationViewController alloc]initWithRootViewController:lo];
     UIWindow *keyWindows = [UIApplication sharedApplication].keyWindow;
     keyWindows.rootViewController = nav;
     
+    //__weak typeof(self) weakSelf = self;
+    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"PWD_CHANGED"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
+        
+    } OKBlock:^{
+        
+    }];
    
-    UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"PWD_CHANGED"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
-    [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
-        
-        
-//        for (id<LoginManagerDelegate>delegate in _hashTable) {
-//            
-//            if ([delegate respondsToSelector:@selector(loginOutForServer:)]) {
-//                [delegate loginOutForServer:errorType];
-//            }
-//            
-//        }
-        
-    } otherDelegate:nil];
-    
-    
 }
 
 -(JFGSDKAcount *)accountCache
@@ -563,6 +574,8 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
         [[NSUserDefaults standardUserDefaults] setBool:NO forKey:JFGAccountMsgChangedKey];
         
     }
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"wx_push_main:%d",account.wx_push]];
+    
 }
 
 
@@ -644,6 +657,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
         if (delegate && [delegate respondsToSelector:@selector(loginSuccess)])
         {
             [delegate loginSuccess];
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"loginVCDealloc" object:nil];
             [ApnsManger registerRemoteNotification:YES];
         }
         
@@ -674,8 +688,12 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
 #pragma mark- 授权登录失败提示
 -(void)authorizationfailedAlert
 {
-    UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap0_Authorizationfailed"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
-    [alert show];
+    //__weak typeof(self) weakSelf = self;
+    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap0_Authorizationfailed"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
+        
+    } OKBlock:^{
+        
+    }];
     
     [self loginFailRespone:JFGErrorTypeUnknown];
 }

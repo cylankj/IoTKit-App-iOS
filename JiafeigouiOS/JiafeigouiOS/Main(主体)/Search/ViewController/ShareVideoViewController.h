@@ -20,7 +20,7 @@ typedef NS_ENUM(NSInteger,ShareFileType){
 //以下参数必填
 @property (nonatomic,copy)NSString *cid;//设备cid
 @property (nonatomic,copy)NSString *devAlias;//设备昵称
-@property (nonatomic,copy)NSString *filePath;//文件路径
+@property (nonatomic,copy)NSString *filePath;//文件路径,本地缓存路径
 @property (nonatomic,strong)UIImage *thumbImage;//缩略图
 @property (nonatomic,assign)SSDKPlatformType platformType;//分享平台
 @property (nonatomic,assign)ShareFileType fileType;//分享内容类型

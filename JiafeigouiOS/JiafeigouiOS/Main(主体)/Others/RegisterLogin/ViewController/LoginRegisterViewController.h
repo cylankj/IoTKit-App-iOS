@@ -18,6 +18,7 @@ typedef NS_ENUM(NSInteger,FristIntoViewType){
     
 };
 
+
 //登陆状态
 typedef NS_ENUM(NSInteger,LoginState){
     

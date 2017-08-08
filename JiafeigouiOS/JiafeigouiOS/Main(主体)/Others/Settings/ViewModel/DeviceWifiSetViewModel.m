@@ -32,6 +32,7 @@
         self._cid = cid;
         [JFGSDK addDelegate:self];
         [JFGSDK fping:@"255.255.255.255"];
+        [JFGSDK fping:@"192.168.10.255"];
     }else{
         self._cid = @"";
         [self.jfgSDKBind scanWifi];

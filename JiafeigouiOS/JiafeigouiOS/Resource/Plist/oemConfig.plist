@@ -4,10 +4,14 @@
 <dict>
 	<key>recommend</key>
 	<dict>
+		<key>recommenForCellCUrl</key>
+		<string>https://appsto.re/cn/fYJGgb.</string>
 		<key>showRecommend</key>
 		<true/>
 		<key>recommendurl</key>
 		<string>http://www.jfgou.com/app/download.html</string>
+		<key>recommenForDobyUrl</key>
+		<string>https://itunes.apple.com/us/app/doby-new-smart-home/id1258090582?l=zh&amp;ls=1&amp;mt=8</string>
 	</dict>
 	<key>about</key>
 	<dict>

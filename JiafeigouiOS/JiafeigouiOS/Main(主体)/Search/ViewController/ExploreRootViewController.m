@@ -35,9 +35,9 @@
 #import "JfgConfig.h"
 #import "OemManager.h"
 #import "CommonMethod.h"
+#import "ShareView.h"
 //sharesdk
 #import "ShareClassView.h"
-#import <ShareSDK/ShareSDK.h>
 #import "JfgCacheManager.h"
 #import "LoginManager.h"
 #import "UIImageView+JFGImageView.h"
@@ -47,12 +47,17 @@
 #import "KRVideoPlayerController.h"
 #import "ExploreVideoPlayViewController.h"
 #import "JFGDatePickers.h"
+#import "Watch720PhotoVC.h"
+#import "ProgressHUD.h"
+#import "LSAlertView.h"
+#import "FLShareSDKHelper.h"
+#import "FLLog.h"
 
 #define COVERVIEWTAG 1001
 #define TIMEBUTTONTAG 2555
 #define TIMEBUTTON1TAG 2556
 
-@interface ExploreRootViewController ()<TimeChangeMonitorDelegate,LoginManagerDelegate,JFGSDKCallbackDelegate,DateRulerViewDelegate,DJActionRulerDelegate,UITableViewDelegate,UITableViewDataSource,UIGestureRecognizerDelegate,JFGDatePickerDelegate>
+@interface ExploreRootViewController ()<TimeChangeMonitorDelegate,LoginManagerDelegate,JFGSDKCallbackDelegate,DJActionRulerDelegate,UITableViewDelegate,UITableViewDataSource,UIGestureRecognizerDelegate,JFGDatePickerDelegate>
 {
     BOOL isRefreshing;
 }
@@ -236,22 +241,12 @@
     }else{
         self.contentTableView.mj_footer.hidden = YES;
     }
-//    //初始化时间选择器
-//    if (!self.ruler.superview) {
-//        [[UIApplication sharedApplication].delegate.window addSubview:self.ruler];
-//    }
-//    //            ExploreModel * m = [self.modelArray firstObject];
-//    [_ruler loadDateStringArray:self.timeArray markedDateString:[self.timeArray firstObject]];
 }
 
 - (void)judgeHaveData{
     if (self.modelArray.count == 0) {
-        //self.timeSelectButton.enabled = NO;
-        //self.timeSelectButton1.enabled = NO;
         self.noDataView.hidden = NO;
     }else{
-        //self.timeSelectButton.enabled = YES;
-        //self.timeSelectButton1.enabled = YES;
         self.noDataView.hidden = YES;
     }
     if (self.modelArray.count) {
@@ -261,15 +256,38 @@
     }
 }
 #pragma mark - create Data
-- (void)createData {
-    
+- (void)createData
+{
     if (self.contentTableView.mj_footer) {
         [self.contentTableView.mj_footer resetNoMoreData];
     }
-    DataPointIDVerSeg * seg = [[DataPointIDVerSeg alloc]init];
-    seg.msgId = dpMsgAccount_Wonder;
-    seg.version = 0;
-    [[dataPointMsg shared]packMutableDataPointMsg:@[seg] withCid:@"" isAsc:NO countLimit:15 SuccessArrBlock:^(NSMutableArray *arr) {
+    [[JFGSDKDataPoint sharedClient] robotGetDataEx:@"" version:0 dpids:@[@602] asc:NO success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+        NSMutableArray *arr = [NSMutableArray array];
+        
+        for (NSArray * subArr in idDataList)
+        {
+            NSMutableArray *elementArr = [NSMutableArray array];
+            for (DataPointSeg *seg in subArr)
+            {
+                NSError *error = nil;
+                NSMutableDictionary *elementDict = [NSMutableDictionary dictionary];
+                id obj = [MPMessagePackReader readData:seg.value error:&error];
+                if (!error)
+                {
+                    [elementDict setObject:@(seg.version) forKey:dpTimeKey];
+                    [elementDict setObject:[NSNumber numberWithInt:(int)seg.msgId] forKey:@"msgID"];
+                    [elementDict setValue:obj forKey:dpValueKey];
+                    [elementDict setValue:@(seg.msgId) forKey:dpIdKey];
+                    [elementArr addObject:elementDict]; // error 不为nil 添加数
+                    
+                }else{
+                    
+                    NSLog(@"___error %@",error);
+                }
+            }
+            [arr addObject:elementArr];
+        }
+
         if (arr.count > 0) {
             [self.modelArray removeAllObjects];
             [self.timeArray removeAllObjects];
@@ -278,6 +296,7 @@
                     NSArray * vauleArr = [dic objectForKey:@"_dpValue"];
                     ExploreModel * m = [[ExploreModel alloc]init];
                     m.version = [dic objectForKey:@"_dpTime"];
+                    m.msgID = [[dic objectForKey:@"msgID"] intValue];
                     m.cid = [vauleArr objectAtIndex:0];
                     m.msgTime = [[vauleArr objectAtIndex:1] stringValue];
                     
@@ -288,7 +307,12 @@
                     m.url = [vauleArr objectAtIndex:4];
                     
                     if (vauleArr.count>6) {
-                        m.collectedTimestamp = [vauleArr[6] longLongValue];
+                        id _obj = vauleArr[6];
+                        if ([_obj isKindOfClass:[NSNumber class]]) {
+                           m.collectedTimestamp = [vauleArr[6] longLongValue];
+                        }else if([_obj isKindOfClass:[NSString class]]){
+                           m.shareVideoUrl = vauleArr[6];
+                        }
                     }else{
                         m.collectedTimestamp = 0;
                     }
@@ -308,25 +332,80 @@
             [self.contentTableView reloadData];
             self.topicTitleLabel.alpha = 1;
             self.greetLabel.alpha = 1;
-
             
-            //初始化时间选择器
-//            if (!self.ruler.superview) {
-//                [[UIApplication sharedApplication].delegate.window addSubview: self.ruler];
-//            }
-//            
-////            ExploreModel * m = [self.modelArray firstObject];
-//            [_ruler loadDateStringArray:self.timeArray markedDateString:[self.timeArray firstObject]];
         }
         
-    } FailBlock:^(RobotDataRequestErrorType error) {
-        NSLog(@"每日精彩获取失败：%ld",(long)error);
+    } failure:^(RobotDataRequestErrorType type) {
+        
+        NSLog(@"每日精彩获取失败：%ld",(long)type);
         [self.refreshView endRefresh];
         self.topicTitleLabel.alpha = 1;
         self.greetLabel.alpha = 1;
-
         [self judgeHaveData];
+        
     }];
+    
+//    DataPointIDVerSeg * seg = [[DataPointIDVerSeg alloc]init];
+//    seg.msgId = dpMsgAccount_Wonder;
+//    seg.version = 0;
+//    [[dataPointMsg shared]packMutableDataPointMsg:@[seg] withCid:@"" isAsc:NO countLimit:15 SuccessArrBlock:^(NSMutableArray *arr) {
+//        if (arr.count > 0) {
+//            [self.modelArray removeAllObjects];
+//            [self.timeArray removeAllObjects];
+//            for (NSArray * msgArr in arr) {
+//                for (NSDictionary * dic in msgArr) {
+//                    NSArray * vauleArr = [dic objectForKey:@"_dpValue"];
+//                    ExploreModel * m = [[ExploreModel alloc]init];
+//                    m.version = [dic objectForKey:@"_dpTime"];
+//                    m.cid = [vauleArr objectAtIndex:0];
+//                    m.msgTime = [[vauleArr objectAtIndex:1] stringValue];
+//                    
+//                    long long timestamp = [m.version longLongValue]/1000;
+//                    m.time = [JfgTimeFormat transToHHmm:[NSString stringWithFormat:@"%lld",timestamp]];
+//                    m.isPic = ![[vauleArr objectAtIndex:2] boolValue];
+//                    m.regionType = [[vauleArr objectAtIndex:3] intValue];
+//                    m.url = [vauleArr objectAtIndex:4];
+//                    
+//                    if (vauleArr.count>6) {
+//                        m.collectedTimestamp = [vauleArr[6] longLongValue];
+//                    }else{
+//                        m.collectedTimestamp = 0;
+//                    }
+//                    
+//                    if (vauleArr.count>5) {
+//                        m.alias = [vauleArr objectAtIndex:5];
+//                    }else{
+//                        m.alias = m.cid;
+//                    }
+//                    
+//                    [self.modelArray addObject:m];
+//                    [self.timeArray addObject:[JfgTimeFormat transToyyyyMMddhhmmss:m.msgTime]];
+//                }
+//            }
+//            [self judgeHaveData];
+//            [self.refreshView endRefresh];
+//            [self.contentTableView reloadData];
+//            self.topicTitleLabel.alpha = 1;
+//            self.greetLabel.alpha = 1;
+//
+//            
+//            //初始化时间选择器
+////            if (!self.ruler.superview) {
+////                [[UIApplication sharedApplication].delegate.window addSubview: self.ruler];
+////            }
+////            
+//////            ExploreModel * m = [self.modelArray firstObject];
+////            [_ruler loadDateStringArray:self.timeArray markedDateString:[self.timeArray firstObject]];
+//        }
+//        
+//    } FailBlock:^(RobotDataRequestErrorType error) {
+//        NSLog(@"每日精彩获取失败：%ld",(long)error);
+//        [self.refreshView endRefresh];
+//        self.topicTitleLabel.alpha = 1;
+//        self.greetLabel.alpha = 1;
+//
+//        [self judgeHaveData];
+//    }];
     [self performSelector:@selector(headerEndRefresh) withObject:nil afterDelay:10.0];
 
 }
@@ -399,28 +478,73 @@
     static NSString *cellID = @"cellE1";
     static NSString *cellID1 = @"cellE0";
     ExploreModel *m = [self.modelArray objectAtIndex:indexPath.row];
-    //NSLog(@"source:%@",m.url);
     if(!m.isPic)//视频
     {
         ExploreTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellID1];
         if(!cell) {
             cell= [[NSBundle mainBundle]loadNibNamed:@"ExploreTableViewCell" owner:self options:nil][0];
             [cell.shareButton setTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_Button"] forState:UIControlStateNormal];
+            if ([OemManager oemType] == oemTypeCell_C) {
+                cell.shareButton.hidden = YES;
+            }
         }
         cell.msgTime = m.msgTime;
         cell._indexPath = indexPath;
+        
+        JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
+        
+        NSString *fileName = [m.url stringByDeletingPathExtension];
+        fileName = [fileName stringByAppendingPathExtension:@"jpg"];
+        
+        if (m.msgID == 602) {
+            fileName = m.url;
+        }
+        if (m.ossUrl == nil) {
+            NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,m.cid,fileName];
+            
+            NSString *_url = [JFGSDK getCloudUrlWithFlag:m.regionType fileName:wonderFilePath];
+            m.ossUrl = _url;
+        }
+       
+        
+        [cell.playVideoButton removeTarget:self action:@selector(videoPlayButton:) forControlEvents:UIControlEventTouchUpInside];
         [cell.playVideoButton addTarget:self action:@selector(videoPlayButton:) forControlEvents:UIControlEventTouchUpInside];
+        cell.playVideoButton.exModel = m;
+        cell.playVideoButton.supImageView = cell.videoImageView;
         
-        [cell.videoImageView jfg_setImageWithURL:[NSURL URLWithString:m.url] placeholderImage:[UIImage imageNamed:@"Wonderful_bg_image"]];
         
-        
+        [cell.videoImageView sd_setImageWithURL:[NSURL URLWithString:m.ossUrl] placeholderImage:[UIImage imageNamed:@"Wonderful_bg_image"] completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+            if (image) {
+                cell.shareButton.shareImage = image;
+            }else{
+                NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,m.cid,fileName];
+                NSString *_url = [JFGSDK getCloudUrlWithFlag:m.regionType fileName:wonderFilePath];
+                m.ossUrl = _url;
+                [cell.videoImageView sd_setImageWithURL:[NSURL URLWithString:m.ossUrl] placeholderImage:cell.videoImageView.image];
+                FLLog(@"errorUrl:%@",wonderFilePath);
+            }
+        }];
         cell.timeLineTimeLabel.text = m.time;
         
-        if (m.alias.length > 8) {
-            cell.fromDeviceLabel.text = [NSString stringWithFormat:@"%@...", [m.alias substringToIndex:8]];
-        }else{
-            cell.fromDeviceLabel.text = m.alias;
+        NSMutableString *newStr = [NSMutableString new];
+        int j=0;
+        for(int i =0; i < [m.alias length]; i++)
+        {
+            NSString *temp = [m.alias substringWithRange:NSMakeRange(i, 1)];
+            if ([temp lengthOfBytesUsingEncoding:NSUTF8StringEncoding]>1) {
+                j = j+2;
+            }else{
+                j++;
+            }
+            if (j<=16) {
+                [newStr appendString:temp];
+            }else{
+                [newStr appendString:@"..."];
+                break;
+            }
         }
+        cell.fromDeviceLabel.text = newStr;
+        
         //删除
         [UIButton button:cell.deleteButton touchUpInSideHander:^(UIButton *button) {
             
@@ -430,10 +554,8 @@
                 return ;
             }
             
-            
             [DJActionSheet showDJActionSheetWithTitle:[JfgLanguage getLanTextStrByKey:@"Tips_SureDelete"] buttonTitleArray:@[[JfgLanguage getLanTextStrByKey:@"DELETE"],[JfgLanguage getLanTextStrByKey:@"CANCEL"]] actionType:actionTypeDelete defaultIndex:0 didSelectedBlock:^(NSInteger index) {
                 if(index == 0) {
-                    
                     
                     if ([[NSUserDefaults standardUserDefaults] boolForKey:JFGShowDemoForExploreKey]) {
                         [[NSUserDefaults standardUserDefaults] setBool:NO forKey:JFGShowDemoForExploreKey];
@@ -446,14 +568,11 @@
                             self.refreshView.hidden = NO;
                             self.contentTableView.mj_footer.hidden = NO;
                         }else if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusLoginOut){
-                            //        [self.modelArray removeAllObjects];
-                            //
-                            
+                           
                             [self judgeHaveData];
-                            //        [self.refreshView endRefresh];
-                            //        [self.contentTableView reloadData];
                             self.refreshView.hidden = YES;
                             self.contentTableView.mj_footer.hidden = YES;
+                            
                         }else{
                             self.refreshView.hidden = YES;
                             self.contentTableView.mj_footer.hidden = YES;
@@ -466,7 +585,7 @@
                         [_contentTableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationBottom];
                         [_contentTableView reloadData];
                         DataPointIDVerSeg * seg = [[DataPointIDVerSeg alloc]init];
-                        seg.msgId = dpMsgAccount_Wonder;
+                        seg.msgId = m.msgID;
                         seg.version = (int64_t)[m.version longLongValue];
                         [[JFGSDKDataPoint sharedClient]robotDelDataWithPeer:@"" queryDps:@[seg] success:^(NSString *identity, int ret) {
                             if (ret == 0) {
@@ -478,43 +597,41 @@
                         }];
                         
                     }
-                    
-                    
-                    /*
-                     
-                     
-                     
-                     */
+
                 }
                 
             } didDismissBlock:nil];
         }];
-        //分享视频
-        [UIButton button:cell.shareButton touchUpInSideHander:^(UIButton *button) {
-            
-            if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
-                
-                [CommonMethod showNetDisconnectAlert];
-                return ;
-            }
-            
-            NSMutableDictionary *shareContent = [NSMutableDictionary dictionary];
-            [shareContent SSDKEnableUseClientShare];
-            
-            NSArray* imageArray = @[[UIImage imageNamed:@"bgimage_top_day.png"]];
-            if (imageArray) {
-                [shareContent SSDKSetupShareParamsByText:[JfgLanguage getLanTextStrByKey:@"Tap2_share_sharevideo_tips"]
-                                                  images:imageArray
-                                                     url:[NSURL URLWithString:@"http://www.mob.com"]
-                                                   title:[JfgLanguage getLanTextStrByKey:@"Tap2_share_sharevideo"]
-                                                    type:SSDKContentTypeWebPage];
-                [ShareClassView showShareViewWitnContent:shareContent withType:shareTypeVendor navigationController:nil Cid:nil];
-            }
-        }];
+        cell.shareButton.exModel = m;
+        [cell.shareButton removeTarget:self action:@selector(shareAction:) forControlEvents:UIControlEventTouchUpInside];
+        [cell.shareButton addTarget:self action:@selector(shareAction:) forControlEvents:UIControlEventTouchUpInside];
         
-        [UIButton button:cell.playVideoButton touchUpInSideHander:^(UIButton *button) {
-            [self playButtonTapped];
-        }];
+        //分享视频
+//        [UIButton button:cell.shareButton touchUpInSideHander:^(UIButton *button) {
+//            
+//            if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+//                
+//                [CommonMethod showNetDisconnectAlert];
+//                return ;
+//            }
+//            
+//            NSMutableDictionary *shareContent = [NSMutableDictionary dictionary];
+//            [shareContent SSDKEnableUseClientShare];
+//            
+//            NSArray* imageArray = @[[UIImage imageNamed:@"bgimage_top_day.png"]];
+//            if (imageArray) {
+//                [shareContent SSDKSetupShareParamsByText:[JfgLanguage getLanTextStrByKey:@"Tap2_share_sharevideo_tips"]
+//                                                  images:imageArray
+//                                                     url:[NSURL URLWithString:@"http://www.mob.com"]
+//                                                   title:[JfgLanguage getLanTextStrByKey:@"Tap2_share_sharevideo"]
+//                                                    type:SSDKContentTypeWebPage];
+//                [ShareClassView showShareViewWitnContent:shareContent withType:shareTypeVendor navigationController:nil Cid:nil];
+//            }
+//        }];
+        
+//        [UIButton button:cell.playVideoButton touchUpInSideHander:^(UIButton *button) {
+//            [self playButtonTapped];
+//        }];
 
         return cell;
     }
@@ -524,45 +641,77 @@
             cell= [[NSBundle mainBundle]loadNibNamed:@"ExploreTableViewCell" owner:self options:nil][1];
             [cell.shareButton1 setTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_Button"] forState:UIControlStateNormal];
             cell.shareButton1.titleLabel.adjustsFontSizeToFitWidth = YES;
-            [cell.deleteButton1 setTitle:@"删除" forState:UIControlStateNormal];
-            
+            if ([OemManager oemType] == oemTypeCell_C) {
+                cell.shareButton1.hidden = YES;
+            }
         }
         cell.msgTime = m.msgTime;
         cell._indexPath = indexPath;
-        /*
-         NSString *filaName = [NSString stringWithFormat:@"/%@/%lld_%d.jpg",cid,timestamp,order];
-         return [JFGSDK getCloudUrlWithFlag:flag fileName:filaName];
-         */
-        
-        //
-        
-        //NSString *fileName = [NSString stringWithFormat:@"/%@/%@",m.cid,m.url];
-        //NSString *_url = [JFGSDK getCloudUrlWithFlag:m.regionType fileName:wonderFilePath];
-        ///long/[vid]/[account]/wonder/[cid]/[timestamp].jpg
+        cell.photoImageView.msgID = m.msgID;
         JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
-        NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,m.cid,m.url];
-        NSString *_url = [JFGSDK getCloudUrlWithFlag:m.regionType fileName:wonderFilePath];
         
-        if (_url == nil || [_url isEqualToString:@""]) {
+       
+        if (m.ossUrl == nil) {
             NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,m.cid,m.url];
-            //拼一个假的url作为key，获取缓存图片
-            _url = [NSString stringWithFormat:@"https://www.jfgou.com%@",wonderFilePath];
+            NSString *_url = [JFGSDK getCloudUrlWithFlag:m.regionType fileName:wonderFilePath];
+            if (_url == nil || [_url isEqualToString:@""]) {
+                NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,m.cid,m.url];
+                //拼一个假的url作为key，获取缓存图片
+                _url = [NSString stringWithFormat:@"https://www.jfgou.com%@",wonderFilePath];
+            }
+            m.ossUrl = _url;
         }
         
-        cell.photoImageView.imageUrl = _url;
-        [cell.photoImageView jfg_setImageWithURL:[NSURL URLWithString:_url] placeholderImage:[UIImage imageNamed:@"picMoren"]];
+        
+        
+        cell.photoImageView.imageUrl = m.ossUrl;
+        [cell.photoImageView sd_setImageWithURL:[NSURL URLWithString:m.ossUrl] placeholderImage:[UIImage imageNamed:@"picMoren"] completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+            if (image) {
+                cell.shareButton1.shareImage = image;
+            }else{
+                NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,m.cid,m.url];
+                NSString *_url = [JFGSDK getCloudUrlWithFlag:m.regionType fileName:wonderFilePath];
+                if (_url == nil || [_url isEqualToString:@""]) {
+                    NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,m.cid,m.url];
+                    //拼一个假的url作为key，获取缓存图片
+                    _url = [NSString stringWithFormat:@"https://www.jfgou.com%@",wonderFilePath];
+                }
+                m.ossUrl = _url;
+                [cell.photoImageView sd_setImageWithURL:[NSURL URLWithString:m.ossUrl] placeholderImage:cell.photoImageView.image completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+                    
+                    if (error) {
+                        //如果oss链接获取失败，重新获取
+                        m.ossUrl = nil;
+                        FLLog(@"errorUrl:%@",wonderFilePath);
+                    }
+                    
+                }];
+            }
+            
+            
+        }];
         
         cell.timeLineTimeLabel1.text = m.time;
-        
-        if (m.alias.length > 8) {
-            cell.fromDeviceLabel1.text = [NSString stringWithFormat:@"%@...", [m.alias substringToIndex:8]];
-        }else{
-            cell.fromDeviceLabel1.text = m.alias;
+        NSMutableString *newStr = [NSMutableString new];
+        int j=0;
+        for(int i =0; i < [m.alias length]; i++)
+        {
+            NSString *temp = [m.alias substringWithRange:NSMakeRange(i, 1)];
+            if ([temp lengthOfBytesUsingEncoding:NSUTF8StringEncoding]>1) {
+                j = j+2;
+            }else{
+                j++;
+            }
+            if (j<=16) {
+                [newStr appendString:temp];
+            }else{
+                [newStr appendString:@"..."];
+                break;
+            }
         }
-        
-        
-        //cell.fromDeviceLabel1.text = @"";
-        
+        cell.fromDeviceLabel1.text = newStr;
+        cell.shareButton1.exModel = m;
+        __weak typeof(self) weakSelf = self;
         //删除
         [UIButton button:cell.deleteButton1 touchUpInSideHander:^(UIButton *button) {
             
@@ -574,21 +723,21 @@
             
             [DJActionSheet showDJActionSheetWithTitle:[JfgLanguage getLanTextStrByKey:@"Tips_SureDelete"] buttonTitleArray:@[[JfgLanguage getLanTextStrByKey:@"DELETE"],[JfgLanguage getLanTextStrByKey:@"CANCEL"]] actionType:actionTypeDelete defaultIndex:0 didSelectedBlock:^(NSInteger index) {
                 if(index == 0) {
-                    [self.modelArray removeObject:m];
+                    [weakSelf.modelArray removeObject:m];
                     //NSLog(@"每日精彩的数据:%@",self.modelArray);
                     [_contentTableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationBottom];
                     [_contentTableView reloadData];
                     DataPointIDVerSeg * seg = [[DataPointIDVerSeg alloc]init];
                     seg.msgId = dpMsgAccount_Wonder;
+                    if (m.msgID == 606) {
+                        seg.msgId = 606;
+                    }
                     seg.version = (int64_t)[m.version longLongValue];
                     [[JFGSDKDataPoint sharedClient]robotDelDataWithPeer:@"" queryDps:@[seg] success:^(NSString *identity, int ret) {
                         if (ret == 0) {
                             NSLog(@"delete success");
-                            
-                            [self cancelCollectedMarkWithTimestamp:m.collectedTimestamp cid:m.cid];
-                            //
-                            
-                            [self judgeHaveData];
+                            [weakSelf cancelCollectedMarkWithTimestamp:m.collectedTimestamp cid:m.cid];
+                            [weakSelf judgeHaveData];
                         }
                     } failure:^(RobotDataRequestErrorType type) {
                          NSLog(@"delete fail:%ld",(long)type);
@@ -599,24 +748,22 @@
 
         }];
 
+        [cell.shareButton1 removeTarget:self action:@selector(shareAction:) forControlEvents:UIControlEventTouchUpInside];
+        [cell.shareButton1 addTarget:self action:@selector(shareAction:) forControlEvents:UIControlEventTouchUpInside];
+        
         //分享图片
-        [UIButton button:cell.shareButton1 touchUpInSideHander:^(UIButton *button) {
-            UIImage *Im = cell.photoImageView.image ;
-            
-            if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
-                
-                [CommonMethod showNetDisconnectAlert];
-                return ;
-            }
-            
-//            ExploreModel *_m = [self.modelArray objectAtIndex:cell._indexPath.row];
-//            JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
-//            NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,_m.cid,_m.url];
-//            [JFGSDK getVideoShareUrlForFileName:wonderFilePath content:@"ceshiceshi" ossType:0 shareType:1];
-            
-            [ShareClassView showShareViewWithTitle:@"" content:@"" url:@"www.jfgou.com" image:Im imageUrl:_url Type:shareTypeVendor navigationController:self.navigationController Cid:nil];
-            
-        }];
+//        [UIButton button:cell.shareButton1 touchUpInSideHander:^(UIButton *button) {
+//            UIImage *Im = cell.photoImageView.image ;
+//            
+//            if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+//                
+//                [CommonMethod showNetDisconnectAlert];
+//                return ;
+//            }
+//            
+//            [ShareClassView showShareViewWithTitle:@"" content:@"" url:@"www.jfgou.com" image:Im imageUrl:_url Type:shareTypeVendor navigationController:self.navigationController Cid:nil];
+//            
+//        }];
 
         return cell;
     }
@@ -627,6 +774,54 @@
 {
     NSLog(@"%@",url);
 }
+
+-(void)shareAction:(ExploreShareButton *)btn
+{
+    if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+        
+        [CommonMethod showNetDisconnectAlert];
+        return ;
+    }
+    ExploreModel *m = btn.exModel;
+    ShareView *sv = [[ShareView alloc]initWithLandScape:NO];
+    [sv showShareView:^(SSDKPlatformType platformType) {
+        
+        NSString *title = [OemManager appName];
+
+        if (m.isPic) {
+            
+            if (m.msgID == 606) {
+                //全景图片  Tap1_Shared_Title
+                if ([OemManager oemType] == oemTypeDoby) {
+                    title = [JfgLanguage getLanTextStrByKey:@"Tap1_Shared_Title_zhognxing"];
+                }else{
+                    title = [JfgLanguage getLanTextStrByKey:@"Tap1_Shared_Title"];
+                }
+                [FLShareSDKHelper shareToThirdpartyPlatform:platformType url:m.shareVideoUrl image:btn.shareImage title:title contentType:SSDKContentTypeImage];
+            }else{
+                [FLShareSDKHelper shareToThirdpartyPlatform:platformType url:@"http://http://www.jfgou.com" image:btn.shareImage title:title contentType:SSDKContentTypeImage];
+            }
+            
+        }else{
+           
+            if (m.msgID == 606) {
+                //全景视频
+                if ([OemManager oemType] == oemTypeDoby) {
+                    title = [JfgLanguage getLanTextStrByKey:@"Tap1_Shared_Title_zhognxing"];
+                }else{
+                    title = [JfgLanguage getLanTextStrByKey:@"Tap1_Shared_Title"];
+                }
+                [FLShareSDKHelper shareToThirdpartyPlatform:platformType url:m.shareVideoUrl image:btn.shareImage title:title contentType:SSDKContentTypeImage];
+            }
+            
+        }
+        
+    } cancel:^{
+        
+    }];
+}
+
+
 
 -(void)cancelCollectedMarkWithTimestamp:(int64_t)timestamp cid:(NSString *)cid
 {
@@ -832,12 +1027,24 @@
         }];
     }
 }
-- (void)videoPlayButton:(id)sender{
+- (void)videoPlayButton:(id)sender
+{
+    ExploreVideoButton *btn = sender;
+    ExploreModel *m = btn.exModel;
 
-    [UIView animateWithDuration:0.5 animations:^{
-        self.topicTitleLabel.alpha  = 1;
-        self.greetLabel.alpha = 1;
-    }];
+    JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
+    NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,m.cid,m.url];
+    NSString *videoUrl = [JFGSDK getCloudUrlWithFlag:m.regionType fileName:wonderFilePath];
+    
+
+    Watch720PhotoVC *vc = [Watch720PhotoVC new];
+    vc.thumbNailImage = btn.supImageView.image;
+    vc.titleTime = [m.msgTime longLongValue];
+    vc.panoMediaType = mediaTypeVideo;
+    vc.panoMediaPath = videoUrl;
+    vc.hidesBottomBarWhenPushed = YES;
+    [self.navigationController pushViewController:vc animated:YES];
+
 }
 
 - (void)shareButtonAction:(id)sender
@@ -882,14 +1089,40 @@
 
 -(void)addFooter
 {
+    __weak typeof(self) weakSelf = self;
     MJRefreshAutoNormalFooter *footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
-        ExploreModel * model = [self.modelArray lastObject];
         
-        DataPointIDVerSeg * seg = [[DataPointIDVerSeg alloc]init];
-        seg.msgId = dpMsgAccount_Wonder;
-        seg.version = [model.version longLongValue];
-        [[dataPointMsg shared]packMutableDataPointMsg:@[seg] withCid:@"" isAsc:NO countLimit:15 SuccessArrBlock:^(NSMutableArray *arr) {
-            [self.contentTableView.mj_footer endRefreshing];
+        ExploreModel * model = [weakSelf.modelArray lastObject];
+        [[JFGSDKDataPoint sharedClient] robotGetDataEx:@"" version:[model.version longLongValue] dpids:@[@602] asc:NO success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+            NSMutableArray *arr = [NSMutableArray array];
+            
+            for (NSArray * subArr in idDataList)
+            {
+                NSMutableArray *elementArr = [NSMutableArray array];
+                
+                for (DataPointSeg *seg in subArr)
+                {
+                    NSError *error = nil;
+                    NSMutableDictionary *elementDict = [NSMutableDictionary dictionary];
+                    id obj = [MPMessagePackReader readData:seg.value error:&error];
+                    
+                    if (!error)
+                    {
+                        [elementDict setObject:@(seg.version) forKey:dpTimeKey];
+                        [elementDict setValue:obj forKey:dpValueKey];
+                        [elementDict setValue:@(seg.msgId) forKey:dpIdKey];
+                        [elementDict setObject:[NSNumber numberWithInt:(int)seg.msgId] forKey:@"msgID"];
+                        [elementArr addObject:elementDict]; // error 不为nil 添加数组
+                       
+                    }
+                    else
+                    {
+                        NSLog(@"___error %@",error);
+                    }
+                }
+                [arr addObject:elementArr];
+            }
+            [weakSelf.contentTableView.mj_footer endRefreshing];
             NSString *showString = nil;
             if (arr.count > 0) {
                 
@@ -897,13 +1130,12 @@
                     for (NSDictionary * dic in msgArr) {
                         NSArray * vauleArr = [dic objectForKey:@"_dpValue"];
                         NSString *msgTime = [[vauleArr objectAtIndex:1] stringValue];
-//                        if ([msgTime isEqualToString:@"0"]) {
-//                            break;
-//                        }
+                        
                         ExploreModel * m = [[ExploreModel alloc]init];
                         m.version = [dic objectForKey:@"_dpTime"];
+                        m.msgID = [[dic objectForKey:@"msgID"] intValue];
                         m.cid = [vauleArr objectAtIndex:0];
-                        m.msgTime = [[vauleArr objectAtIndex:1] stringValue];
+                        m.msgTime = msgTime;
                         long long timestamp = [m.version longLongValue]/1000;
                         m.time = [JfgTimeFormat transToHHmm:[NSString stringWithFormat:@"%lld",timestamp]];
                         m.isPic = ![[vauleArr objectAtIndex:2] boolValue];
@@ -916,38 +1148,48 @@
                             m.alias = m.cid;
                         }
                         
-                        [self.modelArray addObject:m];
-                        [self.timeArray addObject:[JfgTimeFormat transToyyyyMMddhhmmss:m.msgTime]];
+                        if (vauleArr.count>6) {
+                            id _obj = vauleArr[6];
+                            if ([_obj isKindOfClass:[NSNumber class]]) {
+                                m.collectedTimestamp = [vauleArr[6] longLongValue];
+                            }else if([_obj isKindOfClass:[NSString class]]){
+                                m.shareVideoUrl = vauleArr[6];
+                            }
+                        }else{
+                            m.collectedTimestamp = 0;
+                        }
+                        
+                        [weakSelf.modelArray addObject:m];
+                        [weakSelf.timeArray addObject:[JfgTimeFormat transToyyyyMMddhhmmss:m.msgTime]];
                         
                         if (showString == nil) {
                             showString = [JfgTimeFormat transToyyyyMMddhhmmss:m.msgTime];
                         }
                     }
                     if (msgArr.count<=0) {
-                        [self.contentTableView.mj_footer endRefreshingWithNoMoreData];
+                        [weakSelf.contentTableView.mj_footer endRefreshingWithNoMoreData];
                     }
                 }
                 
                 
-                [self judgeHaveData];
-                [self.contentTableView reloadData];
-                //初始化时间选择器
-//                if (!self.ruler.superview) {
-//                    [[UIApplication sharedApplication].delegate.window addSubview: self.ruler];
-//                }
-//                
-//                //            ExploreModel * m = [self.modelArray firstObject];
-//                [_ruler loadDateStringArray:self.timeArray markedDateString:showString?showString:@""];
+                [weakSelf judgeHaveData];
+                [weakSelf.contentTableView reloadData];
+                
+                
             }else{
-                [self.contentTableView.mj_footer endRefreshingWithNoMoreData];
+                [weakSelf.contentTableView.mj_footer endRefreshingWithNoMoreData];
             }
+
             
-        } FailBlock:^(RobotDataRequestErrorType error) {
-            NSLog(@"每日精彩获取失败：%ld",(long)error);
-            [self.contentTableView.mj_footer endRefreshing];
-            [self judgeHaveData];
+        } failure:^(RobotDataRequestErrorType type) {
+            NSLog(@"每日精彩获取失败：%ld",(long)type);
+            [weakSelf.contentTableView.mj_footer endRefreshing];
+            [weakSelf judgeHaveData];
         }];
-        [self performSelector:@selector(headerEndRefresh) withObject:nil afterDelay:10.0];
+
+        [weakSelf performSelector:@selector(headerEndRefresh) withObject:nil afterDelay:10.0];
+        
+        
     }];
     /**
      "PULL_TO_LOAD" = "下拉加载";
@@ -1341,8 +1583,7 @@
     if (!_dayGradient) {
         CAGradientLayer *gradient = [CAGradientLayer layer];
         gradient.frame = self.barView.bounds;
-        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#54b2d0"].CGColor,
-                           (id)[UIColor colorWithHexString:@"#439ac4"].CGColor,
+        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#17AFD1"].CGColor,(id)[UIColor colorWithHexString:@"#17AFD1"].CGColor,
                            nil];
         
         _dayGradient = gradient;
@@ -1355,8 +1596,7 @@
     if (!_nightGradient) {
         CAGradientLayer *gradient = [CAGradientLayer layer];
         gradient.frame = self.barView.bounds;
-        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#7590ae"].CGColor,
-                           (id)[UIColor colorWithHexString:@"#3a5170"].CGColor,
+        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#263954"].CGColor,(id)[UIColor colorWithHexString:@"#263954"].CGColor,
                            nil];
         _nightGradient = gradient;
     }
@@ -1409,4 +1649,8 @@
         self.timeSelectButton1.selected = NO;
     }
 }
+
+
+
+
 @end

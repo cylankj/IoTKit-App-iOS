@@ -16,7 +16,6 @@
 #import "OemManager.h"
 #import "FileManager.h"
 #import "JfgConstKey.h"
-#import "FileManager.h"
 #import "DownloadUtils.h"
 #import "JfgConfig.h"
 
@@ -33,7 +32,20 @@ static char const *objKey;
     [JFGBoundDevicesMsg sharedDeciceMsg];
     
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"jfg language Name: [%@]",[JfgLanguage languageName]]];
+
+    [self getAdUrlRequest];
+    [self performSelector:@selector(getAdUrlRequest) withObject:nil afterDelay:5.0];
+}
+
+- (void)getAdUrlRequest
+{
+    JFGLog(@"getadurl request ");
     [JFGSDK getAdPolicyForLanguage:(int)[JfgLanguage languageType] version:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"] resolution:[NSString stringWithFormat:@"%dx%d",(int)Kwidth, (int)kheight]];
+}
+
+- (void)revokeAdUrlRequest
+{
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(getAdUrlRequest) object:nil];
 }
 
 -(void)jfgOnUpdateNTP:(uint32_t)unixTimestamp
@@ -66,10 +78,8 @@ static char const *objKey;
 #pragma mark- JFGSDKDelegate
 - (void)jfgGetAdpolicyResult:(JFGErrorType)errorType endTime:(uint32_t)endtime picUrl:(NSString *)picUrl tagUrl:(NSString *)tagUrl
 {
-    if (errorType == JFGErrorTypeNone)
-    {
-        
-    }
+    [self revokeAdUrlRequest];
+    
     NSDictionary *adDict = @{adEndTimeKey:@(endtime),
                              adPicURLKey:picUrl,
                              adTagURLKey:tagUrl
@@ -79,22 +89,31 @@ static char const *objKey;
     [[NSUserDefaults standardUserDefaults] setObject:adDict forKey:adDictKey];
     [[NSUserDefaults standardUserDefaults] synchronize];
     
-    DownloadUtils *download = [[DownloadUtils alloc] init];
-    [download checkUrl:picUrl downLoadAction:^(DownLoadModel *dlModel) {
-        switch (dlModel.dlState)
-        {
-            case downloadStateNeedDownload:
+    if ([picUrl isEqualToString:@""] || picUrl == nil)
+    {
+        
+        [FileManager deleteFile:[[FileManager jfgAdvertisementDirPath] stringByAppendingPathComponent:[[NSURL URLWithString:[adDict objectForKey:adPicURLKey]] lastPathComponent]]];
+        
+    }
+    else
+    {
+        DownloadUtils *download = [[DownloadUtils alloc] init];
+        [download downloadWithUrl:picUrl toDirectory:[FileManager jfgAdvertisementDirPath] state:^(SRDownloadState state) {
+            switch (state)
             {
-                [download downloadWithUrl:picUrl toDirectory:[FileManager jfgAdvertisementDirPath] state:^(SRDownloadState state) {
+                case SRDownloadStateCompleted:
+                {
+                    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"download success __%@",picUrl]];
+                }
+                    break;
                     
-                } progress:nil completion:nil];
+                default:
+                    break;
             }
-                break;
-                
-            default:
-                break;
-        }
-    }];
+        } progress:nil completion:nil];
+        
+    }
+    
 }
 
 #pragma mark- getter and setter

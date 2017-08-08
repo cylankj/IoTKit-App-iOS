@@ -18,6 +18,7 @@
 #import "BindDevProgressViewController.h"
 #import "WifiModeFor720CFResultVC.h"
 #import "OemManager.h"
+#import "PilotLampStateVC.h"
 
 #define SCREEN_SIZE   [[UIScreen mainScreen] bounds].size
 #define DEVICE_IPHONE4S CGSizeEqualToSize(CGSizeMake(320, 480), SCREEN_SIZE)
@@ -36,6 +37,7 @@
 @property(nonatomic, strong)UILabel * lineLabel_bottom;
 @property(nonatomic, strong)UIButton * goToSettingButton;
 @property(nonatomic, strong)DelButton * exitBtn;
+@property(nonatomic, strong)UIButton *declareBtn;
 
 @end
 
@@ -49,20 +51,24 @@
     [self.view addSubview:self.circle2];
     [self.view addSubview:self.label2];
     [self.view addSubview:self.exitBtn];
-    
-    if (!IOS_SYSTEM_VERSION_EQUAL_OR_ABOVE(10.0)){
-        [self.view addSubview:self.goToSettingButton];
-        [self.view addSubview:self.lineLabel_bottom];
-    }
+    [self.view addSubview:self.goToSettingButton];
+    [self.view addSubview:self.lineLabel_bottom];
     [self.view addSubview:self.olImageView];
+    [self.view addSubview:self.declareBtn];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(becomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
     // Do any additional setup after loading the view.
+}
+
+-(void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
 }
 
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
     [self connectedAP];
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault];
 }
 
 -(BOOL)connectedAP
@@ -70,6 +76,7 @@
     BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.cidStr];
     if (isAP) {
         if (self.isAPModel) {
+            
             WifiModeFor720CFResultVC *resultVC = [WifiModeFor720CFResultVC new];
             resultVC.isAPModeFinished = YES;
             [self.navigationController pushViewController:resultVC animated:YES];
@@ -159,11 +166,19 @@
 }
 -(OLImageView *)olImageView{
     if (!_olImageView) {
-        _olImageView = [[OLImageView alloc]initWithFrame:CGRectMake(kLeft, self.label2.bottom+30*kScreen_Scale, 230*kScreen_Scale, 350*kScreen_Scale)];
+        _olImageView = [[OLImageView alloc]initWithFrame:CGRectMake(kLeft, self.label2.bottom+30*kScreen_Scale, 750*0.5*kScreen_Scale, 704*0.5*kScreen_Scale)];
         if ([OemManager oemType] == oemTypeDoby) {
              [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"doby"]]];
+            
         }else{
-            [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"connDevice"]]];
+            if (self.isAPModel) {
+                //460 × 700
+                [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"zhilian"]]];
+                _olImageView.size =CGSizeMake(460*0.5*kScreen_Scale, 700*0.5*kScreen_Scale);
+            }else{
+               [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"connDevice"]]];
+            }
+            
         }
         _olImageView.x = self.view.x;
     }
@@ -195,6 +210,23 @@
         [_exitBtn addTarget:self action:@selector(exitAction) forControlEvents:UIControlEventTouchUpInside];
     }
     return _exitBtn;
+}
+
+-(UIButton *)declareBtn
+{
+    if (!_declareBtn) {
+        _declareBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _declareBtn.frame = CGRectMake(self.view.width-15-25, 40, 25, 25);
+        [_declareBtn setImage:[UIImage imageNamed:@"icon_explain_gray"] forState:UIControlStateNormal];
+        [_declareBtn addTarget:self action:@selector(intoVC) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _declareBtn;
+}
+
+-(void)intoVC
+{
+    PilotLampStateVC *lampVC = [PilotLampStateVC new];
+    [self presentViewController:lampVC animated:YES completion:nil];
 }
 
 

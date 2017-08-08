@@ -14,7 +14,7 @@
 
 @interface SearchTableView()
 {
-    NSInteger selectedIndex; // 选中 的 单元格
+//    NSInteger selectedIndex; // 选中 的 单元格
 }
 
 @property (strong, nonatomic) NSMutableArray *searchDataArray;
@@ -22,6 +22,8 @@
 @property (nonatomic, strong) UIView *withoutDataView;
 @property (nonatomic, strong) UIImageView *noDataImageView;
 @property (nonatomic, strong) UILabel *noDataLabel;
+
+//@property (nonatomic, strong) NSString *selectedRowKey;
 
 @end
 
@@ -35,7 +37,7 @@
     {
         self.delegate = self;
         self.dataSource = self;
-        selectedIndex = -1; // Default -1
+//        selectedIndex = -1; // Default -1
         
         [self addSubview:self.withoutDataView];
     }
@@ -101,12 +103,13 @@
     NSString *zoneStr = [dataDict objectForKey:timezoneValue];
     searchCell.accessoryType = UITableViewCellAccessoryNone;
     
-    if ([[dataDict objectForKey:timezoneKey] isEqualToString:self.zoneId] && selectedIndex == -1)
-    {
-        selectedIndex = indexPath.row;
-    }
-    
-    if (selectedIndex == indexPath.row)
+//    if ([[dataDict objectForKey:timezoneKey] isEqualToString:self.zoneId] && selectedIndex == -1)
+//    {
+//        selectedIndex = indexPath.row;
+//    }
+
+//    selectedIndex == indexPath.row && 
+    if ([[dataDict objectForKey:timezoneKey] isEqualToString:self.zoneId])
     {
         searchCell.accessoryType = UITableViewCellAccessoryCheckmark;
     }
@@ -130,9 +133,11 @@
 
     [self tableViewDidSelect:indexPath withData:dataDict];
     
-    [tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:selectedIndex inSection:0]].accessoryType = UITableViewCellAccessoryNone;
-    selectedIndex = indexPath.row;
-    [self reloadRowsAtIndexPaths:[NSArray arrayWithObject:[NSIndexPath indexPathForRow:selectedIndex inSection:0]] withRowAnimation:UITableViewRowAnimationNone];
+//    [tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:selectedIndex inSection:0]].accessoryType = UITableViewCellAccessoryNone;
+//    selectedIndex = indexPath.row;
+    self.zoneId = [dataDict objectForKey:timezoneKey];
+//    [self reloadRowsAtIndexPaths:[NSArray arrayWithObject:[NSIndexPath indexPathForRow:selectedIndex inSection:0]] withRowAnimation:UITableViewRowAnimationNone];
+    [self reloadData];
     
 }
 #pragma mark ScrollView delegate

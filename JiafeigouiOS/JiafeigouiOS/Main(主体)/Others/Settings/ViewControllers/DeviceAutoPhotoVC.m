@@ -8,19 +8,23 @@
 
 #import "DeviceAutoPhotoVC.h"
 #import "BaseTableView.h"
-#import "BaseTableViewCell.h"
+#import "DeviceSettingCell.h"
 #import "JfgTableViewCellKey.h"
-#import "DeviceInfoViewModel.h"
+#import "DeviceAutoPhotoViewModel.h"
 #import "JfgMsgDefine.h"
+#import "JfgProductJduge.h"
 #import "DeviceInfoFootView.h"
+#import "LoginManager.h"
+#import "CommonMethod.h"
 #import "LSAlertView.h"
 #import "JfgGlobal.h"
 #import <JFGSDK/JFGSDKDataPoint.h>
+#import "UISwitch+Clicked.h"
 #import "JFGDataPointValueAnalysis.h"
 #import "JfgUserDefaultKey.h"
 #import "ProgressHUD.h"
 
-@interface DeviceAutoPhotoVC()<UIAlertViewDelegate>
+@interface DeviceAutoPhotoVC()<UIAlertViewDelegate, tableViewDelegate>
 {
     BOOL isHasSDCard;
     NSInteger sdCardErrorCode;
@@ -29,6 +33,8 @@
 @property (strong, nonatomic) BaseTableView *autoPhotoTableView;
 @property (strong, nonatomic) NSMutableArray *dataArray;
 @property (assign, nonatomic) NSInteger selectedIndex;
+
+@property (nonatomic, strong) DeviceAutoPhotoViewModel *autoPhotoVM;
 
 @end
 
@@ -49,6 +55,12 @@
     [self warnSensitivity];
     
     [[NSUserDefaults standardUserDefaults] setBool:NO forKey:isShowAutoPhotoRedDot(self.cid)];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [[NSUserDefaults standardUserDefaults] setBool:NO forKey:isShowRecordRedDot(self.cid)];
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -163,12 +175,22 @@
     {
         _dataArray = [[NSMutableArray alloc] initWithCapacity:5];
         
-        DeviceInfoViewModel *deviceInfo = [[DeviceInfoViewModel alloc] init];
-        deviceInfo.deviceInfoType = DeviceInfoTypeAutoPhoto;
-        [_dataArray addObjectsFromArray:[deviceInfo dataArrayFromViewModelWithProductType:self.pType Cid:self.cid]];
+        [_dataArray addObjectsFromArray:[self.autoPhotoVM fetchData]];
     }
     
     return _dataArray;
+}
+
+- (DeviceAutoPhotoViewModel *)autoPhotoVM
+{
+    if (_autoPhotoVM == nil)
+    {
+        _autoPhotoVM = [[DeviceAutoPhotoViewModel alloc] init];
+        _autoPhotoVM.delegate = self;
+        _autoPhotoVM.cid = self.cid;
+        _autoPhotoVM.pType = self.pType;
+    }
+    return _autoPhotoVM;
 }
 
 #pragma mark action
@@ -188,22 +210,53 @@
     [super leftButtonAction:sender];
 }
 
+#pragma mark ViewModel delegate
+- (void)updatedDataArray:(NSArray *)updatedArray
+{
+    [self.dataArray removeAllObjects];
+    [self.dataArray addObjectsFromArray:updatedArray];
+    
+    JFG_WS(weakSelf);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [weakSelf.autoPhotoTableView reloadData];
+    });
+}
+
 #pragma mark tableView delegate
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     static NSString *cellIdentifier = @"deviceAutoPhoto";
     
     NSDictionary *dataDict = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
-    BaseTableViewCell *autoPhotocell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
+    DeviceSettingCell *autoPhotocell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
     if (!autoPhotocell)
     {
-        autoPhotocell = [[BaseTableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cellIdentifier];
+        autoPhotocell = [[DeviceSettingCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cellIdentifier];
     }
     autoPhotocell.accessoryType = UITableViewCellAccessoryNone;
+    autoPhotocell.cusLabel.text = [dataDict objectForKey:cellTextKey];
+    autoPhotocell.cusDetailLabel.text = [dataDict objectForKey:cellDetailTextKey];
+    autoPhotocell.settingSwitch.hidden = ![[dataDict objectForKey:cellshowSwitchKey] boolValue];
+    autoPhotocell.redDot.hidden = ![[dataDict objectForKey:cellRedDotInRight] boolValue];
     
-    autoPhotocell.textLabel.text = [dataDict objectForKey:cellTextKey];
-    autoPhotocell.detailTextLabel.text = [dataDict objectForKey:cellDetailTextKey];
+    if (!autoPhotocell.settingSwitch.hidden)
+    {
+        JFG_WS(weakSelf);
+        autoPhotocell.settingSwitch.on = [[dataDict objectForKey:isCellSwitchOn] boolValue];
+        
+        [autoPhotocell.settingSwitch addValueChangedBlockAcion:^(UISwitch *_switch) {
+            
+            if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess ) {
+                [CommonMethod showNetDisconnectAlert];
+                _switch.on = !_switch.on;
+                return ;
+            }
+            [weakSelf.autoPhotoVM updateSwitchWithCellID:[dataDict objectForKey:cellUniqueID] changedValue:@(_switch.on)];
+        }];
+    }
     
+    
+    [autoPhotocell layoutAgain];
     
     switch (self.pType)
     {
@@ -234,8 +287,11 @@
             
         default:
         {
-            if (indexPath.section == self.selectedIndex)
+            
+            if (indexPath.section == self.selectedIndex && ![JfgProductJduge isAutoRecordSwitch:self.pType])
             {
+
+                
                 autoPhotocell.accessoryType = UITableViewCellAccessoryCheckmark;
             }
         }

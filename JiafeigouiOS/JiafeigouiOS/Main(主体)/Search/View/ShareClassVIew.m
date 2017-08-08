@@ -29,10 +29,10 @@
 @implementation ShareClassView
 
 static NSMutableDictionary * _Content;
-static shareType _type;
+static shareClassType _type;
 static UINavigationController * _nav;
 static NSString * _cid;
--(instancetype)initWithFrame:(CGRect)frame shareWithContent:(NSMutableDictionary *)content withType:(shareType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid{
+-(instancetype)initWithFrame:(CGRect)frame shareWithContent:(NSMutableDictionary *)content withType:(shareClassType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid{
     if (self =[super initWithFrame:frame]) {
         _Content = content;
         _type = type;
@@ -100,7 +100,7 @@ static NSString * _cid;
     return self;
 }
 -(NSArray *)createImages{
-    NSArray * btnImages = [NSArray array];
+    NSArray * btnImages = nil;
     switch (_type) {
         case shareTypeDevice:
             btnImages = @[@"icon_friend100.png",@"icon_contacts110.png"];
@@ -113,7 +113,7 @@ static NSString * _cid;
     return btnImages;
 }
 -(NSArray *)createTitles{
-    NSArray * btnTitles = [NSArray array];
+    NSArray * btnTitles = nil;
 
     switch (_type) {
         case shareTypeDevice:
@@ -127,7 +127,7 @@ static NSString * _cid;
     return btnTitles;
 }
 
-+(void)showShareViewWithTitle:(NSString *)title content:(NSString *)content url:(NSString *)url image:(UIImage *)image imageUrl:(NSString *)imageUrl Type:(shareType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid
++(void)showShareViewWithTitle:(NSString *)title content:(NSString *)content url:(NSString *)url image:(UIImage *)image imageUrl:(NSString *)imageUrl Type:(shareClassType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid
 {
     NSMutableDictionary *dict = [[NSMutableDictionary alloc]init];
     [dict safeSetObject:title forKey:@"title"];
@@ -155,7 +155,7 @@ static NSString * _cid;
     }];
 }
 
-+(ShareClassView *)showShareViewWitnContent:(NSMutableDictionary *)dictionary withType:(shareType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid
++(ShareClassView *)showShareViewWitnContent:(NSMutableDictionary *)dictionary withType:(shareClassType)type navigationController:(UINavigationController *)nav Cid:(NSString *)cid
 {
     UIWindow * window = [UIApplication sharedApplication].keyWindow;
     ShareClassView * share = [[ShareClassView alloc]initWithFrame:CGRectMake(0, kheight, Kwidth, kheight) shareWithContent:dictionary withType:type navigationController:nav Cid:cid];
@@ -349,8 +349,8 @@ static NSString * _cid;
                  }
                  case SSDKResponseStateSuccess:
                  {
-                      [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_SuccessTips"]];
-                     break;
+                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_SuccessTips"]];
+                    break;
                  }
                  case SSDKResponseStateFail:
                  {

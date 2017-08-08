@@ -15,13 +15,14 @@
 #import "DeviceSettingViewModel.h"
 #import "UISwitch+Clicked.h"
 #import "JfgTimeFormat.h"
+#import "CusPickerView.h"
 
 typedef NS_ENUM(NSInteger, pickerTag) {
     pickerTag_beginTime = 1000, // 1000 开始
     pickerTag_endTime,
 };
 
-@interface SafeProtectTableView()<cusDatePickerDelegate>
+@interface SafeProtectTableView()<cusDatePickerDelegate, UIPickerViewDelegate, UIPickerViewDataSource, CusPickerViewDelegate>
 /**
  *  数据
  */
@@ -65,9 +66,6 @@ typedef NS_ENUM(NSInteger, pickerTag) {
 {
     [self.safeProtectVM requestDataWithCid:self.cid];
 }
-
-
-
 
 #pragma mark  getter
 - (NSArray *)dataArray
@@ -144,6 +142,13 @@ typedef NS_ENUM(NSInteger, pickerTag) {
     
 }
 
+#pragma mark  cusPickerVide delegate
+- (void)didComfirmItem:(NSInteger)selectValue pickerView:(UIPickerView *)pickerView
+{
+    [self.safeProtectVM updateWarnDuration:(int)selectValue];
+}
+
+
 #pragma mark  tableView delegate
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -166,6 +171,7 @@ typedef NS_ENUM(NSInteger, pickerTag) {
     cell.accessoryType = (UITableViewCellAccessoryType)[[dataDict objectForKey:cellAccessoryKey] intValue];
     cell.cusDetailLabel.text = (cell.settingSwitch.hidden == YES)?[dataDict objectForKey:cellDetailTextKey]:nil;
     cell.imageView.image = [UIImage imageNamed:[dataDict objectForKey:cellIconImageKey]];
+    cell.redDot.hidden = ![[dataDict objectForKey:cellRedDotInRight] boolValue];
     
     [cell.settingSwitch addValueChangedBlockAcion:^(UISwitch *_switch)
     {
@@ -228,46 +234,34 @@ typedef NS_ENUM(NSInteger, pickerTag) {
 {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     NSDictionary *dataInfo = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
+    NSString *uniuqeIDStr = [dataInfo objectForKey:cellUniqueID];
     
-    switch (indexPath.section)
+    if ([uniuqeIDStr isEqualToString:idCellSensitive])
     {
-        case 0:
-        {
-            switch (indexPath.row)
-            {
-                case 1:
-                {
-                    [DJActionSheet showDJActionSheetWithTitle:[JfgLanguage getLanTextStrByKey:@"SECURE_SENSITIVITY"] buttonTitleArray:@[[JfgLanguage getLanTextStrByKey:@"SENSITIVI_LOW"], [JfgLanguage getLanTextStrByKey:@"SENSITIVI_STANDARD"], [JfgLanguage getLanTextStrByKey:@"SENSITIVI_HIGHT"]] actionType:actionTypeSelect defaultIndex:[[dataInfo objectForKey:cellHiddenText] intValue] didSelectedBlock:^(NSInteger index) {
-                        
-                        [self.safeProtectVM updateSensitive:index];
-                    } didDismissBlock:^{
-                        
-                    }];
-                    
-                }
-                    break;
-                    
-                default:
-                    break;
-            }
-        }
-            break;
-        case 1:
-        {
-            if (self.pType == productType_FreeCam)
-            {
-                [self showDatePickerView:indexPath.row];
-            }
-        }
-            break;
-        case 2:
-        {
-            [self showDatePickerView:indexPath.row];
-        }
-            break;
-        default:
-            break;
+        [DJActionSheet showDJActionSheetWithTitle:[JfgLanguage getLanTextStrByKey:@"SECURE_SENSITIVITY"] buttonTitleArray:@[[JfgLanguage getLanTextStrByKey:@"SENSITIVI_LOW"], [JfgLanguage getLanTextStrByKey:@"SENSITIVI_STANDARD"], [JfgLanguage getLanTextStrByKey:@"SENSITIVI_HIGHT"]] actionType:actionTypeSelect defaultIndex:[[dataInfo objectForKey:cellHiddenText] intValue] didSelectedBlock:^(NSInteger index) {
+            
+            [self.safeProtectVM updateSensitive:index];
+        } didDismissBlock:^{
+            
+        }];
+        return;
     }
+    else if ([uniuqeIDStr isEqualToString:idCellWarnBeginTime])
+    {
+        [self showDatePickerView:pickerTag_beginTime];
+        return;
+    }
+    else if ([uniuqeIDStr isEqualToString:idCellWarnEndTime])
+    {
+        [self showDatePickerView:pickerTag_beginTime];
+        return;
+    }
+    else if ([uniuqeIDStr isEqualToString:idCellAlramDutaion])
+    {
+        [self showPickerView:dataInfo];
+        return;
+    }
+    
     
     if ([self.safeTableViewDelegate respondsToSelector:@selector(tableViewDidSelect:withData:)])
     {
@@ -275,11 +269,20 @@ typedef NS_ENUM(NSInteger, pickerTag) {
     }
 }
 
+#pragma mark
+- (void)showPickerView:(NSDictionary *)dataInfo
+{
+    CusPickerView *pickerView = [[CusPickerView alloc] initWitinitWithTitle:@"" OkButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"]];
+    pickerView.delegate = self;
+    [pickerView setData:[[dataInfo objectForKey:cellHiddenText] integerValue]];
+    [pickerView show];
+}
+
 - (void)showDatePickerView:(NSInteger)row
 {
     switch (row)
     {
-        case 0:
+        case pickerTag_beginTime:
         {
             CusDatePickerView *datePicker = [[CusDatePickerView alloc] initWitinitWithTitle:@"" OkButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"]];
             datePicker.datePicker.tag = pickerTag_beginTime;
@@ -289,7 +292,7 @@ typedef NS_ENUM(NSInteger, pickerTag) {
             
         }
             break;
-        case 1:
+        case pickerTag_endTime:
         {
             CusDatePickerView *datePicker = [[CusDatePickerView alloc] initWitinitWithTitle:@"" OkButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"]];
             datePicker.datePicker.tag = pickerTag_endTime;

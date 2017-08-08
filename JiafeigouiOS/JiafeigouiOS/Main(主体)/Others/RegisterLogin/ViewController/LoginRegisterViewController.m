@@ -14,6 +14,7 @@
 #import "SecurityCodeButton.h"
 #import "NewPasswordViewController.h"
 #import "JfgConfig.h"
+#import "JfgConstKey.h"
 #import "ForgetPasswordRootViewController.h"
 #import "LoginManager.h"
 #import "JfgTypeDefine.h"
@@ -30,10 +31,12 @@
 #import "NSString+FLExtension.h"
 #import "UIButton+Addition.h"
 #import "FLShareSDKHelper.h"
+#import "OemManager.h"
 
 @interface LoginRegisterViewController ()<UITextFieldDelegate,LoginManagerDelegate, JFGSDKCallbackDelegate>
 {
     LoginState loginState;
+    BOOL isAppear;
 }
 
 //登陆相关控件
@@ -95,6 +98,8 @@
         
     }
     
+    //cell_c 移除部分控件
+    [self cell_cOemDeal];
     loginState = LoginStateNot;
     // Do any additional setup after loading the view.
 }
@@ -105,6 +110,7 @@
     [super viewDidAppear:animated];
     [JFGSDK addDelegate:self];
     [[LoginManager sharedManager] addDelegate:self];
+    isAppear = YES;
 }
 
 -(void)viewDidDisappear:(BOOL)animated
@@ -113,7 +119,20 @@
     [JFGSDK removeDelegate:self];
     [ProgressHUD dismiss];
     [[LoginManager sharedManager] removeDelegate:self];
+    isAppear = NO;
 }
+
+
+- (BOOL)shouldAutorotate
+{
+    return YES;
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskPortrait;
+}
+
 
 -(void)transformLogin
 {
@@ -238,6 +257,15 @@
     });
 }
 
+
+-(void)cell_cOemDeal
+{
+    if ([OemManager oemType] == oemTypeCell_C) {
+        [self.qqLoginBtn removeFromSuperview];
+        [self.weiboLoginBtn removeFromSuperview];
+        [self.xieyiLabel removeFromSuperview];
+    }
+}
 
 //初始化登陆页面，不带动画
 -(void)initializeLoginViewWithoutAnimation
@@ -536,7 +564,6 @@
         [_loginBtn addTarget:self action:@selector(loginAction:) forControlEvents:UIControlEventTouchUpInside];
         _loginBtn.selected = NO;
         _loginBtn.enabled = NO;
-        _loginBtn.isRelatingNetwork = YES;
     }
     return _loginBtn;
 }
@@ -707,7 +734,6 @@
         _registerYDBtn.tag = 123456;
         [_registerYDBtn setTitleColor:[UIColor colorWithHexString:@"#d8d8d8"] forState:UIControlStateDisabled];
         _registerYDBtn.enabled = NO;
-        _registerYDBtn.isRelatingNetwork = YES;
     }
     return _registerYDBtn;
 }
@@ -804,12 +830,12 @@
         
         if (textField == _accountTextFiled) {
             
-            if (toBeString.length>65) {
+            if (toBeString.length>accountMaxLength) {
                 return NO;
             }
           
         }else{
-            if (toBeString.length>12) {
+            if (toBeString.length>pwMaxLength) {
                 return NO;
             }
         }
@@ -818,19 +844,19 @@
     
     if (textField == _registerTextFiled) {
         if (self.registerTypeBtn.tag == 20) {
-           //手机注册
-            if (toBeString.length>11) {
+           //手机注册  为什么 是 11 ？？？
+            if (toBeString.length>pwMaxLength) {
                 return NO;
             }
         }else{
-            if (toBeString.length>65) {
+            if (toBeString.length>accountMaxLength) {
                 return NO;
             }
         }
     }
     
     if (textField == _codeTextFiled) {
-        if (toBeString.length>6) {
+        if (toBeString.length>smsMaxLength) {
             return NO;
         }
     }
@@ -846,19 +872,22 @@
 
 -(void)loginFail:(JFGErrorType)error
 {
-    if ([LoginManager sharedManager].loginType == JFGSDKLoginTypeAccountLogin ) {
-         [ProgressHUD showText:[CommonMethod languageKeyForLoginErrorType:error]];
+    if (isAppear) {
+        if ([LoginManager sharedManager].loginType == JFGSDKLoginTypeAccountLogin ) {
+            [ProgressHUD showText:[CommonMethod languageKeyForLoginErrorType:error]];
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self stopLoginingAnimation];
+        });
+        
+        loginState = LoginStateLoginFinished;
+        self.pwTextFiled.enabled = YES;
+        self.accountTextFiled.enabled = YES;
+        self.lockBtn.userInteractionEnabled = YES;
+        
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(loginTimeOut) object:nil];
     }
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self stopLoginingAnimation];
-    });
     
-    loginState = LoginStateLoginFinished;
-    self.pwTextFiled.enabled = YES;
-    self.accountTextFiled.enabled = YES;
-    self.lockBtn.userInteractionEnabled = YES;
-    
-    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(loginTimeOut) object:nil];
 }
 
 
@@ -866,22 +895,27 @@
 
 -(void)loginSuccess
 {
-    //[[NSNotificationCenter defaultCenter]postNotificationName:LoginSuccessNotification object:nil];
-    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(loginTimeOut) object:nil];
-    [self stopLoginingAnimation];
-    loginState = LoginStateLoginFinished;
-    self.pwTextFiled.enabled = YES;
-    self.accountTextFiled.enabled = YES;
-    self.lockBtn.userInteractionEnabled = YES;
-
-    AppDelegate *delegate = (AppDelegate*)[UIApplication sharedApplication].delegate;
-    
-    if ([delegate.window.rootViewController isKindOfClass:[UITabBarController class]]) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:JFGTabBarJumpVcKey object:[NSNumber numberWithInt:0]];
-        [self dismissViewControllerAnimated:YES completion:nil];
-    }else{
-        [delegate goToJFGViewContrller];
+    if (isAppear) {
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(loginTimeOut) object:nil];
+        [self stopLoginingAnimation];
+        loginState = LoginStateLoginFinished;
+        self.pwTextFiled.enabled = YES;
+        self.accountTextFiled.enabled = YES;
+        self.lockBtn.userInteractionEnabled = YES;
+        
+        AppDelegate *delegate = (AppDelegate*)[UIApplication sharedApplication].delegate;
+        
+        if ([delegate.window.rootViewController isKindOfClass:[UITabBarController class]]) {
+            [[NSNotificationCenter defaultCenter] postNotificationName:JFGTabBarJumpVcKey object:[NSNumber numberWithInt:0]];
+            [self dismissViewControllerAnimated:YES completion:nil];
+        }else{
+            [self viewDidDisappear:YES];
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"loginVCDealloc" object:nil];
+            [delegate goToJFGViewContrller];
+        }
     }
+    //[[NSNotificationCenter defaultCenter]postNotificationName:LoginSuccessNotification object:nil];
+   
 }
 
 
@@ -1038,7 +1072,10 @@
  */
 -(void)registerYDAction:(UIButton *)sender
 {
-   
+    if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline) {
+        [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"OFFLINE_ERR_1"]];
+        return;
+    }
     [self.view endEditing:YES];
     if (sender.tag == 123456) {
         if ([self.registerTextFiled.text isMobileNumber]){
@@ -1100,6 +1137,7 @@
     help.isXieyi = YES;
     help.hidesBottomBarWhenPushed = YES;
     [self.navigationController pushViewController:help animated:YES];
+
 }
 
 
@@ -1119,6 +1157,15 @@
 //登陆按钮事件
 -(void)loginAction:(UIButton *)sender
 {
+    if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline) {
+        [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"OFFLINE_ERR_1"]];
+        
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"currentNetworkStatus:%d",[JFGSDK currentNetworkStatus]]];
+        
+        return;
+    }
+    
+
     NSString *str = _accountTextFiled.text;
     if ([str isEmail] || [str isMobileNumber]) {
         
@@ -1173,9 +1220,7 @@
             [self performSelector:@selector(loginTimeOut) withObject:nil afterDelay:15];
         }else{
             [ProgressHUD showText:[NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap0_Login_NoInstalled"],@"QQ"]];
-            
         }
-        
         
     }else{
         [[LoginManager sharedManager] openLoginByType:JFGSDKLoginTypeOpenLoginForTwitter];
@@ -1318,6 +1363,7 @@
             //账号已经注册
             [ProgressHUD showText:[CommonMethod languageKeyForLoginErrorType:JFGErrorTypeAccountAlreadyExist]];
         }else{
+            
             NewPasswordViewController *newP = [[NewPasswordViewController alloc]init];
             newP.type = SetPasswordTypeInitializePassword;
             newP.registerType = registerTypeEmail;

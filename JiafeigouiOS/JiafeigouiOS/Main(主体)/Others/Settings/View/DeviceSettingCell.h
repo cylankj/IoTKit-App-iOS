@@ -9,10 +9,11 @@
 #import <UIKit/UIKit.h>
 #import "JfgGlobal.h"
 #import "BaseTableViewCell.h"
+@class JFGSettingSwitch;
 
 @interface DeviceSettingCell : BaseTableViewCell
 
-@property (strong, nonatomic) UISwitch *settingSwitch;
+@property (strong, nonatomic) JFGSettingSwitch *settingSwitch;
 
 @property (strong, nonatomic) UIImageView * cusImageVIew;
 
@@ -23,5 +24,12 @@
 @property (assign, nonatomic) BOOL canClickCell;
 
 - (void)layoutAgain;
+
+@end
+
+
+@interface JFGSettingSwitch : UISwitch
+
+@property (nonatomic,strong)NSIndexPath *indexPath;
 
 @end

@@ -20,6 +20,8 @@
 #define designHscale  kheight/667.0f
 #define designWscale  Kwidth/375.0f
 
+#define JFG_WS(weakSelf) __weak typeof(self) weakSelf = self;
+
 #pragma mark - System Version
 /// 当前系统版本大于等于某版本
 #define IOS_SYSTEM_VERSION_EQUAL_OR_ABOVE(v) (([[[UIDevice currentDevice] systemVersion] floatValue] >= (v))? (YES):(NO))

@@ -15,7 +15,7 @@
 #import <JFGSDK/JFGSDK.h>
 #import "JFGBoundDevicesMsg.h"
 
-@interface QRViewModel()<efamilyRequeseDelegate>
+@interface QRViewModel()
 
 @property (nonatomic, assign) BOOL isOldVersion; // 是否是老版本
 
@@ -45,6 +45,13 @@ NSString *const macKey = @"_macKey";
 //    http://www.jfgou.com/app/download.html?vid=001&pid=0012&sn=200000041777
     [JFGSDK appendStringToLogFile:qrResult];
     
+    
+    if ([qrResult rangeOfString:@"www.jfgou.com"].location == NSNotFound) {
+        
+        [self resultCallBack:QRReustTypeInvalidQRCode forPid:@"0"];
+        return YES;
+    }
+    
     NSMutableDictionary *dataInfo = [self QRResultStringParse:qrResult];
     self.vid = [dataInfo objectForKey:vidKey];
     self.pid = [dataInfo objectForKey:pidKey];
@@ -57,79 +64,83 @@ NSString *const macKey = @"_macKey";
         
         if ([model.uuid isEqualToString:self.sn]) {
             
-            [self resultCallBack:QRReustTypeBinded];
+            [self resultCallBack:QRReustTypeBinded forPid:@"0"];
             return YES;
         }
         
     }
     
+    
+    
     //先判断sn 是否存在
     if ([self.sn isEqualToString:@""] || self.sn == nil)
     {
-        [self resultCallBack:QRReustTypeError];
-        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_QR_Fail"]];
-        return NO;
+        [self resultCallBack:QRReustTypeError forPid:@"0"];
+        return YES;
     }
     
     // 判断pid 和vid 是否 存在
     if (self.pid == nil || [self.pid isEqualToString:@""] || self.vid == nil || [self.vid isEqualToString:@""])
     {
-        [self resultCallBack:QRReustTypeError];
+        [self resultCallBack:QRReustTypeError forPid:@"0"];
         return YES;
     }
-    
+    [self resultCallBack:QRReustTypePUshGuideCamera forPid:self.pid];
     // 再判断 pid
-    switch ([self.pid intValue])
-    {
-        case productType_3G:
-        case productType_WIFI:
-        case productType_WIFI_V2:
-        case productType_FreeCam:         // 门铃硬件 的狗 乐视
-        case productType_Camera_HS:      // 海思
-        case productType_Camera_ZY:      // 乔安
-        case productType_Camera_GK:
-        case productType_ColudCamera: // 看家王 云相机
-        case productType_Wifi8330:       // wifi版 8330主板
-        case productType_HS_960:         // 海思 960
-        case productType_HS_1080:
-        case 4:
-        case 23:
-        case 36:
-        case 37://摄像头
-        {
-            [self resultCallBack:QRReustTypePUshGuideCamera];
-        }
-            break;
-            
-        case 21:
-        case productType_720:            // 720 VR 全景相机
-        {
-            [self resultCallBack:QRReustTypePUshGuideCameraFor720];
-        }
-            break;
-        
-        case 6:
-        case 15:
-        case 27:
-        case 1160:
-        case productType_newDoorBell:      // 门铃
-        case productType_newDoorBell_V2p:
-        case 22://门铃
-        {
-            [self resultCallBack:QRReustTypePushGuideDoor];
-        }
-            break;
-        case 8://中控
-        {
-            [self sendBindMsg]; 
-        }
-            break;
-        default:
-        {
-            [self resultCallBack:QRReustTypeError];
-        }
-            break;
-    }
+//    switch ([self.pid intValue])
+//    {
+//        case productType_3G:
+//        case productType_WIFI:
+//        case productType_WIFI_V2:
+//        case productType_FreeCam:         // 门铃硬件 的狗 乐视
+//        case productType_Camera_HS:      // 海思
+//        case productType_Camera_ZY:      // 乔安
+//        case productType_Camera_GK:
+//        case productType_ColudCamera: // 看家王 云相机
+//        case productType_Wifi8330:       // wifi版 8330主板
+//        case productType_HS_960:         // 海思 960
+//        case productType_HS_1080:
+//        case 4:
+//        case 23:
+//        case 36:
+//        case 37:
+//        case 47:
+//        case 48:
+//        case 1346:
+//        case 1347://摄像头
+//        {
+//            
+//        }
+//            break;
+//            
+//        case 21:
+//        case productType_720:            // 720 VR 全景相机
+//        {
+//            [self resultCallBack:QRReustTypePUshGuideCameraFor720];
+//        }
+//            break;
+//            
+//        case 6:
+//        case 15:
+//        case 27:
+//        case 1160:
+//        case productType_newDoorBell:      // 门铃
+//        case productType_newDoorBell_V2p:
+//        case 22://门铃
+//        case 44:
+//        case 46:
+//        case 1344:
+//        case 1345:
+//        {
+//            [self resultCallBack:QRReustTypePushGuideDoor];
+//        }
+//            break;
+//        default:
+//        {
+//            [self resultCallBack:QRReustTypeError];
+//        }
+//        break;
+//    }
     return YES;
 }
 
@@ -188,32 +199,16 @@ NSString *const macKey = @"_macKey";
 
 
 
-- (void)resultCallBack:(QRReustType)resultType
+- (void)resultCallBack:(QRReustType)resultType forPid:(NSString *)pid
 {
-    if ([_vmDelegate respondsToSelector:@selector(QRScanDidFinished:)])
+    if ([_vmDelegate respondsToSelector:@selector(QRScanDidFinished:forPid:)])
     {
-        [_vmDelegate QRScanDidFinished:resultType];
+        [_vmDelegate QRScanDidFinished:resultType forPid:pid];
     }
 }
 
 #pragma  mark bindDelegate
 
--(void)efamilyResponseResult:(BOOL)success
-{
-    if (success) {
-        
-        if (self.vmDelegate && [self.vmDelegate respondsToSelector:@selector(QRScanDidFinished:)]) {
-            [self.vmDelegate QRScanDidFinished:QRReustTypeSuccess];
-        }
-        
-    }else{
-        
-        if (self.vmDelegate && [self.vmDelegate respondsToSelector:@selector(QRScanDidFinished:)]) {
-            [self.vmDelegate QRScanDidFinished:QRReustTypeFailed];
-        }
-        
-    }
-}
 
 #pragma  mark Property
 - (EfamilyRequest *)efamRequest
@@ -221,7 +216,7 @@ NSString *const macKey = @"_macKey";
     if (_efamRequest == nil)
     {
         _efamRequest = [[EfamilyRequest alloc] init];
-        _efamRequest.delegate = self;
+        //_efamRequest.delegate = self;
     }
     return _efamRequest;
 }

@@ -16,6 +16,7 @@
 #import "JFGEquipmentAuthority.h"
 #import "CommonMethod.h"
 #import "ProgressHUD.h"
+#import "OemManager.h"
 
 @interface AddFriendsByScan ()<JFGSDKCallbackDelegate>
 {
@@ -124,7 +125,6 @@
         AVMetadataMachineReadableCodeObject *obj = metadataObjects[0];
         NSString *resultStr = obj.stringValue;
         NSLog(@"%@%@",[NSThread currentThread],resultStr);
-        //http://www.jfgou.com/app/download.html?id=18503060168
         resultStr = [resultStr stringByReplacingOccurrencesOfString:@" " withString:@""];
         resultStr = resultStr.lowercaseString;
         NSRange range = [resultStr rangeOfString:@"id="];
@@ -149,26 +149,10 @@
                 [self.scanQRView stopQRAnimation];
                 [self.scanQRView showLoading];
                 [JFGSDK checkFriendIsExistWithAccount:accountStr];
+                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(checkAccountOvertime) object:nil];
+                [self performSelector:@selector(checkAccountOvertime) withObject:nil afterDelay:10];
             }
-//            if ([accountStr isEmail] || [accountStr isMobileNumber]) {
-//                
-//               
-//                
-//                
-//            }else{
-//                
-//                [FLProressHUD showTextFLHUDForStyleDarkWithView:self.view text:[JfgLanguage getLanTextStrByKey:@"EFAMILY_INVALID_DEVICE"] position:FLProgressHUDPositionCenter];
-//                [FLProressHUD hideAllHUDForView:self.view animation:YES delay:1];
-//                
-//                int64_t delayInSeconds = 2.0;
-//                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
-//                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-//                    
-//                    [self openQRCodeScan];
-//                    
-//                });
-//            }
-//            NSLog(@"%@",accountStr);
+
             
         }else{
             
@@ -193,10 +177,21 @@
     }
 }
 
+-(void)checkAccountOvertime
+{
+    [FLProressHUD showTextFLHUDForStyleDarkWithView:self.view text:[JfgLanguage getLanTextStrByKey:@"Request_TimeOut"] position:FLProgressHUDPositionCenter];
+    [FLProressHUD hideAllHUDForView:self.view animation:YES delay:1];
+    [self openQRCodeScan];
+    [self.scanQRView startQRAnimation];
+    [self.scanQRView stopLoading];
+}
+
+
 -(void)jfgCheckAccount:(NSString *)account alias:(NSString *)alias isExist:(BOOL)isExist errorType:(JFGErrorType)errorType
 {
     if([account isEqualToString:scanResult] ){
         
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(checkAccountOvertime) object:nil];
         if (isExist) {
             //是好友
             FriendsInfoVC * infoVC = [FriendsInfoVC new];
@@ -207,6 +202,8 @@
             infoVC.account = account;
             infoVC.nickNameString = alias;
             [self.navigationController pushViewController:infoVC animated:YES];
+            [self.scanQRView stopLoading];
+            
         }else{
             //非好友
             if (errorType == 240) {
@@ -228,6 +225,7 @@
                 infoVC.account = account;
                 infoVC.nickNameString = alias;
                 [self.navigationController pushViewController:infoVC animated:YES];
+                [self.scanQRView stopLoading];
             }
             
         }
@@ -314,6 +312,9 @@
 {
     JFGSDKAcount *acc = [LoginManager sharedManager].accountCache;
     NSString *content = [NSString stringWithFormat:@"http://www.jfgou.com/app/download.html?id=%@",acc.account];
+    if ([OemManager oemType] == oemTypeDoby || [OemManager oemType] == oemTypeCell_C) {
+        content = [NSString stringWithFormat:@"id=%@",acc.account];
+    }
     UIImage *image = [self qrCodeByAccount:content];
     return image;
 }

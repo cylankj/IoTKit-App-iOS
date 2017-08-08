@@ -17,6 +17,8 @@
 #import <JFGSDK/JFGSDK.h>
 #import "CommonMethod.h"
 #import "CheckingEmailViewController.h"
+#import "LSAlertView.h"
+#import "JfgConstKey.h"
 
 @interface SetPwForOpenLoginViewController ()<UITextFieldDelegate,JFGSDKCallbackDelegate>
 
@@ -51,13 +53,14 @@
 
 - (void)leftButtonAction:(UIButton *)sender
 {
-    UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap3_logout_tips"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Yes"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Button_No"], nil];
-    [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
-        if (buttonIndex == 0) {
-            [self.view endEditing:YES];
-            [super leftButtonAction:sender];
-        }
-    } otherDelegate:nil];
+    __weak typeof(self) weakSelf = self;
+    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap3_logout_tips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_No"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Yes"] CancelBlock:^{
+        
+    } OKBlock:^{
+        [weakSelf.view endEditing:YES];
+        [super leftButtonAction:sender];
+    }];
+    
 }
 
 - (void)rightButtonAction:(UIButton *)sender
@@ -208,7 +211,8 @@
     }
     
     NSString *str = [textField.text stringByReplacingCharactersInRange:range withString:string];
-    if (str.length>12) {
+    
+    if (str.length > pwMaxLength) {
         return NO;
     }
     

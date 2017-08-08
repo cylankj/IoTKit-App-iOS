@@ -11,6 +11,8 @@
 #import "JfgLanguage.h"
 #import "JfgConfig.h"
 #import "NSFileManager+FLExtension.h"
+#import "JfgUserDefaultKey.h"
+#import <JFGSDK/JFGSDK.h>
 
 @implementation OemManager
 
@@ -21,6 +23,7 @@ NSString *const doby = @"zhongxing";
 NSString *const cell_c = @"cell_c";
 
 NSString *const domainKey = @"Jfgsdk_host";
+NSString *const portKey = @"Jfgsdk_post";
 
 // oem 类型
 + (NSInteger)oemType
@@ -68,20 +71,23 @@ NSString *const domainKey = @"Jfgsdk_host";
     {
         case oemTypeDoby:
         {
+//            protocolUrl = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Treaty_url"],[NSString stringWithFormat:@"_%@",[[NSBundle mainBundle] objectForInfoDictionaryKey:oemNameKey]]];
+            
             switch ([JfgLanguage languageType])
             {
                 case LANGUAGE_TYPE_CHINESE:
                 {
-                    protocolUrl = @"http://www.jfgou.com/app/treaty_zhongxing_cn.html";
+                    protocolUrl = @"http://www.jfgou.com/app/DobyNew/treaty_DobyNew_cn.html";
                 }
                     break;
                     
                 default:
                 {
-                    protocolUrl = @"http://www.jfgou.com/app/treaty_zhongxing_en.html";
+                    protocolUrl = @"http://www.jfgou.com/app/DobyNew/treaty_DobyNew_en.html";
                 }
                     break;
             }
+            
         }
             break;
         case oemTypeCell_C: // 不显示 协议
@@ -92,6 +98,10 @@ NSString *const domainKey = @"Jfgsdk_host";
         case oemTypeCylan:
         default:
         {
+//            "Treaty_url" = "http://www.jfgou.com/app/treaty%@_en.html";
+            protocolUrl = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Treaty_url"],@""];
+            
+            /*
             switch ([JfgLanguage languageType])
             {
                 case LANGUAGE_TYPE_CHINESE:
@@ -106,6 +116,7 @@ NSString *const domainKey = @"Jfgsdk_host";
                 }
                     break;
             }
+            */
         }
             break;
     }
@@ -122,17 +133,22 @@ NSString *const domainKey = @"Jfgsdk_host";
         case oemTypeDoby:
         case oemTypeCell_C: // 不显示 协议
         {
-            helpUrl = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"help_url_Doby"],[[[NSBundle mainBundle] infoDictionary] objectForKey:domainKey]];
+            if ([JfgLanguage languageType] == LANGUAGE_TYPE_CHINESE) {
+                helpUrl = [NSString stringWithFormat:@"https://%@:8081/helps/zh-rCN_doby.html",[self getdomainURLString]];
+            }else{
+                helpUrl = [NSString stringWithFormat:@"https://%@:8081/helps/en_doby.html",[self getdomainURLString]];
+            }
+            
         }
             break;
         case oemTypeCylan:
         default:
         {
-            helpUrl = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"help_url"],[[[NSBundle mainBundle] infoDictionary] objectForKey:domainKey]];
+            helpUrl = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"help_url"],[self getdomainURLString], @""];
         }
             break;
     }
-    
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"helpUrl:%@",helpUrl]];
     return helpUrl;
 }
 
@@ -171,7 +187,7 @@ NSString *const domainKey = @"Jfgsdk_host";
         case oemTypeDoby:
         {
             //ekPVDWnSKiTkwCT3QQkXd0U0SolaYqr1
-            oemKey = @"F6rHsK2c3af7SAV0CKsRQpwa14QijAdB";
+            oemKey = @"ekPVDWnSKiTkwCT3QQkXd0U0SolaYqr1";
         }
             break;
         case oemTypeCell_C:
@@ -187,6 +203,48 @@ NSString *const domainKey = @"Jfgsdk_host";
             break;
     }
     return oemKey;
+}
+
+#pragma mark 域名获取
+
++ (NSString *)getdomainWithPortURLString
+{
+    return [NSString stringWithFormat:@"%@:%@",[self getdomainWithPortURLString], [self getPort]];
+}
+
++ (NSString *)getdomainURLString
+{
+    NSString *domainUrlStrng = [[NSUserDefaults standardUserDefaults] objectForKey:jfgDomianURL];
+    
+    
+    if (domainUrlStrng != nil && ![domainUrlStrng isEqualToString:@""])
+    {
+        if ([domainUrlStrng containsString:@":"])
+        {
+            NSArray *domains = [domainUrlStrng componentsSeparatedByString:@":"];
+            
+            return [domains objectAtIndex:0];
+        }
+    }
+    
+    return [[[NSBundle mainBundle] infoDictionary] objectForKey:domainKey];
+}
+
++ (NSString *)getPort
+{
+    NSString *domainUrlStrng = [[NSUserDefaults standardUserDefaults] objectForKey:jfgDomianURL];
+    
+    if (domainUrlStrng != nil && ![domainUrlStrng isEqualToString:@""])
+    {
+        if ([domainUrlStrng containsString:@":"])
+        {
+            NSArray *domains = [domainUrlStrng componentsSeparatedByString:@":"];
+            
+            return [domains objectAtIndex:1];
+        }
+    }
+    
+    return [[[NSBundle mainBundle] infoDictionary] objectForKey:portKey];
 }
 
 @end

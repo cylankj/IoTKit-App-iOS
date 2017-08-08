@@ -32,6 +32,10 @@
  *  cid 设备 唯一 标识
  */
 @property (copy, nonatomic) NSString *cid;
+/**
+ *  alias  设备 nickName
+ */
+@property (copy, nonatomic) NSString *nickName;
 
 /**
  *  产品类别ID ，区分产品

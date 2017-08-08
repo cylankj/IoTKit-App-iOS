@@ -24,6 +24,8 @@ NSString *const company_vKey_robot = @"Z5SYDbLV44zfFGRdAgFQhH62fAnIqf3G";
 //账号头像改变通知
 NSString *const account_headImage_changed = @"account_headImageChanged_";
 NSString *const JFGCurrentLoginedAccountKey = @"JFGCurrentLoginedAccountKey";
+NSString *const JFGClearFeedbackNotificationKey = @"JFGClearFeedbackNotificationKey_";
+NSString *const JFGIsAlwaysShowWebchatRedPointKey = @"_JFGIsAlwaysShowWebchatRedPointKey";//已经显示过绑定微信红点提醒
 
 //账号相关key
 //账号信息更新
@@ -51,6 +53,9 @@ NSString *const JFGShowDemoForExploreKey = @"JFGShowDemoForExploreKey_";
 NSString *const JFGDoorBellIsCallingKey = @"JFGDoorBellIsCallingKey_";
 NSString *const JFGDoorBellIsPlayingCid = @"JFGDoorBellIsPlayingCid";
 NSString *const JFGTabBarJumpVcKey = @"JFGTabBarJumpVcKey_";
+
+//720设备删除所有相片通知
+NSString *const JFG720DevDelAllPhotoNotificationKey = @"JFG720DevDelAllPhotoNotificationKey_";
 
 // bugly 相关配置
 NSString *const buglyAppID = @"900022745";

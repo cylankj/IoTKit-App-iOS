@@ -185,6 +185,8 @@
     NSString *cellText = [dataDict objectForKey:cellTextKey];
     NSString *cellDetailText = [dataDict objectForKey:cellDetailTextKey];
     NSNumber *cellAccessory = [dataDict objectForKey:cellAccessoryKey];
+    UIColor *detailColor = [dataDict objectForKey:detailTextColorKey];
+    
     if (![cellAccessory isKindOfClass:[NSNumber class]]) {
         cellAccessory = @0;
     }
@@ -197,6 +199,10 @@
     
     infoCell.textLabel.text = cellText;
     infoCell.detailTextLabel.text = cellDetailText;
+    if (detailColor != nil)
+    {
+        infoCell.detailTextLabel.textColor = detailColor;
+    }
     infoCell.accessoryType = (UITableViewCellAccessoryType)[cellAccessory intValue];
     infoCell.redDot.hidden = ![[dataDict objectForKey:cellRedDotInRight] boolValue];
     return infoCell;
@@ -249,6 +255,22 @@
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     NSDictionary *dataDict = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
+    NSString *cellID = [dataDict objectForKey:cellUniqueID];
+    
+    if ([cellID isEqualToString:deviceName])
+    {
+        [self pushToSetDevNameVC:dataDict];
+    }
+    else if ([cellID isEqualToString:timeZone])
+    {
+        [self pushToTimeZoneSearchVC:dataDict];
+    }
+    else if ([cellID isEqualToString:devUpgrade])
+    {
+        [self pushToUpgradeVC];
+    }
+    
+    /*
     switch (self.pType) {
         case productType_Mag:
         {
@@ -268,6 +290,9 @@
         }
             break;
         case productType_DoorBell:
+        case productType_CesBell:
+        case productType_CesBell_V2:
+        case productType_CatEye:
         {
             switch (indexPath.section)
             {
@@ -290,6 +315,78 @@
                     }
                 }
                     break;
+                default:
+                    break;
+            }
+        }
+            break;
+        case productType_720:
+        case productType_720p:
+        {
+            switch (indexPath.section)
+            {
+                case 0:
+                {
+                    switch (indexPath.row)
+                    {
+                        case 0:
+                        {
+                            SetDeviceNameVC *setDeviceName = [[SetDeviceNameVC alloc] init];
+                            setDeviceName.cid = self.deviceInfoVM.cid;
+                            setDeviceName.deviceNameVCType =  DeviceNameVCTypeSelf;
+                            setDeviceName.deviceName = [dataDict objectForKey:cellDetailTextKey];
+                            [self.navigationController pushViewController:setDeviceName animated:YES];
+                        }
+                            break;
+                        case 1:
+                        {
+                            
+                        }
+                        default:
+                            break;
+                    }
+                }
+                    break;
+                case 1:
+                {
+                    int sdCardType = [[dataDict objectForKey:cellHiddenText] intValue];
+                    // 未插卡 和 正常使用 不需要提示
+                    
+                    switch (sdCardType)
+                    {
+                        case SDCardType_Using:
+                        {
+                            MicroSDCardVC *microSDcard = [[MicroSDCardVC alloc] init];
+                            microSDcard.cid = self.cid;
+                            microSDcard.isShare = self.isShare;
+                            microSDcard.pType = self.pType;
+                            [self.navigationController pushViewController:microSDcard animated:YES];
+                        }
+                            break;
+                        case SDCardType_Error:
+                        {
+                            if ([self.deviceInfoVM isClearingSDCard])
+                            {
+                                return;
+                            }
+                            //格式化sd卡wwwwwwww
+                            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"VIDEO_SD_DESC"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"SD_INIT"] CancelBlock:^{
+                            } OKBlock:^{
+                                [self.deviceInfoVM clearSDCard];
+                            }];
+                        }
+                        default:
+                            break;
+                    }
+                }
+                    break;
+                case 2:
+                {
+                    UpgradeDeviceVC *upgradeDevice = [[UpgradeDeviceVC alloc] init];
+                    upgradeDevice.cid = self.cid;
+                    upgradeDevice.pType = self.pType;
+                    [self.navigationController pushViewController:upgradeDevice animated:YES];
+                }
                 default:
                     break;
             }
@@ -380,7 +477,7 @@
                     break;
                 case 3:
                 {
-                    if (![CommonMethod isPanoCameraWithType:self.pType]) // 全景不升级
+                    if (![CommonMethod isPanoCameraWithType:self.pType] && self.pType != productType_RS_120 && self.pType != productType_RS_180) // 全景不升级
                     {
                         if (self.isShare == NO)
                         {
@@ -398,6 +495,72 @@
             }
             break;
     }
+    */
+}
+
+#pragma mark 
+
+- (void)pushToTimeZoneSearchVC:(NSDictionary *)dataDict
+{
+    SettingSearchVC * searchVC = [SettingSearchVC new];
+    searchVC.delegate  = self;
+    searchVC.cid = self.cid;
+    searchVC.oldZoneStr = [dataDict objectForKey:cellHiddenText];
+    [self.navigationController pushViewController:searchVC animated:YES];
+}
+
+//- (void)sdCardClear:(NSDictionary *)dataDict
+//{
+//    int sdCardType = [[dataDict objectForKey:cellHiddenText] intValue];
+//    // 未插卡 和 正常使用 不需要提示
+//    
+//    switch (sdCardType)
+//    {
+//        case SDCardType_Using:
+//        {
+//            MicroSDCardVC *microSDcard = [[MicroSDCardVC alloc] init];
+//            microSDcard.cid = self.cid;
+//            microSDcard.isShare = self.isShare;
+//            microSDcard.pType = self.pType;
+//            [self.navigationController pushViewController:microSDcard animated:YES];
+//        }
+//            break;
+//        case SDCardType_Error:
+//        {
+//            if ([self.deviceInfoVM isClearingSDCard])
+//            {
+//                return;
+//            }
+//            //格式化sd卡wwwwwwww
+//            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"VIDEO_SD_DESC"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"SD_INIT"] CancelBlock:^{
+//            } OKBlock:^{
+//                [self.deviceInfoVM clearSDCard];
+//            }];
+//        }
+//        default:
+//            break;
+//    }
+//}
+
+- (void)pushToUpgradeVC
+{
+    if (self.isShare == NO)
+    {
+        UpgradeDeviceVC *upgradeDevice = [[UpgradeDeviceVC alloc] init];
+        upgradeDevice.cid = self.cid;
+        upgradeDevice.pType = self.pType;
+        [self.navigationController pushViewController:upgradeDevice animated:YES];
+    }
+}
+
+
+- (void)pushToSetDevNameVC:(NSDictionary *)dataDict
+{
+    SetDeviceNameVC *setDeviceName = [[SetDeviceNameVC alloc] init];
+    setDeviceName.cid = self.deviceInfoVM.cid;
+    setDeviceName.deviceNameVCType =  DeviceNameVCTypeSelf;
+    setDeviceName.deviceName = [dataDict objectForKey:cellDetailTextKey];
+    [self.navigationController pushViewController:setDeviceName animated:YES];
 }
 
 #pragma mark 更改时区

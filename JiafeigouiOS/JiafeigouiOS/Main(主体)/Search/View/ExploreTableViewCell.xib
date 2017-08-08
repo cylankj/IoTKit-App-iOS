@@ -75,7 +75,7 @@
                             <attributedString key="attributedTitle"/>
                         </state>
                     </button>
-                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oDU-ZL-0Vv" userLabel="playButton">
+                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oDU-ZL-0Vv" userLabel="playButton" customClass="ExploreVideoButton">
                         <rect key="frame" x="174" y="116" width="50" height="50"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="50" id="7G2-aY-XXp"/>
@@ -104,7 +104,7 @@
                         <inset key="imageEdgeInsets" minX="-3" minY="0.0" maxX="0.0" maxY="0.0"/>
                         <state key="normal" image="btn_share">
                             <attributedString key="attributedTitle">
-                                <fragment content="分享1">
+                                <fragment content="分享">
                                     <attributes>
                                         <color key="NSColor" red="0.49019607843137253" green="0.49019607843137253" blue="0.49019607843137253" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <font key="NSFont" size="12" name=".PingFangSC-Regular"/>
@@ -216,14 +216,7 @@
                         </constraints>
                         <color key="tintColor" red="0.29411764705882354" green="0.62352941176470589" blue="0.83529411764705885" alpha="1" colorSpace="calibratedRGB"/>
                         <state key="normal">
-                            <attributedString key="attributedTitle">
-                                <fragment content="删除">
-                                    <attributes>
-                                        <font key="NSFont" size="12" name="PingFangSC-Regular"/>
-                                        <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
-                                    </attributes>
-                                </fragment>
-                            </attributedString>
+                            <attributedString key="attributedTitle"/>
                         </state>
                     </button>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="yoC-05-xCD" userLabel="smallLineLabel">

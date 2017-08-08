@@ -30,6 +30,11 @@
 #import <JFGSDK/JFGSDKDataPoint.h>
 #import <JFGSDK/JFGSDK.h>
 #import "JfgMsgDefine.h"
+#import "LSAlertView.h"
+#import "ProgressHUD.h"
+#import "FileManager.h"
+#import "jfgConfigManager.h"
+#import "JfgCacheManager.h"
 
 @interface jiafeigouTableView()<MXScrollViewDelegate,NetworkMonitorDelegate,LoginManagerDelegate>
 {
@@ -50,6 +55,8 @@
 //无设备提醒视图
 @property (nonatomic,strong)NothingDevTipView *addDevReminderBgView;
 
+@property (nonatomic,strong)NSArray *devList;
+
 @end
 
 
@@ -59,6 +66,7 @@
     CGFloat defaultViewHeight;
     
     BOOL isShowNotNetLabel;
+    NSString *delCid;
 }
 
 
@@ -80,8 +88,6 @@
     [self loginStatueChick];
     [self addDataDelegate];
     
-    
-    
     if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusLoginOut) {
         
         if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess) {
@@ -89,8 +95,6 @@
         }else{
             [self deviceList];
         }
-        
-       
     }
     return self;
 }
@@ -155,6 +159,47 @@
         self.refreshView.hidden = YES;
     }
     
+}
+
+#pragma mark- 解除绑定结果
+-(void)jfgDeviceUnBind:(JFGErrorType)errorType
+{
+    if (errorType == JFGErrorTypeNone) {
+        
+        [ProgressHUD dismiss];
+        [JFGSDK refreshDeviceList];
+        [JFGSDK fping:@"255.255.255.255"];
+        if (delCid) {
+            //删除720设备
+            NSString *filePath1 = [FileManager jfgPano720PhotoDirPath:delCid];
+            NSString *filePath2 = [FileManager jfgPano720PhotoThumbnailsPath:delCid];
+            NSFileManager *fileManager = [NSFileManager defaultManager];
+            if ([fileManager fileExistsAtPath:filePath1]) {
+                [fileManager removeItemAtPath:filePath1 error:nil];
+            }
+            if ([fileManager fileExistsAtPath:filePath2]) {
+                [fileManager removeItemAtPath:filePath2 error:nil];
+            }
+            [JfgCacheManager removeSfcPatamModelForCid:delCid];
+        }
+        
+        
+    }else{
+        if (delCid) {
+            [[JFGBoundDevicesMsg sharedDeciceMsg] removeDelDeviceCid:delCid];
+        }
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"NO_NETWORK_4"]];
+    }
+    
+    
+}
+
+-(void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
+{
+    if (delCid && [ask.cid isEqualToString:delCid]) {
+        [JFGSDK udpSetDevAPForCid:delCid ip:ask.address model:1];
+        delCid = nil;
+    }
 }
 
 //退出登录（其他端修改密码，服务器强制退出以及用户执行loginOut）
@@ -261,135 +306,75 @@
     //别名
     if (dev.alias && ![dev.alias isEqualToString:@""] && ![dev.alias isEqualToString:dev.uuid]) {
         
-        cell.deviceNickLabel.text = dev.alias;
-        if (cell.deviceNickLabel.text.length > 8) {
-            cell.deviceNickLabel.text = [NSString stringWithFormat:@"%@...",[cell.deviceNickLabel.text substringToIndex:8]];
+        
+        NSMutableString *newStr = [NSMutableString new];
+        int j=0;
+        for(int i =0; i < [dev.alias length]; i++)
+        {
+            NSString *temp = [dev.alias substringWithRange:NSMakeRange(i, 1)];
+            if ([temp lengthOfBytesUsingEncoding:NSUTF8StringEncoding]>1) {
+                j = j+2;
+            }else{
+                j++;
+            }
+            if (j<=16) {
+                [newStr appendString:temp];
+            }else{
+                [newStr appendString:@"..."];
+                break;
+            }
         }
+        cell.deviceNickLabel.text = newStr;
         
     }else{
 
         cell.deviceNickLabel.text = dev.uuid;
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"devCid:%@",dev.uuid]];
         
     }
     
-//    NSString *log = [NSString stringWithFormat:@"cid:%@ net:%ld",dev.uuid,(long)dev.netType];
-//    [JFGSDK appendStringToLogFile:log];
     
-    //设备类型
-    switch (dev.deviceType) {
-        case JFGDeviceTypeCameraWifi:
-        case JFGDeviceTypeCamera3G:
-        case JFGDeviceTypeCamera4G:
+    UIImage *iconImage = [UIImage imageNamed:@"ico_camera"];
+    UIImage *disableIconImage = [UIImage imageNamed:@"ico_camera_Disabled"];
+    BOOL isFinished = NO;
+    for (NSArray *subArr in self.devList) {
+        
+        for (AddDevConfigModel *model in subArr) {
             
-            cell.deviceImageView.image = [UIImage imageNamed:@"ico_camera"];
-            if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
-                cell.deviceImageView.image = [UIImage imageNamed:@"ico_camera_Disabled"];
-            }
-            
-            break;
-        case JFGDeviceTypeDoorBell:
-            
-            cell.deviceImageView.image = [UIImage imageNamed:@"ico_ring"];
-            if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
-                cell.deviceImageView.image = [UIImage imageNamed:@"ico_ring_Disabled"];
-            }
-            
-            break;
-        case JFGDeviceTypeEfamily:
-        {
-            cell.deviceImageView.image = [UIImage imageNamed:@"ico_album"];
-            if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
-                cell.deviceImageView.image = [UIImage imageNamed:@"ico_album_Disabled"];
-            }
-        }
-            break;
-
-        case JFGDeviceTypePanoramicCamera:
-        {
-            //720全景
-            
-            if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
+            for (NSNumber *os in model.osList) {
                 
-                cell.deviceImageView.image = [UIImage imageNamed:@"home_icon1_720camera"];
-                if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
-                    cell.deviceImageView.image = [UIImage imageNamed:@"home_icon1_720camera_disabled"];
+                if ([os integerValue] == [dev.pid integerValue]) {
+                    iconImage = [UIImage imageNamed:model.homeIconName];
+                    disableIconImage = [UIImage imageNamed:model.homeDisableIconName];
+                    isFinished = YES;
+                    break;
                 }
                 
-            }else{
-                cell.deviceImageView.image = [UIImage imageNamed:@"ico_camera"];
-                if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
-                    cell.deviceImageView.image = [UIImage imageNamed:@"ico_camera_Disabled"];
-                }
+            }
+            if (isFinished) {
+                break;
             }
         }
+        if (isFinished) {
             break;
-            
-        default:{
-            
-            cell.deviceImageView.image = [UIImage imageNamed:@"ico_camera"];
-            if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
-                cell.deviceImageView.image = [UIImage imageNamed:@"ico_camera_Disabled"];
-            }
         }
-            break;
+        
     }
-
-    //未读消息
-    cell.devicemsgTimeLabel.text = dev.lastMsgTime;
-    if (dev.unReadMsgCount !=0) {
-        cell.unreadRedPoint.hidden = NO;
-        if (dev.unReadMsgCount > 99) {
-            
-            if (dev.deviceType == JFGDeviceTypeDoorBell) {
-                cell.deviceMsgLabel.text = [NSString stringWithFormat:@"[99+]%@",[JfgLanguage getLanTextStrByKey:@"Tap1_Index_Tips_Newvisitor"]];
-            }else{
-                if (dev.shareState == DevShareStatuOther) {
-                    cell.deviceMsgLabel.text = @"";
-                    cell.unreadRedPoint.hidden = YES;
-                }else{
-                    cell.deviceMsgLabel.text = [NSString stringWithFormat:@"[99+]%@",[JfgLanguage getLanTextStrByKey:@"MSG_WARNING"]];
-                }
-            }
-            
-        }else{
-            
-            if (dev.deviceType == JFGDeviceTypeDoorBell) {
-                cell.deviceMsgLabel.text = [NSString stringWithFormat:@"[%ld]%@",(long)dev.unReadMsgCount,[JfgLanguage getLanTextStrByKey:@"Tap1_Index_Tips_Newvisitor"]];
-            }else{
-                if (dev.shareState == DevShareStatuOther) {
-                    cell.deviceMsgLabel.text = @"";
-                    cell.unreadRedPoint.hidden = YES;
-                }else{
-                    cell.deviceMsgLabel.text = [NSString stringWithFormat:@"[%ld]%@",(long)dev.unReadMsgCount,[JfgLanguage getLanTextStrByKey:@"MSG_WARNING"]];
-                }
-            }
+    
+    if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
+        cell.deviceImageView.image = disableIconImage;
+        
+        if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera && [CommonMethod isConnectedAPWithPid:productType_720 Cid:dev.uuid]) {
+            cell.deviceImageView.image = iconImage;
         }
         
-        if (dev.shareState == DevShareStatuOther && dev.deviceType != JFGDeviceTypeDoorBell) {
-            cell.unreadRedPoint.hidden = YES;
-            cell.deviceMsgLabel.text = @"";
-            cell.devicemsgTimeLabel.text = @"";
-        }else{
-            cell.devicemsgTimeLabel.text = dev.lastMsgTime;
-        }
-        
-        if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera){
-            cell.unreadRedPoint.hidden = YES;
-            cell.devicemsgTimeLabel.text = @"";
-            cell.deviceMsgLabel.text = @"";
-        }
-        
-
         
     }else{
-        if (dev.shareState == DevShareStatuOther && dev.deviceType != JFGDeviceTypeDoorBell) {
-            cell.deviceMsgLabel.text = @"";
-        }else{
-            cell.deviceMsgLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_NoMessages"];
-        }
-        cell.devicemsgTimeLabel.text = @"";
-        cell.unreadRedPoint.hidden = YES;
+        cell.deviceImageView.image = iconImage;
     }
+    
+    //未读消息数处理
+    [self unreadCountDealForCell:cell devModel:dev];
     
     BOOL showShareIcon = NO;
     //分享状态
@@ -404,7 +389,7 @@
         cell.shareImageView.hidden = YES;
         showShareIcon = YES;
     }
-    
+    NSLog(@"showShareIcon:%d",showShareIcon);
     //右侧图标
     if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
         cell.iconImage1.hidden = YES;
@@ -420,19 +405,51 @@
         if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera){
             // 720全景
             if ([CommonMethod isConnectedAPWithPid:productType_720 Cid:dev.uuid]) {
-                //ap模式
-                cell.deviceMsgLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_OutdoorMode"];
+                BOOL isLowBattery = NO;
+                if (dev.Battery <= 20 && !dev.isPower) {
+                    isLowBattery = YES;
+                }
                 
-                if (cell.iconImage1.hidden) {
-                    cell.iconImage1.hidden = NO;
-                    cell.iconImage1.image = [UIImage imageNamed:@"home_icon_ap"];
-                }else{
+                if (showShareIcon) {
                     cell.iconImage2.hidden = NO;
                     cell.iconImage2.image = [UIImage imageNamed:@"home_icon_ap"];
+                    if (dev.delayCamera) {
+                        cell.iconImage3.hidden = NO;
+                        cell.iconImage3.image = [UIImage imageNamed:@"home_icon_recording"];
+                        if (isLowBattery) {
+                            cell.iconImage4.hidden = NO;
+                            cell.iconImage4.image = [UIImage imageNamed:@"ico_battery_status"];
+                        }
+                        
+                    }else{
+                        
+                        if (isLowBattery) {
+                            cell.iconImage3.hidden = NO;
+                            cell.iconImage3.image = [UIImage imageNamed:@"ico_battery_status"];
+                        }
+                    }
+                }else{
+                    cell.iconImage1.image = [UIImage imageNamed:@"home_icon_ap"];
+                    cell.iconImage1.hidden = NO;
+                    if (dev.delayCamera) {
+                        cell.iconImage2.hidden = NO;
+                        cell.iconImage2.image = [UIImage imageNamed:@"home_icon_recording"];
+                        if (isLowBattery) {
+                            cell.iconImage3.hidden = NO;
+                            cell.iconImage3.image = [UIImage imageNamed:@"ico_battery_status"];
+                        }
+                        
+                    }else{
+                        
+                        if (isLowBattery) {
+                            cell.iconImage2.hidden = NO;
+                            cell.iconImage2.image = [UIImage imageNamed:@"ico_battery_status"];
+                        }
+                    }
                 }
                 
             }else{
-                cell.deviceMsgLabel.text = [JfgLanguage getLanTextStrByKey:@"OFF_LINE"];
+                //cell.deviceMsgLabel.text = [JfgLanguage getLanTextStrByKey:@"OFF_LINE"];
             }
             
         }
@@ -451,18 +468,7 @@
         }else if(dev.netType == JFGNetType3G){
             cell.iconImage1.image = [UIImage imageNamed:@"ico_3g"];
         }
-        
-        if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera){
-            // 720全景
-            if ([CommonMethod isConnectedAPWithPid:productType_720 Cid:dev.uuid]) {
-                //ap模式
-                cell.deviceMsgLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_OutdoorMode"];
-                cell.iconImage1.image = [UIImage imageNamed:@"home_icon_ap"];
-            }else{
-                cell.deviceMsgLabel.text =  [JfgLanguage getLanTextStrByKey:@"DEVICE_WIFI_ONLINE"];
-            }
-            
-        }
+
         
         BOOL isLowBattery = NO;
         if (dev.deviceType == JFGDeviceTypeCamera3G) {
@@ -478,7 +484,7 @@
                 isLowBattery = YES;
             }
         }else if ([dev.pid isEqualToString:@"17"] || [CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera){
-            if (dev.Battery <= 20) {
+            if (dev.Battery <= 20 && !dev.isPower) {
                 isLowBattery = YES;
             }
         }
@@ -502,7 +508,7 @@
                 
             }else{
                 
-                if (dev.delayCamera && dev.shareState != DevShareStatuOther) {//延时摄影开启中
+                if (dev.delayCamera) {//延时摄影开启中
                     cell.iconImage3.hidden = NO;
                     cell.iconImage3.image = [UIImage imageNamed:@"ico_photography_status"];
                     if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
@@ -589,7 +595,7 @@
             }else{
                 
                 
-                if (dev.delayCamera && dev.shareState != DevShareStatuOther) {
+                if (dev.delayCamera) {
                     
                     cell.iconImage2.hidden = NO;
                     cell.iconImage2.image = [UIImage imageNamed:@"ico_photography_status"];
@@ -639,6 +645,82 @@
     return cell;
 }
 
+-(void)unreadCountDealForCell:(jiafeigouTableViewCell *)cell devModel:(JiafeigouDevStatuModel *)dev
+{
+    //未读消息
+    cell.devicemsgTimeLabel.text = dev.lastMsgTime;
+    cell.unreadRedPoint.hidden = NO;
+    BOOL isHiddenRedPoint = NO;
+    NSString *msgString = @"";
+    NSString *timeString = dev.lastMsg;
+    
+    if (dev.deviceType == JFGDeviceTypeDoorBell) {
+        
+        if (dev.unReadMsgCount == 0) {
+            msgString = [JfgLanguage getLanTextStrByKey:@"Tap1_NoMessages"];
+            timeString = @"";
+            isHiddenRedPoint = YES;
+        }else if (dev.unReadMsgCount<99){
+            msgString = [NSString stringWithFormat:@"[%ld]%@",(long)dev.unReadMsgCount,[JfgLanguage getLanTextStrByKey:@"Tap1_Index_Tips_Newvisitor"]];
+        }else{
+            msgString = [NSString stringWithFormat:@"[99+]%@",[JfgLanguage getLanTextStrByKey:@"Tap1_Index_Tips_Newvisitor"]];
+        }
+        
+    }else if(dev.shareState != DevShareStatuOther){
+        
+        int unreadCount = 0;
+        if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
+            //双鱼眼
+            unreadCount = dev.unReadMsgCount+dev.unReadPhotoCount;
+            NSLog(@"unReadMsgCount:%d unReadPhotoCount:%d",dev.unReadMsgCount,dev.unReadPhotoCount);
+        }else{
+            unreadCount = dev.unReadMsgCount;
+        }
+        
+        if (unreadCount == 0) {
+            
+            msgString = [JfgLanguage getLanTextStrByKey:@"Tap1_NoMessages"];
+            timeString = @"";
+            isHiddenRedPoint = YES;
+            
+        }else if (unreadCount<99){
+            msgString = [NSString stringWithFormat:@"[%d]%@",unreadCount,[JfgLanguage getLanTextStrByKey:@"MSG_WARNING"]];
+        }else{
+            msgString = [NSString stringWithFormat:@"[99+]%@",[JfgLanguage getLanTextStrByKey:@"MSG_WARNING"]];
+        }
+        
+    }else if (dev.shareState == DevShareStatuOther){
+        
+        isHiddenRedPoint = YES;
+        timeString = @"";
+        msgString = @"";
+        
+        if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
+            //双鱼眼
+            int unreadCount = dev.unReadMsgCount+dev.unReadPhotoCount;
+            NSLog(@"unReadMsgCount:%d unReadPhotoCount:%d",dev.unReadMsgCount,dev.unReadPhotoCount);
+            if (unreadCount == 0) {
+                
+                msgString = [JfgLanguage getLanTextStrByKey:@"Tap1_NoMessages"];
+                timeString = @"";
+                isHiddenRedPoint = YES;
+                
+            }else if (unreadCount<99){
+                msgString = [NSString stringWithFormat:@"[%d]%@",unreadCount,[JfgLanguage getLanTextStrByKey:@"MSG_WARNING"]];
+            }else{
+                msgString = [NSString stringWithFormat:@"[99+]%@",[JfgLanguage getLanTextStrByKey:@"MSG_WARNING"]];
+            }
+            
+        }
+        
+    }
+    
+    cell.unreadRedPoint.hidden = isHiddenRedPoint;
+    cell.devicemsgTimeLabel.text = timeString;
+    cell.deviceMsgLabel.text = msgString;
+}
+
+
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     return 80;
@@ -652,65 +734,51 @@
     if (viewControler)
     {
         JiafeigouDevStatuModel *dev = [self.dataArray objectAtIndex:indexPath.row];
-        BOOL isFromOthers = (dev.shareState == DevShareStatuOther);
-        
-        if (dev.unReadMsgCount !=0 ) {
-            //dev.unReadMsgCount = 0;
-            //[tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
-        }
+//        BOOL isFromOthers = (dev.shareState == DevShareStatuOther);
+//        
+//        if (dev.unReadMsgCount !=0 ) {
+//            //dev.unReadMsgCount = 0;
+//            //[tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+//        }
         
         switch (dev.deviceType)
         {
             case JFGDeviceTypeCamera3G:
             case JFGDeviceTypeCamera4G:
+            case JFGDeviceTypeDoorBell:
             case JFGDeviceTypeCameraWifi:
             {
-                VideoPlayViewController *video = [VideoPlayViewController new];
-                video.hidesBottomBarWhenPushed = YES;
+                VideoPlayViewController *video = [[VideoPlayViewController alloc]initWithMessage];
                 video.cid = dev.uuid;
                 video.devModel = dev;
+                video.hidesBottomBarWhenPushed = YES;
                 [viewControler.navigationController pushViewController:video animated:YES];
-            }
-                break;
-            case JFGDeviceTypeDoorBell:
-            {
-                BellViewController *bell = [BellViewController new];
-                bell.hidesBottomBarWhenPushed = YES;
-                bell.cid = dev.uuid;
-                bell.devModel = dev;
-                bell.isShare = isFromOthers;
-                if (dev.netType == JFGNetTypeOffline) {
-                    bell.state = BellStateOffline;
-                }else{
-                    bell.state = BellStateOnline;
-                }
-                if (dev.alias && ![dev.alias isEqualToString:@""]) {
-                    bell.alias = dev.alias;
-                }else{
-                    bell.alias = dev.uuid;
-                }
-                [viewControler.navigationController pushViewController:bell animated:YES];
-            }
-                break;
-            case JFGDeviceTypeEfamily:
-            {
-                EfamilyRootVC *efamily = [EfamilyRootVC new];
-                efamily.hidesBottomBarWhenPushed = YES;
-                efamily.cid = dev.uuid;
-                efamily.isShare = isFromOthers;
-                [viewControler.navigationController pushViewController:efamily animated:YES];
-            }
-                break;
-            case JFGDeviceTypeDoorSensor: {
-                MagViewController * mag = [MagViewController new];
-                mag.hidesBottomBarWhenPushed = YES;
-                mag.cid = dev.uuid;
-                mag.isShare = isFromOthers;
-                dev.unReadMsgCount = 0;
-                [viewControler.navigationController pushViewController:mag animated:YES];
-            }
+               
                 
+            }
                 break;
+//            case JFGDeviceTypeDoorBell:
+//            {
+//                BellViewController *bell = [BellViewController new];
+//                bell.hidesBottomBarWhenPushed = YES;
+//                bell.cid = dev.uuid;
+//                bell.devModel = dev;
+//                bell.isShare = isFromOthers;
+//                
+//                if (dev.netType == JFGNetTypeOffline) {
+//                    bell.state = BellStateOffline;
+//                }else{
+//                    bell.state = BellStateOnline;
+//                }
+//                if (dev.alias && ![dev.alias isEqualToString:@""]) {
+//                    bell.alias = dev.alias;
+//                }else{
+//                    bell.alias = dev.uuid;
+//                }
+//                [viewControler.navigationController pushViewController:bell animated:YES];
+//            }
+//                break;
+           
             
             case JFGDeviceTypePanoramicCamera:{
                 if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
@@ -722,7 +790,7 @@
                     
                 }else{
                     
-                    VideoPlayViewController *video = [VideoPlayViewController new];
+                    VideoPlayViewController *video = [[VideoPlayViewController alloc]initWithMessage];
                     video.hidesBottomBarWhenPushed = YES;
                     video.cid = dev.uuid;
                     video.devModel = dev;
@@ -733,7 +801,7 @@
             
             default:{
                 
-                VideoPlayViewController *video = [VideoPlayViewController new];
+                VideoPlayViewController *video = [[VideoPlayViewController alloc]initWithMessage];
                 video.hidesBottomBarWhenPushed = YES;
                 video.cid = dev.uuid;
                 video.devModel = dev;
@@ -742,13 +810,39 @@
             }
                 break;
         }
-        
-        
-        
     }
 }
 
+- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return YES;
+}
 
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (editingStyle == UITableViewCellEditingStyleDelete) {
+        __weak JiafeigouDevStatuModel *dev = [self.dataArray objectAtIndex:indexPath.row];
+        NSString *message = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"SURE_DELETE_1"],dev.uuid];
+        
+        if (dev.alias) {
+            message = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"SURE_DELETE_1"],dev.alias];
+        }
+        
+        [LSAlertView showAlertWithTitle:message Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+        } OKBlock:^{
+            
+            if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+                [CommonMethod showNetDisconnectAlert];
+                return;
+            }
+            [[JFGBoundDevicesMsg sharedDeciceMsg] addDelDeviceCid:dev.uuid];
+            [ProgressHUD showProgress:nil];
+            [JFGSDK unBindDev:dev.uuid];
+            delCid = dev.uuid;
+            
+        }];
+    }
+}
 
 #pragma mark- 添加设备提示
 //显示添加设备提醒文本
@@ -831,7 +925,7 @@
     
     UILabel *nt = [[UILabel alloc]initWithFrame:CGRectMake(64, 0, notNetLabel.width-64, notNetLabel.height)];
     nt.backgroundColor = [UIColor clearColor];
-    nt.text = @"当前网络不可用";
+    nt.text = [JfgLanguage getLanTextStrByKey:@"NoNetworkTips"];
     nt.font = [UIFont systemFontOfSize:16];
     nt.textColor =[UIColor colorWithHexString:@"#777777"];
     [notNetLabel addSubview:nt];
@@ -891,7 +985,7 @@
     
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"current:%.0f lastTime:%.0f",curTime,self.dpReqForLastTimeInterval]];
         
-        if (curTime - self.dpReqForLastTimeInterval > 2) {
+        if (curTime - self.dpReqForLastTimeInterval > 5) {
             [self messageList];
             self.dpReqForLastTimeInterval = curTime;
         }
@@ -904,40 +998,69 @@
 -(void)messageList
 {
     [JFGSDK appendStringToLogFile:@"messageList"];
-    NSMutableArray *cidList = [NSMutableArray new];
-    NSMutableDictionary *dpsDict = [[NSMutableDictionary alloc]init];
-    NSMutableArray *devFor720Arr = [NSMutableArray new];
-   // NSMutableDictionary *dpCountDict = [NSMutableDictionary new];
     
-    for (JiafeigouDevStatuModel *mode in self.dataArray) {
+    //每次cid请求限制最多十个，所以对cid进行10个一组的分组处理
+    NSMutableArray *groups = [NSMutableArray new];
+    [self.dataArray enumerateObjectsUsingBlock:^(JiafeigouDevStatuModel * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+       
+        NSInteger group = idx/10;
+        if (groups.count>group) {
+            
+            NSMutableArray *g = [groups objectAtIndex:group];
+            [g addObject:obj];
+            
+        }else{
+            
+            NSMutableArray *g = [[NSMutableArray alloc]init];
+            [g addObject:obj];
+            [groups addObject:g];
+        }
         
+    }];
+    
+    for (NSArray *cidList in groups) {
+        [self robotGetDPForMultiDataForDevModels:cidList];
+    }
+    
+    //获取已分享好友列表
+    NSMutableArray *cidList = [NSMutableArray new];
+    for (JiafeigouDevStatuModel *mode in self.dataArray) {
         //被分享设备不获取已分享设备列表
         if (mode.shareState != DevShareStatuOther) {
             [cidList addObject:mode.uuid];
         }
+    }
+    [JFGSDK getDeviceSharedListForCids:cidList];
+    
+}
+
+-(void)robotGetDPForMultiDataForDevModels:(NSArray *)devModels
+{
+    NSMutableDictionary *dpsDict = [[NSMutableDictionary alloc]init];
+    
+    for (JiafeigouDevStatuModel *mode in devModels) {
         
-        NSMutableArray *msgIDArr = [[NSMutableArray alloc]initWithArray:@[[NSNumber numberWithInt:dpMsgCamera_isLive],[NSNumber numberWithInt:dpMsgBase_Battery],[NSNumber numberWithInt:dpMsgBase_Net],[NSNumber numberWithInt:dpMsgCamera_TimeLapse],[NSNumber numberWithInt:dpMsgCamera_WarnEnable]]];
+        NSMutableArray *msgIDArr = [[NSMutableArray alloc]initWithArray:@[[NSNumber numberWithInt:dpMsgCamera_isLive],[NSNumber numberWithInt:dpMsgBase_Battery],[NSNumber numberWithInt:dpMsgBase_Net],[NSNumber numberWithInt:dpMsgCamera_WarnEnable]]];
         
-        //720设备只有两个属性需要获取
-        if ([CommonMethod devBigTypeForOS:mode.pid] == JFGDevBigTypeEyeCamera) {
-            msgIDArr = [[NSMutableArray alloc]initWithArray:@[[NSNumber numberWithInt:dpMsgBase_Battery],[NSNumber numberWithInt:dpMsgBase_Net]]];
-            [devFor720Arr addObject:mode];
-        }
         
+        BOOL isDoorBell = [jfgConfigManager devIsDoorBellForPid:mode.pid];
         //不是被分享设备，获取设备最新一条报警消息时间
-        if (mode.deviceType == JFGDeviceTypeDoorBell) {
-            
-            [msgIDArr addObject:[NSNumber numberWithInt:dpMsgBell_callMsg]];
-            
+        if (mode.shareState != DevShareStatuOther){
+            [msgIDArr addObject:[NSNumber numberWithInt:dpMsgCamera_WarnMsg]];
         }else{
-            
-            //720设备不获取
-            if (mode.shareState != DevShareStatuOther && [CommonMethod devBigTypeForOS:mode.pid] != JFGDevBigTypeEyeCamera){
-                [msgIDArr addObject:[NSNumber numberWithInt:dpMsgCamera_WarnMsg]];
+            if (isDoorBell) {
+                [msgIDArr addObject:[NSNumber numberWithInt:dpMsgBell_callMsg]];
             }
         }
         
-        
+        //720设备只有两个属性需要获取
+        if ([CommonMethod devBigTypeForOS:mode.pid] == JFGDevBigTypeEyeCamera) {
+            [msgIDArr removeAllObjects];
+            [msgIDArr addObject:[NSNumber numberWithInt:dpMsgBase_Net]];
+            [msgIDArr addObject:[NSNumber numberWithInt:dpMsgCamera_WarnMsg]];
+            //获取720设备的电量
+            [self battrayFor720WithCid:mode.uuid];
+        }
         
         NSMutableArray *msgVerSegArr = [NSMutableArray new];
         for (NSNumber *msgID in msgIDArr) {
@@ -949,39 +1072,23 @@
         
 #pragma mark- 报警与门铃呼叫未读消息数
         //被分享设备不显示报警消息
-        if ((mode.shareState == DevShareStatuOther && mode.deviceType != JFGDeviceTypeDoorBell) || [CommonMethod devBigTypeForOS:mode.pid] == JFGDevBigTypeEyeCamera ) {
+        if (mode.shareState == DevShareStatuOther && mode.deviceType != JFGDeviceTypeDoorBell && [CommonMethod devBigTypeForOS:mode.pid] != JFGDevBigTypeEyeCamera ) {
             
             mode.unReadMsgCount = 0;
             
         }else{
             
             //NSMutableArray *unReadMsgIDArr = [NSMutableArray new];
-            if (mode.deviceType == JFGDeviceTypeDoorBell) {
-                
-                //门铃呼叫记录，2.0，3.0
-                for (int i = 1004; i<=1005; i++) {
-                    DataPointIDVerSeg *seg = [DataPointIDVerSeg new];
-                    seg.msgId = i;
-                    seg.version = 0;
-                    [msgVerSegArr addObject:seg];
-                }
-
-            }else{
-                
-                //2.0 ，3.0报警消息，sd卡拔插消息
-                for (int i = 1001; i<=1003; i++) {
-                    DataPointIDVerSeg *seg = [DataPointIDVerSeg new];
-                    seg.msgId = i;
-                    seg.version = 0;
-                    [msgVerSegArr addObject:seg];
-                }
-                
+            for (int i =  1001; i<=1005; i++) {
+                DataPointIDVerSeg *seg = [DataPointIDVerSeg new];
+                seg.msgId = i;
+                seg.version = 0;
+                [msgVerSegArr addObject:seg];
             }
-            
-        }
-        
-        [dpsDict setObject:msgVerSegArr forKey:mode.uuid];
 
+        }
+        [dpsDict setObject:msgVerSegArr forKey:mode.uuid];
+        
     }
     
     //安全防护 电量 网络类型 最新报警消息 待机 延时摄影是否开启
@@ -1017,24 +1124,23 @@
                                         
                                     }
                                 }
-                                
-                                
                             }
-                            
                         }
                             break;
                             
                         case dpMsgBase_Battery:{//电量
                             
-                            
-                            if (model.deviceType == JFGDeviceTypeDoorBell || model.deviceType == JFGDeviceTypeCamera3G || [CommonMethod devBigTypeForOS:model.pid] == JFGDevBigTypeEyeCamera || [model.pid isEqualToString:@"17"]) {
+                            if ([CommonMethod devBigTypeForOS:model.pid] == JFGDevBigTypeEyeCamera) {
+                                break;
+                            }
+                            if (model.deviceType == JFGDeviceTypeDoorBell || model.deviceType == JFGDeviceTypeCamera3G || [model.pid isEqualToString:@"17"]) {
                                 id obj = [MPMessagePackReader readData:seg.value error:nil];
                                 if ([obj isKindOfClass:[NSNumber class]]) {
                                     model.Battery = [obj intValue];
                                 }
                                 
                             }else{
-                                model.Battery = 200;
+                                model.Battery = 100;
                             }
                             
                         }
@@ -1088,16 +1194,13 @@
                             break;
                         case dpMsgCamera_TimeLapse:{
                             id obj = [MPMessagePackReader readData:seg.value error:nil];
-                            
                             if ([obj isKindOfClass:[NSArray class]]) {
                                 
                                 model.delayCamera = NO;
                                 NSArray *objArr = obj;
                                 if (objArr.count>3) {
-                                    
                                     id obj1 = objArr[3];
                                     if ([obj1 isKindOfClass:[NSNumber class]]) {
-                                        
                                         int status = [obj1 intValue];
                                         if (status == 1) {
                                             model.delayCamera = YES;
@@ -1107,14 +1210,6 @@
                             }
                         }
                             break;
-                        case 1001:
-                        case 1002:
-                        case 1003:
-                        case 1004:
-                        case 1005:{
-                            [self deviceUnreadCount:seg devModel:model];
-                        }
-                            break;
                         default:
                             break;
                     }
@@ -1122,45 +1217,25 @@
                     
                 }
             }
-            if (model.deviceType == JFGDeviceTypeDoorBell) {
+            
+            int count = 0;
+            for (int i = 1001; i<=1005; i++){
                 
-                int count = 0;
-                for (int i = 1004; i<=1005; i++){
-                    
-                    NSArray *segArr_msgID = dic[[NSString stringWithFormat:@"%d",i]];
-                    if (segArr_msgID.count) {
-                        DataPointSeg *seg = [segArr_msgID lastObject];
-                        id obj = [MPMessagePackReader readData:seg.value error:nil];
-                        if ([obj isKindOfClass:[NSNumber class]]) {
-                            count = [obj intValue] + count;
-                        }
+                NSArray *segArr_msgID = dic[[NSString stringWithFormat:@"%d",i]];
+                if (segArr_msgID.count) {
+                    DataPointSeg *seg = [segArr_msgID lastObject];
+                    id obj = [MPMessagePackReader readData:seg.value error:nil];
+                    if ([obj isKindOfClass:[NSNumber class]]) {
+                        count = [obj intValue] + count;
                     }
-                   
                 }
-                model.unReadMsgCount = count;
-                
-            }else{
-                
-                int count = 0;
-                for (int i = 1001; i<=1003; i++){
-                    
-                    NSArray *segArr_msgID = dic[[NSString stringWithFormat:@"%d",i]];
-                    if (segArr_msgID.count) {
-                        DataPointSeg *seg = [segArr_msgID lastObject];
-                        id obj = [MPMessagePackReader readData:seg.value error:nil];
-                        if ([obj isKindOfClass:[NSNumber class]]) {
-                            count = [obj intValue] + count;
-                        }
-                    }
-                    
-                }
-                model.unReadMsgCount = count;
                 
             }
+            model.unReadMsgCount = count;
             
         }
         dispatch_async(dispatch_get_main_queue(), ^{
-        
+            
             [self reloadData];
             
         });
@@ -1170,31 +1245,23 @@
             [self reloadData];
         });
     }];
+}
+
+-(void)battrayFor720WithCid:(NSString *)cid
+{
+    //电池状态
+    DataPointSeg *seg2 = [DataPointSeg new];
+    seg2.msgId = 206;
+    seg2.value = [NSData data];
+    seg2.version = 0;
     
-    for (JiafeigouDevStatuModel *mode  in devFor720Arr) {
-        
-        if ([CommonMethod isConnectedAPWithPid:productType_720 Cid:mode.uuid]) {
-            
-            //192.168.10.255
-            
-        }else{
-            
-            
-        }
-        
-    }
-    //获取已分享好友列表
-    [JFGSDK getDeviceSharedListForCids:cidList];
+    DataPointSeg *seg3 = [DataPointSeg new];
+    seg3.msgId = dpMsgBase_Power;
+    seg3.value = [NSData data];
+    seg3.version = 0;
     
-//    int64_t delayInSeconds = 2.0;
-//    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
-//    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-//        
-//        [self reloadData];
-//        
-//    });
-    
-    
+    [JFGSDK sendDPDataMsgForSockWithPeer:cid dpMsgIDs:@[seg2,seg3]];
+    [JFGSDK sendMsgForTcpWithDst:@[cid] isAck:YES fileType:13 msg:[NSData data]];
 }
 
 
@@ -1224,6 +1291,10 @@
         topHeight = scrollView.parallaxHeader.height+fabs(scrollView.parallaxHeader.progress) *scrollView.parallaxHeader.height;
     }
     
+    if (topHeight < 64) {
+        return;
+    }
+    //NSLog(@"topHeight:%f",topHeight);
     //往上滚动了，顶部视图高度小于原始高度
     if (topHeight<defaultViewHeight-2) {
         
@@ -1237,8 +1308,6 @@
             greedLabel.alpha = nickLabel.alpha = self.rippleView.alpha;
             
         }
-        
-        
         
     }else{
         
@@ -1384,8 +1453,7 @@
     if (!_dayGradient) {
         CAGradientLayer *gradient = [CAGradientLayer layer];
         gradient.frame = self.barView.bounds;
-        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#54b2d0"].CGColor,
-                           (id)[UIColor colorWithHexString:@"#439ac4"].CGColor,
+        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#17AFD1"].CGColor,(id)[UIColor colorWithHexString:@"#17AFD1"].CGColor,
                            nil];
         
         _dayGradient = gradient;
@@ -1399,15 +1467,20 @@
     if (!_nightGradient) {
         CAGradientLayer *gradient = [CAGradientLayer layer];
         gradient.frame = self.barView.bounds;
-        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#7590ae"].CGColor,
-                           (id)[UIColor colorWithHexString:@"#3a5170"].CGColor,
+        gradient.colors = [NSArray arrayWithObjects:(id)[UIColor colorWithHexString:@"#263954"].CGColor,(id)[UIColor colorWithHexString:@"#263954"].CGColor,
                            nil];
         _nightGradient = gradient;
     }
     return _nightGradient;
 }
 
-
+-(NSArray *)devList
+{
+    if (!_devList) {
+        _devList = [[NSArray alloc]initWithArray:[jfgConfigManager getAllDevModel]];
+    }
+    return _devList;
+}
 /*
 // Only override drawRect: if you perform custom drawing.
 // An empty implementation adversely affects performance during animation.

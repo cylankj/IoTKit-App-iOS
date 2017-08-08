@@ -39,7 +39,7 @@ typedef NS_ENUM(NSInteger,PanoramaCameraParam){
 /**
  *  视频回调代理
  */
-@property (nonatomic,assign)id <JFGSDKPlayVideoDelegate> delegate;
+@property (nonatomic,weak)id <JFGSDKPlayVideoDelegate> delegate;
 
 
 #pragma mark- 视频播放相关

@@ -16,4 +16,8 @@
     //隐藏的nameButton的origh.y,相对其父视图
     CGFloat nameButtonY;
 }
+
+//获取未读消息数
+-(void)getUnreadCount;
+
 @end

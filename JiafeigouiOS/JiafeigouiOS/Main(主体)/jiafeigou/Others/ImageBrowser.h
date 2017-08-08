@@ -48,7 +48,7 @@
 -(instancetype)initWithImageView:(NSArray<UIImageView *> *)oldImageViews Title:(NSString *)title currentImageIndex:(NSInteger)index isExpore:(BOOL)isExpore;
 
 
--(instancetype)initAllAnglePicViewWithImageView:(NSArray<UIImageView *> *)oldImageViews Title:(NSString *)title tly:(int)tly currentImageIndex:(NSInteger)index;
+-(instancetype)initAllAnglePicViewWithImageView:(NSArray<UIImageView *> *)oldImageViews Title:(NSString *)title tly:(int)tly currentImageIndex:(NSInteger)index cid:(NSString *)cid;
 
 /**
  *  动态放大显示点击的图片

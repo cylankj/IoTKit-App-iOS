@@ -17,7 +17,7 @@
 @property (nonatomic,strong)NSMutableArray <NSArray <NSString *> *>*dataArray;
 
 //代理
-@property (nonatomic,assign)id <HistoryDatePickerDelegate> delegate;
+@property (nonatomic,weak)id <HistoryDatePickerDelegate> delegate;
 
 //背景图片（默认无)
 @property (nonatomic,strong)UIImageView *bgImageView;

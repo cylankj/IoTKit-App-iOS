@@ -13,6 +13,8 @@
 #import <JFGSDK/JFGSDK.h>
 #import "JfgLanguage.h"
 #import "JFGBoundDevicesMsg.h"
+#import "CommonMethod.h"
+#import "jfgConfigManager.h"
 
 @interface SetDevNicNameViewController ()<UITextFieldDelegate>
 {
@@ -28,6 +30,7 @@
 @implementation SetDevNicNameViewController
 
 - (void)viewDidLoad {
+    
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor whiteColor];
     self.automaticallyAdjustsScrollViewInsets = NO;
@@ -47,62 +50,28 @@
         }
         
     }
-    //4.5.7.17.18.19.20.21.23
-    if (pid >0) {
-        switch (pid) {
-            case 4:
-            case 5:
-            case 7:
-            case 17:
-            case 18:
-            case 19:
-            case 20:
-            case 21:
-            case 23:{
-               self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"];
-            }
-               break;
-                
-                
-            case 15://门铃：15.22.24
-            case 22:
-            case 24:{
-                self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"];
-            }
-                break;
-                
-            default:
-                break;
-        }
-    }
     
-    if ([self.cid isKindOfClass:[NSString class]] && self.cid.length>2) {
-        
-        if ([[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"50"]) {
-            self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"];
-        }else if([[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"20"]){
-            self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"];
-        }else{
-            
-            if (self.pType == productType_DoorBell) {
-                 self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"];
-            }else{
-                 self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"];
+    
+    if (self.pType > 0) {
+
+        NSArray *configData = [jfgConfigManager getAllDevModel];
+        for (NSArray *subArr in configData) {
+            for (AddDevConfigModel *model in subArr) {
+                
+                for (NSNumber *osNumber in model.osList) {
+                    
+                    if (self.pType == [osNumber intValue]) {
+                        
+                        self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:model.title];
+                        break;
+                    }
+                    
+                }
+                
             }
-            
         }
-        
     }else{
-        if (self.pType == productType_DoorBell) {
-            self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"];
-        }else{
-            self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"];
-        }
-    }
-    if (self.pType == productType_720) {
-        self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"_720PanoramicCamera"];
-    }else if (self.pType == productType_IPCam){
-        self.nameTextFiled.text = @"IPCam";
+        self.nameTextFiled.text = [JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"];
     }
     
     // Do any additional setup after loading the view.
@@ -141,36 +110,73 @@
     NSString *name = @"";
     if ([self.nameTextFiled.text isEqualToString:@""])
     {
-        if ([self.cid isKindOfClass:[NSString class]] && self.cid.length>2) {
+//        if ([self.cid isKindOfClass:[NSString class]] && self.cid.length>2) {
+//            
+//            switch (self.pType)
+//            {
+//                case productType_DoorBell:
+//                case productType_CatEye:
+//                case productType_CesBell:
+//                case productType_CesBell_V2:
+//                {
+//                    name = [JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"];
+//                }
+//                    break;
+//                case productType_WIFI:
+//                {
+//                    name = [JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"];
+//                }
+//                    break;
+//                case productType_720:{
+//                    name = [JfgLanguage getLanTextStrByKey:@"_720PanoramicCamera"];
+//                }
+//                    break;
+//                default:{
+//                    name = [JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"];
+//                }
+//                    break;
+//            }
+//            
+//        }
+        
+        if (self.pType > 0) {
             
-            switch (self.pType)
-            {
-                case productType_DoorBell:
-                {
-                    name = [JfgLanguage getLanTextStrByKey:@"CALL_CAMERA_NAME"];
+            
+            NSArray *configData = [jfgConfigManager getAllDevModel];
+            for (NSArray *subArr in configData) {
+                for (AddDevConfigModel *model in subArr) {
+                    
+                    for (NSNumber *osNumber in model.osList) {
+                        
+                        if (self.pType == [osNumber intValue]) {
+                            
+                            name = [JfgLanguage getLanTextStrByKey:model.title];
+                            break;
+                            
+                        }
+                        
+                    }
+                    
                 }
-                    break;
-                case productType_WIFI:
-                default:
-                {
-                    name = [JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"];
-                }
-                    break;
             }
-            
+        }else{
+            name = [JfgLanguage getLanTextStrByKey:@"DOG_CAMERA_NAME"];
         }
+        
     }else{
         name = self.nameTextFiled.text;
     }
     if (self.cid) {
         [JFGSDK setAlias:name forCid:self.cid];
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cid:%@ nickName:%@",self.cid,name]];
+    }else{
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cid为空"]];
     }
-    
-    
     [self.navigationController popToRootViewControllerAnimated:YES];
-    //[self dismissViewControllerAnimated:YES completion:nil];
+    [JFGSDK refreshDeviceList];
+    
 }
+
 
 -(BOOL)textFieldShouldReturn:(UITextField *)textField
 {
@@ -184,30 +190,49 @@
     //note：键盘智能输入不会触发此代理方法，这是一个bug吗
     
     //不能输入空字符
-    if ([string isEqualToString:@" "]) {
-        return NO;
-    }
+//    if ([string isEqualToString:@" "]) {
+//        return NO;
+//    }
     //禁止输入表情
     if ([[[UITextInputMode currentInputMode] primaryLanguage]         isEqualToString:@"emoji"]) {
         return NO;
     }
     NSString *str = [textField.text stringByReplacingCharactersInRange:range withString:string];
    
+    if ([CommonMethod lenghtForString:str] > 24) {
+        return NO;
+    }
     return YES;
 }
 
 -(void)textFieldValueChanged:(UITextField *)textField
 {
     NSString *lang = [[UITextInputMode currentInputMode]primaryLanguage];//键盘输入模式
-    if ([lang isEqualToString:@"zh-Hans"]) {// 简体中文输入，包括简体拼音，健体五笔，简体手写
+    NSString *string = textField.text;
+    if ([lang isEqualToString:@"zh-Hans"]) {
+        // 简体中文输入，包括简体拼音，健体五笔，简体手写
         UITextRange *selectedRange = [textField markedTextRange];
         //获取高亮部分
         UITextPosition *position = [textField positionFromPosition:selectedRange.start offset:0];
+        
         //没有高亮选择的字，则对已输入的文字进行字数统计和限制
         if (!position) {
-            if (textField.text.length >12) {
-                textField.text = [textField.text substringToIndex:12];
+            int j=0;
+            for(int i =0; i < [string length]; i++)
+            {
+                NSString *temp = [string substringWithRange:NSMakeRange(i, 1)];
+                if ([temp lengthOfBytesUsingEncoding:NSUTF8StringEncoding]>1) {
+                    j = j+2;
+                }else{
+                    j++;
+                }
+                if (j>=24) {
+                    NSString *subString = [string substringToIndex:i+1];
+                    textField.text = subString;
+                    break;
+                }
             }
+            
         }
         //有高亮选择的字符串，则暂不对文字进行统计和限制
         else{
@@ -216,8 +241,20 @@
     }
     // 中文输入法以外的直接对其统计限制即可，不考虑其他语种情况
     else{
-        if (textField.text.length > 12) {
-            textField.text = [textField.text substringToIndex:12];
+        int j=0;
+        for(int i =0; i < [string length]; i++)
+        {
+            NSString *temp = [string substringWithRange:NSMakeRange(i, 1)];
+            if ([temp lengthOfBytesUsingEncoding:NSUTF8StringEncoding]>1) {
+                j = j+2;
+            }else{
+                j++;
+            }
+            if (j>=24) {
+                NSString *subString = [string substringToIndex:i+1];
+                textField.text = subString;
+                break;
+            }
         }
     }
     recordText = textField.text;

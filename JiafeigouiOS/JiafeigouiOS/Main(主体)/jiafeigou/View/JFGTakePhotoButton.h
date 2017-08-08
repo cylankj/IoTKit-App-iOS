@@ -17,7 +17,11 @@ typedef NS_ENUM(NSUInteger, JFGTakePhotoTouchEvents) {
 
 @protocol JFGTakePhotoTouchActionDelegate <NSObject>
 
+//长按，短按开始
 -(void)takePhotoTouchUpDown:(JFGTakePhotoButton *)btn forTakePhotoEvents:(JFGTakePhotoTouchEvents)controlEvents;
+
+//长按结束
+-(void)takePhotoTouchLongTapEnd;
 
 @end
 

@@ -9,21 +9,30 @@
 #import "DeviceSettingViewModel.h"
 #import "JfgTableViewCellKey.h"
 #import "JfgGlobal.h"
+#import "JfgHttp.h"
+#import "JfgConstKey.h"
 #import <JFGSDK/JFGSDK.h>
 #import <JFGSDK/JFGSDKDataPoint.h>
 #import "DeviceSettingModel.h"
 #import "JfgTypeDefine.h"
 #import "JfgMsgDefine.h"
+#import "JfgProductJduge.h"
 #import "ProgressHUD.h"
-#import <JFGSDK/JFGSDK.h>
 #import "dataPointMsg.h"
 #import "SDImageCache.h"
+#import "JfgGlobal.h"
 #import "JfgConfig.h"
+#import "LSAlertView.h"
 #import "LoginManager.h"
+#import "JfgDataTool.h"
 #import "JFGEquipmentAuthority.h"
 #import "JfgUserDefaultKey.h"
 #import "OemManager.h"
-
+#import "CommonMethod.h"
+#import "PropertyManager.h"
+#import "WebChatBindViewController.h"
+#import "ChangePhoneViewController.h"
+#import "SetDeviceNameVC.h"
 
 @interface DeviceSettingViewModel()<JFGSDKCallbackDelegate>
 
@@ -31,6 +40,8 @@
 @property (strong, nonatomic) NSMutableArray *dpsArray; //dps 数组
 
 @property (strong, nonatomic) DeviceSettingModel *settingModel;
+@property (strong, nonatomic) PropertyManager *propertyTool;
+@property (nonatomic, assign) JFGNetType netWorkState;
 
 @end
 
@@ -42,6 +53,9 @@
     if (self)
     {
         [JFGSDK addDelegate:self];
+        
+        _netWorkState = (JFGNetType)-1;
+        
     }
     
     return self;
@@ -60,6 +74,7 @@
 {
     self.cid = cid;
     self.pType = type;
+    self.settingModel.pType = type;
     
     if ([_delegate respondsToSelector:@selector(fetchDataArray:)])
     {
@@ -67,22 +82,29 @@
         [_delegate fetchDataArray:[self createDataWithProductType:type Cid:cid]]; //获取 初始数据
     }
     
-    if (self.pType == productType_Mine)
+    switch (self.pType)
     {
-        return [self createDataWithProductType:type Cid:cid];
-    }
-    
-    [[dataPointMsg shared] packSingleDataPointMsg:self.dpsArray withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic) {
-        if (dic == nil)
+        case productType_IPCam:
+        case productType_IPCam_V2:
         {
-            dic = [self jfgDeviceSettingCahche];
+            [self pingRequest];
         }
-        
-        [self initModel:dic];
-        [self update];
-    } FailBlock:^(RobotDataRequestErrorType error) {
-        
-    }];
+        default:
+        {
+            [[dataPointMsg shared] packSingleDataPointMsg:self.dpsArray withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic) {
+                if (dic == nil)
+                {
+                    dic = [self jfgDeviceSettingCahche];
+                }
+                
+                [self initModel:dic];
+                [self update];
+            } FailBlock:^(RobotDataRequestErrorType error) {
+                
+            }];
+        }
+            break;
+    }    
     
     return [self createDataWithProductType:type Cid:cid];
 }
@@ -103,11 +125,16 @@
         self.settingModel.info = self.alias;
         
         NSArray *wifiArray = [dict objectForKey:msgBaseNetKey];
-        if (wifiArray.count >= 2)
+        if ([wifiArray isKindOfClass:[NSArray class]])
         {
-            self.settingModel.deviceNetType = (DeviceNetType)[[wifiArray objectAtIndex:0] integerValue];
-            self.settingModel.wifi = [wifiArray objectAtIndex:1];
+            if (wifiArray.count >= 2)
+            {
+                self.settingModel.deviceNetType = (DeviceNetType)[[wifiArray objectAtIndex:0] integerValue];
+                self.settingModel.wifi = [wifiArray objectAtIndex:1];
+            }
         }
+        
+        
         
         self.settingModel.isMobile = [[dict objectForKey:msgBaseMobileKey] boolValue];
         self.settingModel.isWarnEnable = [[dict objectForKey:dpMsgCameraWarnEnableKey] boolValue];
@@ -129,14 +156,22 @@
             self.settingModel.delayPhotoBeginTime = [[delayArr objectAtIndex:0] longLongValue];
         }
         
-        NSArray *sdInfos = [dict objectForKey:msgBaseSDStatusKey];
-        if (sdInfos.count >= 4)
+        if ([JfgProductJduge isDoubleFishEyeDevice:self.pType] && [CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
         {
-            self.settingModel.sdCardError = [[sdInfos objectAtIndex:2] intValue];
-            self.settingModel.isExistSDCard = [[sdInfos objectAtIndex:3] boolValue];
+            [self pingRequest];
+        }
+        else
+        {
+            NSArray *sdInfos = [dict objectForKey:msgBaseSDStatusKey];
+            if (sdInfos.count >= 4)
+            {
+                self.settingModel.sdCardError = [[sdInfos objectAtIndex:2] intValue];
+                self.settingModel.isExistSDCard = [[sdInfos objectAtIndex:3] boolValue];
+            }
         }
         
         self.settingModel.isOpenIndicator = [[dict objectForKey:msgBaseLEDKey] boolValue];
+        
         self.settingModel.isRotate = [[dict objectForKey:dpMsgVideoDiretionKey] boolValue];
         self.settingModel.isNTSC = [[dict objectForKey:msgBaseNTSCKey] boolValue];
         self.settingModel.SIMCardType = [[dict objectForKey:msgBaseSIMInfoKey] intValue];
@@ -152,20 +187,34 @@
         }else{
             self.settingModel.isStandby = [[dict objectForKey:dpMsgCameraisLiveKey] boolValue];
         }
-
-    } @catch (NSException *exception) {
         
+        self.settingModel.isWiredNetAvailalbe = [[dict objectForKey:msgBaseWiredNetAvailableKey] boolValue];
+        self.settingModel.isUsingWiredNet = [[dict objectForKey:msgBaseUsingWiredNetKey] boolValue];
+        
+    } @catch (NSException *exception) {
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"deviceSettingVM %@",exception]];
     } @finally {
         
     }
 }
 
+- (void)pingRequest
+{
+    [JFGSDK fping:@"255.255.255.255"];
+    [JFGSDK fping:@"192.168.10.255"];
+    
+    self.settingModel.isInLocalNet = NO;
+    [JFGSDK appendStringToLogFile:@"fping request in deviceSettingVM "];
+}
+
 // 关门 造 数据
 - (NSArray *)createDataWithProductType:(productType)type Cid:(NSString *)cid
 {
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"product Type in DevSetting [%ld]", type]];
+    
     [self.groupArray removeAllObjects];
     
-    if (self.isShare)
+    if (self.isShare && (type != productType_720 && type != productType_720p))
     {
         [self.groupArray addObjectsFromArray:[self shareSettingsArray]];
     }
@@ -173,6 +222,7 @@
     {
         switch (type)
         {
+            /*
             case productType_3G:
             case productType_3G_2X:
             case productType_4G:
@@ -181,6 +231,9 @@
             }
                 break;
             case productType_DoorBell:
+            case productType_CesBell:
+            case productType_CesBell_V2:
+            case productType_CatEye:
             {
                 [self.groupArray addObjectsFromArray:[self doorBellSettingsArray]];
                 
@@ -191,11 +244,6 @@
                 [self.groupArray addObjectsFromArray:[self magSettingsArray]];
             }
                 break;
-            case productType_Mine:
-            {
-                [self.groupArray addObjectsFromArray:[self mineSettingsArray]];
-            }
-                break;
             case productType_Efamily:
             {
                 [self.groupArray addObjectsFromArray:[self efamilySettingsArray]];
@@ -203,6 +251,7 @@
                 break;
             case productType_Camera_HS:
             case productType_Camera_ZY:
+            case productType_CesCamera:
             case productType_Camera_GK:
             {
                 [self.groupArray addObjectsFromArray:[self panoramaDogSettingsArray]];
@@ -214,6 +263,7 @@
             }
                 break;
             case productType_720:
+            case productType_720p:
             {
                 [self.groupArray addObjectsFromArray:[self ap720CameraSettingArray]];
             }
@@ -223,8 +273,13 @@
                 [self.groupArray addObjectsFromArray:[self rsSettingsArray]];
             }
                 break;
-            case productType_RS_120:
             case productType_IPCam:
+            {
+                [self.groupArray addObjectsFromArray:[self ipCamSettingsArray]];
+            }
+                break;
+            case productType_RS_120:
+            */
             default:
             {
                 [self.groupArray addObjectsFromArray:[self dogSettingsArray]];
@@ -246,6 +301,7 @@
     [shareSettings addObject:[NSArray arrayWithObjects:
                                 [NSDictionary dictionaryWithObjectsAndKeys:
                                  @"set_icon_info",cellIconImageKey,
+                                 deviceInfo, cellUniqueID,
                                  [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
                                  self.settingModel.info,cellDetailTextKey,
                                  @0,cellshowSwitchKey,
@@ -254,532 +310,50 @@
     
     return shareSettings;
 }
-
 // 摄像头 功能设置 数据获取
 - (NSMutableArray *)dogSettingsArray
 {
     NSMutableArray *dogSettings = [NSMutableArray array];
     
+    NSMutableArray *section0 = [self section0Arr];
+    NSMutableArray *section1 = [self section1Arr];
+    NSMutableArray *section2 = [self section2Arr];
+    NSMutableArray *sdCardSection = [self sectionSDCardArr];
+    NSMutableArray *section3 = [self section3Arr];
+    NSMutableArray *section4 = [self section4Arr];
+    NSMutableArray *clearMsgCallSetion = [self clearMsgCallSection];
     
-    [dogSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_info",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
-                                 self.settingModel.info,cellDetailTextKey,
-                                 self.settingModel.detailTextColor, detailTextColorKey,
-                                 @0,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 nil], nil]];
-    [dogSettings addObject:[NSArray arrayWithObjects:
-                                  [NSDictionary dictionaryWithObjectsAndKeys:
-                                   @"set_con_wifi",cellIconImageKey,
-                                   [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,
-                                   self.settingModel.wifi,cellDetailTextKey,
-                                   @0,cellshowSwitchKey,
-                                   @(self.settingModel.isCellCanClick), canClickCellKey,
-                                   nil],
-                                  nil]];
-    [dogSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_safe",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"SECURE"],cellTextKey,
-                                 self.settingModel.safe,cellDetailTextKey,
-                                 @(self.settingModel.safeOrigin),cellHiddenText,
-                                 @0,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @(self.settingModel.isShowSafeRedDot), cellRedDotInRight,
-                                 nil],
-                                
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_recording",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"SETTING_RECORD"],cellTextKey,
-                                 self.settingModel.autoPhoto,cellDetailTextKey,
-                                 @(self.settingModel.autoPhotoOrigin),cellHiddenText,
-                                 @0,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @(self.settingModel.isShowAutoPhotoRedDot), cellRedDotInRight,
-                                 nil],nil]];
-    [dogSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_standby",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"Tap1_CameraFun_Standby"],cellTextKey,
-                                 @(self.settingModel.isStandby),isCellSwitchOn,
-                                 @(self.settingModel.isStandByCanClick),canClickCellKey,
-                                 @1,cellshowSwitchKey, nil], nil]];
-    [dogSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_light",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"LED"],cellTextKey,
-                                 @"",cellDetailTextKey,
-                                 @(self.settingModel.isOpenIndicator),isCellSwitchOn,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @1,cellshowSwitchKey, nil],
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_overturn",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"Tap1_CameraFun_VideoDirection"],cellTextKey,
-                                 @"",cellDetailTextKey,
-                                 @(self.settingModel.isRotate),isCellSwitchOn,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @1,cellshowSwitchKey, nil],
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_fute",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"HZ_VOTE"],cellTextKey,
-                                 @(self.settingModel.isNTSC),isCellSwitchOn,
-                                 [JfgLanguage getLanTextStrByKey:@"FOOT_TIP_VOTE"],cellFootViewTextKey,
-                                 @1,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 nil],
-                                nil]];  
-    
+    if (section0.count > 0)
+    {
+        [dogSettings addObject:section0];
+    }
+    if (section1.count > 0)
+    {
+        [dogSettings addObject:section1];
+    }
+    if (section2.count > 0)
+    {
+        [dogSettings addObject:section2];
+    }
+    if (sdCardSection.count > 0)
+    {
+        [dogSettings addObject:sdCardSection];
+    }
+    if (section3.count > 0)
+    {
+        [dogSettings addObject:section3];
+    }
+    if (section4.count > 0)
+    {
+        [dogSettings addObject:section4];
+    }
+    if (clearMsgCallSetion.count > 0)
+    {
+        [dogSettings addObject:clearMsgCallSetion];
+    }
+        
     return dogSettings;
 }
-- (NSMutableArray *)freeCamSettingsArray
-{
-    NSMutableArray *freeCamArray = [NSMutableArray arrayWithCapacity:5];
-    
-    [freeCamArray addObject:[NSArray arrayWithObjects:
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_icon_info",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
-                             self.settingModel.info,cellDetailTextKey,
-                             self.settingModel.detailTextColor, detailTextColorKey,
-                             @0,cellshowSwitchKey,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             nil], nil]];
-    [freeCamArray addObject:[NSArray arrayWithObjects:
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_con_wifi",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,
-                             self.settingModel.wifi,cellDetailTextKey,
-                             @0,cellshowSwitchKey,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             nil],
-                            nil]];
-    [freeCamArray addObject:[NSArray arrayWithObjects:
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_icon_safe",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"SECURE"],cellTextKey,
-                             self.settingModel.safe,cellDetailTextKey,
-                             @(self.settingModel.safeOrigin),cellHiddenText,
-                             @0,cellshowSwitchKey,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             @(self.settingModel.isShowSafeRedDot), cellRedDotInRight,
-                             nil],
-                            
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_icon_recording",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"SETTING_RECORD"],cellTextKey,
-                             self.settingModel.autoPhoto,cellDetailTextKey,
-                             @(self.settingModel.autoPhotoOrigin),cellHiddenText,
-                             @0,cellshowSwitchKey,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             @(self.settingModel.isShowAutoPhotoRedDot), cellRedDotInRight,
-                             nil],nil]];
-//    [freeCamArray addObject:[NSArray arrayWithObjects:
-//                            [NSDictionary dictionaryWithObjectsAndKeys:
-//                             @"set_icon_standby",cellIconImageKey,
-//                             [JfgLanguage getLanTextStrByKey:@"Tap1_CameraFun_Standby"],cellTextKey,
-//                             @(self.settingModel.isStandby),isCellSwitchOn,
-//                             @(self.settingModel.isStandByCanClick),canClickCellKey,
-//                             @1,cellshowSwitchKey, nil], nil]];
-    [freeCamArray addObject:[NSArray arrayWithObjects:
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_icon_overturn",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"Tap1_CameraFun_VideoDirection"],cellTextKey,
-                             @"",cellDetailTextKey,
-                             @(self.settingModel.isRotate),isCellSwitchOn,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             @1,cellshowSwitchKey, nil],
-//                            [NSDictionary dictionaryWithObjectsAndKeys:
-//                             @"set_icon_fute",cellIconImageKey,
-//                             [JfgLanguage getLanTextStrByKey:@"HZ_VOTE"],cellTextKey,
-//                             @(self.settingModel.isNTSC),isCellSwitchOn,
-//                             [JfgLanguage getLanTextStrByKey:@"FOOT_TIP_VOTE"],cellFootViewTextKey,
-//                             @1,cellshowSwitchKey,
-//                             @(self.settingModel.isCellCanClick), canClickCellKey,
-//                             nil],
-                            nil]];
-
-    
-    return freeCamArray;
-}
-// 全景摄像头 功能设置 数据获取
-- (NSMutableArray *)panoramaDogSettingsArray
-{
-    NSMutableArray *dogSettings = [NSMutableArray array];
-    
-    
-    [dogSettings addObject:[NSArray arrayWithObjects:
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_icon_info",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
-                             self.settingModel.info,cellDetailTextKey,
-                             self.settingModel.detailTextColor, detailTextColorKey,
-                             @0,cellshowSwitchKey,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             nil], nil]];
-    [dogSettings addObject:[NSArray arrayWithObjects:
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_con_wifi",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,
-                             self.settingModel.wifi,cellDetailTextKey,
-                             @0,cellshowSwitchKey,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             nil],
-                            nil]];
-    [dogSettings addObject:[NSArray arrayWithObjects:
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_icon_safe",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"SECURE"],cellTextKey,
-                             self.settingModel.safe,cellDetailTextKey,
-                             @(self.settingModel.safeOrigin),cellHiddenText,
-                             @0,cellshowSwitchKey,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             @(self.settingModel.isShowSafeRedDot), cellRedDotInRight,
-                             nil],
-                            
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_icon_recording",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"SETTING_RECORD"],cellTextKey,
-                             self.settingModel.autoPhoto,cellDetailTextKey,
-                             @(self.settingModel.autoPhotoOrigin),cellHiddenText,
-                             @0,cellshowSwitchKey,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             @(self.settingModel.isShowAutoPhotoRedDot), cellRedDotInRight,
-                             nil],nil]];
-    [dogSettings addObject:[NSArray arrayWithObjects:
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_icon_standby",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"Tap1_CameraFun_Standby"],cellTextKey,
-                             @(self.settingModel.isStandby),isCellSwitchOn,
-                             @(self.settingModel.isStandByCanClick),canClickCellKey,
-                             @1,cellshowSwitchKey, nil], nil]];
-    [dogSettings addObject:[NSArray arrayWithObjects:
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"install_icon_angle",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_ViewAngle"],cellTextKey,
-                             self.settingModel.angleStr,cellDetailTextKey,
-                             @0,cellshowSwitchKey,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             @(self.settingModel.angleType), cellHiddenText,
-                              nil],
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_icon_light",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"LED"],cellTextKey,
-                             @"",cellDetailTextKey,
-                             @(self.settingModel.isOpenIndicator),isCellSwitchOn,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             @1,cellshowSwitchKey, nil],
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             @"set_icon_fute",cellIconImageKey,
-                             [JfgLanguage getLanTextStrByKey:@"HZ_VOTE"],cellTextKey,
-                             @(self.settingModel.isNTSC),isCellSwitchOn,
-                             [JfgLanguage getLanTextStrByKey:@"FOOT_TIP_VOTE"],cellFootViewTextKey,
-                             @1,cellshowSwitchKey,
-                             @(self.settingModel.isCellCanClick), canClickCellKey,
-                             nil],
-                            nil]];
-    
-    return dogSettings;
-}
-// 门铃 功能设置 数据获取
-- (NSMutableArray *)doorBellSettingsArray
-{
-    NSMutableArray *doorBellSettings = [NSMutableArray array];
-    
-    [doorBellSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_info",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
-                                 self.settingModel.info,cellDetailTextKey,
-                                 @0,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 nil], nil]];
-    if (!self.isShare)
-    {
-        [doorBellSettings addObject:[NSArray arrayWithObjects:
-                                    [NSDictionary dictionaryWithObjectsAndKeys:
-                                     @"set_con_wifi",cellIconImageKey,
-                                     @(self.settingModel.isCellCanClick), canClickCellKey,
-                                     [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,
-                                     self.settingModel.wifi,cellDetailTextKey,
-                                     @0,cellshowSwitchKey,nil],
-                                    nil]];
-        [doorBellSettings addObject:[NSArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
-                                                              [JfgLanguage getLanTextStrByKey:@"DOOR_CLEAR_REOCRD"],cellTextKey,
-                                                              @0,cellshowSwitchKey,
-                                                              @(self.settingModel.isCellCanClick), canClickCellKey,
-                                                              @(UITableViewCellAccessoryNone),cellAccessoryKey, nil], nil]];
-    }
-    
-    return doorBellSettings;
-}
-// 3G、4G 狗 功能设置 数据获取
-- (NSMutableArray *)mobileDogSettingsArray
-{
-    NSMutableArray *mobileDogSettings = [NSMutableArray array];
-    
-    [mobileDogSettings addObject:[NSArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_info",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
-                                 self.settingModel.info,cellDetailTextKey,
-                                 @0,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,nil], nil]];
-    if (self.settingModel.SIMCardType == SIMType_Using)
-    {
-        [mobileDogSettings addObject:[NSArray arrayWithObjects:
-                                      [NSDictionary dictionaryWithObjectsAndKeys:
-                                       @"set_con_wifi",cellIconImageKey,
-                                       [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,
-                                       self.settingModel.wifi,cellDetailTextKey,
-                                       @(self.settingModel.isCellCanClick), canClickCellKey,
-                                       @0,cellshowSwitchKey,nil],
-                                      [NSDictionary dictionaryWithObjectsAndKeys:
-                                       @"set_icon_3g",cellIconImageKey,
-                                       [JfgLanguage getLanTextStrByKey:@"MOBILE_DATA"],cellTextKey,
-                                       @"",cellDetailTextKey,
-                                       @(self.settingModel.isMobile),isCellSwitchOn,
-                                       @(self.settingModel.isMobileCanClick), canClickCellKey,
-                                       @1,cellshowSwitchKey, nil],nil]];
-    }
-    else
-    {
-        [mobileDogSettings addObject:[NSArray arrayWithObjects:
-                                      [NSDictionary dictionaryWithObjectsAndKeys:
-                                       @"set_con_wifi",cellIconImageKey,
-                                       [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,
-                                       self.settingModel.wifi,cellDetailTextKey,
-                                       @(self.settingModel.isCellCanClick), canClickCellKey,
-                                       @0,cellshowSwitchKey,nil],
-                                       nil]];
-    }
-    
-    [mobileDogSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_safe",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"SECURE"],cellTextKey,
-                                 self.settingModel.safe,cellDetailTextKey,
-                                 @(self.settingModel.safeOrigin),cellHiddenText,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @(self.settingModel.isShowSafeRedDot), cellRedDotInRight,
-                                 @0,cellshowSwitchKey, nil],
-                                
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_recording",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"SETTING_RECORD"],cellTextKey,
-                                 self.settingModel.autoPhoto,cellDetailTextKey,
-                                 @(self.settingModel.autoPhotoOrigin),cellHiddenText,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @(self.settingModel.isShowAutoPhotoRedDot), cellRedDotInRight,
-                                 @0,cellshowSwitchKey, nil],
-                                
-                                /*[NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_delay",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"Tap2_Timelapse_title"],cellTextKey,
-                                 self.settingModel.delayPhoto,cellDetailTextKey,
-                                 @(self.settingModel.isDelayPhotoCanClick), canClickCellKey,
-                                 @(self.settingModel.isShowDelayPhotoRedDot), cellRedDotInRight,
-                                 @0,cellshowSwitchKey, nil],*/
-                                nil]];
-    [mobileDogSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_standby",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"Tap1_CameraFun_Standby"],cellTextKey,
-                                 @(self.settingModel.isStandby),isCellSwitchOn,
-                                 @(self.settingModel.isStandByCanClick), canClickCellKey,
-                                 @1,cellshowSwitchKey, nil], nil]];
-    [mobileDogSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_light",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"LED"],cellTextKey,
-                                 @"",cellDetailTextKey,
-                                 @(self.settingModel.isOpenIndicator),isCellSwitchOn,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @1,cellshowSwitchKey, nil],
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_overturn",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"Tap1_CameraFun_VideoDirection"],cellTextKey,
-                                 @"",cellDetailTextKey,
-                                 @(self.settingModel.isRotate),isCellSwitchOn,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @1,cellshowSwitchKey, nil],
-//                                [NSDictionary dictionaryWithObjectsAndKeys:
-//                                 @"set_icon_fute",cellIconImageKey,
-//                                 [JfgLanguage getLanTextStrByKey:@"HZ_VOTE"],cellTextKey,
-//                                 @(self.settingModel.isNTSC),isCellSwitchOn,
-//                                 [JfgLanguage getLanTextStrByKey:@"FOOT_TIP_VOTE"],cellFootViewTextKey,
-//                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-//                                 @1,cellshowSwitchKey, nil],
-                                nil]];
-    
-    return mobileDogSettings;
-}
-
-// 720 ap全景 摄像头
-- (NSMutableArray *)ap720CameraSettingArray
-{
-    NSMutableArray *ap720Settings = [NSMutableArray arrayWithCapacity:5];
-    
-    [ap720Settings addObject:[NSArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
-                                                          @"set_icon_info",cellIconImageKey,
-                                                          [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
-                                                          self.settingModel.info,cellDetailTextKey,
-                                                          @0,cellshowSwitchKey,
-                                                          @(self.settingModel.isCellCanClick), canClickCellKey, nil], nil]];
-    [ap720Settings addObject:[NSArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
-                                                          @"720_info_logo",cellIconImageKey,
-                                                          [JfgLanguage getLanTextStrByKey:@"LOGO选择"],cellTextKey,
-                                                          @(self.settingModel.isCellCanClick), canClickCellKey,
-                                                          @0,cellshowSwitchKey, nil], nil]];
-    [ap720Settings addObject:[NSArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
-                                                        @"set_con_wifi",cellIconImageKey,
-                                                        [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,
-                                                        self.settingModel.wifi,cellDetailTextKey,
-                                                        @(self.settingModel.isCellCanClick), canClickCellKey,
-                                                        @0,cellshowSwitchKey,nil],
-                                                      [NSDictionary dictionaryWithObjectsAndKeys:
-                                                       @"720_info_ap",cellIconImageKey,
-                                                       [JfgLanguage getLanTextStrByKey:@"户外模式"],cellTextKey,
-                                                       @"",cellDetailTextKey,
-                                                       @0,cellshowSwitchKey,
-                                                       @1, canClickCellKey,
-                                                       nil], nil]];
-    
-    return ap720Settings;
-}
-
-
-// 中控 功能设置 数据获取
-- (NSMutableArray *)efamilySettingsArray
-{
-    NSMutableArray *efamilySettings = [NSMutableArray array];
-    
-    [efamilySettings addObject:[NSArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
-                                                         @"set_icon_info",cellIconImageKey,
-                                                         [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
-                                                         self.settingModel.info,cellDetailTextKey,
-                                                         @0,cellshowSwitchKey,
-                                                         @(self.settingModel.isCellCanClick), canClickCellKey, nil], nil]];
-    [efamilySettings addObject:[NSArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
-                                                         @"set_con_wifi",cellIconImageKey,
-                                                         [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,[JfgLanguage getLanTextStrByKey:@"cylan_605"],cellDetailTextKey,
-                                                         @(self.settingModel.isCellCanClick), canClickCellKey,
-                                                         @0,cellshowSwitchKey, nil], nil]];
-    [efamilySettings addObject:[NSArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
-                                                          [JfgLanguage getLanTextStrByKey:@"DOOR_CLEAR_REOCRD"],cellTextKey,
-                                                          @0,cellshowSwitchKey,
-                                                          @(self.settingModel.isCellCanClick), canClickCellKey,
-                                                          @(UITableViewCellAccessoryNone),cellAccessoryKey, nil], nil]];
-    
-    return efamilySettings;
-}
-
-// RS in doby settings
-- (NSMutableArray *)rsSettingsArray
-{
-    {
-        NSMutableArray *rsSettings = [NSMutableArray array];
-        
-        
-        [rsSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_info",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
-                                 self.settingModel.info,cellDetailTextKey,
-                                 self.settingModel.detailTextColor, detailTextColorKey,
-                                 @0,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 nil], nil]];
-        [rsSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_con_wifi",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,
-                                 self.settingModel.wifi,cellDetailTextKey,
-                                 @0,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 nil],
-                                nil]];
-        [rsSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_safe",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"SECURE"],cellTextKey,
-                                 self.settingModel.safe,cellDetailTextKey,
-                                 @(self.settingModel.safeOrigin),cellHiddenText,
-                                 @0,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @(self.settingModel.isShowSafeRedDot), cellRedDotInRight,
-                                 nil],
-                                
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_recording",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"SETTING_RECORD"],cellTextKey,
-                                 self.settingModel.autoPhoto,cellDetailTextKey,
-                                 @(self.settingModel.autoPhotoOrigin),cellHiddenText,
-                                 @0,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @(self.settingModel.isShowAutoPhotoRedDot), cellRedDotInRight,
-                                 nil],nil]];
-        [rsSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_standby",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"Tap1_CameraFun_Standby"],cellTextKey,
-                                 @(self.settingModel.isStandby),isCellSwitchOn,
-                                 @(self.settingModel.isStandByCanClick),canClickCellKey,
-                                 @1,cellshowSwitchKey, nil], nil]];
-        [rsSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_light",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"LED"],cellTextKey,
-                                 @"",cellDetailTextKey,
-                                 @(self.settingModel.isOpenIndicator),isCellSwitchOn,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 @1,cellshowSwitchKey, nil],
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 @"set_icon_fute",cellIconImageKey,
-                                 [JfgLanguage getLanTextStrByKey:@"HZ_VOTE"],cellTextKey,
-                                 @(self.settingModel.isNTSC),isCellSwitchOn,
-                                 [JfgLanguage getLanTextStrByKey:@"FOOT_TIP_VOTE"],cellFootViewTextKey,
-                                 @1,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 nil],
-                                nil]];
-        
-        return rsSettings;
-    }
-}
-
-// 门磁 功能设置 数据获取
-- (NSMutableArray *)magSettingsArray
-{
-    NSMutableArray *magSettings = [NSMutableArray array];
-    
-    [magSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
-                                 self.settingModel.info,cellDetailTextKey,
-                                 @0,cellshowSwitchKey,
-                                 @(self.settingModel.isCellCanClick), canClickCellKey,
-                                 nil], nil]];
-    
-    BOOL iswarn = [[NSUserDefaults standardUserDefaults] boolForKey:@"JFGMagWarnStatue"];
-    [magSettings addObject:[NSArray arrayWithObjects:
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                   [JfgLanguage getLanTextStrByKey:@"Tap1_Magnetism_Setting_Notify"],cellTextKey,
-                                   @(self.settingModel.isCellCanClick), canClickCellKey,
-                                   @1,cellshowSwitchKey,@(iswarn),isCellSwitchOn, nil],
-                                  nil]];
-    
-    [magSettings addObject:[NSArray arrayWithObjects:
-                      [NSDictionary dictionaryWithObjectsAndKeys:
-                       [JfgLanguage getLanTextStrByKey:@"Tap1_Magnetism_ClearRecord"],cellTextKey,
-                       @(self.settingModel.isCellCanClick), canClickCellKey,
-                       @0,cellshowSwitchKey,
-                       @(UITableViewCellAccessoryNone),cellAccessoryKey, nil],
-                      nil]];
-    
-    return magSettings;
-}
-
 // 功能模块 “我的” 数据获取
 - (NSMutableArray *)mineSettingsArray
 {
@@ -799,11 +373,49 @@
                                    @(self.settingModel.isCellCanClick), canClickCellKey,
                                    nil],nil]];
     
-    NSString *cacheStr = @"0.0M";
+    JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
+    
+    if (account.wxopenid && ![account.wxopenid isEqualToString:@""] && account.wx_push == 1) {
+        isPush = YES;
+    }else{
+        isPush = NO;
+    }
+    if (isPush) {
+        [mineArr addObject:[NSArray arrayWithObjects:
+                            [NSDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"Alarm_WeChat"],cellTextKey,
+                             @1,cellshowSwitchKey,
+                             @(isPush),isCellSwitchOn,
+                             @(self.settingModel.isShowWxRedDot), cellRedDotInRight,
+                             @(self.settingModel.isCellCanClick), canClickCellKey,
+                             nil],
+                            
+                            [NSDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"Change_ID"],cellTextKey,
+                             @0,cellshowSwitchKey,
+                             @(self.settingModel.isCellCanClick), canClickCellKey,
+                             @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
+                             nil],
+                            nil]];
+        
+        
+    }else{
+        [mineArr addObject:[NSArray arrayWithObjects:
+                            [NSDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"Alarm_WeChat"],cellTextKey,
+                             @1,cellshowSwitchKey,
+                             @(self.settingModel.isShowWxRedDot), cellRedDotInRight,
+                             @(isPush),isCellSwitchOn,
+                             @(self.settingModel.isCellCanClick), canClickCellKey,
+                             nil],nil]];
+    }
+    
+    
+    
     [mineArr addObject:[NSArray arrayWithObjects:
                                 [NSDictionary dictionaryWithObjectsAndKeys:
                                  [JfgLanguage getLanTextStrByKey:@"CLEAR_DATA"],cellTextKey,
-                                 cacheStr,cellDetailTextKey,
+                                 self.settingModel.cacheString,cellDetailTextKey,
                                  @(self.settingModel.isCellCanClick), canClickCellKey,
                                  @0,cellshowSwitchKey,
                                  nil], nil]];
@@ -822,6 +434,248 @@
     return mineArr;
 }
 
+#pragma mark section data handle
+
+- (NSMutableArray *)section0Arr
+{
+    NSMutableArray *section0 = [NSMutableArray arrayWithCapacity:2];
+    
+    [section0 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                        @"set_icon_info",cellIconImageKey,
+                        [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_INFO"],cellTextKey,
+                         deviceInfo, cellUniqueID,
+                        self.settingModel.info,cellDetailTextKey,
+                        @0,cellshowSwitchKey,
+                        @(self.settingModel.isCellCanClick), canClickCellKey,
+                         nil]];
+    
+    
+    return section0;
+}
+- (NSMutableArray *)section1Arr
+{
+    NSMutableArray *section1 = [NSMutableArray arrayWithCapacity:2];
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pWifiKey])
+    {
+        switch (self.pType)
+        {
+            case productType_720:
+            case productType_720p:
+            {
+                [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                                     @"set_con_wifi",cellIconImageKey,
+                                     wifiConfig, cellUniqueID,
+                                     [JfgLanguage getLanTextStrByKey:@"Tap1_HomeMode"],cellTextKey,
+                                     self.settingModel.wifi,cellDetailTextKey,
+                                     @(self.settingModel.isCellCanClick), canClickCellKey,
+                                     @0,cellshowSwitchKey,nil]];
+            }
+                break;
+            
+            default:
+            {
+                [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                                     @"set_con_wifi",cellIconImageKey,
+                                     [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,
+                                     wifiConfig, cellUniqueID,
+                                     self.settingModel.wifi,cellDetailTextKey,
+                                     @0,cellshowSwitchKey,
+                                     @(self.settingModel.isCellCanClick), canClickCellKey,
+                                     nil]];
+            }
+                break;
+        }
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pApConnectting])
+    {
+        [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             @"720_info_ap",cellIconImageKey,
+                             [JfgLanguage getLanTextStrByKey:@"Tap1_OutdoorMode"],cellTextKey,
+                             apConnectting, cellUniqueID,
+                             self.settingModel.outdoorString,cellDetailTextKey,
+                             @0,cellshowSwitchKey,
+                             @1, canClickCellKey,
+                             nil]];
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pHotWireless])
+    {
+        [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             @"set_hot_spots",cellIconImageKey,
+                             [JfgLanguage getLanTextStrByKey:@"Start_Hotspot"],cellTextKey,
+                             hotWireless, cellUniqueID,
+                             @0,cellshowSwitchKey,
+                             [JfgLanguage getLanTextStrByKey:@"Start_Hotspot_Note"],cellFootViewTextKey,
+                             @(self.settingModel.isHotWiredCanClick), canClickCellKey,
+                             nil]];
+    }
+    
+    if (self.settingModel.SIMCardType == SIMType_Using)
+    {
+        [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                            @"set_icon_3g",cellIconImageKey,
+                            [JfgLanguage getLanTextStrByKey:@"MOBILE_DATA"],cellTextKey,
+                             mobileConfig, cellUniqueID,
+                            @"",cellDetailTextKey,
+                            @(self.settingModel.isMobile),isCellSwitchOn,
+                            @(self.settingModel.isMobileCanClick), canClickCellKey,
+                             @1,cellshowSwitchKey, nil]];
+    }
+    
+    return (section1.count>0)?section1:nil;
+}
+
+- (NSMutableArray *)section2Arr
+{
+    NSMutableArray *section2 = [NSMutableArray arrayWithCapacity:2];
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pProtectionKey])
+    {
+        [section2 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                            @"set_icon_safe",cellIconImageKey,
+                            [JfgLanguage getLanTextStrByKey:@"SECURE"],cellTextKey,
+                             safeProtect, cellUniqueID,
+                            self.settingModel.safe,cellDetailTextKey,
+                            @(self.settingModel.safeOrigin),cellHiddenText,
+                            @0,cellshowSwitchKey,
+                            @(self.settingModel.isCellCanClick), canClickCellKey,
+                            @(self.settingModel.isShowSafeRedDot), cellRedDotInRight,
+                             nil]];
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pRecordSettingKey])
+    {
+        [section2 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                            @"set_icon_recording",cellIconImageKey,
+                            [JfgLanguage getLanTextStrByKey:@"SETTING_RECORD"],cellTextKey,
+                            recordSetting, cellUniqueID,
+                            self.settingModel.autoPhoto,cellDetailTextKey,
+                            @(self.settingModel.autoPhotoOrigin),cellHiddenText,
+                            @0,cellshowSwitchKey,
+                            @(self.settingModel.isCellCanClick), canClickCellKey,
+                            @(self.settingModel.isShowAutoPhotoRedDot), cellRedDotInRight,
+                             nil]];
+    }
+    
+    return section2;
+}
+
+- (NSMutableArray *)sectionSDCardArr
+{
+    NSMutableArray *sectionSdCard = [NSMutableArray arrayWithCapacity:2];
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pSDCardKey])
+    {
+        [sectionSdCard addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
+                                  [JfgLanguage getLanTextStrByKey:@"SETTING_SD"],cellTextKey,
+                                  @"set_icon_sd",cellIconImageKey,
+                                  microSDCard,cellUniqueID,
+                                  self.settingModel.SDCardInfo,cellDetailTextKey,
+                                  @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
+                                  @(self.settingModel.isCellCanClick), canClickCellKey,
+                                  @(self.settingModel.sdCardType), cellHiddenText,
+                                  self.settingModel.detailTextColor, detailTextColorKey,
+                                  nil]];
+    }
+    
+    return sectionSdCard;
+}
+
+
+- (NSMutableArray *)section3Arr
+{
+    NSMutableArray *section3 = [NSMutableArray arrayWithCapacity:2];
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pStandByKey])
+    {
+        [section3 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                            @"set_icon_standby",cellIconImageKey,
+                             standBy, cellUniqueID,
+                            [JfgLanguage getLanTextStrByKey:@"Tap1_CameraFun_Standby"],cellTextKey,
+                            @(self.settingModel.isStandby),isCellSwitchOn,
+                            @(self.settingModel.isStandByCanClick),canClickCellKey,
+                             @1,cellshowSwitchKey, nil]];
+    }
+    
+    return section3;
+}
+
+- (NSMutableArray *)section4Arr
+{
+    NSMutableArray *section4 = [NSMutableArray arrayWithCapacity:2];
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pAngleKey])
+    {
+        [section4 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             @"install_icon_angle",cellIconImageKey,
+                             angle, cellUniqueID,
+                             [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_ViewAngle"],cellTextKey,
+                             self.settingModel.angleStr,cellDetailTextKey,
+                             @0,cellshowSwitchKey,
+                             @(self.settingModel.isCellCanClick), canClickCellKey,
+                             @(self.settingModel.angleType), cellHiddenText,
+                             nil]];
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pLedKey])
+    {
+        [section4 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                            @"set_icon_light",cellIconImageKey,
+                             indirector, cellUniqueID,
+                            [JfgLanguage getLanTextStrByKey:@"LED"],cellTextKey,
+                            @"",cellDetailTextKey,
+                            @(self.settingModel.isOpenIndicator),isCellSwitchOn,
+                            @(self.settingModel.isCellCanClick), canClickCellKey,
+                             @1,cellshowSwitchKey, nil]];
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pHangUpKey])
+    {
+        [section4 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             @"set_icon_overturn",cellIconImageKey,
+                             hangup, cellUniqueID,
+                             [JfgLanguage getLanTextStrByKey:@"Tap1_CameraFun_VideoDirection"],cellTextKey,
+                             @"",cellDetailTextKey,
+                             @(self.settingModel.isRotate),isCellSwitchOn,
+                             @(self.settingModel.isCellCanClick), canClickCellKey,
+                             @1,cellshowSwitchKey, nil]];
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pNTSCKey])
+    {
+        [section4 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             @"set_icon_ntsc",cellIconImageKey,
+                             ntsc, cellUniqueID,
+                             [JfgLanguage getLanTextStrByKey:@"HZ_NTSC_PAL"],cellTextKey,
+                             @(self.settingModel.isNTSC),isCellSwitchOn,
+                             [JfgLanguage getLanTextStrByKey:@"FOOT_TIP_VOTE"],cellFootViewTextKey,
+                             @1,cellshowSwitchKey,
+                             @(self.settingModel.isCellCanClick), canClickCellKey,
+                             nil]];
+    }
+    
+    return section4;
+}
+
+- (NSMutableArray *)clearMsgCallSection
+{
+    NSMutableArray *section = [NSMutableArray arrayWithCapacity:2];
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pCallMsg])
+    {
+        [section addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"DOOR_CLEAR_REOCRD"],cellTextKey,
+                             clearCallMsg, cellUniqueID,
+                             @0,cellshowSwitchKey,
+                             @(self.settingModel.isCellCanClick), canClickCellKey,
+                             @(UITableViewCellAccessoryNone),cellAccessoryKey, nil]];
+    }
+    
+    return  section;
+}
+
 
 #pragma mark
 #pragma mark  更新字段 Action
@@ -832,6 +686,9 @@
 {
     NSArray *dpSegs = nil;
     NSError *error = nil;
+    
+    NSLog(@"indexPath  uuid %@", [[self.groupArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]);
+    
     
     DataPointSeg *seg = [[DataPointSeg alloc] init];
     seg.value = [MPMessagePackWriter writeObject:changedValue error:&error];
@@ -991,7 +848,7 @@
                 {
                     switch (indexPath.row)
                     {
-                        case 0:
+                        case 1:
                         {
                             seg.msgId = dpMsgBase_LED;
                             dpSegs = @[seg];
@@ -1009,7 +866,7 @@
                             }
                         }
                             break;
-                        case 1: // 110V
+                        case 2: // 110V
                         {
                             seg.msgId = dpMsgBase_NTSC;
                             dpSegs = @[seg];
@@ -1040,9 +897,229 @@
             }
         }
             break;
-        case productType_RS_120:
+        case productType_Mag:
+        {
+            if (indexPath.section == 1) {
+                //处理开关数据
+            }
+        }
+            break;
         case productType_IPCam:
-        case productType_WIFI:{
+        case productType_IPCam_V2:
+        {
+            switch (indexPath.section)
+            {
+                case 1:
+                {
+                    switch (indexPath.row)
+                    {
+                        case 1:     // 有线模式
+                        {
+//                            [self updateWiredNet:changedValue];
+                        }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                    break;
+//                case 3:
+//                {
+//                    switch (indexPath.row)
+//                    {
+//                        case 0: // 待机
+//                        {
+//                            [self updateStandBy:changedValue];
+//                        }
+//                            break;
+//                            
+//                        default:
+//                            break;
+//                    }
+//                }
+//                    break;
+                case 3:
+                {
+                    switch (indexPath.row)
+                    {
+                        case 0:
+                        {
+                            seg.msgId = dpMsgBase_LED;
+                            dpSegs = @[seg];
+                            
+                            if (!error)
+                            {
+                                [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
+                                    self.settingModel.isOpenIndicator = [changedValue boolValue];
+                                    [self update];
+                                    [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                                    
+                                } failed:^(RobotDataRequestErrorType error) {
+                                    
+                                }];
+                            }
+                        }
+                            break;
+                        case 1: //画面调转
+                        {
+                            seg.msgId = dpMsgVideo_diretion;
+                            dpSegs = @[seg];
+                            
+                            if (!error)
+                            {
+                                [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
+                                    self.settingModel.isRotate = [changedValue boolValue];
+                                    [self update];
+                                    [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                                    
+                                } failed:^(RobotDataRequestErrorType error) {
+                                    
+                                }];
+                            }
+                            else
+                            {
+                            }
+                        }
+                            break;
+                        case 2: // 110V
+                        {
+                            seg.msgId = dpMsgBase_NTSC;
+                            dpSegs = @[seg];
+                            
+                            if (!error)
+                            {
+                                [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
+                                    self.settingModel.isNTSC = [changedValue boolValue];
+                                    [self update];
+                                    [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                                    
+                                } failed:^(RobotDataRequestErrorType error) {
+                                    
+                                }];
+                            }
+                            else
+                            {
+                            }
+                        }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                    break;
+                default:
+                    break;
+            }
+        }
+            break;
+       
+        case productType_FreeCam:
+        {
+            switch (indexPath.section)
+            {
+                case 3:
+                {
+                    seg.msgId = dpMsgVideo_diretion;
+                    dpSegs = @[seg];
+                    
+                    if (!error)
+                    {
+                        __weak typeof(self) weakSelf = self;
+                        [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
+                            weakSelf.settingModel.isRotate = [changedValue boolValue];
+                            [weakSelf update];
+                            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                            
+                        } failed:^(RobotDataRequestErrorType error) {
+                            
+                        }];
+                    }
+                    else
+                    {
+                    }
+                }
+                    break;
+                    
+                default:
+                    break;
+            }
+        }
+            break;
+        case productType_Camera_HS:
+        case productType_Camera_ZY:
+        case productType_Camera_GK:
+        case productType_CesCamera:
+        {
+            switch (indexPath.section)
+            {
+                case 3: // 待机
+                {
+                    [self updateStandBy:changedValue];
+                }
+                    break;
+                case 4:
+                {
+                    switch (indexPath.row)
+                    {
+                        case 1: // 设备指示灯
+                        {
+                            seg.msgId = dpMsgBase_LED;
+                            dpSegs = @[seg];
+                            
+                            if (!error)
+                            {
+                                __weak typeof(self) weakSelf = self;
+                                [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
+                                    weakSelf.settingModel.isOpenIndicator = [changedValue boolValue];
+                                    [weakSelf update];
+                                    [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                                    
+                                } failed:^(RobotDataRequestErrorType error) {
+                                    
+                                }];
+                            }
+                            else
+                            {
+                            }
+                        }
+                            break;
+                        case 2: // 110V 市电
+                        {
+                            seg.msgId = dpMsgBase_NTSC;
+                            dpSegs = @[seg];
+                            
+                            if (!error)
+                            {
+                                __weak typeof(self) weakSelf = self;
+                                [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
+                                    weakSelf.settingModel.isNTSC = [changedValue boolValue];
+                                    [weakSelf update];
+                                    [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                                    
+                                } failed:^(RobotDataRequestErrorType error) {
+                                    
+                                }];
+                            }
+                            else
+                            {
+                            }
+                        }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                    break;
+                default:
+                    break;
+            }
+        }
+            break;
+        case productType_WIFI_V2:
+        case productType_RS_120:
+        case productType_WIFI:
+        default:
+        {
             switch (indexPath.section)
             {
                 case 3:
@@ -1135,162 +1212,33 @@
             
         }
             break;
-        case productType_Mag:
-        {
-            if (indexPath.section == 1) {
-                //处理开关数据
-            }
-        }
-            break;
-        case productType_Mine:
-        {
-            BOOL setPush = [changedValue boolValue];
-            
-            if (setPush) {
-                
-                if ([JFGEquipmentAuthority canNotificationPermission]) {
-                    //_switch.on = YES;
-                    [JFGSDK isOpenPush:YES];
-                    [[NSUserDefaults standardUserDefaults] setBool:[changedValue boolValue] forKey:@"JFGAccountIsOpnePush"];
-                    [[NSUserDefaults standardUserDefaults] synchronize];
-                }else{
-                    //_switch.on = NO;
-                }
-            }else{
-                [JFGSDK isOpenPush:NO];
-                [[NSUserDefaults standardUserDefaults] setBool:[changedValue boolValue] forKey:@"JFGAccountIsOpnePush"];
-                [[NSUserDefaults standardUserDefaults] synchronize];
-                //_switch.on = NO;
-            }
-            
-            
-            [self update];
-        }
-            break;
-        case productType_FreeCam:
-        {
-            switch (indexPath.section)
-            {
-                case 3:
-                {
-                    seg.msgId = dpMsgVideo_diretion;
-                    dpSegs = @[seg];
-                    
-                    if (!error)
-                    {
-                        [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
-                            self.settingModel.isRotate = [changedValue boolValue];
-                            [self update];
-                            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
-                            
-                        } failed:^(RobotDataRequestErrorType error) {
-                            
-                        }];
-                    }
-                    else
-                    {
-                    }
-                }
-                    break;
-                    
-                default:
-                    break;
-            }
-        }
-            break;
-        case productType_Camera_HS:
-        case productType_Camera_ZY:
-        case productType_Camera_GK:
-        {
-            switch (indexPath.section)
-            {
-                case 3: // 待机
-                {
-                    [self updateStandBy:changedValue];
-                    /*
-                    seg.msgId = dpMsgCamera_isLive;
-                    dpSegs = @[seg];
-                    
-                    if (!error)
-                    {
-                        [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
-                            self.settingModel.isStandby = [changedValue boolValue];
-                            [self update];
-                            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
-                            [[NSNotificationCenter defaultCenter] postNotificationName:JFGSettingOpenSafety object:changedValue];
-                            
-                        } failed:^(RobotDataRequestErrorType error) {
-                            
-                        }];
-                    }else{
-                        
-                        
-                    }
-                    */
-                }
-                    break;
-                case 4:
-                {
-                    switch (indexPath.row)
-                    {
-                        case 1: // 设备指示灯
-                        {
-                            seg.msgId = dpMsgBase_LED;
-                            dpSegs = @[seg];
-                            
-                            if (!error)
-                            {
-                                [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
-                                    self.settingModel.isOpenIndicator = [changedValue boolValue];
-                                    [self update];
-                                    [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
-                                    
-                                } failed:^(RobotDataRequestErrorType error) {
-                                    
-                                }];
-                            }
-                            else
-                            {
-                            }
-                        }
-                            break;
-                        case 2: // 110V 市电
-                        {
-                            seg.msgId = dpMsgBase_NTSC;
-                            dpSegs = @[seg];
-                            
-                            if (!error)
-                            {
-                                [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
-                                    self.settingModel.isNTSC = [changedValue boolValue];
-                                    [self update];
-                                    [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
-                                    
-                                } failed:^(RobotDataRequestErrorType error) {
-                                    
-                                }];
-                            }
-                            else
-                            {
-                            }
-                        }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                    break;
-                default:
-                    break;
-            }
-        }
-            break;
-        default:
-            break;
     }
     
     
 }
+
+- (void)updateDataWithCelluuid:(NSString *)cellUniqueID changedValue:(id)changedValue
+{
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cell witch uniqueID %@", cellUniqueID]];
+    
+    if ([cellUniqueID isEqualToString:indirector])
+    {
+        [self updateIndirector:changedValue];
+    }
+    else if ([cellUniqueID isEqualToString:standBy])
+    {
+        [self updateStandBy:changedValue];
+    }
+    else if ([cellUniqueID isEqualToString:hangup])
+    {
+        [self updateDiretion:changedValue];
+    }
+    else if ([cellUniqueID isEqualToString:ntsc])
+    {
+        [self updateNTSC:changedValue];
+    }
+}
+
 // 服务器 更新 自动录像
 - (void)updateMotionDection:(NSInteger)dectionType
 {
@@ -1300,10 +1248,11 @@
     seg.value = [MPMessagePackWriter writeObject:@(dectionType) error:&error];
     NSArray * dps = @[seg];
     
+    __weak typeof(self) weakSelf = self;
     [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dps success:^(NSMutableDictionary *dic) {
-        self.settingModel.autoPhotoOrigin = (int)dectionType;
+        weakSelf.settingModel.autoPhotoOrigin = (int)dectionType;
         [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
-        [self update];
+        [weakSelf update];
     } failed:^(RobotDataRequestErrorType error) {
         
     }];
@@ -1317,13 +1266,14 @@
     seg.value = [MPMessagePackWriter writeObject:@(dectionType) error:&error];
     NSArray * dps = @[seg];
     
+    __weak typeof(self) weakSelf = self;
     [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dps success:^(NSMutableDictionary *dic) {
-        self.settingModel.autoPhotoOrigin = dectionType;
+        weakSelf.settingModel.autoPhotoOrigin = dectionType;
         if (isShow)
         {
             [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
         }
-        [self update];
+        [weakSelf update];
     } failed:^(RobotDataRequestErrorType error) {
         
     }];
@@ -1337,17 +1287,23 @@
     seg.msgId = dpMsgCamera_Angle;
     seg.value = [MPMessagePackWriter writeObject:[NSString stringWithFormat:@"%d",angleType] error:&error];
     NSArray * dps = @[seg];
+    NSString *ap = [NSString stringWithFormat:@"DOG-2W-%@",[self.cid substringFromIndex:6]];
+    NSString *currentWifi = [CommonMethod currentConnecttedWifi];
     
-    [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dps success:^(NSMutableDictionary *dic) {
+    if ([currentWifi isEqualToString:ap]) {
         self.settingModel.angleType = angleType;
-        [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
         [self update];
-    } failed:^(RobotDataRequestErrorType error) {
-        
-    }];
+    }else{
+        __weak typeof(self) weakSelf = self;
+        [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dps success:^(NSMutableDictionary *dic) {
+            weakSelf.settingModel.angleType = angleType;
+            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+            [weakSelf update];
+        } failed:^(RobotDataRequestErrorType error) {
+            
+        }];
+    }
 }
-
-
 
 // 本地更新 安全防护 时间
 - (void)updateTime:(int)repeatDate
@@ -1389,7 +1345,87 @@
     [self update];
 }
 
+- (void)openHotWired
+{
+    NSString *msgTitle = nil;
+    
+    switch (self.settingModel.deviceNetType)
+    {
+        case DeviceNetType_Wifi:
+        {
+            msgTitle = [JfgLanguage getLanTextStrByKey:[NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Start_Hotspot_Prompt"], self.settingModel.wifi]];
+        }
+            break;
+        case DeviceNetType_Wired:
+        {
+            msgTitle = [JfgLanguage getLanTextStrByKey:@"Cable_Mode_Start_Hotspot"];
+        }
+            break;
+        default:
+            return;
+            break;
+    }
+    
+    __weak typeof(self) weakSelf = self;
+    [LSAlertView showAlertWithTitle:msgTitle Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+        
+    } OKBlock:^{
+        
+        [weakSelf sendOpenHotWireMsg];
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Instructions_Sent"]];
+        [weakSelf performSelector:@selector(jfgSetAPRespose:) withObject:nil afterDelay:10.0];
+    }];
+}
+
 #pragma mark private
+
+// 更新 有线模式 开关
+- (void)updateWiredNet:(id)isOpen
+{
+    JFG_WS(weakSelf);
+    
+    if ([isOpen boolValue] == NO) // 关闭
+    {
+        [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Cable_Mode_Switch_Cancel"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+            weakSelf.settingModel.isUsingWiredNet = ![isOpen boolValue];
+            [weakSelf update];
+        } OKBlock:^{
+            [weakSelf sendWiredNetMsg:isOpen];
+        }];
+    }
+    else
+    {
+        [self sendWiredNetMsg:isOpen];
+    }
+    
+}
+
+// 发送 开启有线 消息
+- (void)sendWiredNetMsg:(id)isOpen
+{
+    JFG_WS(weakSelf);
+    NSArray *dpSegs = nil;
+    NSError *error = nil;
+    
+    DataPointSeg *seg = [[DataPointSeg alloc] init];
+    seg.value = [MPMessagePackWriter writeObject:isOpen error:&error];
+    
+    seg.msgId = dpMsgBase_isUsingWiredNet;
+    dpSegs = @[seg];
+    
+    if (!error)
+    {
+        [[dataPointMsg shared] setdpDataWithCid:weakSelf.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
+            weakSelf.settingModel.isUsingWiredNet = [isOpen boolValue];
+            [weakSelf update];
+            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+            
+        } failed:^(RobotDataRequestErrorType error) {
+            
+        }];
+    }
+}
+
 //封装 更新待机 状态
 - (void)updateStandBy:(id)changedValue
 {
@@ -1414,12 +1450,13 @@
         
         if (!error)
         {
+            __weak typeof(self) weakSelf = self;
             [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
-                self.settingModel.isStandby = [changedValue boolValue];
-                self.settingModel.isWarnEnable = NO;
-                self.settingModel.isOpenIndicator = NO;
-                self.settingModel.autoPhotoOrigin = MotionDetectNever;
-                [self update];
+                weakSelf.settingModel.isStandby = [changedValue boolValue];
+                weakSelf.settingModel.isWarnEnable = NO;
+                weakSelf.settingModel.isOpenIndicator = NO;
+                weakSelf.settingModel.autoPhotoOrigin = MotionDetectNever;
+                [weakSelf update];
                 
                 [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
                 [[NSNotificationCenter defaultCenter] postNotificationName:JFGSettingOpenSafety object:changedValue];
@@ -1431,6 +1468,7 @@
     }
     else // 关闭 待机
     {
+        __weak typeof(self) weakSelf = self;
         [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgCamera_isLive)] withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic) {
             NSMutableArray *dpValues = [dic objectForKey:dpMsgCameraisLiveKey];
             [dpValues replaceObjectAtIndex:0 withObject:changedValue];
@@ -1438,15 +1476,15 @@
             seg.value = [MPMessagePackWriter writeObject:dpValues error:nil];
             
             [dpSegs addObject:seg];
-            [dpSegs addObjectsFromArray:[self isLiveRelative:[dic objectForKeyedSubscript:dpMsgCameraisLiveKey]]];
+            [dpSegs addObjectsFromArray:[weakSelf isLiveRelative:[dic objectForKeyedSubscript:dpMsgCameraisLiveKey]]];
             
             [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic)
             {
-                self.settingModel.isStandby = [changedValue boolValue];
-                self.settingModel.isWarnEnable = [[dpValues objectAtIndex:1] boolValue];
-                self.settingModel.isOpenIndicator = [[dpValues objectAtIndex:2] boolValue];
-                self.settingModel.autoPhotoOrigin = [[dpValues objectAtIndex:3] integerValue];
-                [self update];
+                weakSelf.settingModel.isStandby = [changedValue boolValue];
+                weakSelf.settingModel.isWarnEnable = [[dpValues objectAtIndex:1] boolValue];
+                weakSelf.settingModel.isOpenIndicator = [[dpValues objectAtIndex:2] boolValue];
+                weakSelf.settingModel.autoPhotoOrigin = [[dpValues objectAtIndex:3] integerValue];
+                [weakSelf update];
                 [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
                 [[NSNotificationCenter defaultCenter] postNotificationName:JFGSettingOpenSafety object:changedValue];
                 
@@ -1457,8 +1495,6 @@
         } FailBlock:^(RobotDataRequestErrorType error) {
             
         }];
-        
-        
     }
 
 }
@@ -1482,9 +1518,125 @@
     return @[indicatorSeg, warnEableSeg, autoRecordSeg];
 }
 
+// 修改 设备指示灯
+- (void)updateIndirector:(id)changedValue
+{
+    NSArray *dpSegs = nil;
+    NSError *error = nil;
+    
+    DataPointSeg *seg = [[DataPointSeg alloc] init];
+    seg.value = [MPMessagePackWriter writeObject:changedValue error:&error];
+    seg.msgId = dpMsgBase_LED;
+    dpSegs = @[seg];
+    
+    if (!error)
+    {
+        [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
+            self.settingModel.isOpenIndicator = [changedValue boolValue];
+            [self update];
+            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+            
+        } failed:^(RobotDataRequestErrorType error) {
+            
+        }];
+    }
+}
 
+- (void)updateDiretion:(id)changedValue
+{
+    NSArray *dpSegs = nil;
+    NSError *error = nil;
 
+    DataPointSeg *seg = [[DataPointSeg alloc] init];
+    seg.value = [MPMessagePackWriter writeObject:changedValue error:&error];
+    seg.msgId = dpMsgVideo_diretion;
+    dpSegs = @[seg];
+    
+    if (!error)
+    {
+        [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
+            self.settingModel.isRotate = [changedValue boolValue];
+            [self update];
+            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+            
+        } failed:^(RobotDataRequestErrorType error) {
+            
+        }];
+    }
+}
 
+- (void)updateNTSC:(id)changedValue
+{
+    NSArray *dpSegs = nil;
+    NSError *error = nil;
+    
+    DataPointSeg *seg = [[DataPointSeg alloc] init];
+    seg.value = [MPMessagePackWriter writeObject:changedValue error:&error];
+    
+    seg.msgId = dpMsgBase_NTSC;
+    dpSegs = @[seg];
+    
+    if (!error)
+    {
+        [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dpSegs success:^(NSMutableDictionary *dic) {
+            self.settingModel.isNTSC = [changedValue boolValue];
+            [self update];
+            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+            
+        } failed:^(RobotDataRequestErrorType error) {
+            
+        }];
+    }
+}
+
+// 发送 开启热点消息
+- (void)sendOpenHotWireMsg
+{
+    if (self.settingModel.ipAdress != nil)
+    {
+        [JFGSDK udpSetDevAPForCid:self.cid ip:self.settingModel.ipAdress model:1];
+    }
+    
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"openHotWire udp ip address %@", self.settingModel.ipAdress]];
+}
+
+// 清空 SDcard
+- (void)clearSDCard
+{
+    int sdcardClearDuration = 120.0f;
+    
+    if (self.netWorkState == JFGNetTypeOffline)
+    {
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"OFFLINE_ERR_1"]];
+        return;
+    }
+    DataPointSeg *seg =[[DataPointSeg alloc]init];
+    seg.msgId = dpMsgBase_FormatSD;
+    seg.version = 0;
+    [ProgressHUD shared].timeOutTip = [JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips5"];
+    [ProgressHUD showProgress:[JfgLanguage getLanTextStrByKey:@"SD_INFO_2"] lastingTime:sdcardClearDuration];
+    
+    self.settingModel.isClearingSDCard = YES;
+    [self performSelector:@selector(clearSDCardOverTime) withObject:nil afterDelay:sdcardClearDuration];
+    
+    [[JFGSDKDataPoint sharedClient] robotSetDataWithPeer:self.cid dps:@[seg] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
+        
+    } failure:^(RobotDataRequestErrorType type) {
+        
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
+    }];
+}
+
+- (void)clearSDCardFinish
+{
+    [ProgressHUD dismiss];
+}
+
+// clear sdcard overtime
+- (void)clearSDCardOverTime
+{
+    self.settingModel.isClearingSDCard = NO;
+}
 #pragma mark
 #pragma mark  功能设置 缓存 存取
 - (void)setJfgDeviceSettingCache:(NSDictionary *)dict
@@ -1506,12 +1658,21 @@
     switch (self.pType)
     {
         case productType_DoorBell:
+        case productType_CesBell:
+        case productType_CesBell_V2:
+        case productType_RSDoorBell:
+        case productType_CatEye:
+        case productType_KKS_DoorBell:
         {
             DataPointIDVerSeg *seg = [[DataPointIDVerSeg alloc] init];
             seg.version = -1;
             seg.msgId = dpMsgBell_callMsg;
             
-            [[JFGSDKDataPoint sharedClient] robotDelDataWithPeer:self.cid queryDps:@[seg] success:^(NSString *identity, int ret) {
+            DataPointIDVerSeg *seg1 = [[DataPointIDVerSeg alloc] init];
+            seg1.version = -1;
+            seg1.msgId = dpMsgBell_callMsgV3;
+            
+            [[JFGSDKDataPoint sharedClient] robotDelDataWithPeer:self.cid queryDps:@[seg, seg1] success:^(NSString *identity, int ret) {
                 if (ret == 0)
                 {
                     [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips3"]];
@@ -1524,7 +1685,6 @@
             break;
         case productType_Mag:
         {
-            NSLog(@"清空开关记录");
             
         }
             break;
@@ -1535,8 +1695,61 @@
 
 #pragma mark
 #pragma mark --- 网络代理 ---
+- (void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
+{
+    if ([self.cid isEqualToString:ask.cid])
+    {
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"recevie fpingResponse"]];
+        switch (self.pType)
+        {
+            case productType_IPCam:
+            case productType_IPCam_V2:
+            {
+                self.settingModel.ipAdress = ask.address;
+                self.settingModel.isInLocalNet = YES;
+            }
+                break;
+            case productType_720p:
+            case productType_720:
+            {
+                JFG_WS(weakSelf);
+                [[JfgHttp sharedHttp] get:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getSdInfo", ask.address] parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+                    weakSelf.settingModel.isExistSDCard = [[responseObject objectForKey:panoSdCardExistKey] boolValue];
+                    weakSelf.settingModel.sdCardError = [[responseObject objectForKey:panoSdCardError] intValue];
+        
+                    [weakSelf update];
+                } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                    
+                }];
+            }
+                break;
+            default:
+                break;
+        }
+        
+        [self update];
+    }
+    
+}
+
+- (void)jfgSetAPRespose:(JFGSDKUDPResposeSetAP *)ask
+{
+    if (ask == nil)
+    {
+        [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"Start_Failed"]];
+        return;
+    }
+    
+    if ([ask.cid isEqualToString:self.cid])
+    {
+        [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"Start_Success"]];
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(jfgSetAPRespose:) object:nil];
+    }
+}
+
 -(void)jfgNetworkChanged:(JFGNetType)netType
 {
+    self.netWorkState = netType;
     [self updateSettingCell:!(netType == JFGNetTypeConnect || netType == JFGNetTypeOffline)];
 }
 
@@ -1557,6 +1770,7 @@
         {
             NSError *error = nil;
             id obj = [MPMessagePackReader readData:seg.value error:&error];
+            JFGLog(@"___ push obj __ %@", obj);
             if (error == nil)
             {
                 switch (seg.msgId)
@@ -1568,28 +1782,26 @@
                             NSArray *objArr = obj;
                             if (objArr.count>0)
                             {
-                                
                                 int netType = [[objArr objectAtIndex:0] intValue];
-                                switch (netType)
-                                {
-                                    case DeviceNetType_Offline:
-                                    case DeviceNetType_Connetct:
-                                    {
-                                        [self updateSettingCell:NO];
-                                    }
-                                        break;
-                                    case DeviceNetType_2G:
-                                    case DeviceNetType_3G:
-                                    case DeviceNetType_4G:
-                                    case DeviceNetType_5G:
-                                    case DeviceNetType_Wifi:
-                                    {
-                                        [self updateSettingCell:YES];
-                                    }
-                                    default:
-                                        break;
-                                }
+                                self.settingModel.deviceNetType = (DeviceNetType)netType;
+                                self.settingModel.wifi = [objArr objectAtIndex:1];
                                 
+                                if (![JfgDataTool deviceIsOnline:(DeviceNetType)netType])
+                                {
+                                    switch (self.pType)
+                                    {
+                                        case productType_IPCam:
+                                        case productType_IPCam_V2:
+                                        {
+                                            [self pingRequest];     // 重新 检测局域网
+                                        }
+                                            break;
+                                            
+                                        default:
+                                            break;
+                                    }
+                                }
+                                [self updateSettingCell:[JfgDataTool deviceIsOnline:(DeviceNetType)netType]];
                             }
                         }
                         
@@ -1604,31 +1816,52 @@
                         }
                     }
                         break;
-                    /*
-                    case dpMsgBase_SDStatus:
+                    case dpMsgBase_isWiredNetAvailable:
+                    {
+                        self.settingModel.isWiredNetAvailalbe = [obj boolValue];
+                        [self update];
+                    }
+                        break;
+                    case dpMsgCamera_isLive:
                     {
                         if ([obj isKindOfClass:[NSArray class]])
                         {
-                            BOOL isExistSDCard = [[obj objectAtIndex:3] boolValue];
-                            
-                            if (!isExistSDCard) // SD卡 不存在
+                            NSArray *isLiveArr = (NSArray *)obj;
+                            if (isLiveArr.count >= 4)
                             {
-                                self.settingModel.isExistSDCard = isExistSDCard;
-                                self.settingModel.sdCardError = [[obj objectAtIndex:2] intValue];
-                                self.settingModel.info = self.alias;
+                                self.settingModel.isStandby = [[isLiveArr objectAtIndex:0] boolValue];
+                                self.settingModel.isWarnEnable = [[isLiveArr objectAtIndex:1] boolValue];
+                                self.settingModel.isOpenIndicator = [[isLiveArr objectAtIndex:2] boolValue];
+                                self.settingModel.autoPhotoOrigin = [[isLiveArr objectAtIndex:3] integerValue];
                                 [self update];
                             }
-                            else
-                            {
-                                self.settingModel.isExistSDCard = isExistSDCard;
-                                self.settingModel.sdCardError = [[obj objectAtIndex:2] intValue];
-                                [self update];
-                            }
-                            
                         }
                     }
                         break;
-                    */
+                    case dpMsgBase_SDCardFomat:
+                    {
+                        if ([obj isKindOfClass:[NSArray class]])
+                        {
+                            NSArray *sdInfos = (NSArray *)obj;
+                            if (sdInfos.count >= 4)
+                            {
+                                self.settingModel.sdCardError = [[sdInfos objectAtIndex:2] intValue];
+                                self.settingModel.isExistSDCard = [[sdInfos objectAtIndex:3] boolValue];
+                                
+                                if (self.settingModel.sdCardError == 0)
+                                {
+                                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips3"]];
+                                }
+                                else
+                                {
+                                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
+                                }
+                            }
+                            self.settingModel.isClearingSDCard = NO;
+                            [self update];
+                        }
+                    }
+                    break;
                     case dpMsgBase_SDCardInfoList:
                     {
                         if ([obj isKindOfClass:[NSArray class]])
@@ -1638,10 +1871,18 @@
                             self.settingModel.isExistSDCard = isExistSDCard;
                             self.settingModel.sdCardError = [[obj objectAtIndex:1] intValue];
                             self.settingModel.info = self.alias;
+                            
                             [self update];
                             
                         }
                         
+                    }
+                        break;
+                    case dpMsgBase_SDStatus:
+                    {
+                        self.settingModel.isExistSDCard = [[obj objectAtIndex:3] intValue];
+                        self.settingModel.sdCardError = [[obj objectAtIndex:2] intValue];
+                        [self update];
                     }
                         break;
                     default:
@@ -1653,6 +1894,56 @@
         }
     }
 }
+
+// 720 专用
+-(void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
+                                               mSeq:(uint64_t)mSeq
+                                                cid:(NSString *)cid
+                                               type:(int)type
+                                       isInitiative:(BOOL)initiative
+                                           dpMsgArr:(NSArray *)dpMsgArr
+{
+    for (DataPointSeg *seg in dpMsgArr)
+    {
+        NSError *error = nil;
+        id obj = [MPMessagePackReader readData:seg.value error:&error];
+        
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"socket dpID[%llu]  value[%@]", seg.msgId, obj]];
+        
+        if (error == nil)
+        {
+            switch (seg.msgId)
+            {
+                // SDCard 插拔
+                case dpMsgBase_SDStatus:
+                {
+                    if ([obj isKindOfClass:[NSArray class]])
+                    {
+                        BOOL isExistSDCard = [[obj objectAtIndex:3] intValue];
+                        if (isExistSDCard == NO)
+                        {
+                            //show hub sdCard was pulled out
+                            if (initiative)
+                            {
+                                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"]];
+                            }
+                        }
+                        
+                        self.settingModel.isExistSDCard = isExistSDCard;
+                        self.settingModel.sdCardError = [[obj objectAtIndex:2] intValue];
+                        
+                    }
+                }
+                break;
+                default:
+                break;
+            }
+        }
+    }
+    
+    [self update];
+}
+
 
 #pragma mark
 #pragma mark property
@@ -1674,12 +1965,15 @@
         
         switch (self.pType)
         {
-           case productType_DoorBell:
+            case productType_DoorBell:
+            case productType_CesBell:
+            case productType_CesBell_V2:
             {
                 [_dpsArray addObjectsFromArray:@[@(dpMsgBase_Net)]];
             }
                 break;
             case productType_WIFI:
+            case productType_CatEye:
             case productType_3G:
             default:
             {
@@ -1696,6 +1990,8 @@
                                                  @(dpMsgBase_SIMInfo),
                                                  @(dpMsgCamera_Angle),
                                                  @(dpMsgCamera_WarnEnable),
+                                                 @(dpMsgBase_isWiredNetAvailable),
+                                                 @(dpMsgBase_isUsingWiredNet)
                                                  ]];
             }
                 break;
@@ -1706,12 +2002,29 @@
     return _dpsArray;
 }
 
+- (PropertyManager *)propertyTool
+{
+    if (_propertyTool == nil)
+    {
+        _propertyTool = [[PropertyManager alloc] init];
+        _propertyTool.propertyFilePath = [[NSBundle mainBundle] pathForResource:self.isShare?@"properties_share":@"properties" ofType:@"json"];
+    }
+    return _propertyTool;
+}
+
+- (BOOL)isClearingSDCard
+{
+    return self.settingModel.isClearingSDCard;
+}
+
 - (DeviceSettingModel *)settingModel
 {
     if (_settingModel == nil)
     {
         _settingModel = [[DeviceSettingModel alloc] init];
         _settingModel.cid = self.cid;
+        _settingModel.pType = self.pType;
+        _settingModel.isShare = self.isShare;
     }
     return _settingModel;
 }

@@ -24,12 +24,7 @@
         if ([urlStr rangeOfString:@"security-token"].location != NSNotFound && [urlStr rangeOfString:@"jiafeigou"].location != NSNotFound) {
             url = [[NSURL alloc] initWithScheme:url.scheme host:url.host path:url.path];
         }
-        
-//        NSString *host = url.host;
-//        NSString *scheme = url.scheme;
         NSString *path = url.path;
-        //[[NSUserDefaults standardUserDefaults] setObject:url.host forKey:@"osshost"];
-        
         return path;
         
     }];

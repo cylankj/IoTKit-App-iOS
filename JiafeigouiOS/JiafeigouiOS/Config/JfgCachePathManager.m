@@ -34,6 +34,13 @@
     return homeDic;
 }
 
++(NSString *)sfcParamModelCachePath
+{
+    NSString *homeDic = [[self class] cylanDic];
+    homeDic = [homeDic stringByAppendingPathComponent:[NSString stringWithFormat:@"sfcParamModelCachePath_%@.db",@"all"]];
+    return homeDic;
+}
+
 +(NSString *)warnPicForDelCachePathForCid:(NSString *)cid
 {
     NSString *homeDic = [[self class] cylanDic];
@@ -52,6 +59,13 @@
 {
     NSString *homeDic = [[self class] cylanDic];
     homeDic = [homeDic stringByAppendingPathComponent:@"delDevice.db"];
+    return homeDic;
+}
+
++(NSString *)readAddFriendReqListCachePath
+{
+    NSString *homeDic = [[self class] cylanDic];
+    homeDic = [homeDic stringByAppendingPathComponent:@"readAddFriendReq.list"];
     return homeDic;
 }
 

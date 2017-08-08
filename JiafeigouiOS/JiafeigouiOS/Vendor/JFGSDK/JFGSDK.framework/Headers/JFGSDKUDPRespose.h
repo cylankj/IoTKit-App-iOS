@@ -121,6 +121,12 @@
  */
 @property (nonatomic,assign)int ret;
 
+@end
 
+@interface JFGSDKUDPResposeSetAP : JFGSDKUDPResposeHead
+
+@property (nonatomic,assign)int ret;
 
 @end
+
+

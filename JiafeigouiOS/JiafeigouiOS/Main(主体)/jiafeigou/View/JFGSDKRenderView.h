@@ -77,28 +77,30 @@ SFCParamIos SFCParamIosMake(int t_cx, int t_cy, int t_r, int t_w, int t_h, int t
 - (bool)isPanorama;
 // 设置摄像头参数
 - (void)configV720;
+- (void)configV720WithXML:(NSString*)xml_path;
 // opengl 截图
-- (UIImage*) takeSnapshot;
+- (UIImage*)takeSnapshot;
+
 //
 - (void) setDisplayMode:(DFDisplayMode) mode;
 - (DFDisplayMode) getCurrentDisplayMode;
 // 开启陀螺仪
-- (void)enableGyro:(bool) enable;
+- (void)enableGyro:(bool)enable;
 // 开启VR分屏
-- (void)enableVRMode:(bool) enable;
+- (void)enableVRMode:(bool)enable;
 // 通知view方向变化
-- (void)detectOrientationChange;
+- (void)detectOrientationChange:(UIDeviceOrientation) Orientation;
 // 载入图片
-- (BOOL)loadImage:(NSString*) imgPath;
+- (BOOL)loadImage:(NSString*)imgPath;
 // 载入图片
-- (BOOL)loadUIImage:(UIImage*) img;
+- (BOOL)loadUIImage:(UIImage*)img;
 // 获取双击的手势对象
-- (UITapGestureRecognizer*) getDoubleTapRecognizer;
+- (UITapGestureRecognizer*)getDoubleTapRecognizer;
 // 手动停止view的渲染和更新（释放timer资源）
 - (void)stopRender;
 
 // 是否启用视频第一帧动画
--(void) enableFirstFrameEvent:(bool) enable;
+-(void)enableFirstFrameEvent:(bool)enable;
 
 // panorama interface end
 

@@ -9,6 +9,9 @@
 #import "JFGWebViewController.h"
 #import "FLGlobal.h"
 #import "JfgLanguage.h"
+#import "OemManager.h"
+
+
 @interface JFGWebViewController ()
 @property(nonatomic, strong)UIWebView *_webView;
 
@@ -29,10 +32,13 @@
         case webViewTypeUserProtocol:
         {
             self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"TERM_OF_USE"];
-            BOOL isOem = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"oemname"] isEqualToString:@"zhongxing"]; // 是否是中性版本
-            NSString *oemString = isOem?@"_zhongxing":@"";
-            NSString *cnString = ([JfgLanguage languageType] == LANGUAGE_TYPE_CHINESE)?@"_cn":@"_en";
-            self.urlString = [NSString stringWithFormat:@"http://www.jfgou.com/app/treaty%@%@.html",oemString,cnString];
+//            BOOL isOem = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"oemname"] isEqualToString:@"zhongxing"]; // 是否是中性版本
+//            NSString *oemString = isOem?@"_zhongxing":@"";
+//            NSString *cnString = ([JfgLanguage languageType] == LANGUAGE_TYPE_CHINESE)?@"_cn":@"_en";
+//            self.urlString = [NSString stringWithFormat:@"http://www.jfgou.com/app/treaty%@%@.html",oemString,cnString];
+            
+            self.urlString =  [OemManager getOemProtocolUrl];
+            
             [self loadWebView];
         }
             break;

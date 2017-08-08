@@ -10,8 +10,17 @@
 #import "TimeLineView.h"
 #import "DelButton.h"
 #import "ExploreImageView.h"
+@class ExploreModel;
 
 @interface ExploreShareButton : UIButton
+@property (nonatomic,strong)ExploreModel *exModel;
+@property (nonatomic,strong)UIImage *shareImage;
+@end
+
+@interface ExploreVideoButton : UIButton
+
+@property (nonatomic,strong)ExploreModel *exModel;
+@property (nonatomic,strong)UIImageView *supImageView;
 
 @end
 
@@ -27,7 +36,7 @@
 @property (weak, nonatomic) IBOutlet UILabel *fromDeviceLabel;
 @property (weak, nonatomic) IBOutlet UIImageView *videoImageView;
 @property (weak, nonatomic) IBOutlet DelButton *deleteButton;
-@property (weak, nonatomic) IBOutlet UIButton *playVideoButton;
+@property (weak, nonatomic) IBOutlet ExploreVideoButton *playVideoButton;
 @property (weak, nonatomic) IBOutlet ExploreShareButton *shareButton;
 
 

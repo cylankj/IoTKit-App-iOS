@@ -8,6 +8,7 @@
 
 #import "BaseViewController.h"
 #import "JfgTypeDefine.h"
+#import "jfgConfigManager.h"
 
 @protocol AddDeviceGuideVCNextActionDelegate <NSObject>
 

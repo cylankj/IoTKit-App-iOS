@@ -16,7 +16,7 @@
 #import "JfgUserDefaultKey.h"
 #import "JfgLanguage.h"
 #import <JFGSDK/JFGSDK.h>
-#import "AddDeviceMainViewController.h"
+#import "AddDeviceGuideViewController.h"
 #import <KVOController.h>
 #import "DeviceSettingVC.h"
 #import "UIAlertView+FLExtension.h"
@@ -24,6 +24,7 @@
 #import "SetWifiLoadingFor720VC.h"
 #import "CommonMethod.h"
 #import "PilotLampStateVC.h"
+#import "LSAlertView.h"
 
 #define kScreen_Scale [UIScreen mainScreen].bounds.size.width/375.0f
 #define kTop 100*kScreen_Scale
@@ -31,6 +32,9 @@
 #define kLineWidth Kwidth-40*kScreen_Scale
 
 @interface ConfigWiFiViewController ()<UITextFieldDelegate,JFGSDKCallbackDelegate,UIAlertViewDelegate>
+{
+    NSDictionary *cacheWifiListDict;
+}
 @property(nonatomic, strong)UILabel * titleLabel;
 @property(nonatomic, strong)UITextField * wifiNameTF;
 @property(nonatomic, strong)UILabel * lineLabel_top;
@@ -41,8 +45,6 @@
 @property(nonatomic, strong)UIButton *wifiListButton;
 @property(nonatomic, strong)DelButton *exitBtn;
 @property(nonatomic, strong)UIButton *declareBtn;
-
-
 @property (nonatomic, copy) NSString *ipAddress;
 @property (nonatomic, copy) NSString *macStr;
 
@@ -74,20 +76,16 @@
         [self.view addSubview:self.declareBtn];
     }
     
-    if ([self.cid isKindOfClass:[NSString class]] && self.cid.length >1 && ( [[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"50"] ||
-        [[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"51"] ||
-        [[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"65"]||
-        [[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"60"]||
-        [[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"66"]||
-        [[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"67"]||
-        [[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"69"]||
-        [[self.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"68"] )) {
-        
-        self.isCamare = YES;
-        
+    self.isCamare = NO;
+    NSArray *wifiListOS = @[@6,@15,@17,@22,@24,@25,@26,@27,@28,@42,@44,@46,@50,@52];
+    for (NSNumber *os in wifiListOS) {
+        if ([os integerValue] == self.pType) {
+            self.isCamare = YES;
+            break;
+        }
     }
     
-    if (self.isCamare) {
+    if (!self.isCamare) {
         [self.view addSubview:self.wifiListButton];
         [self.view insertSubview:self.wifiListButton aboveSubview:self.wifiNameTF];
     }
@@ -106,6 +104,7 @@
     if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
         self.navigationController.interactivePopGestureRecognizer.enabled = NO;
     }
+    cacheWifiListDict = nil;
 }
 
 - (void)viewDidDisappear:(BOOL)animated
@@ -125,10 +124,8 @@
     self.ipAddress = ask.address;
     //65开头设备不显示获取wifi列表按钮（FreeCam）
     if (ask.cid && [[ask.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"65"]) {
-        
         [self.wifiListButton removeFromSuperview];
         [JFGSDK removeDelegate:self];
-        
     }
 }
 
@@ -137,19 +134,8 @@
 {
     // 公共判断区域
     //断开了ap连接
-    if (![CommonMethod isConnecttedDeviceWifiWithPid:self.pType]) {
-        
-        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Item_ConnectionFail"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:nil, nil];
-        [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
-            
-            [self intoAddDevGuideVC];
-            
-        } otherDelegate:nil];
-        return;
-    }
-    
-    
-    
+    BOOL isConnectAp = [jfgConfigManager isAPModel];
+    /////
 //    if (self.wifiNameTF.left == 0) {
 //        
 //        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"ENTER_WIFI"]];
@@ -162,7 +148,6 @@
     {
         case configWifiType_configWifi:
         {
-            
             [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"wifiName:%@  wifiPasword:%@",self.wifiNameTF.text,self.wifiPasswordTF.text]];
             [JFGSDK wifiSetWithSSid:self.wifiNameTF.text keyword:self.wifiPasswordTF.text cid:self.cid ipAddr:@"255.255.255.255" mac:@""];
             [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_SET_WIFI_MSG"]];
@@ -171,7 +156,17 @@
             break;
         case configWifiType_default:
         {
-            
+            if (!isConnectAp) {
+                __weak typeof(self) weakSelf = self;
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Item_ConnectionFail"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
+                    
+                    [weakSelf intoAddDevGuideVC];
+                    
+                } OKBlock:^{
+                    
+                }];
+                return;
+            }
             [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"wifiName:%@  wifiPasword:%@",self.wifiNameTF.text,self.wifiPasswordTF.text]];
             BindDevProgressViewController *bindDevice = [BindDevProgressViewController new];
             bindDevice.pType = self.pType;
@@ -179,7 +174,6 @@
             bindDevice.wifiName = self.wifiNameTF.text;
             bindDevice.wifiPassWord = self.wifiPasswordTF.text;
             [self.navigationController pushViewController:bindDevice animated:YES];
-            
         }
             break;
         case configWifiType_resetWifi:{
@@ -189,6 +183,7 @@
             setwifi.wifiPassword = self.wifiPasswordTF.text;
             setwifi.cid = self.cid;
             [self.navigationController pushViewController:setwifi animated:YES];
+            
         }
             break;
             
@@ -197,31 +192,107 @@
             break;
     }
     
+    [self saveWifiInfoForName:self.wifiNameTF.text pw:self.wifiPasswordTF.text];
+    
+}
+
+
+-(void)saveWifiInfoForName:(NSString *)wifiName pw:(NSString *)pw
+{
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library"];
+    path = [path stringByAppendingPathComponent:@"jfgou"];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:path]) {
+        [fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:nil];
+    }
+    path = [path stringByAppendingPathComponent:@"wifi.plist"];
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc]initWithContentsOfFile:path];
+    if (dict) {
+        NSString *oldPw = [dict objectForKey:wifiName];
+        if (oldPw) {
+            [dict removeObjectForKey:wifiName];
+        }
+    }else{
+        dict = [NSMutableDictionary new];
+    }
+    [dict setObject:pw forKey:wifiName];
+    [dict writeToFile:path atomically:YES];
+}
+
+-(void)removeWifiPWForKey:(NSString *)key
+{
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library"];
+    path = [path stringByAppendingPathComponent:@"jfgou"];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:path]) {
+        [fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:nil];
+    }
+    path = [path stringByAppendingPathComponent:@"wifi.plist"];
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc]initWithContentsOfFile:path];
+    if (dict) {
+        NSString *va = [dict objectForKey:key];
+        if (va) {
+            [dict removeObjectForKey:va];
+        }
+        cacheWifiListDict = nil;
+        cacheWifiListDict = [[NSDictionary alloc]initWithDictionary:dict];
+        [dict writeToFile:path atomically:YES];
+    }
     
     
 }
--(void)getWiFiListAciton:(UIButton *)button{
 
+-(NSDictionary *)getWifiInfo
+{
+    if (cacheWifiListDict == nil) {
+        NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library"];
+        path = [path stringByAppendingPathComponent:@"jfgou"];
+        path = [path stringByAppendingPathComponent:@"wifi.plist"];
+        NSDictionary *dict = [[NSDictionary alloc]initWithContentsOfFile:path];
+        if (dict) {
+            cacheWifiListDict = [[NSDictionary alloc]initWithDictionary:dict];
+        }
+    }
+    return cacheWifiListDict;
+}
+
+
+
+-(void)getWiFiListAciton:(UIButton *)button
+{
     [self.view endEditing:YES];
     [WifiListView createWifiListView:^(NSString *wifiNameString) {
         self.wifiNameTF.text = wifiNameString;
+        self.wifiPasswordTF.text = @"";
+        NSDictionary *dic = [self getWifiInfo];
+        if (dic) {
+            for (NSString *key in dic) {
+                if ([key isEqualToString:wifiNameString]) {
+                    self.wifiPasswordTF.text = [dic objectForKey:key];
+                    break;
+                }
+            }
+        }
     }];
 }
 
 -(void)exitAction
 {
     //弹框逻辑处理
-    UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_tips"] delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"CANCEL"], nil];
-    alert.tag = 10245;
-    [alert show];
+    __weak typeof(self) weakSelf = self;
+    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_tips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] CancelBlock:^{
+        
+        [weakSelf intoAddDevGuideVC];
+        
+    } OKBlock:^{
+        
+    }];
 }
 
 -(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
-    
     if (alertView.tag == 10245 && buttonIndex == 0) {
         [self intoAddDevGuideVC];
-        
     }
 }
 
@@ -245,7 +316,7 @@
         {
             for (UIViewController *temp in self.navigationController.viewControllers)
             {
-                if ([temp isKindOfClass:[AddDeviceMainViewController class]]   || [temp isKindOfClass:[DeviceSettingVC class]])
+                if ([temp isKindOfClass:[AddDeviceGuideViewController class]]   || [temp isKindOfClass:[DeviceSettingVC class]])
                 {
                     [self.navigationController popToViewController:temp animated:YES];
                 }
@@ -286,11 +357,22 @@
         _wifiNameTF.delegate = self;
         _wifiNameTF.returnKeyType = UIReturnKeyNext;
         _wifiNameTF.clearButtonMode = UITextFieldViewModeWhileEditing;
-        [self.KVOController observe:_wifiNameTF keyPath:@"text" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionInitial block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
+        
+        NSString *wifiNam = [[NSUserDefaults standardUserDefaults] objectForKey:availableWIFI];
+        if ([wifiNam isKindOfClass:[NSString class]]) {
             
-           
-            
-        }];
+            _wifiNameTF.text = wifiNam;
+//            NSDictionary *dic = [self getWifiInfo];
+//            if (dic) {
+//                for (NSString *key in dic) {
+//                    if ([key isEqualToString:wifiNam]) {
+//                        
+//                        break;
+//                    }
+//                }
+//            }
+        }
+        
     }
     return _wifiNameTF;
 }
@@ -306,17 +388,24 @@
         _wifiPasswordTF.returnKeyType = UIReturnKeyDone;
         _wifiPasswordTF.clearButtonMode = UITextFieldViewModeWhileEditing;
         _wifiPasswordTF.rightViewMode = UITextFieldViewModeAlways;
-        [self.KVOController observe:_wifiPasswordTF keyPath:@"text" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionInitial block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
+        NSString *wifiNam = [[NSUserDefaults standardUserDefaults] objectForKey:availableWIFI];
+        if ([wifiNam isKindOfClass:[NSString class]]) {
             
-            if (_wifiPasswordTF.text.length>60) {
-                
-               
+            NSDictionary *dic = [self getWifiInfo];
+            if (dic) {
+                for (NSString *key in dic) {
+                    if ([key isEqualToString:wifiNam]) {
+                        _wifiPasswordTF.text = [dic objectForKey:key];
+                        break;
+                    }
+                }
             }
-
-        }];
+            
+        }
     }
     return _wifiPasswordTF;
 }
+
 -(UILabel *)lineLabel_top
 {
     if (!_lineLabel_top) {
@@ -325,6 +414,7 @@
     }
     return _lineLabel_top;
 }
+
 -(UILabel *)lineLabel_bottom{
     if (!_lineLabel_bottom) {
         _lineLabel_bottom = [self creatLineLabel];
@@ -467,8 +557,29 @@
         }
     }
    
+    if (textField == self.wifiNameTF) {
+        NSDictionary *dic = [self getWifiInfo];
+        if (dic) {
+            for (NSString *key in dic) {
+                if ([key isEqualToString:maxLString]) {
+                    self.wifiPasswordTF.text = [dic objectForKey:key];
+                    break;
+                }
+                if ([key isEqualToString:textField.text]) {
+                    
+                    if ([self.wifiPasswordTF.text isEqualToString:[dic objectForKey:key]]) {
+                        self.wifiPasswordTF.text = @"";
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    
     return YES;
 }
+
+
 - (BOOL)textFieldShouldReturn:(UITextField *)textField{
     if (textField == _wifiNameTF) {
         [textField resignFirstResponder];
@@ -483,31 +594,31 @@
 
 -(void)textFieldValueChanged:(UITextField *)textField
 {
-//    NSString *lang = [[UITextInputMode currentInputMode]primaryLanguage];//键盘输入模式
-//    if ([lang isEqualToString:@"zh-Hans"]) {// 简体中文输入，包括简体拼音，健体五笔，简体手写
-//        UITextRange *selectedRange = [textField markedTextRange];
-//        //获取高亮部分
-//        UITextPosition *position = [textField positionFromPosition:selectedRange.start offset:0];
-//        //没有高亮选择的字，则对已输入的文字进行字数统计和限制
-//        if (!position) {
-//            if (textField.text.length >63) {
-//                textField.text = [textField.text substringToIndex:63];
-//            }
-//        }
-//        //有高亮选择的字符串，则暂不对文字进行统计和限制
-//        else{
-//            
-//        }
-//    }
-//    // 中文输入法以外的直接对其统计限制即可，不考虑其他语种情况
-//    else{
-//        if (textField.text.length >63) {
-//            textField.text = [textField.text substringToIndex:63];
-//        }
-//    }
-    
-    
+
 }
 
+-(BOOL)textFieldShouldClear:(UITextField *)textField
+{
+    if (textField == self.wifiPasswordTF) {
+        NSDictionary *dic = [self getWifiInfo];
+        if (dic) {
+            for (NSString *key in dic) {
+                if ([key isEqualToString:self.wifiNameTF.text]) {
+                    
+                    NSString *pw = [dic objectForKey:key];
+                    if ([pw isEqualToString:textField.text]) {
+                        [self removeWifiPWForKey:key];
+                    }
+                    break;
+                }
+            }
+        }
+    }
+//    else{
+//        self.wifiPasswordTF.text = @"";
+//    }
+    
+    return YES;
+}
 
 @end

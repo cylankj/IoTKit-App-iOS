@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 
 #define footLabelWidth  Kwidth - 5 - 15
+#define footLabelFontSize 12.0
 
 @interface DeviceInfoFootView : UIView
 

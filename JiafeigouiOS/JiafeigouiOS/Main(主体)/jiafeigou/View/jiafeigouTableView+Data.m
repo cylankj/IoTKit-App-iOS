@@ -14,6 +14,7 @@
 #import "LoginManager.h"
 #import "NetworkMonitor.h"
 #import "JfgLanguage.h"
+#import "jfgConfigManager.h"
 
 
 @implementation jiafeigouTableView (Data)
@@ -62,6 +63,13 @@
 }
 
 
+-(void)jfgSetDeviceAliasResult:(JFGErrorType)errorType
+{
+    if (errorType == JFGErrorTypeNone) {
+        [JFGSDK refreshDeviceList];
+    }
+}
+
 
 -(void)jfgRobotSyncDataForPeer:(NSString *)peer fromDev:(BOOL)isDev msgList:(NSArray<DataPointSeg *> *)msgList
 {
@@ -70,11 +78,12 @@
         
         if (seg.msgId == 201) {
             [self deviceNetworkState:seg devModel:[self.dataDict objectForKey:peer]];
-        }else if (seg.msgId == 505){
+        }else if (seg.msgId == 505 || seg.msgId == 512 || seg.msgId == 222){
             
             //被分享设备不处理报警消息
             JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:peer];
-            if (mode.shareState == DevShareStatuOther) {
+            BOOL isDoorBell = [jfgConfigManager devIsDoorBellForPid:mode.pid];
+            if (mode.shareState == DevShareStatuOther && !isDoorBell) {
                 return;
             }
             NSDateFormatter *formatter = [[NSDateFormatter alloc] init] ;
@@ -109,61 +118,60 @@
                 
             }
             
-            [[JFGSDKDataPoint sharedClient] robotCountDataWithPeer:peer dpIDs:@[[NSNumber numberWithInt:505]] success:^(NSString *identity, NSArray<DataPointCountSeg *> *dataList) {
+            [[JFGSDKDataPoint sharedClient] robotCountDataWithPeer:peer dpIDs:@[@222,@505,@512] success:^(NSString *identity, NSArray<DataPointCountSeg *> *dataList) {
                 
-                JiafeigouDevStatuModel *model = [self.dataDict objectForKey:identity];
-                if (dataList.count>0) {
-                    
-                    DataPointCountSeg *seg = dataList[0];
-                    model.unReadMsgCount = seg.count;
-                    
+                NSInteger allCount = 0;
+                for (DataPointCountSeg *seg in dataList) {
+                    if (seg.count>0) {
+                        allCount = allCount+seg.count;
+                    }
                 }
-                
-                
+                JiafeigouDevStatuModel *model = [self.dataDict objectForKey:identity];
+                model.unReadMsgCount = allCount;
                 [self reloadData];
-                
                 
             } failure:^(RobotDataRequestErrorType type) {
                 
-               
-                
             }];
+            
+            
         }else if(seg.msgId == dpMsgBase_Battery){
-            if (model.deviceType == JFGDeviceTypeDoorBell) {
+            
+            
+            if (model.deviceType == JFGDeviceTypeDoorBell || model.deviceType == JFGDeviceTypeCamera3G || [model.pid isEqualToString:@"17"]) {
                 id obj = [MPMessagePackReader readData:seg.value error:nil];
                 if ([obj isKindOfClass:[NSNumber class]]) {
                     model.Battery = [obj intValue];
                 }
             }else{
-                model.Battery = 200;
+                model.Battery = 100;
+                model.isPower = YES;
             }
             [self reloadData];
+            
+            
         }else if (seg.msgId == 401 || seg.msgId == 403){
             
             //门铃未读消息
+            
             JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:peer];
-            if (mode.shareState == DevShareStatuOther) {
+            BOOL isDoorBell = [jfgConfigManager devIsDoorBellForPid:mode.pid];
+            if (mode.shareState == DevShareStatuOther && !isDoorBell) {
                 return;
             }
-            [[JFGSDKDataPoint sharedClient] robotCountDataWithPeer:peer dpIDs:@[[NSNumber numberWithInt:401],[NSNumber numberWithInt:403]] success:^(NSString *identity, NSArray<DataPointCountSeg *> *dataList) {
+            [[JFGSDKDataPoint sharedClient] robotCountDataWithPeer:peer dpIDs:@[@401,@403,@222] success:^(NSString *identity, NSArray<DataPointCountSeg *> *dataList) {
                 
                 JiafeigouDevStatuModel *model = [self.dataDict objectForKey:identity];
-                if (dataList.count == 1) {
-                    DataPointCountSeg *seg = dataList[0];
-                    model.unReadMsgCount = seg.count;
+                NSInteger allCount = 0;
+                
+                for (DataPointCountSeg *seg in dataList) {
                     
-                    
-                    
-                }else if(dataList.count == 2){
-                    
-                    DataPointCountSeg *seg = dataList[0];
-                    DataPointCountSeg *seg1 = dataList[1];
-                    if (seg.count > seg1.count) {
-                        model.unReadMsgCount = seg.count;
-                    }else{
-                        model.unReadMsgCount = seg1.count;
+                    if (seg.count>0) {
+                        allCount = allCount+seg.count;
                     }
+                    
                 }
+                model.unReadMsgCount = allCount;
                 if (model.unReadMsgCount < 0) {
                     model.unReadMsgCount  = 0;
                 }
@@ -212,7 +220,12 @@
     NSLog(@"主动推送消息%@",peer);
 }
 
--(void)jfgMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID mSeq:(uint64_t)mSeq cid:(NSString *)cid type:(int)type msgData:(NSData *)msgData
+-(void)jfgMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
+                                             mSeq:(uint64_t)mSeq
+                                              cid:(NSString *)cid
+                                             type:(int)type
+                                     isInitiative:(BOOL)initiative
+                                          msgData:(NSData *)msgData
 {
     if (type == 14){
         //视频录制情况
@@ -224,13 +237,21 @@
 }
 
 
--(void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID mSeq:(uint64_t)mSeq cid:(NSString *)cid type:(int)type dpMsgArr:(NSArray *)dpMsgArr
+-(void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
+                                               mSeq:(uint64_t)mSeq
+                                                cid:(NSString *)cid
+                                               type:(int)type
+                                       isInitiative:(BOOL)initiative
+                                           dpMsgArr:(NSArray *)dpMsgArr
 {
     for (DataPointSeg *seg in dpMsgArr) {
         
         NSLog(@"%@",seg.value);
         if (seg.msgId == 204) {
             id obj = [MPMessagePackReader readData:seg.value error:nil];
+            if (obj) {
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"%@",obj]];
+            }
             NSLog(@"%@",obj);
         }else if (seg.msgId == 206 || seg.msgId == dpMsgBase_Power){
             [self baratyDeal:seg forCid:cid];
@@ -240,18 +261,33 @@
 
 -(void)baratyDeal:(DataPointSeg *)seg forCid:(NSString *)cid
 {
+    
     if (seg.msgId == 206){
         
         id obj = [MPMessagePackReader readData:seg.value error:nil];
+        if (obj) {
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"%@",obj]];
+        }
         if ([obj isKindOfClass:[NSNumber class]]) {
             JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:cid];
             mode.Battery = [obj intValue];
             NSLog(@"barrty:%d",[obj intValue]);
         }
-        
+    
     }else if (seg.msgId == dpMsgBase_Power){
-        JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:cid];
-        mode.Battery = 200;
+        id obj = [MPMessagePackReader readData:seg.value error:nil];
+        if (obj) {
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"%@",obj]];
+        }
+        if ([obj isKindOfClass:[NSNumber class]]) {
+            int power  = [obj intValue];
+            JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:cid];
+            if (power == 1) {
+               mode.isPower = YES;
+            }else{
+               mode.isPower = NO;
+            }
+        }
     }
     [self reloadData];
 }
@@ -259,6 +295,11 @@
 -(void)videoRecordDeal:(NSData *)msgData forCid:(NSString *)cid
 {
     id obj = [MPMessagePackReader readData:msgData error:nil];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"videoRecordDeal:%@",obj]];
+    if (obj) {
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"%@",obj]];
+    }
+    
     if ([obj isKindOfClass:[NSArray class]]) {
         
         NSArray *sourceArr = obj;
@@ -275,18 +316,13 @@
 //                int ret = [sourceArr[0] intValue];
 //                int secouds = [sourceArr[1] intValue];
                 int videoType = [sourceArr[2] intValue];
-                if (videoType == -1) {
-                   //没有录像
-                   mode.delayCamera = NO;
-                    
-                }else if(videoType == 1){
-                   //8s短视频
-                   mode.delayCamera = NO;
-                }else if (videoType == 2){
+                if (videoType == 2 ) {
                     //长视频
-                   mode.delayCamera = YES;
+                    mode.delayCamera = YES;
+                }else{
+                    //没有录像
+                    mode.delayCamera = NO;
                 }
-                
                 [self reloadData];
                 
             } @catch (NSException *exception) {
@@ -305,6 +341,9 @@
 -(void)videoDataDeal:(NSData *)msgData forCid:(NSString *)cid
 {
     id obj = [MPMessagePackReader readData:msgData error:nil];
+    if (obj) {
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"%@",obj]];
+    }
     if ([obj isKindOfClass:[NSNumber class]]) {
         int ret = [obj intValue];
         if (ret == 0) {
@@ -465,16 +504,18 @@
     if (notification) {
         
         NSString *cid = notification.object;
-        [[JFGSDKDataPoint sharedClient] robotCountDataClear:cid dpIDs:@[@505,@222,@512] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
-  
-        } failure:^(RobotDataRequestErrorType type) {
+        if (cid) {
+            JiafeigouDevStatuModel *model = [self.dataDict objectForKey:cid];
+            [[JFGSDKDataPoint sharedClient] robotCountDataClear:cid dpIDs:@[@401,@222,@403,@505,@512] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
+                
+            } failure:^(RobotDataRequestErrorType type) {
+                
+            }];
             
-        }];
+            model.unReadMsgCount = 0;
+            [self reloadData];
+        }
         
-        JiafeigouDevStatuModel *model = [self.dataDict objectForKey:cid];
-        model.unReadMsgCount = 0;
-        [self reloadData];
-    
     }
 }
 

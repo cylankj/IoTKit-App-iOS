@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <JFGSDK/JFGSDK.h>
 #import <MJExtension/MJExtension.h>
+#import "JfgTypeDefine.h"
 
 typedef enum{
     DevShareStatuNot,//无分享
@@ -22,7 +23,7 @@ typedef enum{
 @property (nonatomic,assign)JFGNetType netType;
 
 //设备类型
-@property (nonatomic,assign) JFGDeviceType deviceType;
+@property (nonatomic,assign)JFGDeviceType deviceType;
 
 //设备cid
 @property (nonatomic,copy) NSString *uuid;
@@ -35,6 +36,9 @@ typedef enum{
 
 //未读消息数
 @property (nonatomic,assign)NSInteger unReadMsgCount;
+
+//720设备拍摄照片未读数
+@property (nonatomic,assign)NSUInteger unReadPhotoCount;
 
 //最新一条消息内容
 @property (nonatomic,copy)NSString *lastMsg;
@@ -56,6 +60,9 @@ typedef enum{
 
 //电量
 @property (nonatomic,assign)int Battery;
+
+//是否充电中
+@property (nonatomic,assign)BOOL isPower;
 
 //门磁是否打开
 @property (nonatomic,assign)BOOL doorcOpen;

@@ -121,6 +121,9 @@ NSString *const cellC_companyDev = @"com.cell.push.dev";
     [[NSUserDefaults standardUserDefaults] setValue:token forKey:jfgDeviceToken];
     [[NSUserDefaults standardUserDefaults] synchronize];
     [GeTuiSdk registerDeviceToken:token];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"GetuiSDKVersion:%@",[GeTuiSdk version]]];
+    //使用个推推送
+    [JFGSDK deviceTokenUploadForString:token tokenType:2];
     
     [self bindGtClientID:[self getGtClientID] WithToken:token];
 }
@@ -148,7 +151,7 @@ NSString *const cellC_companyDev = @"com.cell.push.dev";
         
         if ([[self getGtClientID] isEqualToString:clientID])
         {
-            [JFGSDK deviceTokenUploadForString:clientID];
+            [JFGSDK deviceTokenUploadForString:clientID tokenType:2];
         }
         else
         {

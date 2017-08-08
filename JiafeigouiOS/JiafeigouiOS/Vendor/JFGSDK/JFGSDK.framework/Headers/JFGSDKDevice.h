@@ -81,3 +81,24 @@
 @property (nonatomic,copy)NSString *md5;
 
 @end
+
+
+/**
+ *  设备升级信息
+ */
+@interface JFGSDKDevUpgradeInfo : NSObject
+
+@property (nonatomic,copy)NSString *version;
+@property (nonatomic,copy)NSString *url;
+@property (nonatomic,assign)int partType;
+
+@end
+
+@interface JFGSDKDevUpgradeInfoT : NSObject
+
+@property (nonatomic,copy)NSString *version;
+@property (nonatomic,copy)NSString *url;
+@property (nonatomic,assign)int tag;
+@property (nonatomic,copy)NSString *md5;
+
+@end

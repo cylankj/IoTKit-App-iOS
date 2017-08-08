@@ -19,6 +19,8 @@
 #import "JfgTableViewCellKey.h"
 #import "CommonMethod.h"
 #import "JfgMsgDefine.h"
+#import "MicroSDCardVC.h"
+#import "CusPickerView.h"
 #import "JFGEfamilyDataManager.h"
 #import "JfgConstKey.h"
 #import "FLProressHUD.h"
@@ -28,13 +30,17 @@
 #import <JFGSDK/JFGSDK.h>
 #import "SetAngleVC.h"
 #import "ConfigWiFiViewController.h"
+#import "NSDictionary+FLExtension.h"
 #import "LogoSelectVC.h"
 #import "LoginManager.h"
 #import "JfgConfig.h"
+#import "Cf720WiFiAnimationVC.h"
+#import "WifiModeFor720CFResultVC.h"
 
-@interface DeviceSettingVC()<autoPhotoVCDelegate,UIAlertViewDelegate,JFGSDKCallbackDelegate, setAngleDelegate, safeDelegate>
+@interface DeviceSettingVC()<autoPhotoVCDelegate,UIAlertViewDelegate,JFGSDKCallbackDelegate, setAngleDelegate, safeDelegate,AddDeviceGuideVCNextActionDelegate>
 {
     BOOL isLan;
+    BOOL isAPModelFor720;
 }
 @property (strong, nonatomic) DeviceSettingTableView *settingTableView;
 
@@ -54,18 +60,26 @@
     if (self.pType == productType_Mag) {
         [JFGSDK addDelegate:self];
     }
+    
 }
 
-- (void)viewDidAppear:(BOOL)animated{
+-(void)jfgUpdateAccount:(JFGSDKAcount *)account
+{
+    [self.settingTableView initData];
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
     [super viewDidAppear:animated];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deleteDevice:) name:deleteDeviceNotification object:nil];
-    
     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent animated:YES];
 }
 
 -(void)viewDidDisappear:(BOOL)animated
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:deleteDeviceNotification object:nil];
+    [self.settingTableView.deviceSettingVM clearSDCardFinish];
+    self.settingTableView.deviceSettingVM = nil;
     [super viewDidDisappear:animated];
 }
 
@@ -146,20 +160,7 @@
 {
     // 顶部 导航设置
     [self.leftButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
-    switch (self.pType)
-    {
-        case productType_Mine:
-        {
-            self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"SETTINGS"];
-        }
-            break;
-            
-        default:
-        {
-            self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"SETTINGS_1"];
-        }
-            break;
-    }
+    self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"SETTINGS_1"];
 }
 
 - (void)initView
@@ -192,6 +193,7 @@
         _settingTableView.cid = self.cid;
         _settingTableView.pType = self.pType;
         _settingTableView.isShare = self.isShare;
+        _settingTableView.pid = self.devModel.pid;
         NSMutableArray *list = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
         JiafeigouDevStatuModel *currentModel;
         
@@ -228,285 +230,67 @@
 #pragma mark deviceSettingDelegate
 - (void)deviceSettingTableViewDidSelect:(NSIndexPath *)indexPath withData:(NSDictionary *)dataInfo
 {
-    switch (self.pType) {
-        case productType_Mag://门磁
-        {
-            switch (indexPath.section) {
-                case 0:
-                {
-                    [self pushToDeviceInfoController];
-                }
-                  break;
-                    
-                case 2:
-                {
-                    //清空开关记录
-                    [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Tipsforclearrecents"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
-                        
-                    } OKBlock:^{
-                        [self.settingTableView.deviceSettingVM deleteMsg];
-                        [self clearMagMsg];
-                    }];
-
-                }
-                    break;
-                default:
-                    break;
-            }
-        }
-            break;
-        case productType_DoorBell:
-        {
-            switch (indexPath.section)
-            {
-                case 0:
-                {
-                    [self pushToDeviceInfoController];
-                    
-                }
-                    break;
-                case 1:
-                {
-                    [self pushToWifiController:@""];
-                }
-                    break;
-                case 2:
-                {
-                    [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Tipsforclearrecents"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
-                        
-                    } OKBlock:^{
-                        [self.settingTableView.deviceSettingVM deleteMsg];
-                    }];
-                    
-                }
-                    break;
-                default:
-                    break;
-            }
-        }
-            break;
-        case productType_Mine:
-        {
-            switch (indexPath.section) {
-                
-                case 1:{
-                    [FLProressHUD showIndicatorViewFLHUDForStyleDarkWithView:self.view text:@"" position:FLProgressHUDPositionCenter];
-                    [[SDImageCache sharedImageCache] clearDiskOnCompletion:^{
-                        [FLProressHUD hideAllHUDForView:self.view animation:NO delay:0];
-                        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips3"]];
-                        [self performSelector:@selector(hideProgressHUD) withObject:nil afterDelay:1];
-                        [self.settingTableView refreshData];
-                        [self.settingTableView reloadData];
-                    }];
-                    
-                }
-                    break;
-                    
-                case 2:
-                {
-                    AboutUsViewController * aboutUs = [AboutUsViewController new];
-                    [self.navigationController pushViewController:aboutUs animated:YES];
-                }
-                    break;
-                    
-                default:
-                    break;
-            }
-        }
-            break;
-        case productType_Efamily:
-        {
-            switch (indexPath.section)
-            {
-                case 0: // 设备信息
-                {
-                    [self pushToDeviceInfoController];
-                }
-                    break;
-                case 1: // wifi 配置
-                {
-                    [self pushToWifiController:@""];
-                }
-                    break;
-                case 2: // 清空 呼叫记录
-                {
-                    UIAlertView *aler = [[UIAlertView alloc]initWithTitle:@"" message:[JfgLanguage getLanTextStrByKey:@"Tap1_Tipsforclearrecents"] delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Button_Sure"], nil];
-                    aler.tag = 1002;
-                    [aler show];
-                }
-                    break;
-                default:
-                    break;
-            }
-        }
-            break;
-        case productType_FreeCam:
-        {
-            switch (indexPath.section)
-            {
-                case 0: //设备信息
-                {
-                    [self pushToDeviceInfoController];
-                }
-                    break;
-                case 1: // wifi 配置
-                {
-                    [self pushToWifiController:[dataInfo objectForKey:cellDetailTextKey]];
-                }
-                    break;
-                case 2: // 安全防护，自动录像
-                {
-                    switch (indexPath.row)
-                    {
-                        case 0:
-                        {
-                            [self pushToSafeProtectController];
-                        }
-                            break;
-                        case 1:
-                        {
-                            [self pushToAutoPhotoController:dataInfo];
-                        }
-                            break;
-                    }
-                }
-                    break;
-                case 3:
-                {
-                    
-                }
-                    break;
-                default:
-                    break;
-            }
-        }
-            break;
-        case productType_720:
-        {
-            switch (indexPath.section)
-            {
-                case 0:
-                {
-                    [self pushToDeviceInfoController];
-                }
-                    break;
-                case 1:
-                {
-                    LogoSelectVC *lsVC = [[LogoSelectVC alloc] init];
-                    [self.navigationController pushViewController:lsVC animated:YES];
-                }
-                    break;
-                case 2:
-                {
-                    switch (indexPath.row)
-                    {
-                        case 0:
-                        {
-                            [self pushToWifiController:[dataInfo objectForKey:cellDetailTextKey]];
-                        }
-                            break;
-                        case 1:
-                        {
-                            [self pushToAddDevicesVC];
-                        }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                    break;
-                default:
-                    break;
-            }
-        }
-            break;
-        case productType_3G:
-        default:
-            switch (indexPath.section)
-            {
-                case 0:
-                {
-                    [self pushToDeviceInfoController];
-                }
-                    break;
-                case 1:
-                {
-                    switch (indexPath.row)
-                    {
-                        case 0:
-                        {
-                            [self pushToWifiController:[dataInfo objectForKey:cellDetailTextKey]];
-                        }
-                            break;
-                            
-                        default:
-                            break;
-                    }
-                }
-                    break;
-                case 2:
-                {
-                    switch (indexPath.row)
-                    {
-                        case 0:
-                        {
-                            [self pushToSafeProtectController];
-                        }
-                            break;
-                        case 1:
-                        {
-                            [self pushToAutoPhotoController:dataInfo];
-                        }
-                            break;
-                        /*       暂时保留  延时摄影 代码
-                        case 2:
-                        {
-                            if (![self isFirstTimeLapse])
-                            {
-                                TimeLapseGuideViewController * guide = [[TimeLapseGuideViewController alloc]init];
-                                [self.navigationController pushViewController:guide animated:YES];
-                                guide.cid = self.cid;
-                            }else{
-                                TimeLapsePGViewController * timeLapse = [[TimeLapsePGViewController alloc]init];
-                                [self.navigationController pushViewController:timeLapse animated:YES];
-                                timeLapse.cid = self.cid;
-                            }
-                        }
-                            break;
-                        */
-                        default:
-                            break;
-                    }
-                }
-                    break;
-                case 4:
-                {
-                    switch (indexPath.row)
-                    {
-                        case 0:
-                        {
-                            if (self.pType == productType_Camera_HS )
-                            {
-                                SetAngleVC *angleVC = [[SetAngleVC alloc] init];
-                                angleVC.angleDelegate = self;
-                                angleVC.oldAngleType = [[dataInfo objectForKey:cellHiddenText] intValue];
-                                [self.navigationController pushViewController:angleVC animated:YES];
-                            }
-                        }
-                            break;
-                            
-                        default:
-                            break;
-                    }
-                }
-                    break;
-                default:
-                    break;
-            }
-
-            break;
+    JFG_WS(weakSelf);
+    
+    NSString *cellID = [dataInfo objectForKey:cellUniqueID];
+    
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@" clicked unique id %@",cellID]];
+    
+    if ([cellID isEqualToString:deviceInfo]) // 设备信息
+    {
+        [self pushToDeviceInfoController];
     }
+    else if ([cellID isEqualToString:wifiConfig]) // wifi 配置
+    {
+        [self pushToWifiController:[dataInfo objectForKey:cellDetailTextKey]];
+    }
+    else if ([cellID isEqualToString:safeProtect]) // 安全防护
+    {
+        [self pushToSafeProtectController];
+    }
+    else if ([cellID isEqualToString:recordSetting])    // 录像设置
+    {
+        [self pushToAutoPhotoController:dataInfo];
+    }
+    else if ([cellID isEqualToString:microSDCard]) // sd 卡
+    {
+        [self sdCardClear:dataInfo];
+    }
+    else if ([cellID isEqualToString:angle])    // 视角
+    {
+        [self pubshToAngle:dataInfo];
+    }
+    else if ([cellID isEqualToString:clearCallMsg]) // 清空 呼叫记录
+    {
+        [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Tipsforclearrecents"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+            
+        } OKBlock:^{
+            [weakSelf.settingTableView.deviceSettingVM deleteMsg];
+        }];
+    }
+    else if ([cellID isEqualToString:hotWireless])      // 开启 热点
+    {
+        [self.settingTableView.deviceSettingVM openHotWired];
+    }
+    else if ([cellID isEqualToString:apConnectting])    // 直连ap
+    {
+        isAPModelFor720 = YES;
+        BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+        if (isAP) {
+            WifiModeFor720CFResultVC *resultVC = [WifiModeFor720CFResultVC new];
+            resultVC.isAPModeFinished = YES;
+            [self.navigationController pushViewController:resultVC animated:YES];
+        }else{
+            AddDeviceGuideViewController *deviGuide = [AddDeviceGuideViewController new];
+            deviGuide.pType = productType_720;
+            deviGuide.delegate = self;
+            [self.navigationController pushViewController:deviGuide animated:YES];
+        }
+    }
+
 }
+
+
 
 - (void)moveDectionChanged:(BOOL)isOpen repeatTime:(int)repeat begin:(int)begin end:(int)end
 {
@@ -557,22 +341,41 @@
     [self.navigationController pushViewController:autoPhoto animated:YES];
 }
 
+- (void)sdCardClear:(NSDictionary *)dataDict
+{
+    int sdCardType = [[dataDict objectForKey:cellHiddenText] intValue];
+    // 未插卡 和 正常使用 不需要提示
+    
+    switch (sdCardType)
+    {
+        case SDCardType_Using:
+        {
+            MicroSDCardVC *microSDcard = [[MicroSDCardVC alloc] init];
+            microSDcard.cid = self.cid;
+            microSDcard.isShare = self.isShare;
+            microSDcard.pType = self.pType;
+            [self.navigationController pushViewController:microSDcard animated:YES];
+        }
+        break;
+        case SDCardType_Error:
+        {
+            if ([self.settingTableView.deviceSettingVM isClearingSDCard])
+            {
+                return;
+            }
+            //格式化sd卡wwwwwwww
+            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"VIDEO_SD_DESC"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"SD_INIT"] CancelBlock:^{
+            } OKBlock:^{
+                [self.settingTableView.deviceSettingVM clearSDCard];
+            }];
+        }
+        default:
+        break;
+    }
+}
 // 跳转 wifi界面
 -(void)pushToWifiController:(NSString *)dogWifi
 {
-    
-    // FreeCam 等类型 直接跳转绑定页面
-    if (self.pType == productType_FreeCam || self.pType == productType_DoorBell ||self.pType == productType_DoorBell_V2)
-    {
-        AddDeviceGuideViewController * wifiConf = [AddDeviceGuideViewController new];
-        wifiConf.pType = self.pType;
-        wifiConf.cid = self.cid;
-        wifiConf.configType = configWifiType_configWifi;
-        [self.navigationController pushViewController:wifiConf animated:YES];
-        
-        return;
-    }
-
     NSMutableArray *list = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
     JiafeigouDevStatuModel *currentModel;
     
@@ -584,6 +387,67 @@
             break;
         }
     }
+    // FreeCam 等类型 直接跳转绑定页面
+    switch (self.pType)
+    {
+        case productType_FreeCam:
+        case productType_DoorBell:
+        case productType_DoorBell_V2:
+        case productType_CesBell_V2:
+        case productType_CatEye:
+        case productType_CesBell:
+        {
+            AddDeviceGuideViewController * wifiConf = [AddDeviceGuideViewController new];
+            wifiConf.pType = self.pType;
+            wifiConf.cid = self.cid;
+            wifiConf.configType = configWifiType_configWifi;
+            [self.navigationController pushViewController:wifiConf animated:YES];
+            
+            return;
+        }
+            break;
+        case productType_720p:
+        case productType_720:
+        {
+            NSString *currentWifiName = [CommonMethod currentConnecttedWifi];
+            
+            
+            if ([CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid] || [dogWifi isEqualToString:currentWifiName]) {
+                
+                //局域网或者直连AP
+                ConfigWiFiViewController *configWifi = [ConfigWiFiViewController new];
+                configWifi.cid = self.cid;
+                configWifi.pType = productType_720;
+                configWifi.configType = configWifiType_resetWifi;
+                configWifi.isCamare = YES;
+                [self.navigationController pushViewController:configWifi animated:YES];
+                
+            }else if(currentModel.netType == JFGNetTypeOffline){
+                
+                //离线
+                isAPModelFor720 = NO;
+                AddDeviceGuideViewController *deviGuide = [AddDeviceGuideViewController new];
+                deviGuide.pType = productType_720;
+                deviGuide.delegate = self;
+                [self.navigationController pushViewController:deviGuide animated:YES];
+                
+            }else{
+                
+                //前往WiFi配置
+                [LSAlertView showAlertWithTitle:nil Message:[NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"WIFI_SET_1"],dogWifi] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"WELL_OK"] OtherButtonTitle:nil CancelBlock:^{
+                    
+                } OKBlock:^{
+                    
+                }];
+            }
+            return;
+        }
+            break;
+        default:
+            break;
+    }
+
+    
     
     if (currentModel.netType != JFGNetTypeOffline && currentModel.netType != JFGNetTypeConnect)
     {
@@ -636,6 +500,23 @@
     [self.navigationController pushViewController:wifiConf animated:YES];
 }
 
+- (void)pubshToAngle:(NSDictionary *)dataInfo
+{
+    SetAngleVC *angleVC = [[SetAngleVC alloc] init];
+    angleVC.angleDelegate = self;
+    angleVC.oldAngleType = [[dataInfo objectForKey:cellHiddenText] intValue];
+    [self.navigationController pushViewController:angleVC animated:YES];
+}
+
+//跳转wifi配置动画页面（720设备专属）
+-(void)addDeviceGuideVCNectActionForVC:(UIViewController *)vc
+{
+    Cf720WiFiAnimationVC *wifiAn = [Cf720WiFiAnimationVC new];
+    wifiAn.cidStr = self.cid;
+    wifiAn.isAPModel = isAPModelFor720;
+    [vc.navigationController pushViewController:wifiAn animated:YES];
+}
+
 #pragma mark 移动侦测 更新
 - (void)updateMotionDetection:(NSInteger)motionType
 {
@@ -657,12 +538,12 @@
 -(void)aliasChanged:(NSNotification *)notification
 {
     NSString *newAlias = notification.object;
-    
     [self.settingTableView.deviceSettingVM updateAliasWithString:newAlias];
 }
 
 #pragma mark - isFirstTimeLapse
--(BOOL)isFirstTimeLapse{
+-(BOOL)isFirstTimeLapse
+{
     NSUserDefaults * userDefault = [NSUserDefaults standardUserDefaults];
     if ([userDefault objectForKey:@"isFirstTimeLapse"] == nil) {
         [userDefault setBool:YES forKey:@"isFirstTimeLapse"];

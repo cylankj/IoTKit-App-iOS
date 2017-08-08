@@ -24,6 +24,12 @@
  */
 + (NSString *)dictionaryToJson:(NSDictionary *)dictionary;
 
+/*
+ * json 字符串 转 字典
+ */
++ (NSDictionary *)dictionaryWithJsonString:(NSString *)jsonString;
+
+
 @end
 
 ///----------------------------------

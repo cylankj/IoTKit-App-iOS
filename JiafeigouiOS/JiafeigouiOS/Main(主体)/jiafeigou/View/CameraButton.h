@@ -19,7 +19,7 @@
 /**
  *  代理
  */
-@property (nonatomic,assign)id <CameraButtonDelegate> delegate;
+@property (nonatomic,weak)id <CameraButtonDelegate> delegate;
 
 /**
  *  开启延时摄影按钮动画

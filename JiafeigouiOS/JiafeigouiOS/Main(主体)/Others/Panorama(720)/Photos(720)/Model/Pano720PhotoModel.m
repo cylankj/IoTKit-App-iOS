@@ -12,8 +12,11 @@
 @interface Pano720PhotoModel()
 
 @property (nonatomic, assign) FileType panoFileType;
-
 @property (nonatomic, copy) NSString *videoDurationStr;
+
+@property (nonatomic, copy) NSString *thumbNailFilePath;
+@property (nonatomic, copy) NSString *filePath;
+
 
 @end
 
@@ -43,23 +46,19 @@
     return _filePath;
 }
 
-- (NSString *)imageShowedPath
+- (NSString *)thumbNailFilePath
 {
-    if (self.panoFileType == FileTypeVideo)
+    if (_thumbNailFilePath == nil)
     {
-        _imageShowedPath = [NSString stringWithFormat:@"%@/%@.thumb", [FileManager jfgPano720PhotoThumbnailsPath:self.cid], [self.fileName stringByDeletingPathExtension]];
-    }
-    else
-    {
-        _imageShowedPath = self.filePath;
+        _thumbNailFilePath = [NSString stringWithFormat:@"%@/%@.thumb", [FileManager jfgPano720PhotoThumbnailsPath:self.cid], [self.fileName stringByDeletingPathExtension]];
     }
     
-    return _imageShowedPath;
+    return _thumbNailFilePath;
 }
 
 - (long long)fileTime
 {
-    long long resutTime;
+    long long resutTime = 0;
     if (self.fileName != nil && ![self.fileName isEqualToString:@""])
     {
         if (self.fileName.length >= 10)

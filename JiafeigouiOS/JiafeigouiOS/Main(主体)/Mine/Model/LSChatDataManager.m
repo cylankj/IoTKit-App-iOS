@@ -184,15 +184,16 @@ static LSChatDataManager *_instance;
     }
 }
 
--(void)addChatModel:(LSChatModel *)chatModel
+-(BOOL)addChatModel:(LSChatModel *)chatModel
 {
     for (LSChatModel *model in self.chatModelList) {
         //去重
         if (model.timestamp == chatModel.timestamp) {
-            return;
+            return NO;
         }
     }
     [self.chatModelList addObject:chatModel];
+    return YES;
 }
 
 -(void)removeChatModel:(LSChatModel *)chatModel
@@ -213,6 +214,9 @@ static LSChatDataManager *_instance;
     path = [path stringByAppendingPathComponent:@"chatList.plist"];
     NSFileManager *fileManager = [NSFileManager defaultManager];
     [fileManager removeItemAtPath:path error:nil];
+    [self.chatModelList removeAllObjects];
+
+    self.chatModelList = nil;
 }
 
 @end

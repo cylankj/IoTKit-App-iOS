@@ -13,7 +13,8 @@
 #import "PickerGroupViewController.h"
 #import "PersonQRCodeView.h"
 #import "LoginManager.h"
-
+#import "BaseNavgationViewController.h"
+#import "OemManager.h"
 #import <JFGSDK/JFGSDKCallbackDelegate.h>
 #import "ChangePwdViewController.h"
 #import "SetDeviceNameVC.h"
@@ -32,6 +33,8 @@
 #import "LoginLoadingViewController.h"
 #import "JFGEquipmentAuthority.h"
 #import "UIImage+ImageEffects.h"
+#import "OemManager.h"
+
 
 @interface PersonMsgViewController ()<UITableViewDelegate,UITableViewDataSource,PhotoSelectionAlertViewDelegate,UINavigationControllerDelegate, UIImagePickerControllerDelegate,JFGSDKCallbackDelegate>
 {
@@ -45,6 +48,7 @@
     NSInteger uploadImageRequestID;
     UIImageView *accountImageView;
     BOOL headImageUseCache;
+    int64_t uploadMark;
 }
 @property (nonatomic,strong)NSArray *dataArray;
 @property (nonatomic,strong)UITableView *tableView;
@@ -108,7 +112,7 @@
     NSString *account = acc.account;
     
     //上传图像
-    [JFGSDK uploadFile:[self saveImage:image] toCloudFolderPath:[NSString stringWithFormat:@"/image/%@.jpg",account]];
+    uploadMark = [JFGSDK uploadFile:[self saveImage:image] toCloudFolderPath:[NSString stringWithFormat:@"/image/%@.jpg",account]];
     //通知服务器修改了头像
     [JFGSDK resetAccountPhoto];
     
@@ -125,29 +129,32 @@
 
 -(void)jfgHttpResposeRet:(int)ret requestID:(int)requestID result:(NSString *)result
 {
-    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(uploadImageTimeout) object:nil];
-    
-    NSString *aleartStr ;
-    if (ret == 200) {
+    if (requestID == uploadMark) {
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(uploadImageTimeout) object:nil];
         
-        if (headImage) {
-            accountImageView.image = headImage;
+        NSString *aleartStr ;
+        if (ret == 200) {
+            
+            if (headImage) {
+                accountImageView.image = headImage;
+            }else{
+                headImageUseCache = NO;
+                [self.tableView reloadData];
+            }
+            
+            [[NSNotificationCenter defaultCenter] postNotificationName:account_headImage_changed object:nil];
+            aleartStr = [JfgLanguage getLanTextStrByKey:@"Tap3_UploadingComplete"];
+            
         }else{
-            headImageUseCache = NO;
-            [self.tableView reloadData];
+            aleartStr = [JfgLanguage getLanTextStrByKey:@"Tap3_UploadingFailed"];
         }
-    
-        [[NSNotificationCenter defaultCenter] postNotificationName:account_headImage_changed object:nil];
-        aleartStr = [JfgLanguage getLanTextStrByKey:@"Tap3_UploadingComplete"];
         
-    }else{
-        aleartStr = [JfgLanguage getLanTextStrByKey:@"Tap3_UploadingFailed"];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [FLProressHUD showTextFLHUDForStyleDarkWithView:self.view text:aleartStr position:FLProgressHUDPositionCenter];
+            [FLProressHUD hideAllHUDForView:self.view animation:YES delay:1];
+        });
     }
     
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [FLProressHUD showTextFLHUDForStyleDarkWithView:self.view text:aleartStr position:FLProgressHUDPositionCenter];
-        [FLProressHUD hideAllHUDForView:self.view animation:YES delay:1];
-    });
 }
 
 -(NSString *)saveImage:(UIImage *)currentImage
@@ -281,7 +288,7 @@
     
     NSArray *subArr = self.dataArray[indexPath.section];
 
-    if (indexPath.section ==0 ||  indexPath.section == self.dataArray.count-1) {
+    if (indexPath.section ==0) {
         cell.accessoryType = UITableViewCellAccessoryNone;
     }else{
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
@@ -312,29 +319,8 @@
         
 #pragma mark- 退出登录按钮UI处理
     UILabel *bottomLine = (UILabel *)[cell.contentView viewWithTag:1203];
-    
-    if (indexPath.section == self.dataArray.count-1) {
-        
-        bottomLine.hidden = NO;
-        
-        cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        cell.textLabel.text = @"";
-        cell.detailTextLabel.text = @"";
-        
-        UILabel *titleLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
-        titleLabel.backgroundColor = [UIColor clearColor];
-        titleLabel.textAlignment = NSTextAlignmentCenter;
-        titleLabel.text = [JfgLanguage getLanTextStrByKey:@"LOGOUT"];
-        titleLabel.font = [UIFont systemFontOfSize:16];
-        titleLabel.textColor = [UIColor colorWithHexString:@"#ff3b30"];
-        [cell.contentView addSubview:titleLabel];
-        
-    }else{
-        
-        cell.selectionStyle = UITableViewCellSelectionStyleGray;
-        bottomLine.hidden = YES;
-        
-    }
+    cell.selectionStyle = UITableViewCellSelectionStyleGray;
+    bottomLine.hidden = YES;
     
 #pragma mark- 头像栏UI处理
     UIImageView *headImageView = [cell.contentView viewWithTag:1124];
@@ -360,12 +346,12 @@
                 NSLog(@"imageFrom:%ld",(long)cacheType);
                 if (image == nil) {
                     headImageView.image = [UIImage imageNamed:@"image_defaultHead"];
+                }else{
+                    headImage = image;
                 }
 
             }];
         }
-        
-        
         accountImageView = headImageView;
   
     }else{
@@ -443,18 +429,28 @@
                 
             }else if (indexPath.row == 1){
                 
-               //http://www.jfgou.com/app/download.html
                 NSString *content = [NSString stringWithFormat:@"http://www.jfgou.com/app/download.html?id=%@",self.jfgAccount.account];
-                PersonQRCodeView *qr = [[PersonQRCodeView alloc]initWithHeadImage:headImage name:accountN qrImage:[self qrCodeByAccount:content]];
+                if ([OemManager oemType] == oemTypeDoby || [OemManager oemType] == oemTypeCell_C) {
+                    content = [NSString stringWithFormat:@"id=%@",self.jfgAccount.account];
+                }
+
+                UIImage *defaultImage = [UIImage imageNamed:@"image_defaultHead"];
+                if (headImage) {
+                    defaultImage = headImage;
+                }
+                
+                PersonQRCodeView *qr = [[PersonQRCodeView alloc]initWithHeadImage:defaultImage name:nickName qrImage:[self qrCodeByAccount:content]];
                 [qr show];
                 
             }else if (indexPath.row == 2){
+                
                 SetDeviceNameVC * nickNameVC = [SetDeviceNameVC new];
                 nickNameVC.jfgAccount = self.jfgAccount;
                 nickNameVC.deviceNameVCType = DeviceNameVCTypeNickName;
                 [self.navigationController pushViewController:nickNameVC animated:YES];
                 
             }else if (indexPath.row == 3){
+                
                 SetDeviceNameVC * emailVC = [SetDeviceNameVC new];
                 emailVC.jfgAccount = self.jfgAccount;
                 if (self.jfgAccount.email.length == 0) {
@@ -467,7 +463,6 @@
             }else if (indexPath.row == 4){
                 ChangePhoneViewController * phoneVC = [ChangePhoneViewController new];
                 phoneVC.jfgAccount = self.jfgAccount;
-                
                 JFGSDKAcount *acc = [[LoginManager sharedManager] accountCache];
                 if (([acc.phone isEqualToString:@""] || acc.phone == nil) && ([acc.email isEqualToString:@""] || acc.email == nil)) {
                     phoneVC.actionType = actionTypeBingPhone;
@@ -482,22 +477,16 @@
             break;
         case 2:{
             
-            if ([LoginManager sharedManager].loginType == JFGSDKLoginTypeAccountLogin) {
-                ChangePwdViewController * changePwd = [ChangePwdViewController new];
-                changePwd.jfgAccount = self.jfgAccount;
-                [self.navigationController pushViewController:changePwd animated:YES];
-            }else{
-                PhotoSelectionAlertView *actionSheet = [[PhotoSelectionAlertView alloc]initWithMark:@"loginout" delegate:self otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"LOGOUT"],[JfgLanguage getLanTextStrByKey:@"CANCEL"],nil];
-                [actionSheet show];
-            }
-            
+            ChangePwdViewController * changePwd = [ChangePwdViewController new];
+            changePwd.jfgAccount = self.jfgAccount;
+            [self.navigationController pushViewController:changePwd animated:YES];
             
         }
             
             break;
         case 3:{
-            PhotoSelectionAlertView *actionSheet = [[PhotoSelectionAlertView alloc]initWithMark:@"loginout" delegate:self otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"LOGOUT"],[JfgLanguage getLanTextStrByKey:@"CANCEL"],nil];
-            [actionSheet show];
+//            PhotoSelectionAlertView *actionSheet = [[PhotoSelectionAlertView alloc]initWithMark:@"loginout" delegate:self otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"LOGOUT"],[JfgLanguage getLanTextStrByKey:@"CANCEL"],nil];
+//            [actionSheet show];
             
 //            JFGHelpViewController *helpView = [[JFGHelpViewController alloc]init];
 //            [self.navigationController pushViewController:helpView animated:YES];
@@ -508,9 +497,6 @@
         default:
             break;
     }
-    
-    
-
 }
 
 
@@ -527,8 +513,7 @@
                              [JfgLanguage getLanTextStrByKey:@"ALIAS"],
                              [JfgLanguage getLanTextStrByKey:@"EMAIL"],
                              [JfgLanguage getLanTextStrByKey:@"PHONE_NUMBER"]],
-                           @[[JfgLanguage getLanTextStrByKey:@"CHANGE_PWD"]],
-                           @[@""]
+                           @[[JfgLanguage getLanTextStrByKey:@"CHANGE_PWD"]]
                            ];
             
             if ([JfgLanguage languageType] != LANGUAGE_TYPE_CHINESE) {
@@ -539,12 +524,20 @@
                                  [JfgLanguage getLanTextStrByKey:@"ALIAS"],
                                  [JfgLanguage getLanTextStrByKey:@"EMAIL"],
                                 ],
-                               @[[JfgLanguage getLanTextStrByKey:@"CHANGE_PWD"]],
-                               @[@""]
+                               @[[JfgLanguage getLanTextStrByKey:@"CHANGE_PWD"]]
                                ];
             }
             
         }else{
+            
+            BOOL isShowPw = NO;
+            if (self.jfgAccount.email && ![self.jfgAccount.email isEqualToString:@""]) {
+                isShowPw = YES;
+            }
+            
+            if (self.jfgAccount.phone && ![self.jfgAccount.phone isEqualToString:@""]) {
+                isShowPw = YES;
+            }
             
             _dataArray = @[
                            @[[JfgLanguage getLanTextStrByKey:@"Tap3_Friends_Myaccount"]],
@@ -552,9 +545,18 @@
                              [JfgLanguage getLanTextStrByKey:@"Tap3_MyQRCode"],
                              [JfgLanguage getLanTextStrByKey:@"ALIAS"],
                              [JfgLanguage getLanTextStrByKey:@"EMAIL"],
-                             [JfgLanguage getLanTextStrByKey:@"PHONE_NUMBER"]],
-                           @[@""]
-                           ];
+                             [JfgLanguage getLanTextStrByKey:@"PHONE_NUMBER"]]];
+            
+            if (isShowPw) {
+                _dataArray = @[
+                               @[[JfgLanguage getLanTextStrByKey:@"Tap3_Friends_Myaccount"]],
+                               @[[JfgLanguage getLanTextStrByKey:@"PROFILE_PHOTO"],
+                                 [JfgLanguage getLanTextStrByKey:@"Tap3_MyQRCode"],
+                                 [JfgLanguage getLanTextStrByKey:@"ALIAS"],
+                                 [JfgLanguage getLanTextStrByKey:@"EMAIL"],
+                                 [JfgLanguage getLanTextStrByKey:@"PHONE_NUMBER"]],
+                               @[[JfgLanguage getLanTextStrByKey:@"CHANGE_PWD"]]];
+            }
             
             if ([JfgLanguage languageType] != LANGUAGE_TYPE_CHINESE) {
                 
@@ -564,9 +566,19 @@
                                  [JfgLanguage getLanTextStrByKey:@"Tap3_MyQRCode"],
                                  [JfgLanguage getLanTextStrByKey:@"ALIAS"],
                                  [JfgLanguage getLanTextStrByKey:@"EMAIL"],
-                                ],
-                               @[@""]
-                               ];
+                                ]];
+            }
+            
+            if (isShowPw) {
+                _dataArray = @[
+                               @[[JfgLanguage getLanTextStrByKey:@"Tap3_Friends_Myaccount"]],
+                               @[[JfgLanguage getLanTextStrByKey:@"PROFILE_PHOTO"],
+                                 [JfgLanguage getLanTextStrByKey:@"Tap3_MyQRCode"],
+                                 [JfgLanguage getLanTextStrByKey:@"ALIAS"],
+                                 [JfgLanguage getLanTextStrByKey:@"EMAIL"],
+                                 [JfgLanguage getLanTextStrByKey:@"PHONE_NUMBER"],
+                                 ],
+                               @[[JfgLanguage getLanTextStrByKey:@"CHANGE_PWD"]]];
             }
             
         }
@@ -610,7 +622,7 @@
             
             [[LoginManager sharedManager] loginOut];
             LoginLoadingViewController *lo = [LoginLoadingViewController new];
-            UINavigationController * nav = [[UINavigationController alloc]initWithRootViewController:lo];
+            BaseNavgationViewController * nav = [[BaseNavgationViewController alloc]initWithRootViewController:lo];
             UIWindow *keyWindows = [UIApplication sharedApplication].keyWindow;
             keyWindows.rootViewController = nav;
             

@@ -15,6 +15,7 @@
 #import "CommonMethod.h"
 #import "LoginManager.h"
 #import "JfgConfig.h"
+#import "SDWebImageCacheHelper.h"
 
 @interface MessageModel()
 
@@ -61,20 +62,56 @@
     {
         case dpMsgCamera_WarnMsg:
         {
+            if ([self.objects isKindOfClass:[NSArray class]] && self.objects.count) {
+                return [self stringFromObjects:self.objects];
+            }
             return [JfgLanguage getLanTextStrByKey:@"MSG_WARNING"];
         }
             break;
         case dpMsgBase_SDStatus:
-        default:
         {
             return [JfgLanguage getLanTextStrByKey:self.isSDCardOn?@"MSG_SD_ON":@"MSG_SD_OFF"];
+        }
+            break;
+        case 401:{
+            if (self.isAnswer) {
+                return [JfgLanguage getLanTextStrByKey:@"DOOR_CALL"];
+            }else{
+                return [JfgLanguage getLanTextStrByKey:@"DOOR_UNCALL"];
+            }
+        }
+        default:{
+            return [JfgLanguage getLanTextStrByKey:@"MSG_WARNING"];
         }
             break;
     }
 }
 
+-(NSString *)stringFromObjects:(NSArray *)objects
+{
+    NSMutableString *text = [[NSMutableString alloc]initWithString:[JfgLanguage getLanTextStrByKey:@"DETECTED_AI"]];
+    for (NSNumber *num in objects) {
+        if (![text isEqualToString:[JfgLanguage getLanTextStrByKey:@"DETECTED_AI"]]) {
+            [text appendString:@","];
+        }
+        if ([num intValue] == 1) {
+            [text appendString:[JfgLanguage getLanTextStrByKey:@"AI_HUMAN"]];
+        }else if ([num intValue] == 2){
+            [text appendString:[JfgLanguage getLanTextStrByKey:@"AI_CAT"]];
+        }else if ([num intValue] == 3){
+            [text appendString:[JfgLanguage getLanTextStrByKey:@"AI_DOG"]];
+        }else if ([num intValue] == 4){
+            [text appendString:[JfgLanguage getLanTextStrByKey:@"AI_VEHICLE"]];
+        }
+    }
+    return text;
+}
+
 - (BOOL)isShowVideoBtn
 {
+    if (self.msgID == 401 || self.msgID == 403) {
+        return self.is_record;
+    }
     long localTime = [[NSDate date] timeIntervalSince1970];
     if ((localTime - self.timestamp) >= 30*60)
     {
@@ -85,6 +122,7 @@
 
 - (NSString *)leftImageUrl
 {
+    
     if (self.imageNum & 0x1)
     {
         return [self imageUrlWithOrder:1];
@@ -112,52 +150,42 @@
 
 - (NSString *)imageUrlWithOrder:(int)order
 {
-    ////拼一个假的url作为key，获取缓存图片
-    //_url =
-    NSString *url = [JfgDataTool getCloudUrlForCid:self.cid timestamp:self.timestamp order:order flag:self.flag];
+    NSString *fileName = [NSString stringWithFormat:@"/%@/%lld_%d.jpg",self.cid,(long long)self.timestamp,order];
+    if (order == 0) {
+        fileName = [NSString stringWithFormat:@"/%@/%lld.jpg",self.cid,(long long)self.timestamp];
+    }
     
     if (self.deviceVersion == 3) {
         
-        ///cid/[vid]/[cid]/[timestamp]_[id].jpg
-        NSString *filaName = [NSString stringWithFormat:@"cid/%@/%@/%lld_%d.jpg",[OemManager getOemVid],self.cid,(uint64_t)self.timestamp,order];
-        url = [JFGSDK getCloudUrlWithFlag:self.flag fileName:filaName];
-        
+        fileName = [NSString stringWithFormat:@"cid/%@/%@/%lld_%d.jpg",[OemManager getOemVid],self.cid,(uint64_t)self.timestamp,order];
+        if (order == 0) {
+            fileName = [NSString stringWithFormat:@"cid/%@/%@/%lld.jpg",[OemManager getOemVid],self.cid,(uint64_t)self.timestamp];
+        }
+
     }
-    
-    if (url == nil || [url isEqualToString:@""]) {
-        //200000000472/1488178082_1.jpg
-        NSString *path = [NSString stringWithFormat:@"%@/%lld_%d.jpg",self.cid,(long long)self.timestamp,order];
-        url = [NSString stringWithFormat:@"https://www.jfgou.com/%@",path];
+
+    BOOL isExist = [SDWebImageCacheHelper diskImageExistsForFileName:fileName];
+    if (isExist) {
         
+        return [SDWebImageCacheHelper sdwebCacheForTempPathForFileName:fileName];
+    }else{
+        
+        return [JFGSDK getCloudUrlWithFlag:self.flag fileName:fileName];
     }
-    return url;
 }
 
 - (NSMutableArray *)msgImages
 {
-    
-    if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess) {
-
-        if (self.leftImageUrl == nil || ![self.leftImageUrl containsString:@"www.jfgou.com"]) {
-            _msgImages = [[NSMutableArray alloc] initWithCapacity:3];
+    if (!_msgImages) {
+        _msgImages = [[NSMutableArray alloc] initWithCapacity:3];
+        if (self.imageNum == 0) {
+            [self addmsgImages:[self imageUrlWithOrder:0]];
+        }else{
             [self addmsgImages:self.leftImageUrl];
             [self addmsgImages:self.centerImageUrl];
             [self addmsgImages:self.rightImageUrl];
         }
-        
-    }else{
-        
-        if (self.leftImageUrl == nil || [self.leftImageUrl containsString:@"www.jfgou.com"])
-        {
-            _msgImages = [[NSMutableArray alloc] initWithCapacity:3];
-            
-            [self addmsgImages:self.leftImageUrl];
-            [self addmsgImages:self.centerImageUrl];
-            [self addmsgImages:self.rightImageUrl];
-        }
-
     }
-    
     return _msgImages;
 }
 

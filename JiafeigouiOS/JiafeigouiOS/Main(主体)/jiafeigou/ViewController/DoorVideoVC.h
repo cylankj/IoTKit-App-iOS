@@ -21,8 +21,6 @@ typedef NS_ENUM(NSInteger, doorActionType)
 
 @property (nonatomic,copy)NSString *imageUrl;
 
-@property (nonatomic,copy)NSString *nickName;
-
 @property (nonatomic, assign) BOOL isOnline;
 
 @end

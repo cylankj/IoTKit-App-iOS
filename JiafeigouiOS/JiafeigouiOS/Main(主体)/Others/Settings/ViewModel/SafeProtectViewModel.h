@@ -24,7 +24,10 @@
 - (void)updateMoveDection:(BOOL)isOpen;
 // 更改 灵敏度
 - (void)updateSensitive:(NSInteger)sensitiveType;
-
+// 修改 报警时间 间隔
+- (void)updateWarnDuration:(int)warnDur;
+// 更改 AI 人形
+- (void)updateAIRecgnition:(NSArray *)aiTypes;
 
 #pragma mark 
 #pragma mark  设备提示音 

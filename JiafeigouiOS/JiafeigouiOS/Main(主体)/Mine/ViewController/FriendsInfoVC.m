@@ -83,9 +83,11 @@
         [self.view addSubview:self.listTableView];
     }
     
-    
     [self.view addSubview:self.nextButton];
-    [CommonMethod setHeadImageForImageView:self.headImageView account:self.account];
+    
+    NSString *fileName = [NSString stringWithFormat:@"/image/%@.jpg",self.account];
+    NSString *h = [JFGSDK getCloudUrlWithFlag:1 fileName:fileName];
+    [self.headImageView sd_setImageWithURL:[NSURL URLWithString:h] placeholderImage:[UIImage imageNamed:@"bg_head_160"]];
 
 }
 
@@ -174,7 +176,7 @@
                 setWifiPass.deviceName = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap3_FriendsAdd_StuffContents"],account.account];
             }
             
-            
+           
             [self.navigationController pushViewController:setWifiPass animated:YES];
         }
         
@@ -299,22 +301,23 @@
             [[NSNotificationCenter defaultCenter] postNotificationName:@"delFriendNotification" object:nil];
         }else if(errorType == JFGErrorTypeFriendInvalidRequest){
             //Tap3_FriendsAdd_ExpiredTips
+
+            __weak typeof(self) weakSelf = self;
+            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap3_FriendsAdd_ExpiredTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"SEND"] CancelBlock:^{
+                
+            } OKBlock:^{
+                
+                FriendsInfoVC * infoVC = [FriendsInfoVC new];
+                infoVC.nickNameLabel.text = weakSelf.account;
+                infoVC.nameLabel.text = weakSelf.nickNameString;
+                infoVC.friendsInfoType = FriendsInfoUnFiens;
+                infoVC.isVerifyFriends = NO;
+                infoVC.account = weakSelf.account;
+                infoVC.nickNameString = weakSelf.nickNameString;
+                [weakSelf.navigationController pushViewController:infoVC animated:YES];
+                
+            }];
             
-            UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap3_FriendsAdd_ExpiredTips"] delegate:nil cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"SEND"], nil];
-            [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
-                if (buttonIndex == 1) {
-                    
-                    FriendsInfoVC * infoVC = [FriendsInfoVC new];
-                    infoVC.nickNameLabel.text = self.account;
-                    infoVC.nameLabel.text = self.nickNameString;
-                    infoVC.friendsInfoType = FriendsInfoUnFiens;
-                    infoVC.isVerifyFriends = NO;
-                    infoVC.account = self.account;
-                    infoVC.nickNameString = self.nickNameString;
-                    [self.navigationController pushViewController:infoVC animated:YES];
-                    
-                }
-            } otherDelegate:nil];
         }else{
             
             [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"RET_MSG_EUNKNOWN"]];

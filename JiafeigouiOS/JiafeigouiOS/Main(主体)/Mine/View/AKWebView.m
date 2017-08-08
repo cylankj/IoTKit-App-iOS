@@ -8,7 +8,7 @@
 
 #import "AKWebView.h"
 
-@interface AKWebView ()<UIWebViewDelegate,NSURLConnectionDataDelegate>
+@interface AKWebView ()<WKNavigationDelegate,WKUIDelegate>
 
 @property (nonatomic,strong) NSURLConnection *urlConnection;
 @property (nonatomic,strong) NSURLRequest *requestW;
@@ -23,68 +23,94 @@
     static AKWebView *webView = nil;
     dispatch_once(&onece, ^(void){
         webView = [[self alloc]init];
+        
     });
     return webView;
 }
+
+
 
 #pragma mark ***UIWebView 加载方法***
 - (void)webViewWithLoadRequestWithURL:(NSURL *)url Fram:(CGRect)fram{
     
     self.frame = fram;
-    self.delegate = self;
+    self.UIDelegate = self;
+    self.navigationDelegate = self;
     _requestW = [NSURLRequest requestWithURL:url];
     [self loadRequest:_requestW];
 }
 
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    
+    if ([keyPath isEqualToString:@"estimatedProgress"]) {
+        
+        if (object == self) {
+            
+          
+            NSLog(@"webLoadingProgress:%f",self.estimatedProgress);
+        }else{
+            [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+            
+        }
+        
+    }
+    else if ([keyPath isEqualToString:@"title"])
+    {
+        if (object == self) {
+            
+           
+            NSLog(@"webTitle:%@",self.title);
+        }
+        else
+        {
+            [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+            
+        }
+    }
+    else {
+        
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
+}
+
 #pragma mark ***UIWebView 代理方法***
-- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType{
+//https授权
+- (void)webView:(WKWebView *)webView didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable credential))completionHandler
+{
+    NSString *authenticationMethod = [[challenge protectionSpace] authenticationMethod];
     
-    NSLog(@"开始加载: %@ 授权:%d", [[request URL] absoluteString], _authenticated);
-    
-    if (!_authenticated) {
-        _authenticated = kNeverAuthenticate;
+    if ([authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust]) {
         
-        _urlConnection = [[NSURLConnection alloc] initWithRequest:_requestW delegate:self];
-        
-        [_urlConnection start];
-        
-        return NO;
-    }
-    
-    return YES;
-}
-
-
-#pragma mark ***NURLConnection 代理方法***
-- (void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge{
-    NSLog(@"WebController 已经得到授权正在请求 NSURLConnection");
-    
-    if ([challenge previousFailureCount] == 0){
-        _authenticated = kTryAuthenticate;
-        
-        NSURLCredential *credential = [NSURLCredential credentialForTrust:challenge.protectionSpace.serverTrust];
-        
-        [challenge.sender useCredential:credential forAuthenticationChallenge:challenge];
-        
-    } else{
-        [[challenge sender] cancelAuthenticationChallenge:challenge];
+        NSURLCredential *credential = [[NSURLCredential     alloc]initWithTrust:challenge.protectionSpace.serverTrust];
+        completionHandler(NSURLSessionAuthChallengeUseCredential,credential);
     }
 }
 
-- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response{
-    NSLog(@"WebController 已经收到响应并通过了 NSURLConnection请求");
-    
-    _authenticated = kTryAuthenticate;
-    [self loadRequest:_requestW];
-    [_urlConnection cancel];
+-(void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation
+{
+    if (self.webDelegate && [self.webDelegate respondsToSelector:@selector(akWebViewDidStartLoad:)]) {
+        [self.webDelegate akWebViewDidStartLoad:self];
+    }
 }
 
-- (BOOL)connection:(NSURLConnection *)connection canAuthenticateAgainstProtectionSpace:(NSURLProtectionSpace *)protectionSpace{
-    
-    return [protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust];
+-(void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error
+{
+    if (self.webDelegate && [self.webDelegate respondsToSelector:@selector(akWebView:didFailLoadWithError:)]) {
+        [self.webDelegate akWebView:self didFailLoadWithError:error];
+    }
 }
 
-
+-(void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation
+{
+    if (self.webDelegate && [self.webDelegate respondsToSelector:@selector(akWebViewDidFinishLoad:)]) {
+        [self.webDelegate akWebViewDidFinishLoad:self];
+    }
+    NSLog(@"webTitle:%@",self.title);
+    if (self.webDelegate && [self.webDelegate respondsToSelector:@selector(akWebViewTitle:)]) {
+        
+        [self.webDelegate akWebViewTitle:self.title];
+    }
+}
 
 
 @end

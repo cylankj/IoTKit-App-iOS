@@ -12,6 +12,7 @@
 #import "UIColor+HexColor.h"
 #import "JfgLanguage.h"
 #import "FLGlobal.h"
+#import "JfgTypeDefine.h"
 #import "UIView+FLExtensionForFrame.h"
 #import "UILabel+FLExtension.h"
 #import "JfgMsgDefine.h"

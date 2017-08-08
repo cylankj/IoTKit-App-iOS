@@ -9,14 +9,21 @@
 #import "DeviceInfoViewModel.h"
 #import "JfgTableViewCellKey.h"
 #import "JfgGlobal.h"
+#import "JfgProductJduge.h"
 #import <JFGSDK/JFGSDK.h>
 #import <JFGSDK/JFGSDKDataPoint.h>
 #import <JFGSDK/MPMessagePackReader.h>
+#import "JFGBoundDevicesMsg.h"
 #import <JFGSDK/JFGTypeDefine.h>
 #import "ProgressHUD.h"
+#import "JfgConstKey.h"
 #import "JfgMsgDefine.h"
 #import "JfgUserDefaultKey.h"
+#import "CommonMethod.h"
 #import "DeviceInfoModel.h"
+#import "LoginManager.h"
+#import "PropertyManager.h"
+#import "JfgHttp.h"
 #import "dataPointMsg.h"
 
 @interface DeviceInfoViewModel()<JFGSDKCallbackDelegate>
@@ -27,6 +34,8 @@
 @property (strong, nonatomic) NSArray * msgArray;
 
 @property (nonatomic, assign) JFGNetType netWorkState;
+
+@property (strong, nonatomic) PropertyManager *propertyTool;
 
 @end
 
@@ -41,9 +50,9 @@
                           [NSNumber numberWithInteger:dpMsgBase_SysVersion],
                           [NSNumber numberWithInteger:dpMsgBase_Version],
                           [NSNumber numberWithInteger:dpMsgBase_Battery],
-                          [NSNumber numberWithInteger:dpMsgBase_SDStatus],
                           [NSNumber numberWithInteger:dpMsgBase_Timezone],
-                          [NSNumber numberWithInteger:dpMsgBase_Uptime]
+                          [NSNumber numberWithInteger:dpMsgBase_Uptime],
+                          [NSNumber numberWithInteger:dpMsgBase_ipAdress],
                           ];
         
         [JFGSDK addDelegate:self];
@@ -65,19 +74,19 @@
     if (!_model)
     {
         _model = [[DeviceInfoModel alloc]init];
+        _model.pType = self.pType;
     }
     return _model;
 }
 
-- (BOOL)isClearingSDCard
+- (PropertyManager *)propertyTool
 {
-    return self.model.isClearingSDCard;
-}
-
-// clear sdcard overtime
-- (void)clearSDCardOverTime
-{
-    self.model.isClearingSDCard = NO;
+    if (_propertyTool == nil)
+    {
+        _propertyTool = [[PropertyManager alloc] init];
+        _propertyTool.propertyFilePath = [[NSBundle mainBundle] pathForResource:self.isShare?@"properties_share":@"properties" ofType:@"json"];
+    }
+    return _propertyTool;
 }
 
 -(void)initModel:(NSMutableDictionary *)dict
@@ -86,27 +95,20 @@
     
     @try
     {
-        NSArray *sdInfos = [dict objectForKey:msgBaseSDStatusKey];
-        if (sdInfos.count >= 4)
-        {
-            self.model.totalSpace = [[sdInfos objectAtIndex:0] longLongValue];
-            self.model.usedSpace = [[sdInfos objectAtIndex:1] longLongValue];
-            self.model.sdCardError = [[sdInfos objectAtIndex:2] intValue];
-            self.model.isSDCardExist = [[sdInfos objectAtIndex:3] boolValue];
-        }
-        
         NSArray *netArray = [dict objectForKey:msgBaseNetKey];
-        if (netArray.count >= 2)
+        if ([netArray isKindOfClass:[NSArray class]])
         {
-            self.model.netType = [[netArray firstObject] intValue];
-            self.model.wifi = [netArray objectAtIndex:1];
-            self.model.mobileNet = [netArray objectAtIndex:1];
+            if (netArray.count >= 2)
+            {
+                self.model.netType = [[netArray firstObject] intValue];
+                self.model.wifi = [netArray objectAtIndex:1];
+                self.model.mobileNet = [netArray objectAtIndex:1];
+            }
         }
         
         self.model.MAC = [dict objectForKey:msgBaseMacKey];
         self.model.sysVersion = [dict objectForKey:msgBaseSysVersionKey];
-        self.model.version = [dict objectForKey:msgBaseVersionKey];
-        self.model.battery = [[dict objectForKey:msgBaseBatteryKey] stringValue];
+        self.model.softVersion = [dict objectForKey:msgBaseVersionKey];
         
         NSArray *timeZoneArr = [dict objectForKey:msgBaseTimeZoneKey];
         if (timeZoneArr.count >= 2)
@@ -114,8 +116,28 @@
             self.model.timeZoneOrigin = [NSString stringWithFormat:@"%@",timeZoneArr[0]];
         }
         
-        self.model.isCharging = [[dict objectForKey:msgBasePowerKey] boolValue];
+        if ([JfgProductJduge isDoubleFishEyeDevice:self.pType])
+        {
+            JiafeigouDevStatuModel *devModel = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevModelWithCid:self.cid];
+            
+            NSNumber *battery = [[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"barrtyFor720_%@",self.cid]];
+            
+            self.model.battery = [NSString stringWithFormat:@"%d", [battery intValue]];
+            
+            BOOL isPrower = [[NSUserDefaults standardUserDefaults] boolForKey:[NSString stringWithFormat:@"Perwor_%@",self.cid]];
+            self.model.isCharging = isPrower;
+            
+            JFGLog(@"battery %@   isCharging %d",self.model.battery, self.model.isCharging);
+        }
+        else
+        {
+            self.model.battery = [[dict objectForKey:msgBaseBatteryKey] stringValue];
+            self.model.isCharging = [[dict objectForKey:msgBasePowerKey] boolValue];
+        }
+        
         self.model.updateTime = [[dict objectForKey:msgBaseUptimeKey] longLongValue];
+        self.model.ipAddress = [dict objectForKey:msgBaseIpAdressKey];
+        
         [self checkNewPackage];
     }
     @catch (NSException *exception)
@@ -152,13 +174,84 @@
 #pragma mark 数据请求
 - (void)checkNewPackage
 {
-    if (self.model.version != nil)
+    switch (self.pType)
     {
-        [JFGSDK checkDevVersionWithCid:self.cid pid:self.pType version:self.model.version];
+        case productType_720p:
+        case productType_720:
+        {
+            [JFGSDK checkTagDeviceVersionForCid:self.cid];
+        }
+            break;
+            
+        default:
+        {
+            if (self.model.softVersion != nil)
+            {
+                [JFGSDK checkDevVersionWithCid:self.cid pid:self.pType version:self.model.softVersion];
+                
+            }
+            else
+                [JFGSDK appendStringToLogFile:@"versoin is nil"];
+        }
+            break;
     }
-    else
-        [JFGSDK appendStringToLogFile:@"versoin is nil"];
+    
+    
         
+}
+// request data
+- (void)request
+{
+    switch (self.pType)
+    {
+        case productType_720p:
+        case productType_720:
+        {
+            if ([CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+            {
+                [JFGSDK fping:@"255.255.255.255"];
+                [JFGSDK fping:@"192.168.10.255"];
+                
+//                self.model.isSDCardExist = NO;
+                
+                return;
+            }
+            else
+            {
+                // sd卡状态
+                DataPointSeg *seg1 = [DataPointSeg new];
+                seg1.msgId = dpMsgBase_SDStatus;
+                seg1.value = [NSData data];
+                seg1.version = 0;
+                // battery, power,
+                
+                [JFGSDK sendDPDataMsgForSockWithPeer:self.cid dpMsgIDs:@[seg1]];
+            }
+        }
+            
+        default:
+        {
+            [[dataPointMsg shared] packSingleDataPointMsg:self.msgArray withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic)
+             {
+                 if (dic == nil)
+                 {
+                     dic = [self getJfgDeviceInfoCache];
+                 }
+                 else
+                 {
+                     [self setJfgDeviceInfoCache:dic];
+                 }
+                 
+                 [self initModel:dic];
+                 [self update];
+             } FailBlock:^(RobotDataRequestErrorType error)
+             {
+             }];
+        }
+            break;
+    }
+    
+    
 }
 
 #pragma mark 
@@ -176,26 +269,11 @@
         [self.myDelegate fetchDataArray:[self createDataWithProductType:type Cid:cid]];
     }
     
-    [[dataPointMsg shared] packSingleDataPointMsg:self.msgArray withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic)
-     {
-         if (dic == nil)
-         {
-             dic = [self getJfgDeviceInfoCache];
-         }
-         else
-         {
-             [self setJfgDeviceInfoCache:dic];
-         }
-         
-         [self initModel:dic];
-         [self update];
-     } FailBlock:^(RobotDataRequestErrorType error)
-     {
-     }];
-    
-    
+    [self request];
     return [self createDataWithProductType:type Cid:cid];
 }
+
+
 
 // 关门 造 数据
 - (NSArray *)createDataWithProductType:(productType)type Cid:(NSString *)cid
@@ -203,7 +281,6 @@
     NSMutableArray *list = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
     JiafeigouDevStatuModel *currentModel;
     NSString *alias;
-    
     
     for (JiafeigouDevStatuModel *model in list) {
         
@@ -225,141 +302,50 @@
     self.cid = currentModel.uuid;
     
     [self.groupArray removeAllObjects];
+    
     switch (_deviceInfoType)
     {
         case DeviceInfoTypeInfo:
         {
-            switch (type)
+            
+            NSMutableArray *section0 = [self infoSection0Arr];
+            NSMutableArray *section1 = [self infoSection1Arr];
+            NSMutableArray *section3 = [self infoSection3Arr];
+            NSMutableArray *section4 = [self infoSection4Arr];
+            NSMutableArray *section5 = [self infoSection5Arr];
+            NSMutableArray *section6 = [self infoSection6Arr];
+            
+            if (section0.count > 0)
             {
-                case productType_Mag:
-                {
-                    [self.groupArray addObjectsFromArray:[self magInfos]];
-                }
-                    break;
-                case productType_DoorBell:
-                {
-                    [self.groupArray addObjectsFromArray:[self doorBellInfos]];
-                }
-                    break;
-                case productType_3G:
-                case productType_4G:
-                case productType_3G_2X:
-                {
-                    [self.groupArray addObjectsFromArray:[self mobileDeviceInfos]];
-                }
-                    break;
-                case productType_IPCam:
-                case productType_RS_180:
-                case productType_RS_120:
-                case productType_WIFI:{
-                    [self.groupArray addObjectsFromArray:[self wifiDevicesInfos]];
-                }
-                    break;
-                case productType_Camera_ZY:
-                case productType_Camera_HS:
-                {
-                    [self.groupArray addObjectsFromArray:[self panoDevicesInfos]];
-                }
-                    break;
-                case productType_FreeCam:
-                {
-                    [self.groupArray addObjectsFromArray:[self freeCamInfos]];
-                }
-                    break;
-                default:
-                {
-                    [self.groupArray addObject:[NSArray arrayWithObjects:
-                                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                                 [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_NAME"],cellTextKey,
-                                                 alias,cellDetailTextKey,
-                                                 @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                                 nil],
-                                                nil]];
-                    if (self.isShare == NO)
-                    {
-                        [self.groupArray addObject:[NSArray arrayWithObjects:
-                                                    [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                                     [JfgLanguage getLanTextStrByKey:@"SETTING_TIMEZONE"],cellTextKey,
-                                                     self.model.timeZone,cellDetailTextKey,
-                                                     self.model.timeZoneOrigin, cellHiddenText,
-                                                     @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                                     nil],
-                                                    nil]];
-                        
-                        [self.groupArray addObject:[NSArray arrayWithObjects:
-                                                    [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                                     [JfgLanguage getLanTextStrByKey:@"SETTING_SD"],cellTextKey,
-                                                     self.model.SDCardInfo,cellDetailTextKey,
-                                                     @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                                     @(self.model.sdCardType), cellHiddenText,
-                                                     nil],
-                                                    nil]];
-                        
-                    }
-                    [self.groupArray addObject:[NSArray arrayWithObjects:
-                                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                                 [JfgLanguage getLanTextStrByKey:@"NETWORK_1"],cellTextKey,
-                                                 self.model.net,cellDetailTextKey,
-                                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                                 nil],
-                                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                                 [JfgLanguage getLanTextStrByKey:@"Wi-Fi"],cellTextKey,
-                                                 self.model.wifi,cellDetailTextKey,
-                                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                                 nil],
-                                                nil]];
-                    
-                    [self.groupArray addObject:[NSArray arrayWithObjects:
-                                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                                 [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Cid"],cellTextKey,
-                                                 self.model.cid,cellDetailTextKey,
-                                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                                 nil],
-                                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                                 [JfgLanguage getLanTextStrByKey:@"MAC"],cellTextKey,
-                                                 self.model.MAC,cellDetailTextKey,
-                                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                                 nil],
-                                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                                 [JfgLanguage getLanTextStrByKey:@"SYSTME_VERSION"],cellTextKey,
-                                                 self.model.sysVersion,cellDetailTextKey,
-                                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                                 nil],
-//                                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-//                                                 [JfgLanguage getLanTextStrByKey:@"SOFTWARE_VERSION"],cellTextKey,
-//                                                 self.model.version,cellDetailTextKey,
-//                                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-//                                                 nil],
-                                                nil]];
-
-                [self.groupArray addObject:[NSArray arrayWithObjects:
-                                            [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                             [JfgLanguage getLanTextStrByKey:@"BATTERY_LEVEL"],cellTextKey,
-                                             self.model.battery,cellDetailTextKey,
-                                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                             nil],
-                                            [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                             [JfgLanguage getLanTextStrByKey:@"VALID_STORAGE"],cellTextKey,
-                                             self.model.SDCardSpace,cellDetailTextKey,
-                                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                             nil],
-                                            [NSDictionary dictionaryWithObjectsAndKeys:
-                                             [JfgLanguage getLanTextStrByKey:@"STANBY"],cellTextKey,
-                                             self.model.lastingUseTime,cellDetailTextKey,
-                                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                             nil],
-                                            nil]];
-                    
-                }
-                    break;
+                [self.groupArray addObject:section0];
+            }
+            if (section1.count > 0)
+            {
+                [self.groupArray addObject:section1];
+            }
+            if (section3.count > 0)
+            {
+                [self.groupArray addObject:section3];
+            }
+            if (section4.count > 0)
+            {
+                [self.groupArray addObject:section4];
+            }
+            if (section5.count > 0)
+            {
+                [self.groupArray addObject:section5];
+            }
+            if (section5.count > 0)
+            {
+                [self.groupArray addObject:section6];
             }
         }
             break;
-        case DeviceInfoTypeAutoPhoto:
-        {
-            [self.groupArray addObjectsFromArray:[self autoPhotoInfos]];
-        }
-            break;
+//        case DeviceInfoTypeAutoPhoto:
+//        {
+//            [self.groupArray addObjectsFromArray:[self autoPhotoInfos]];
+//        }
+//            break;
             
         default:
         {
@@ -370,735 +356,161 @@
     return self.groupArray;
 }
 
-#pragma mark
-#pragma mark 数据 获取 方法
-// 门磁数据
-- (NSMutableArray *)magInfos
-{
-    NSMutableArray *magArray = [NSMutableArray arrayWithCapacity:5];
-    
-    [magArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_NAME"],cellTextKey,
-                                 self.model.deviceName,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    [magArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"MODEL"],cellTextKey,
-                                 [JfgLanguage getLanTextStrByKey:@"xyz"],cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"SN"],cellTextKey,
-                                 [JfgLanguage getLanTextStrByKey:@"48488484884"],cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    [magArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"BATTERY_LEVEL"],cellTextKey,
-                                 self.model.battery,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"STANBY"],cellTextKey,
-                                 self.model.lastingUseTime,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    
-    return magArray;
-}
-// 门铃数据
-- (NSMutableArray *)doorBellInfos
-{
-    NSMutableArray *doorBellArr = [NSMutableArray arrayWithCapacity:5];
-    
-    [doorBellArr addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_NAME"],cellTextKey,
-                                 self.model.deviceName,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    [doorBellArr addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Cid"],cellTextKey,
-                                 self.model.cid,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"MAC"],cellTextKey,
-                                 self.model.MAC,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"SYSTME_VERSION"],cellTextKey,
-                                 self.model.sysVersion,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                /*[NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"SOFTWARE_VERSION"],cellTextKey,
-                                 self.model.version,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],*/
-                                nil]];
-    if (!self.isShare)
-    {
-        [doorBellArr addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"Tap1_FirmwareUpdate"],cellTextKey,
-                                 self.model.newPackageStr,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                 @(self.model.hasNewPackage), cellRedDotInRight,
-                                 @(self.model.hasNewPackage), cellHiddenText,
-                                 nil],
-                                nil]];
-    }
-    
-    [doorBellArr addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"Wi-Fi"],cellTextKey,
-                                 self.model.wifi,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    [doorBellArr addObject:[NSArray arrayWithObjects:
-                            [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                             [JfgLanguage getLanTextStrByKey:@"BATTERY_LEVEL"],cellTextKey,
-                             self.model.battery,cellDetailTextKey,
-                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                             nil],
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             [JfgLanguage getLanTextStrByKey:@"STANBY"],cellTextKey,
-                             self.model.lastingUseTime,cellDetailTextKey,
-                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                             nil],
-                            nil]];
-    
-    
-    return doorBellArr;
- }
-// wifi 狗 设备信息
-- (NSMutableArray *)wifiDevicesInfos
-{
-    NSMutableArray *wifiArray = [NSMutableArray arrayWithCapacity:5];
-    
-    [wifiArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_NAME"],cellTextKey,
-                                 self.model.deviceName,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    if (self.isShare == NO)
-    {
-        [wifiArray addObject:[NSArray arrayWithObjects:
-                                    [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                     [JfgLanguage getLanTextStrByKey:@"SETTING_TIMEZONE"],cellTextKey,
-                                     self.model.timeZone,cellDetailTextKey,
-                                     self.model.timeZoneOrigin, cellHiddenText,
-                                     @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                     nil],
-                                    nil]];
-        
-        [wifiArray addObject:[NSArray arrayWithObjects:
-                                    [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                     [JfgLanguage getLanTextStrByKey:@"SETTING_SD"],cellTextKey,
-                                     self.model.SDCardInfo,cellDetailTextKey,
-                                     @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                     @(self.model.sdCardType), cellHiddenText,
-                                     nil],
-                                    nil]];
-        [wifiArray addObject:[NSArray arrayWithObjects:
-                              [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                               [JfgLanguage getLanTextStrByKey:@"Tap1_FirmwareUpdate"],cellTextKey,
-                               self.model.newPackageStr,cellDetailTextKey,
-                               @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                               @(self.model.hasNewPackage), cellRedDotInRight,
-                               nil],
-                              nil]];
-    }
-    
-    [wifiArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"Wi-Fi"],cellTextKey,
-                                 self.model.wifi,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    
-    [wifiArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Cid"],cellTextKey,
-                                 self.model.cid,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"MAC"],cellTextKey,
-                                 self.model.MAC,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"SYSTME_VERSION"],cellTextKey,
-                                 self.model.sysVersion,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-//                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-//                                 [JfgLanguage getLanTextStrByKey:@"SOFTWARE_VERSION"],cellTextKey,
-//                                 self.model.version,cellDetailTextKey,
-//                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-//                                 nil],
-                                nil]];
-    
-    [wifiArray addObject:[NSArray arrayWithObjects:
-                          /*[NSMutableDictionary dictionaryWithObjectsAndKeys:
-                           [JfgLanguage getLanTextStrByKey:@"BATTERY_LEVEL"],cellTextKey,
-                           self.model.battery,cellDetailTextKey,
-                           @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                           nil],*/
-                          //                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                          //                                 [JfgLanguage getLanTextStrByKey:@"VALID_STORAGE"],cellTextKey,
-                          //                                 self.model.SDCardSpace,cellDetailTextKey,
-                          //                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                          //                                 nil],
-                          [NSDictionary dictionaryWithObjectsAndKeys:
-                           [JfgLanguage getLanTextStrByKey:@"STANBY"],cellTextKey,
-                           self.model.lastingUseTime,cellDetailTextKey,
-                           @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                           nil],
-                          nil]];
-    
-    
-    return wifiArray;
-}
-// 3G,4G 设备信息
-- (NSMutableArray *)mobileDeviceInfos
-{
-    NSMutableArray *mobileArray = [NSMutableArray arrayWithCapacity:5];
-    
-    [mobileArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_NAME"],cellTextKey,
-                                 self.model.deviceName,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    if (self.isShare == NO)
-    {
-        [mobileArray addObject:[NSArray arrayWithObjects:
-                                    [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                     [JfgLanguage getLanTextStrByKey:@"SETTING_TIMEZONE"],cellTextKey,
-                                     self.model.timeZone,cellDetailTextKey,
-                                     self.model.timeZoneOrigin, cellHiddenText,
-                                     @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                     nil],
-                                    nil]];
-        
-        [mobileArray addObject:[NSArray arrayWithObjects:
-                                    [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                     [JfgLanguage getLanTextStrByKey:@"SETTING_SD"],cellTextKey,
-                                     self.model.SDCardInfo,cellDetailTextKey,
-                                     @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                     @(self.model.sdCardType), cellHiddenText,
-                                     nil],
-                                    nil]];
-        
-        [mobileArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"Tap1_FirmwareUpdate"],cellTextKey,
-                                 self.model.newPackageStr,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                 @(self.model.hasNewPackage), cellRedDotInRight,
-                                 nil],
-                                nil]];
-    }
-    
-    [mobileArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"NETWORK_1"],cellTextKey,
-                                 self.model.mobileNet,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"Wi-Fi"],cellTextKey,
-                                 self.model.wifi,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    
-    [mobileArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Cid"],cellTextKey,
-                                 self.model.cid,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"MAC"],cellTextKey,
-                                 self.model.MAC,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"SYSTME_VERSION"],cellTextKey,
-                                 self.model.sysVersion,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-//                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-//                                 [JfgLanguage getLanTextStrByKey:@"SOFTWARE_VERSION"],cellTextKey,
-//                                 self.model.version,cellDetailTextKey,
-//                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-//                                 nil],
-                                nil]];
-    
+#pragma mark section data handle
 
-    [mobileArray addObject:[NSArray arrayWithObjects:
-                            [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                             [JfgLanguage getLanTextStrByKey:@"BATTERY_LEVEL"],cellTextKey,
-                             self.model.battery,cellDetailTextKey,
-                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                             nil],
-                            //                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            //                                 [JfgLanguage getLanTextStrByKey:@"VALID_STORAGE"],cellTextKey,
-                            //                                 self.model.SDCardSpace,cellDetailTextKey,
-                            //                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            //                                 nil],
-                            [NSDictionary dictionaryWithObjectsAndKeys:
-                             [JfgLanguage getLanTextStrByKey:@"STANBY"],cellTextKey,
-                             self.model.lastingUseTime,cellDetailTextKey,
-                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                             nil],
-                            nil]];
-
-    return mobileArray;
-}
-
-- (NSMutableArray *)freeCamInfos
+- (NSMutableArray *)infoSection0Arr
 {
-    NSMutableArray *freeeCamArr = [NSMutableArray arrayWithCapacity:5];
+    NSMutableArray *section0 = [NSMutableArray arrayWithCapacity:2];
     
-    [freeeCamArr addObject:[NSArray arrayWithObjects:
-                          [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                           [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_NAME"],cellTextKey,
-                           self.model.deviceName,cellDetailTextKey,
-                           @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                           nil],
-                          nil]];
-    if (self.isShare == NO)
-    {
-        [freeeCamArr addObject:[NSArray arrayWithObjects:
-                              [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                               [JfgLanguage getLanTextStrByKey:@"SETTING_TIMEZONE"],cellTextKey,
-                               self.model.timeZone,cellDetailTextKey,
-                               self.model.timeZoneOrigin, cellHiddenText,
-                               @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                               nil],
-                              nil]];
-        
-        [freeeCamArr addObject:[NSArray arrayWithObjects:
-                              [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                               [JfgLanguage getLanTextStrByKey:@"SETTING_SD"],cellTextKey,
-                               self.model.SDCardInfo,cellDetailTextKey,
-                               @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                               @(self.model.sdCardType), cellHiddenText,
-                               nil],
-                              nil]];
-        [freeeCamArr addObject:[NSArray arrayWithObjects:
-                              [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                               [JfgLanguage getLanTextStrByKey:@"Tap1_FirmwareUpdate"],cellTextKey,
-                               self.model.newPackageStr,cellDetailTextKey,
-                               @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                               @(self.model.hasNewPackage), cellRedDotInRight,
-                               nil],
-                              nil]];
-    }
-    
-    [freeeCamArr addObject:[NSArray arrayWithObjects:
-                          [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                           [JfgLanguage getLanTextStrByKey:@"Wi-Fi"],cellTextKey,
-                           self.model.wifi,cellDetailTextKey,
-                           @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                           nil],
-                          nil]];
-    
-    [freeeCamArr addObject:[NSArray arrayWithObjects:
-                          [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                           [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Cid"],cellTextKey,
-                           self.model.cid,cellDetailTextKey,
-                           @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                           nil],
-                          [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                           [JfgLanguage getLanTextStrByKey:@"MAC"],cellTextKey,
-                           self.model.MAC,cellDetailTextKey,
-                           @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                           nil],
-                          [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                           [JfgLanguage getLanTextStrByKey:@"SYSTME_VERSION"],cellTextKey,
-                           self.model.sysVersion,cellDetailTextKey,
-                           @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                           nil],
-                          //                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                          //                                 [JfgLanguage getLanTextStrByKey:@"SOFTWARE_VERSION"],cellTextKey,
-                          //                                 self.model.version,cellDetailTextKey,
-                          //                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                          //                                 nil],
-                          nil]];
-    
-        [freeeCamArr addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"BATTERY_LEVEL"],cellTextKey,
-                                 self.model.battery,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                //                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                //                                 [JfgLanguage getLanTextStrByKey:@"VALID_STORAGE"],cellTextKey,
-                                //                                 self.model.SDCardSpace,cellDetailTextKey,
-                                //                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                //                                 nil],
-                                [NSDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"STANBY"],cellTextKey,
-                                 self.model.lastingUseTime,cellDetailTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    
-    return freeeCamArr;
-}
-
-// 全景 摄像头 设备信息
-- (NSMutableArray *)panoDevicesInfos
-{
-    return [self hSDevicesInfos];
-}
-// HS 设备信息
-- (NSMutableArray *)hSDevicesInfos
-{
-    NSMutableArray *hsArray = [NSMutableArray arrayWithCapacity:5];
-    [hsArray addObject:[NSArray arrayWithObjects:
-                        [NSMutableDictionary dictionaryWithObjectsAndKeys:
+    [section0 addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
                          [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_NAME"],cellTextKey,
+                         deviceName,cellUniqueID,
                          self.model.deviceName,cellDetailTextKey,
                          @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                         nil],
-                        nil]];
-    if (self.isShare == NO)
+                         nil]];
+    
+    
+    return section0;
+}
+- (NSMutableArray *)infoSection1Arr
+{
+    NSMutableArray *section1 = [NSMutableArray arrayWithCapacity:2];
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pTimeZoneKey])
     {
-        [hsArray addObject:[NSArray arrayWithObjects:
-                            [NSMutableDictionary dictionaryWithObjectsAndKeys:
+        [section1 addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
                              [JfgLanguage getLanTextStrByKey:@"SETTING_TIMEZONE"],cellTextKey,
+                             timeZone,cellUniqueID,
                              self.model.timeZone,cellDetailTextKey,
                              self.model.timeZoneOrigin, cellHiddenText,
                              @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                             nil],
-                            nil]];
-        
-        [hsArray addObject:[NSArray arrayWithObjects:
-                            [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                             [JfgLanguage getLanTextStrByKey:@"SETTING_SD"],cellTextKey,
-                             self.model.SDCardInfo,cellDetailTextKey,
-                             @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                             @(self.model.sdCardType), cellHiddenText,
-                             nil],
-                            nil]];
-        /*
-        [hsArray addObject:[NSArray arrayWithObjects:
-                            [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                             nil]];
+    }
+    
+    return (section1.count>0)?section1:nil;
+}
+
+
+- (NSMutableArray *)infoSection3Arr
+{
+    NSMutableArray *section3 = [NSMutableArray arrayWithCapacity:2];
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pDevUpgradeKey])
+    {
+        [section3 addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
                              [JfgLanguage getLanTextStrByKey:@"Tap1_FirmwareUpdate"],cellTextKey,
-                             self.model.newPackageStr,cellDetailTextKey,
+                             devUpgrade,cellUniqueID,
+                             self.model.softVersion,cellDetailTextKey,
                              @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
                              @(self.model.hasNewPackage), cellRedDotInRight,
-                             nil],
-                            nil]];*/
+                             nil]];
     }
     
-    [hsArray addObject:[NSArray arrayWithObjects:
-                        [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                         [JfgLanguage getLanTextStrByKey:@"Wi-Fi"],cellTextKey,
-                         self.model.wifi,cellDetailTextKey,
-                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                         nil],
-                        nil]];
-    
-    [hsArray addObject:[NSArray arrayWithObjects:
-                        [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                         [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Cid"],cellTextKey,
-                         self.model.cid,cellDetailTextKey,
-                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                         nil],
-                        [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                         [JfgLanguage getLanTextStrByKey:@"MAC"],cellTextKey,
-                         self.model.MAC,cellDetailTextKey,
-                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                         nil],
-                        [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                         [JfgLanguage getLanTextStrByKey:@"SYSTME_VERSION"],cellTextKey,
-                         self.model.sysVersion,cellDetailTextKey,
-                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                         nil],
-                        [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                         [JfgLanguage getLanTextStrByKey:@"SOFTWARE_VERSION"],cellTextKey,
-                         self.model.version,cellDetailTextKey,
-                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                         nil],
-                        nil]];
-    
-    [hsArray addObject:[NSArray arrayWithObjects:
-                        /* [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                         [JfgLanguage getLanTextStrByKey:@"BATTERY_LEVEL"],cellTextKey,
-                         self.model.battery,cellDetailTextKey,
-                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                         nil],*/
-                        //                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                        //                                 [JfgLanguage getLanTextStrByKey:@"VALID_STORAGE"],cellTextKey,
-                        //                                 self.model.SDCardSpace,cellDetailTextKey,
-                        //                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                        //                                 nil],
-                        [NSDictionary dictionaryWithObjectsAndKeys:
-                         [JfgLanguage getLanTextStrByKey:@"STANBY"],cellTextKey,
-                         self.model.lastingUseTime,cellDetailTextKey,
-                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                         nil],
-                        nil]];
-    
-    
-    return hsArray;
-}
-// 乔安 设备信息
-- (NSMutableArray *)jooanDevicesInfos
-{
-    NSMutableArray *jooanArray = [NSMutableArray arrayWithCapacity:5];
-    [jooanArray addObject:[NSArray arrayWithObjects:
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_NAME"],cellTextKey,
-                            self.model.deviceName,cellDetailTextKey,
-                            @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                            nil],
-                           nil]];
-    if (self.isShare == NO)
-    {
-        [jooanArray addObject:[NSArray arrayWithObjects:
-                               [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                [JfgLanguage getLanTextStrByKey:@"SETTING_TIMEZONE"],cellTextKey,
-                                self.model.timeZone,cellDetailTextKey,
-                                self.model.timeZoneOrigin, cellHiddenText,
-                                @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                nil],
-                               nil]];
-        
-        [jooanArray addObject:[NSArray arrayWithObjects:
-                               [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                [JfgLanguage getLanTextStrByKey:@"SETTING_SD"],cellTextKey,
-                                self.model.SDCardInfo,cellDetailTextKey,
-                                @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                @(self.model.sdCardType), cellHiddenText,
-                                nil],
-                               nil]];
-        
-        [jooanArray addObject:[NSArray arrayWithObjects:
-                               [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                [JfgLanguage getLanTextStrByKey:@"Tap1_FirmwareUpdate"],cellTextKey,
-                                self.model.newPackageStr,cellDetailTextKey,
-                                @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                @(self.model.hasNewPackage), cellRedDotInRight,
-                                nil],
-                               nil]];
-    }
-    
-    [jooanArray addObject:[NSArray arrayWithObjects:
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"NETWORK_1"],cellTextKey,
-                            self.model.net,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"Wi-Fi"],cellTextKey,
-                            self.model.wifi,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           nil]];
-    
-    [jooanArray addObject:[NSArray arrayWithObjects:
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Cid"],cellTextKey,
-                            self.model.cid,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"MAC"],cellTextKey,
-                            self.model.MAC,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"SYSTME_VERSION"],cellTextKey,
-                            self.model.sysVersion,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           //                        [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                           //                         [JfgLanguage getLanTextStrByKey:@"SOFTWARE_VERSION"],cellTextKey,
-                           //                         self.model.version,cellDetailTextKey,
-                           //                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                           //                         nil],
-                           nil]];
-
-    [jooanArray addObject:[NSArray arrayWithObjects:
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"BATTERY_LEVEL"],cellTextKey,
-                            self.model.battery,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           //                        [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                           //                         [JfgLanguage getLanTextStrByKey:@"VALID_STORAGE"],cellTextKey,
-                           //                         self.model.SDCardSpace,cellDetailTextKey,
-                           //                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                           //                         nil],
-                           [NSDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"STANBY"],cellTextKey,
-                            self.model.lastingUseTime,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           nil]];
-    
-    return jooanArray;
-}
-- (NSMutableArray *)Pano720CameraInfos
-{
-    NSMutableArray *pano720Infos = [NSMutableArray arrayWithCapacity:5];
-    [pano720Infos addObject:[NSArray arrayWithObjects:
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"EQUIPMENT_NAME"],cellTextKey,
-                            self.model.deviceName,cellDetailTextKey,
-                            @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                            nil],
-                           nil]];
-    
-    
-    if (self.isShare == NO)
-    {
-        [pano720Infos addObject:[NSArray arrayWithObjects:
-                               [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                [JfgLanguage getLanTextStrByKey:@"SETTING_TIMEZONE"],cellTextKey,
-                                self.model.timeZone,cellDetailTextKey,
-                                self.model.timeZoneOrigin, cellHiddenText,
-                                @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                nil],
-                               nil]];
-        
-        [pano720Infos addObject:[NSArray arrayWithObjects:
-                               [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                [JfgLanguage getLanTextStrByKey:@"SETTING_SD"],cellTextKey,
-                                self.model.SDCardInfo,cellDetailTextKey,
-                                @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                @(self.model.sdCardType), cellHiddenText,
-                                nil],
-                               nil]];
-        
-        [pano720Infos addObject:[NSArray arrayWithObjects:
-                               [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                [JfgLanguage getLanTextStrByKey:@"Tap1_FirmwareUpdate"],cellTextKey,
-                                self.model.newPackageStr,cellDetailTextKey,
-                                @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                @(self.model.hasNewPackage), cellRedDotInRight,
-                                nil],
-                               nil]];
-    }
-    
-    [pano720Infos addObject:[NSArray arrayWithObjects:
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"NETWORK_1"],cellTextKey,
-                            self.model.net,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"Wi-Fi"],cellTextKey,
-                            self.model.wifi,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           nil]];
-    
-    [pano720Infos addObject:[NSArray arrayWithObjects:
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Cid"],cellTextKey,
-                            self.model.cid,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"MAC"],cellTextKey,
-                            self.model.MAC,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"SYSTME_VERSION"],cellTextKey,
-                            self.model.sysVersion,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           //                        [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                           //                         [JfgLanguage getLanTextStrByKey:@"SOFTWARE_VERSION"],cellTextKey,
-                           //                         self.model.version,cellDetailTextKey,
-                           //                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                           //                         nil],
-                           nil]];
-    
-    [pano720Infos addObject:[NSArray arrayWithObjects:
-                           [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"BATTERY_LEVEL"],cellTextKey,
-                            self.model.battery,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           //                        [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                           //                         [JfgLanguage getLanTextStrByKey:@"VALID_STORAGE"],cellTextKey,
-                           //                         self.model.SDCardSpace,cellDetailTextKey,
-                           //                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                           //                         nil],
-                           [NSDictionary dictionaryWithObjectsAndKeys:
-                            [JfgLanguage getLanTextStrByKey:@"STANBY"],cellTextKey,
-                            self.model.lastingUseTime,cellDetailTextKey,
-                            @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                            nil],
-                           nil]];
-    
-    return pano720Infos;
+    return section3;
 }
 
-
-
-// 自动录像
-- (NSMutableArray *)autoPhotoInfos
+- (NSMutableArray *)infoSection4Arr
 {
-    NSMutableArray *autoPhotoArray = [NSMutableArray arrayWithCapacity:5];
-    [autoPhotoArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"RECORD_MODE"],cellTextKey,
-                                 [JfgLanguage getLanTextStrByKey:@"RECORD_INFO_0"],cellFootViewTextKey,
-                                 @(UITableViewCellAccessoryCheckmark),cellAccessoryKey,
-                                 nil],
-                                nil]];
+    NSMutableArray *section4 = [NSMutableArray arrayWithCapacity:2];
     
-    if (self.pType != productType_FreeCam)
+    if ([self.propertyTool showRowWithPid:self.pType key:pWifiInfoKey])
     {
-        [autoPhotoArray addObject:[NSArray arrayWithObjects:
-                                   [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                    [JfgLanguage getLanTextStrByKey:@"RECORD_MODE_1"],cellTextKey,
-                                    [JfgLanguage getLanTextStrByKey:@"RECORD_INFO_1"],cellFootViewTextKey,
-                                    @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                    nil],
-                                   nil]];
+        [section4 addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"Wi-Fi"],cellTextKey,
+                             self.model.wifi,cellDetailTextKey,
+                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                             nil]];
     }
     
-    [autoPhotoArray addObject:[NSArray arrayWithObjects:
-                                [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                 [JfgLanguage getLanTextStrByKey:@"RECORD_MODE_2"],cellTextKey,
-                                 [JfgLanguage getLanTextStrByKey:@"RECORD_INFO_2"],cellFootViewTextKey,
-                                 @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                 nil],
-                                nil]];
-    return autoPhotoArray;
+    return section4;
+}
+
+- (NSMutableArray *)infoSection5Arr
+{
+    NSMutableArray *section5 = [NSMutableArray arrayWithCapacity:2];
+    
+    [section5 addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Cid"],cellTextKey,
+                             self.model.cid,cellDetailTextKey,
+                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                             nil]];
+    
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pMacKey])
+    {
+        [section5 addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"MAC"],cellTextKey,
+                             self.model.MAC,cellDetailTextKey,
+                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                             nil]];
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pIpAdress])
+    {
+        [section5 addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"IP_Address"],cellTextKey,
+                             self.model.ipAddress,cellDetailTextKey,
+                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                             nil]];
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pSysVersionKey])
+    {
+        [section5 addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"SYSTME_VERSION"],cellTextKey,
+                             self.model.sysVersion,cellDetailTextKey,
+                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                             nil]];
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pSoftVersionKey])
+    {
+        [section5 addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"SOFTWARE_VERSION"],cellTextKey,
+                             self.model.softVersion,cellDetailTextKey,
+                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                             nil]];
+    }
+    
+    return section5;
+}
+
+- (NSMutableArray *)infoSection6Arr
+{
+    NSMutableArray *section6 = [NSMutableArray arrayWithCapacity:2];
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pBatteryKey])
+    {
+        [section6 addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"BATTERY_LEVEL"],cellTextKey,
+                             self.model.battery,cellDetailTextKey,
+                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                             nil]];
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pUpTimeKey])
+    {
+        [section6 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             [JfgLanguage getLanTextStrByKey:@"STANBY"],cellTextKey,
+                             self.model.lastingUseTime,cellDetailTextKey,
+                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                             nil]];
+    }
+    
+    return section6;
 }
 
 #pragma mark
 #pragma mark 数据 更新
 - (void)updateTimeZone:(NSString *)zoneID timeZone:(int)zoneTime
 {
+    if([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess)
+    {
+        [CommonMethod showNetDisconnectAlert];
+        
+        return;
+    }
+        
     DataPointSeg * seg = [[DataPointSeg alloc]init];
     NSError * error = nil;
     seg.msgId = dpMsgBase_Timezone;
@@ -1156,6 +568,32 @@
 
 #pragma mark
 #pragma mark  sdk delegate
+- (void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
+{
+    if ([self.cid isEqualToString:ask.cid])
+    {
+        JFG_WS(weakSelf);
+        
+        [[JfgHttp sharedHttp] get:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getPowerLine", ask.address] parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+            weakSelf.model.isCharging = [[responseObject objectForKey:panoIsCharging] boolValue];
+            [weakSelf update];
+        } failure:^(NSURLSessionDataTask *task, NSError *error) {
+            
+        }];
+        
+        [[JfgHttp sharedHttp] get:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getDevInfo", ask.address] parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+            weakSelf.model.updateTime = [[responseObject objectForKey:panoUptime] longLongValue];
+            weakSelf.model.MAC = [responseObject objectForKey:mac];
+            weakSelf.model.sysVersion = [responseObject objectForKey:sysVersion];
+            [weakSelf update];
+        } failure:^(NSURLSessionDataTask *task, NSError *error) {
+            
+        }];
+        
+    }
+}
+
+
 - (void)jfgNetworkChanged:(JFGNetType)netType
 {
     self.netWorkState = netType;
@@ -1175,30 +613,30 @@
                 {
                     switch (seg.msgId)
                     {
-                        case dpMsgBase_SDCardFomat:
-                        {
-                            if ([obj isKindOfClass:[NSArray class]])
-                            {
-                                NSArray *sdInfos = (NSArray *)obj;
-                                if (sdInfos.count >= 4)
-                                {
-                                    _model.sdCardError = [[sdInfos objectAtIndex:2] intValue];
-                                    _model.isSDCardExist = [[sdInfos objectAtIndex:3] boolValue];
-                                    
-                                    if (_model.sdCardError == 0)
-                                    {
-                                        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SD_INFO_3"]];
-                                    }
-                                    else
-                                    {
-                                        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
-                                    }
-                                }
-                                self.model.isClearingSDCard = NO;
-                                [self update];
-                            }
-                        }
-                            break;
+//                        case dpMsgBase_SDCardFomat:
+//                        {
+//                            if ([obj isKindOfClass:[NSArray class]])
+//                            {
+//                                NSArray *sdInfos = (NSArray *)obj;
+//                                if (sdInfos.count >= 4)
+//                                {
+//                                    _model.sdCardError = [[sdInfos objectAtIndex:2] intValue];
+//                                    _model.isSDCardExist = [[sdInfos objectAtIndex:3] boolValue];
+//                                    
+//                                    if (_model.sdCardError == 0)
+//                                    {
+//                                        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips3"]];
+//                                    }
+//                                    else
+//                                    {
+//                                        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
+//                                    }
+//                                }
+//                                self.model.isClearingSDCard = NO;
+//                                [self update];
+//                            }
+//                        }
+//                            break;
                         case dpMsgBase_Battery:
                         {
                             [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cid[%@]'s battery %@",self.cid, obj]];
@@ -1212,24 +650,37 @@
                             [self update];
                         }
                             break;
-                        case dpMsgBase_SDCardInfoList:
-                        {
-                            if ([obj isKindOfClass:[NSArray class]])
-                            {
-                                BOOL isExistSDCard = [[obj objectAtIndex:0] boolValue];
-                                
-                                self.model.isSDCardExist = isExistSDCard;
-                                self.model.sdCardError = [[obj objectAtIndex:1] intValue];
-                                [self update];
-                                
-                            }
-                        }
-                            break;
+//                        case dpMsgBase_SDCardInfoList:
+//                        {
+//                            if ([obj isKindOfClass:[NSArray class]])
+//                            {
+//                                BOOL isExistSDCard = [[obj objectAtIndex:0] boolValue];
+//                                if (isExistSDCard == NO)
+//                                {
+//                                    //show hub sdCard was pulled out
+//                                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"]];
+//                                }
+//                                
+//                                /*
+//                                // if is Clearing SDCard now, then someone pull sdCard out
+//                                if (self.model.isClearingSDCard == YES && isExistSDCard == NO)
+//                                {
+//                                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
+//                                    self.model.isClearingSDCard = NO;
+//                                }
+//                                */
+//                                self.model.isSDCardExist = isExistSDCard;
+//                                self.model.sdCardError = [[obj objectAtIndex:1] intValue];
+//                                [self update];
+//                                
+//                            }
+//                        }
+//                            break;
                     }
                 }
             }
         } @catch (NSException *exception) {
-            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"jifeigou RootViewControl %@",exception]];
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"deviceInfo VM %@",exception]];
         } @finally {
             
         }
@@ -1238,10 +689,121 @@
     
 }
 
+// 720 专用
+-(void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
+                                               mSeq:(uint64_t)mSeq
+                                                cid:(NSString *)cid
+                                               type:(int)type
+                                       isInitiative:(BOOL)initiative
+                                           dpMsgArr:(NSArray *)dpMsgArr
+{
+    for (DataPointSeg *seg in dpMsgArr)
+    {
+        NSError *error = nil;
+        id obj = [MPMessagePackReader readData:seg.value error:&error];
+        
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"socket dpID[%llu]  value[%@]", seg.msgId, obj]];
+        
+        if (error == nil)
+        {
+            switch (seg.msgId)
+            {
+                case dpMsgBase_Power:
+                {
+                    self.model.isCharging = [obj boolValue];
+                }
+                    break;
+                case dpMsgBase_Net:
+                {
+                    NSArray *netArray = (NSArray *)obj;
+                    if (netArray.count >= 2)
+                    {
+                        self.model.netType = [[netArray firstObject] intValue];
+                        self.model.wifi = [netArray objectAtIndex:1];
+                        self.model.mobileNet = [netArray objectAtIndex:1];
+                    }
+                }
+                    break;
+                case dpMsgBase_Mac:
+                {
+                    self.model.MAC = obj;
+                }
+                    break;
+                case dpMsgBase_SysVersion:
+                {
+                    self.model.sysVersion = obj;
+                }
+                    break;
+                case dpMsgBase_Version:
+                {
+                    self.model.softVersion = obj;
+                }
+                    break;
+                case dpMsgBase_Battery:
+                {
+                    self.model.battery = obj;
+                }
+                    break;
+                // SDCard 插拔
+//                case dpMsgBase_SDStatus:
+//                {
+//                    if ([obj isKindOfClass:[NSArray class]])
+//                    {
+//                        BOOL isExistSDCard = [[obj objectAtIndex:3] intValue];
+//                        if (isExistSDCard == NO)
+//                        {
+//                            //show hub sdCard was pulled out
+//                            if (initiative)
+//                            {
+//                                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"]];
+//                            }
+//                        }
+//                        
+//                        self.model.isSDCardExist = isExistSDCard;
+//                        self.model.sdCardError = [[obj objectAtIndex:2] intValue];
+//                        
+//                    }
+//                }
+//                    break;
+                case dpMsgBase_Timezone:
+                {
+                    NSArray *timeZoneArr = (NSArray *)obj;
+                    if (timeZoneArr.count >= 2)
+                    {
+                        self.model.timeZoneOrigin = [NSString stringWithFormat:@"%@",timeZoneArr[0]];
+                    }
+                }
+                    break;
+                case dpMsgBase_Uptime:
+                {
+                    self.model.updateTime = [obj longLongValue];
+                }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    
+    [self update];
+}
+
+
 - (void)jfgDevVersionUpgradInfo:(JFGSDKDeviceVersionInfo *)info
 {
     self.model.hasNewPackage = info.hasNewPkg;
     
+    [self update];
+}
+
+// 区块升级包 版本检测 回调
+-(void)jfgDevCheckTagDeviceVersion:(NSString *)version
+                          describe:(NSString *)describe
+                          tagInfos:(NSArray <JFGSDKDevUpgradeInfoT *> *)infos
+                               cid:(NSString *)cid
+                         errorType:(JFGErrorType)errorType
+{
+    self.model.hasNewPackage = infos.count > 0;
     [self update];
 }
 

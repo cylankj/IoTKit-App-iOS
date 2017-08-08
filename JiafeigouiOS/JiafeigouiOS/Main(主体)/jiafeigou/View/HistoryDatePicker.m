@@ -11,6 +11,7 @@
 #import "UIColor+FLExtension.h"
 #import "UIView+FLExtensionForFrame.h"
 #import "JfgLanguage.h"
+
 @interface HistoryDatePicker()<UIPickerViewDataSource,UIPickerViewDelegate>
 {
     NSString *selectedItem;
@@ -67,10 +68,6 @@
     } completion:^(BOOL finished) {
 
     }];
-    
-    
-    
-    
 }
 
 -(void)cancel
@@ -102,9 +99,6 @@
         [self removeFromSuperview];
     }];
 }
-
-
-
 
 -(void)setTitle:(NSString *)title
 {

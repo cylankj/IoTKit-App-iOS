@@ -15,9 +15,14 @@ typedef NS_ENUM(NSInteger, oemType)
     oemTypeCell_C
 };
 
+extern NSString *const domainKey;
+
 NSString *const oemRecommendKey = @"recommend"; //dict
 NSString *const oemShowRecommendKey = @"showRecommend";
 NSString *const oemRecommendUrl = @"recommendurl";
+NSString *const oemRecommendDobyUrl = @"recommenForDobyUrl";
+NSString *const oemRecommendCellCUrl = @"recommenForCellCUrl";
+
 
 NSString *const oemAboutKey = @"about"; // dict
 NSString *const oemShowAboutKey = @"showAbout";
@@ -54,4 +59,12 @@ NSString *const oemShowProtocolKey = @"showProtocol";
  *  @return vkey
  */
 + (NSString *)getOemVKey;
+
+#pragma mark  域名获取
++ (NSString *)getdomainWithPortURLString;
+
++ (NSString *)getdomainURLString;
+
++ (NSString *)getPort;
+
 @end

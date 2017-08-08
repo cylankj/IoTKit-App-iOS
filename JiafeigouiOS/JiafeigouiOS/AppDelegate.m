@@ -32,17 +32,25 @@
 #import "LoginLoadingViewController.h"
 #import "FLShareSDKHelper.h"
 #import "VideoChatVC.h"
+#import "JfgLanguage.h"
 #import "JFGBoundDevicesMsg.h"
 #import "JfgLanguage.h"
 #import "JfgConfig.h"
 #import <Bugly/Bugly.h>
 #import "VideoPlayViewController.h"
-#import "JFGBaseTabBarViewController.h"
 #import "BellViewController.h"
 #import "WeiboSDK.h"
 #import "PLeakSniffer.h"
 #import "JFGWebViewController.h"
 #import "AdView.h"
+#import "SlidePageViewController.h"
+#import "BaseNavgationViewController.h"
+#import "OemManager.h"
+#import "LSAlertView.h"
+#import <AFNetworking.h>
+
+
+#define USERGETUISDK 1   //是否使用个推sdk
 
 @interface AppDelegate ()<UIAlertViewDelegate, GeTuiSdkDelegate, BuglyDelegate, AdDelegate>
 @property (nonatomic, strong) AdView *ad;
@@ -115,6 +123,16 @@
         }
     }
     
+    if ([OemManager oemType] == oemTypeCell_C && isShowLoadViewVC) {
+        
+        [[NSUserDefaults standardUserDefaults] setObject:ver forKey:@"OLD_VERSION"];
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGShowDemoForExploreKey];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        //首次进入设置可更新账号信息
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGAccountMsgChangedKey];
+        isShowLoadViewVC = NO;
+        
+    }
     
     if (isShowLoadViewVC){
         //第一次登陆
@@ -122,14 +140,10 @@
         [[NSUserDefaults standardUserDefaults] setObject:ver forKey:@"OLD_VERSION"];
         [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGShowDemoForExploreKey];
         [[NSUserDefaults standardUserDefaults] synchronize];
+        
         [self goToGuideViewController];
         //首次进入设置可更新账号信息
         [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGAccountMsgChangedKey];
-        
-        //初次使用App，登录状态为退出状态
-        //[LoginManager sharedManager].loginStatus = JFGSDKCurrentLoginStatusLoginOut;
-        
-        
         
     }else{
         
@@ -137,14 +151,15 @@
         {
             //已经登录过,跳转到加菲狗主页
             [[LoginManager sharedManager] loginForLastTimeAccount];
-            [self goToJFGViewContrller];
+            JFGBaseTabBarViewController *tab = [self goToJFGViewContrller];
+            [tab.view addSubview:self.ad];
             
-        }
-        else
-        {
+        }else{
+            
             //未登录,跳转到欢迎页
             LoginLoadingViewController *lo = [LoginLoadingViewController new];
-            UINavigationController * nav = [[UINavigationController alloc]initWithRootViewController:lo];
+            [lo.view addSubview:self.ad];
+            BaseNavgationViewController * nav = [[BaseNavgationViewController alloc]initWithRootViewController:lo];
             self.window.rootViewController = nav;
         }
     }
@@ -170,12 +185,17 @@
 
 #if DEBUG 
     //内存泄漏监控
-    [[PLeakSniffer sharedInstance] installLeakSniffer];
+    
+    //iOS自带悬浮窗调试工具   http://www.cocoachina.com/ios/20170712/19817.html
+    id overlayClass = NSClassFromString(@"UIDebuggingInformationOverlay");
+    [overlayClass performSelector:NSSelectorFromString(@"prepareDebuggingOverlay")];
 #endif
     
-    [self.window addSubview:self.ad];
+
+    
     return YES;
 }
+
 
 - (void)routeChange:(NSNotification*)notify{
     if(notify){
@@ -215,7 +235,6 @@
         NSString  *urlStr = [NSString stringWithFormat:@"itms-apps://itunes.apple.com/app/id%@",@"922810939"];
         NSURL *url = [NSURL URLWithString:urlStr];
         [[UIApplication sharedApplication] openURL:url];
-        
     }
 }
 
@@ -239,6 +258,8 @@
     // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
     // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
     [ApnsManger clearApplicationIconBadge];
+    
+    [JFGSDK appendStringToLogFile:@"begin background"];
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application {
@@ -248,6 +269,7 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application {
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+    [JFGSDK appendStringToLogFile:@"end background"];
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application {
@@ -265,7 +287,12 @@
 {
     NSString *token = [[deviceToken description] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"<>"]];
     token = [token stringByReplacingOccurrencesOfString:@" " withString:@""];
-    [ApnsManger keepSysDeviceToken:token];
+    if (USERGETUISDK) {
+        [ApnsManger keepSysDeviceToken:token];
+    }else{
+        [JFGSDK deviceTokenUploadForString:token tokenType:1];
+    }
+    
 }
 
 - (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
@@ -280,13 +307,13 @@
 //跳转到欢迎页面
 -(void)goToGuideViewController
 {
-    CardViewController * guideViewController = [[CardViewController alloc]init];
-    UINavigationController * nav = [[UINavigationController alloc]initWithRootViewController:guideViewController];
+    SlidePageViewController * guideViewController = [[SlidePageViewController alloc]init];
+    BaseNavgationViewController * nav = [[BaseNavgationViewController alloc]initWithRootViewController:guideViewController];
     self.window.rootViewController = nav;
 }
 
 // 跳转到"加菲狗"栏目
--(void)goToJFGViewContrller
+-(JFGBaseTabBarViewController *)goToJFGViewContrller
 {
     //加菲狗Nav
     UINavigationController *jfgNav = [[UINavigationController alloc]initWithRootViewController:[JiafeigouRootViewController new]];
@@ -294,7 +321,8 @@
     jfgNav.tabBarItem = [self tabBarItemWithNomalImage:[UIImage imageNamed:@"ico_cleve-dog_normal-拷贝"] selectedImage:[UIImage imageNamed:@"ico_cleve-dog"] title:[JfgLanguage getLanTextStrByKey:@"Tap1_TitleName"]];
     
     //我的Nav
-    UINavigationController *mineNav = [[UINavigationController alloc]initWithRootViewController:[MineRootViewController new]];
+    MineRootViewController *mineVC = [MineRootViewController new];
+    UINavigationController *mineNav = [[UINavigationController alloc]initWithRootViewController:mineVC];
     mineNav.tabBarItem = [self tabBarItemWithNomalImage:[UIImage imageNamed:@"ico_mine_normal"] selectedImage:[UIImage imageNamed:@"ico_mine"] title:[JfgLanguage getLanTextStrByKey:@"Tap3_TitleName"]];
     
     //探索Nav
@@ -305,51 +333,50 @@
     JFGBaseTabBarViewController *tabController = [[JFGBaseTabBarViewController alloc]init];
     tabController.viewControllers = @[jfgNav,expNav,mineNav];
     [tabController.tabBar setShadowImage:[UIImage new]];
+    self.window.rootViewController = nil;
     self.window.rootViewController = tabController;
+    
+    int64_t delayInSeconds = 1.0;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+        
+        //获取未读数
+        [mineVC getUnreadCount];
+        
+    });
+    
+    //[self afNetWorkingTest];
+    
+    return tabController;
 }
 
 
-//来自中控视频呼叫
--(void)jfgEfamilyMsg:(id)msg
+-(void)afNetWorkingTest
 {
-    if ([msg isKindOfClass:[NSArray class]]) {
+    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
+    /**
+     "act": "get_token",             // string
+     "account": "register account", // string
+     "app_id": "",
+     */
+    NSMutableDictionary *dict = [NSMutableDictionary new];
+    [dict setObject:@"get_token" forKey:@"act"];
+    [dict setObject:@"18503060168" forKey:@"account"];
+    [dict setObject:@"" forKey:@"app_id"];
+    
+    
+    NSString *url = [NSString stringWithFormat:@"http://yf.jfgou.com?act=get_token&account=18503060168&app_id="""];
+    
+    [manager GET:url parameters:dict progress:^(NSProgress * _Nonnull downloadProgress) {
         
-        NSArray *source = msg;
-        if (source.count >=5)
-        {
-            int msgID = [source[0] intValue];
-            if (msgID != JfgMsgType_EfamlActiveCall) {
-                return;
-            }
-            
-            NSString *cid = source[1];
-            NSMutableArray *list = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
-            BOOL isExist = NO;
-            for (JiafeigouDevStatuModel *mode in list) {
-                
-                if ([mode.uuid isEqualToString:cid]) {
-                    
-                    isExist = YES;
-                    break;
-                    
-                }
-                
-            }
-            
-            if (isExist) {
-                VideoChatVC *zkVC = [[VideoChatVC alloc]init];
-                zkVC.cid = cid;
-                zkVC.timeStamp = [source[4] longLongValue];
-                zkVC.chatType = videoChatTypeUnactive;
-                [self.window.rootViewController presentViewController:zkVC animated:YES completion:nil];
-            }
-            
-            
-        }
+    } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
         
-    }
+        NSLog(@"%@",responseObject);
+        
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        NSLog(@"%@",error);
+    }];
 }
-
 
 // 接收apns消息 处理
 - (void)apnsMsgHandle:(NSDictionary *)pushDict isFromFinishLauch:(BOOL)isFromFinishLauch
@@ -384,7 +411,7 @@
                     {
                         case JfgMsgType_EfamlActiveCall:
                         {
-                            [self jfgEfamilyMsg:apsArray];
+                            
                         }
                             break;
                         case JfgMsgType_BellActiveCall:
@@ -409,16 +436,18 @@
                             break;
                         default:
                         {
-                            VideoPlayViewController *videoPlayVC = [[VideoPlayViewController alloc] init];
+                            VideoPlayViewController *videoPlayVC = [[VideoPlayViewController alloc] initWithMessage];
                             videoPlayVC.cid = [apsArray objectAtIndex:2];
                             NSMutableArray * deviList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
                             for (JiafeigouDevStatuModel *model in deviList) {
                                 if ([model.uuid isEqualToString:[apsArray objectAtIndex:2]]) {
+                                    if (model.unReadMsgCount == 0) {
+                                        model.unReadMsgCount = 1;
+                                    }
                                     videoPlayVC.devModel = model;
                                     break;
                                 }
                             }
-                            [videoPlayVC setInnerScrollViewContentOffset:YES];
                             UIWindow * window = [UIApplication sharedApplication].keyWindow;
                             UITabBarController * barCon = (UITabBarController *)window.rootViewController;
                             barCon.selectedIndex = 0;
@@ -457,17 +486,18 @@
         static BOOL isIntoDoorBellRecordVC = NO;
         if (!isIntoDoorBellRecordVC) {
     
-            isIntoDoorBellRecordVC = YES;
-            BellViewController *bell = [BellViewController new];
-            bell.cid = cid;
-            bell.isShare = NO;
+            //isIntoDoorBellRecordVC = YES;
+            VideoPlayViewController *videoPlayVC = [[VideoPlayViewController alloc] initWithMessage];
+            videoPlayVC.cid = cid;
             NSMutableArray * deviList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
             for (JiafeigouDevStatuModel *model in deviList) {
                 if ([model.uuid isEqualToString:cid]) {
-                    bell.alias = model.alias;
-                    if (model.shareState == DevShareStatuOther) {
-                        bell.isShare = YES;
+                    if (model.unReadMsgCount == 0) {
+                        
+                        //为了跳转消息页面
+                        model.unReadMsgCount = 1;
                     }
+                    videoPlayVC.devModel = model;
                     break;
                 }
             }
@@ -476,10 +506,10 @@
             UIWindow * window = [UIApplication sharedApplication].keyWindow;
             UITabBarController * barCon = (UITabBarController *)window.rootViewController;
             if ([barCon isKindOfClass:[UITabBarController class]]) {
-                barCon.selectedIndex = 0;
-                UINavigationController * nav = barCon.viewControllers[0];
-                bell.hidesBottomBarWhenPushed = YES;
-                [nav pushViewController:bell animated:YES];
+                 
+                UINavigationController * nav = barCon.viewControllers[barCon.selectedIndex];
+                videoPlayVC.hidesBottomBarWhenPushed = YES;
+                [nav pushViewController:videoPlayVC animated:YES];
             }
             
             
@@ -492,9 +522,6 @@
             });
             
         }
-        
-        
-        
     }else{
         
         NSString *playingCid = [[NSUserDefaults standardUserDefaults] objectForKey:JFGDoorBellIsPlayingCid];
@@ -549,6 +576,7 @@
     
     [Bugly setUserIdentifier:[NSString stringWithFormat:@"deviceType:[%@]  currentOS: [%f]",[CommonMethod deviceType], [[UIDevice currentDevice].systemVersion floatValue]]];
     [Bugly startWithAppId:buglyAppID config:buglyConfig];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"bugly sysVersion:%f",[[UIDevice currentDevice].systemVersion floatValue]]];
     
 }
 
@@ -563,8 +591,10 @@
 #pragma mark GeTui SDK
 - (void)initGtSDK
 {
-    [GeTuiSdk startSdkWithAppId:[ApnsManger geTuiAppID] appKey:[ApnsManger geTuiAppKey] appSecret:[ApnsManger geTuiAppSecret] delegate:self];
-    [JFGSDK appendStringToLogFile:@"getui init"];
+    if (USERGETUISDK) {
+        [GeTuiSdk startSdkWithAppId:[ApnsManger geTuiAppID] appKey:[ApnsManger geTuiAppKey] appSecret:[ApnsManger geTuiAppSecret] delegate:self];
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"getui init version [%@]", [GeTuiSdk version]]];
+    }
 }
 
 #pragma mark
@@ -575,7 +605,6 @@
     {
         _ad = [[AdView alloc] initWithFrame:self.window.bounds];
         _ad.delegate = self;
-        _ad.backgroundColor = [UIColor brownColor];
     }
     
     return _ad;
@@ -583,6 +612,7 @@
 
 - (void)watchAd:(NSString *)adUrlString
 {
+    
     JFGWebViewController *webView = [[JFGWebViewController alloc] init];
     webView.type = webViewTypeAd;
     webView.urlString = adUrlString;
@@ -590,8 +620,8 @@
     UIWindow * window = [UIApplication sharedApplication].keyWindow;
     UITabBarController * barCon = (UITabBarController *)window.rootViewController;
     if ([barCon isKindOfClass:[UITabBarController class]]) {
-        barCon.selectedIndex = 0;
-        UINavigationController * nav = barCon.viewControllers[0];
+        
+        UINavigationController * nav = barCon.viewControllers[barCon.selectedIndex];
         webView.hidesBottomBarWhenPushed = YES;
         [nav pushViewController:webView animated:YES];
     }
@@ -599,7 +629,7 @@
 
 - (void)skipAction
 {
-    [self.ad removeFromSuperview];
+//    [self.ad removeFromSuperview];
 }
 
 #pragma mark

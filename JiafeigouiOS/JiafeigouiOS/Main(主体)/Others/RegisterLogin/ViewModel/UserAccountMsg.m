@@ -28,12 +28,9 @@
                 return;
                 
             }else{
-                
                 [dict removeObjectForKey:account];
             }
-            
         }
-        
         NSData *_keyData = [[self class] encodeForString:pw];
         [dict setObject:_keyData forKey:account];
         [dict writeToFile:[[self class] accountCachePath] atomically:YES];

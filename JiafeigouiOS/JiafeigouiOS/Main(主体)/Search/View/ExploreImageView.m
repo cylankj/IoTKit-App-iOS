@@ -10,6 +10,9 @@
 #import "UIColor+HexColor.h"
 #import "ExploreTableViewCell.h"
 #import "ImageBrowser.h"
+#import "Watch720PhotoVC.h"
+#import "CommonMethod.h"
+
 @implementation ExploreImageView
 
 /*
@@ -61,27 +64,43 @@
     ExploreTableViewCell * cell = (ExploreTableViewCell *)resultView;
     
     int64_t timestamp = [cell.msgTime longLongValue];
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-   
     
-    NSDate *msgDate = [NSDate dateWithTimeIntervalSince1970:timestamp];
-    [formatter setDateFormat:@"yyyy"];
-    NSInteger msgYear = [[formatter stringFromDate:msgDate] integerValue];
-    NSInteger currentYear = [[formatter stringFromDate:[NSDate date]] integerValue];
-    
-    if (msgYear == currentYear) {
-        [formatter setDateFormat:@"MM.dd-HH:mm"];
+    if (self.msgID == 606) {
+        
+        Watch720PhotoVC *vc = [Watch720PhotoVC new];
+        vc.thumbNailImage = self.image;
+        vc.titleTime = timestamp;
+        vc.panoMediaType = mediaTypePhoto;
+        //vc.panoMediaPath = self.imageUrl;
+        vc.hidesBottomBarWhenPushed = YES;
+        UIViewController *vct = [CommonMethod viewControllerForView:self];
+        [vct.navigationController pushViewController:vc animated:YES];
+        
     }else{
-        [formatter setDateFormat:@"yyyy.MM.dd-HH:mm"];
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        
+        
+        NSDate *msgDate = [NSDate dateWithTimeIntervalSince1970:timestamp];
+        [formatter setDateFormat:@"yyyy"];
+        NSInteger msgYear = [[formatter stringFromDate:msgDate] integerValue];
+        NSInteger currentYear = [[formatter stringFromDate:[NSDate date]] integerValue];
+        
+        if (msgYear == currentYear) {
+            [formatter setDateFormat:@"MM.dd-HH:mm"];
+        }else{
+            [formatter setDateFormat:@"yyyy.MM.dd-HH:mm"];
+        }
+        
+        NSString *title = [formatter stringFromDate:msgDate];
+        ImageBrowser * bro = [[ImageBrowser alloc]initWithImageView:arr Title:title currentImageIndex:0 isExpore:YES];
+        //bro.cid = self.cid;
+        bro.imagesUrl = [[NSMutableArray alloc]initWithObjects:self.imageUrl, nil];
+        bro.imageNumber = (int)arr.count;
+        bro._indexPath = cell._indexPath;
+        [bro showCurrentImageViewIndex:0];//调用方法
     }
     
-    NSString *title = [formatter stringFromDate:msgDate];
-    ImageBrowser * bro = [[ImageBrowser alloc]initWithImageView:arr Title:title currentImageIndex:0 isExpore:YES];
-    //bro.cid = self.cid;
-    bro.imagesUrl = [[NSMutableArray alloc]initWithObjects:self.imageUrl, nil];
-    bro.imageNumber = (int)arr.count;
-    bro._indexPath = cell._indexPath;
-    [bro showCurrentImageViewIndex:0];//调用方法
+    
 }
 
 @end

@@ -67,11 +67,43 @@
     }];
     
     [super setEditing:editing animated:animated];
+    
 }
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated
 {
     [super setSelected:selected animated:animated];
+    
+    //修改编辑模式下,选中的按钮图片
+    if (self.isEditing && self.isSelected) {
+        for (UIView *subview in self.subviews) {
+            if ([subview isKindOfClass:NSClassFromString(@"UITableViewCellEditControl")]) {
+                UIControl *control = (UIControl *)subview;
+                if ([control subviews].count>0) {
+                    UIImageView * imgView = [[control subviews] objectAtIndex:0];
+                    imgView.image = [UIImage imageNamed:@"camera_icon_Selected"];
+                }
+            }
+        }
+        
+        
+        
+    }//编辑模式下,取消选中的图片
+    else if(self.isEditing && !self.isSelected){
+        
+        for (UIView *subview in self.subviews) {
+            if ([subview isKindOfClass:NSClassFromString(@"UITableViewCellEditControl")]) {
+                UIControl *control = (UIControl *)subview;
+                if ([control subviews].count>0) {
+                    UIImageView * imgView = [[control subviews] objectAtIndex:0];
+                    imgView.image = [UIImage imageNamed:@"camera_icon_Select"];
+                }
+            }
+        }
+        
+        
+    }
+    [self setSelectionStyle:UITableViewCellSelectionStyleNone];
 }
 
 
@@ -105,7 +137,8 @@
         CGFloat heigth = width/3;
         
         _picImageView = [[UIImageView alloc] initWithFrame:CGRectMake(x, y, width, heigth)];
-        _picImageView.contentMode = UIViewContentModeScaleToFill;
+        _picImageView.contentMode = UIViewContentModeScaleAspectFill;
+        _picImageView.clipsToBounds = YES;
         _picImageView.image = [UIImage imageNamed:@"album_pic_broken"];
         _picImageView.hidden = NO;
     }
@@ -125,6 +158,7 @@
         
         _phoneIconImgeView = [[UIImageView alloc] initWithFrame:CGRectMake(x, y, width, height)];
         _phoneIconImgeView.image = [UIImage imageNamed:@"album_icon_iphone"];
+        _phoneIconImgeView.hidden = YES;
     }
     
     return _phoneIconImgeView;
@@ -141,6 +175,7 @@
         
         _deviceIconImgeView = [[UIImageView alloc] initWithFrame:CGRectMake(x, y, width, height)];
         _deviceIconImgeView.image = [UIImage imageNamed:@"album_icon_720camera"];
+        _deviceIconImgeView.hidden = YES;
     }
     
     return _deviceIconImgeView;
@@ -176,7 +211,7 @@
         _progressLabel.font = [UIFont systemFontOfSize:height];
         _progressLabel.textColor = [UIColor colorWithHexString:@"#ffffff"];
         _progressLabel.textAlignment = NSTextAlignmentRight;
-        _progressLabel.text = @"05%";
+        _progressLabel.text = @"";
     }
     return _progressLabel;
 }
@@ -198,16 +233,5 @@
     
     return _lineView;
 }
-
-- (Pano720PhotoModel *)cellModel
-{
-    if (_cellModel == nil)
-    {
-        _cellModel = [[Pano720PhotoModel alloc] init];
-    }
-    
-    return _cellModel;
-}
-
 
 @end

@@ -14,6 +14,7 @@
 #import "JfgMsgDefine.h"
 #import "dataPointMsg.h"
 #import "ProgressHUD.h"
+#import "PropertyManager.h"
 #import <JFGSDK/JFGSDK.h>
 
 @interface SafeProtectViewModel()
@@ -22,7 +23,6 @@
 @property (strong, nonatomic) NSMutableArray *dpsArray;   //请求ID 数组
 
 @property (strong, nonatomic) SafeProtectModel *safeProtectmodel;
-
 
 @end
 
@@ -147,7 +147,40 @@
         }];
     }
 }
+- (void)updateWarnDuration:(int)warnDur
+{
+    DataPointSeg * seg = [[DataPointSeg alloc]init];
+    NSError * error = nil;
+    seg.msgId = dpMsgCamera_WarnDuration;
+    seg.value = [MPMessagePackWriter writeObject:@(warnDur) error:&error];
+    NSArray * dps = @[seg];
+    
+    [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dps success:^(NSMutableDictionary *dic) {
+        self.safeProtectmodel.alramDuration = warnDur;
+        [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+        [self update];
+    } failed:^(RobotDataRequestErrorType error) {
+        
+    }];
+}
 
+- (void)updateAIRecgnition:(NSArray *)aiTypes
+{
+    DataPointSeg * seg = [[DataPointSeg alloc]init];
+    NSError * error = nil;
+    seg.msgId = dpMsgCamera_AIRecgnition;
+    seg.value = [MPMessagePackWriter writeObject:aiTypes error:&error];
+    NSArray * dps = @[seg];
+    
+    [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dps success:^(NSMutableDictionary *dic) {
+        self.safeProtectmodel.aiRecognitions = aiTypes;
+        [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+        [self update];
+    } failed:^(RobotDataRequestErrorType error) {
+        
+    }];
+
+}
 
 - (void)update
 {
@@ -187,7 +220,9 @@
             NSArray *sdCardInfos = [dict objectForKey:msgBaseSDCardListKey];
             self.safeProtectmodel.isExistSDCard = [[sdCardInfos objectAtIndex:0] boolValue];
         }
+        self.safeProtectmodel.aiRecognitions = [dict objectForKey:dpMsgCameraAIRecgnitionKey];
         
+        self.safeProtectmodel.alramDuration = [[dict objectForKey:dpMsgCameraWarnDurKey] intValue];
     } @catch (NSException *exception) {
         
     } @finally {
@@ -200,158 +235,150 @@
 {
     [self.groupArray removeAllObjects];
     
-    switch (self.pType)
+    
+    if (self.safeProtectmodel.isWarnEnable)
     {
-        case productType_FreeCam:
+        
+        NSArray *safePro = [self safeProctection];
+        NSArray *warnSound = [self warnSoundRow];
+        
+        if (safePro.count > 0)
         {
-            [self.groupArray addObjectsFromArray:[self freeCamProtect]];
+            [self.groupArray addObject:safePro];
         }
-            break;
-        default:
+        
+        if (warnSound.count > 0)
         {
-            if (self.safeProtectmodel.isWarnEnable)
-            {
-                [self.groupArray addObject:[NSArray arrayWithObjects:
-                                            [NSDictionary dictionaryWithObjectsAndKeys:
-                                             @"",cellIconImageKey,
-                                             [JfgLanguage getLanTextStrByKey:@"SECURE_TYPE"],cellTextKey,
-                                             [JfgLanguage getLanTextStrByKey:@""],cellDetailTextKey,
-                                             @(self.safeProtectmodel.isWarnEnable),isCellSwitchOn,
-                                             @1,cellshowSwitchKey,
-                                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                             nil],
-                                            [NSDictionary dictionaryWithObjectsAndKeys:
-                                             @"",cellIconImageKey,
-                                             [JfgLanguage getLanTextStrByKey:@"SECURE_SENSITIVITY"],cellTextKey,
-                                             self.safeProtectmodel.sensitiveStr,cellDetailTextKey,
-                                             @(self.safeProtectmodel.sensitive), cellHiddenText,
-                                             @0,cellshowSwitchKey,
-                                             @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                             nil], nil]];
-                
-                [self.groupArray addObject:[NSArray arrayWithObjects:
-                                            [NSDictionary dictionaryWithObjectsAndKeys:
-                                             @"",cellIconImageKey,
-                                             [JfgLanguage getLanTextStrByKey:@"SOUNDS"],cellTextKey,
-                                             self.safeProtectmodel.soundStr,cellDetailTextKey,
-                                             self.safeProtectmodel,cellHiddenText,
-                                             @0,cellshowSwitchKey,
-                                             @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                             nil], nil]];
-                
-                [self.groupArray addObject:[NSArray arrayWithObjects:
-                                            [NSDictionary dictionaryWithObjectsAndKeys:
-                                             @"",cellIconImageKey,
-                                             [JfgLanguage getLanTextStrByKey:@"FROME"],cellTextKey,
-                                             self.safeProtectmodel.beginTimeStr,cellDetailTextKey,
-                                             @(self.safeProtectmodel.beginTime), cellHiddenText,
-                                             @0,cellshowSwitchKey,
-                                             @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                             nil],
-                                            [NSDictionary dictionaryWithObjectsAndKeys:
-                                             @"",cellIconImageKey,
-                                             [JfgLanguage getLanTextStrByKey:@"TO"],cellTextKey,
-                                             self.safeProtectmodel.endTimeStr,cellDetailTextKey,
-                                             @(self.safeProtectmodel.endTime), cellHiddenText,
-                                             @0,cellshowSwitchKey,
-                                             @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                             nil],
-                                            [NSDictionary dictionaryWithObjectsAndKeys:
-                                             @"",cellIconImageKey,
-                                             [JfgLanguage getLanTextStrByKey:@"REPEAT"],cellTextKey,
-                                             self.safeProtectmodel.repeatStr,cellDetailTextKey,
-                                             @(self.safeProtectmodel.repeat), cellHiddenText,
-                                             @0,cellshowSwitchKey,
-                                             @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                             nil], nil]];
-            }
-            else
-            {
-                [self.groupArray addObject:[NSArray arrayWithObjects:
-                                            [NSDictionary dictionaryWithObjectsAndKeys:
-                                             @"",cellIconImageKey,
-                                             [JfgLanguage getLanTextStrByKey:@"SECURE_TYPE"],cellTextKey,
-                                             [JfgLanguage getLanTextStrByKey:@""],cellDetailTextKey,
-                                             @(self.safeProtectmodel.isWarnEnable),isCellSwitchOn,
-                                             @1,cellshowSwitchKey,
-                                             @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                             nil], nil]];
-            }
+            [self.groupArray addObject:warnSound];
         }
-            break;
+        
+        [self.groupArray addObject:[NSArray arrayWithObjects:
+                                    [NSDictionary dictionaryWithObjectsAndKeys:
+                                     @"",cellIconImageKey,
+                                     idCellWarnBeginTime, cellUniqueID,
+                                     [JfgLanguage getLanTextStrByKey:@"FROME"],cellTextKey,
+                                     self.safeProtectmodel.beginTimeStr,cellDetailTextKey,
+                                     @(self.safeProtectmodel.beginTime), cellHiddenText,
+                                     @0,cellshowSwitchKey,
+                                     @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
+                                     nil],
+                                    [NSDictionary dictionaryWithObjectsAndKeys:
+                                     @"",cellIconImageKey,
+                                     [JfgLanguage getLanTextStrByKey:@"TO"],cellTextKey,
+                                     idCellWarnEndTime, cellUniqueID,
+                                     self.safeProtectmodel.endTimeStr,cellDetailTextKey,
+                                     @(self.safeProtectmodel.endTime), cellHiddenText,
+                                     @0,cellshowSwitchKey,
+                                     @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
+                                     nil],
+                                    [NSDictionary dictionaryWithObjectsAndKeys:
+                                     @"",cellIconImageKey,
+                                     [JfgLanguage getLanTextStrByKey:@"REPEAT"],cellTextKey,
+                                     idCellRepeatTime, cellUniqueID,
+                                     self.safeProtectmodel.repeatStr,cellDetailTextKey,
+                                     @(self.safeProtectmodel.repeat), cellHiddenText,
+                                     @0,cellshowSwitchKey,
+                                     @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
+                                     nil], nil]];
+    }
+    else
+    {
+        [self.groupArray addObject:[NSArray arrayWithObjects:
+                                    [NSDictionary dictionaryWithObjectsAndKeys:
+                                     @"",cellIconImageKey,
+                                     [JfgLanguage getLanTextStrByKey:@"SECURE_TYPE"],cellTextKey,
+                                     idCellWarnEnable, cellUniqueID,
+                                     [JfgLanguage getLanTextStrByKey:@""],cellDetailTextKey,
+                                     @(self.safeProtectmodel.isWarnEnable),isCellSwitchOn,
+                                     @1,cellshowSwitchKey,
+                                     @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                                     nil], nil]];
     }
 
     return self.groupArray;
 }
 
-- (NSMutableArray *)freeCamProtect
+// 报警 提示音
+- (NSMutableArray *)warnSoundRow
 {
-    NSMutableArray *freeCamArr = [NSMutableArray arrayWithCapacity:3];
-    
-    if (self.safeProtectmodel.isWarnEnable)
+    if ([PropertyManager showPropertiesRowWithPid:self.pType key:pWariningVoiceKey])
     {
-        [freeCamArr addObject:[NSArray arrayWithObjects:
-                               [NSDictionary dictionaryWithObjectsAndKeys:
-                                @"",cellIconImageKey,
-                                [JfgLanguage getLanTextStrByKey:@"SECURE_TYPE"],cellTextKey,
-                                [JfgLanguage getLanTextStrByKey:@""],cellDetailTextKey,
-                                @(self.safeProtectmodel.isWarnEnable),isCellSwitchOn,
-                                @1,cellshowSwitchKey,
-                                @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                nil],
-                               [NSDictionary dictionaryWithObjectsAndKeys:
-                                @"",cellIconImageKey,
-                                [JfgLanguage getLanTextStrByKey:@"SECURE_SENSITIVITY"],cellTextKey,
-                                self.safeProtectmodel.sensitiveStr,cellDetailTextKey,
-                                @(self.safeProtectmodel.sensitive), cellHiddenText,
-                                @0,cellshowSwitchKey,
-                                @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                nil], nil]];
+        NSMutableArray *warnSound = [NSMutableArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
+                                                                      @"",cellIconImageKey,
+                                                                      [JfgLanguage getLanTextStrByKey:@"SOUNDS"],cellTextKey,
+                                                                      idCellWarnSound, cellUniqueID,
+                                                                      self.safeProtectmodel.soundStr,cellDetailTextKey,
+                                                                      self.safeProtectmodel,cellHiddenText,
+                                                                      @0,cellshowSwitchKey,
+                                                                      @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
+                                                                      nil], nil];
         
         
-        [freeCamArr addObject:[NSArray arrayWithObjects:
-                               [NSDictionary dictionaryWithObjectsAndKeys:
-                                @"",cellIconImageKey,
-                                [JfgLanguage getLanTextStrByKey:@"FROME"],cellTextKey,
-                                self.safeProtectmodel.beginTimeStr,cellDetailTextKey,
-                                @(self.safeProtectmodel.beginTime), cellHiddenText,
-                                @0,cellshowSwitchKey,
-                                @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                nil],
-                               [NSDictionary dictionaryWithObjectsAndKeys:
-                                @"",cellIconImageKey,
-                                [JfgLanguage getLanTextStrByKey:@"TO"],cellTextKey,
-                                self.safeProtectmodel.endTimeStr,cellDetailTextKey,
-                                @(self.safeProtectmodel.endTime), cellHiddenText,
-                                @0,cellshowSwitchKey,
-                                @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                nil],
-                               [NSDictionary dictionaryWithObjectsAndKeys:
-                                @"",cellIconImageKey,
-                                [JfgLanguage getLanTextStrByKey:@"REPEAT"],cellTextKey,
-                                self.safeProtectmodel.repeatStr,cellDetailTextKey,
-                                @(self.safeProtectmodel.repeat), cellHiddenText,
-                                @0,cellshowSwitchKey,
-                                @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
-                                nil], nil]];
-    }
-    else
-    {
-        [freeCamArr addObject:[NSArray arrayWithObjects:
-                               [NSDictionary dictionaryWithObjectsAndKeys:
-                                @"",cellIconImageKey,
-                                [JfgLanguage getLanTextStrByKey:@"SECURE_TYPE"],cellTextKey,
-                                [JfgLanguage getLanTextStrByKey:@""],cellDetailTextKey,
-                                @(self.safeProtectmodel.isWarnEnable),isCellSwitchOn,
-                                @1,cellshowSwitchKey,
-                                @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                nil],
-                               nil]];
+        return warnSound;
     }
     
-    
-    return freeCamArr;
+    return nil;
 }
+
+// 移动侦测  section 0
+- (NSMutableArray *)safeProctection
+{
+    NSMutableArray *safes = [NSMutableArray arrayWithCapacity:5];
+    
+    [safes addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                     @"",cellIconImageKey,
+                     [JfgLanguage getLanTextStrByKey:@"SECURE_TYPE"],cellTextKey,
+                     idCellWarnEnable, cellUniqueID,
+                     [JfgLanguage getLanTextStrByKey:@""],cellDetailTextKey,
+                     @(self.safeProtectmodel.isWarnEnable),isCellSwitchOn,
+                     @1,cellshowSwitchKey,
+                     @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                      nil]];
+    
+    if ([PropertyManager showSharePropertiesRowWithPid:self.pType key:pAiRecognition])
+    {
+        [safes addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                          @"",cellIconImageKey,
+                          [JfgLanguage getLanTextStrByKey:@"AI识别"],cellTextKey,
+                          idCellAIRecognition, cellUniqueID,
+                          self.safeProtectmodel.aiRecognitionStr,cellDetailTextKey,
+                          self.safeProtectmodel.aiRecognitions, cellHiddenText,
+                          @(self.safeProtectmodel.isShowAIRedDot), cellRedDotInRight,
+                          @0,cellshowSwitchKey,
+                          @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
+                          nil]];
+    }
+    
+    if ([PropertyManager showSharePropertiesRowWithPid:self.pType key:pAlarmDuration])
+    {
+        [safes addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                          @"",cellIconImageKey,
+                          [JfgLanguage getLanTextStrByKey:@"报警间隔"],cellTextKey,
+                          idCellAlramDutaion, cellUniqueID,
+                          self.safeProtectmodel.alramDurStr, cellDetailTextKey,
+                          @(self.safeProtectmodel.alramDuration), cellHiddenText,
+                          @0,cellshowSwitchKey,
+                          @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
+                          nil]];
+    }
+    
+    
+    [safes addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                     @"",cellIconImageKey,
+                     [JfgLanguage getLanTextStrByKey:@"SECURE_SENSITIVITY"],cellTextKey,
+                     idCellSensitive, cellUniqueID,
+                     self.safeProtectmodel.sensitiveStr,cellDetailTextKey,
+                     @(self.safeProtectmodel.sensitive), cellHiddenText,
+                     @0,cellshowSwitchKey,
+                     @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
+                      nil]];
+    
+    
+    
+    
+    return safes;
+}
+
 
 #pragma mark
 #pragma mark  安全防护 缓存 存取
@@ -379,6 +406,8 @@
     if (_safeProtectmodel == nil)
     {
         _safeProtectmodel = [[SafeProtectModel alloc] init];
+        _safeProtectmodel.cid = self.cid;
+        _safeProtectmodel.pType = self.pType;
     }
     return _safeProtectmodel;
 }
@@ -403,7 +432,9 @@
                                          @(dpMsgCamera_WarnSound),
                                          @(dpMsgCamera_WarnTime),
                                          @(dpMsgVideo_autoRecord),
-                                         @(dpMsgBase_SDCardInfoList)
+                                         @(dpMsgBase_SDCardInfoList),
+                                         @(dpMsgCamera_WarnDuration),
+                                         @(dpMsgCamera_AIRecgnition)
                                          ]];
         
     }

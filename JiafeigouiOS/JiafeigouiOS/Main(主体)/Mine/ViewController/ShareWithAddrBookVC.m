@@ -23,6 +23,7 @@
 #import "FriendsInfoVC.h"
 #import "SetDeviceNameVC.h"
 #import "LoginManager.h"
+#import "OemManager.h"
 
 #define APPDOWNLOADURLSTR @" http://www.jfgou.com/app/download.html "
 
@@ -191,9 +192,16 @@
         if (errorType == 0) {
             
             currentAccount = account;
-            UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice"] delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"OK"], nil];
-            alert.tag = 15263;
-            [alert show];
+            
+            __weak typeof(self) weakSelf = self;
+            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                
+            } OKBlock:^{
+                
+                [ProgressHUD showProgress:nil];
+                [JFGSDK shareDevice:weakSelf.cid toFriend:currentAccount];
+                
+            }];
             
             for (ContactModel *model in self.contactArray) {
                 if ([model.phoneNum isEqualToString:account] || [model.email isEqualToString:account]) {
@@ -222,24 +230,26 @@
         if([MFMessageComposeViewController canSendText])
         {
             @try {
+                
                 MFMessageComposeViewController *mc=[[MFMessageComposeViewController alloc] init];
                 
                 //设置委托
                 mc.messageComposeDelegate=self;
                 
-                NSString *appName = @"";
-                //
-                if ([JfgLanguage languageType] == 0) {
-                    appName = @"加菲狗";
-                }else{
-                    appName = @"Clever Dog";
-                }
+                NSDictionary *dict = [OemManager getOemConfig:oemRecommendKey];
                 //短信内容
-                mc.body = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_share_tips"],@"http://www.jfgou.com/app/download.html",appName];
+                NSString *downUrl = [dict objectForKey:oemRecommendUrl];
+//                if ([OemManager oemType] == oemTypeDoby) {
+//                    downUrl = [dict objectForKey:oemRecommendDobyUrl];
+//                }
+                NSString *body = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_share_tips"],downUrl,[OemManager appName]];
+                //短信内容
+                mc.body = body;
                 //设置短信收件方
                 mc.recipients=[NSArray arrayWithObject:currentAccount];
                 
                 [self presentViewController:mc animated:YES completion:nil];
+                
             } @catch (NSException *exception) {
                 
             } @finally {
@@ -260,16 +270,23 @@
             //                [mc setSubject:@"加菲狗"];
             //发送给谁
             [mc setToRecipients:@[currentAccount]];
-            //内容
-            NSString *appName = @"";
-            //
-            if ([JfgLanguage languageType] == 0) {
-                appName = @"加菲狗";
-            }else{
-                appName = @"Clever Dog";
-            }
-            [mc setMessageBody:[NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_share_tips"],APPDOWNLOADURLSTR,appName] isHTML:NO];
+            
+            NSDictionary *dict = [OemManager getOemConfig:oemRecommendKey];
+            //短信内容
+            NSString *downUrl = [dict objectForKey:oemRecommendUrl];
+//            if ([OemManager oemType] == oemTypeDoby) {
+//                downUrl = [dict objectForKey:oemRecommendDobyUrl];
+//            }
+            //else if([OemManager oemType] == oemTypeCylan){
+//
+//            }else{
+//                downUrl = [dict objectForKey:oemRecommendCellCUrl];
+//            }
+            NSString *body = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_share_tips"],downUrl,[OemManager appName]];
+            
+            [mc setMessageBody:body isHTML:NO];
             [self presentViewController:mc animated:YES completion:nil];
+            
         } else {
             [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap3_Contacts_Feedback"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"SURE"] OtherButtonTitle:nil CancelBlock:nil OKBlock:nil];
         }
@@ -433,9 +450,17 @@
     if (self.vcType == VCTypeShareDeviceFromAddrBook) {
         if (model.isRegiter) {
             currentAccount = model.phoneNum;
-            UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice"] delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"OK"], nil];
-            alert.tag = 15263;
-            [alert show];
+            
+            __weak typeof(self) weakSelf = self;
+            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                
+            } OKBlock:^{
+                
+                [ProgressHUD showProgress:nil];
+                [JFGSDK shareDevice:weakSelf.cid toFriend:currentAccount];
+                
+            }];
+            
         }else{
             [ProgressHUD showProgress:nil];
             [JFGSDK checkFriendIsExistWithAccount:currentAccount];
@@ -645,28 +670,21 @@
                     });
                 }else{
                     NSLog(@"jujue");
-                    NSString *titleName;
-                    if ([JfgLanguage languageType] == 0) {
-                        titleName = @"\"加菲狗\"";
-                    }else{
-                        titleName = @"\"Clever Dog\"";
-                    }
+                    NSString *titleName= [OemManager appName];
                     NSString *str = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_CONTACTS_C"],titleName];
                     //[JfgLanguage getLanTextStrByKey:@"Tap2_Index_OpenTimelapse"]
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
-                        UIAlertView *aler = [[UIAlertView alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_CONTACTS"] message:str delegate:self cancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"], nil];
-                        [aler showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
+                        
+                        [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"UNABLE_TO_CONTACTS"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Tosetup"] CancelBlock:^{
                             
-                            //NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
-                            //NSString *rul = [NSString stringWithFormat:@"prefs:root=%@",identifier];
-                            if (buttonIndex == 1) {
-                                NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
-                                //NSURL *url = [NSURL URLWithString:rul];
-                                [[UIApplication sharedApplication]openURL:url];
-                            }
+                        } OKBlock:^{
                             
-                        } otherDelegate:nil];
+                            NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                            [[UIApplication sharedApplication]openURL:url];
+                            
+                        }];
+                        
                         
                     });
                 }

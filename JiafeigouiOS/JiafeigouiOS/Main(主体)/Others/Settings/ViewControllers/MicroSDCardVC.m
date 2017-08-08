@@ -12,9 +12,12 @@
 #import "JfgMsgDefine.h"
 #import <JFGSDK/JFGSDKDataPoint.h>
 #import "JfgLanguage.h"
+#import "JfgHttp.h"
 #import "ProgressHUD.h"
 #import "dataPointMsg.h"
 #import "LoginManager.h"
+#import "CommonMethod.h"
+#import "JfgConstKey.h"
 #import "NetworkMonitor.h"
 #import <JFGSDK/JFGSDK.h>
 
@@ -36,6 +39,9 @@
 
 @property (nonatomic, assign) CGFloat usedSpace;
 @property (nonatomic, copy) NSString *usedSpaceStr;
+
+@property (nonatomic, copy) NSString *ipAddress;
+
 @end
 
 @implementation MicroSDCardVC
@@ -70,41 +76,84 @@
 
 - (void)initData
 {
-    [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgBase_SDStatus), @(dpMsgBase_Net)] withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic) {
-        NSArray *sdInfos = [dic objectForKey:msgBaseSDStatusKey];
-        if (sdInfos.count >= 4)
+    if ([CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+    {
+        [JFGSDK fping:@"255.255.255.255"];
+        [JFGSDK fping:@"192.168.10.255"];
+        [self setButtonEnable:NO];
+    }
+    else
+    {
+        JFG_WS(weakSelf);
+        
+        switch (self.pType)
         {
-            BOOL sdCardError = [[sdInfos objectAtIndex:2] intValue];
-            BOOL isSDCardExist = [[sdInfos objectAtIndex:3] boolValue];
-            
-            if (isSDCardExist && sdCardError == 0)
+            case productType_720:
+            case productType_720p:
             {
-                self.totalSpace = [[sdInfos objectAtIndex:0] longLongValue];
-                self.usedSpace = [[sdInfos objectAtIndex:1] longLongValue];
-                self.sdCardProgress.progress = self.usedSpace/self.totalSpace;
-                self.sdCardUseLabel.text = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_SpaceUsage"],self.usedSpaceStr, self.totalSpaceStr];
+                // sd卡状态
+                DataPointSeg *seg1 = [DataPointSeg new];
+                seg1.msgId = dpMsgBase_SDStatus;
+                seg1.value = [NSData data];
+                seg1.version = 0;
+                
+                // net
+                DataPointSeg *seg2 = [DataPointSeg new];
+                seg2.msgId = dpMsgBase_Net;
+                seg2.value = [NSData data];
+                seg2.version = 0;
+                
+                
+                [JFGSDK sendDPDataMsgForSockWithPeer:self.cid dpMsgIDs:@[seg1, seg2]];
             }
-            
-        }
-        
-        NSArray *netArr = [dic objectForKey:msgBaseNetKey];
-        if (netArr.count >= 2)
-        {
-            int netType = [[netArr objectAtIndex:0] intValue];
-            
-            if (netType == JFGNetTypeOffline || netType == JFGNetTypeConnect)
+                break;
+                
+            default:
             {
-                [self setButtonEnable:NO];
+                [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgBase_SDStatus), @(dpMsgBase_Net)] withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic)
+                 {
+                     NSArray *sdInfos = [dic objectForKey:msgBaseSDStatusKey];
+                     if (sdInfos.count >= 4)
+                     {
+                         BOOL sdCardError = [[sdInfos objectAtIndex:2] intValue];
+                         BOOL isSDCardExist = [[sdInfos objectAtIndex:3] boolValue];
+                         
+                         if (isSDCardExist && sdCardError == 0)
+                         {
+                             weakSelf.totalSpace = [[sdInfos objectAtIndex:0] longLongValue];
+                             weakSelf.usedSpace = [[sdInfos objectAtIndex:1] longLongValue];
+                             weakSelf.sdCardProgress.progress = weakSelf.usedSpace/weakSelf.totalSpace;
+                             weakSelf.sdCardUseLabel.text = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_SpaceUsage"],weakSelf.usedSpaceStr, weakSelf.totalSpaceStr];
+                         }
+                         
+                     }
+                     
+                     NSArray *netArr = [dic objectForKey:msgBaseNetKey];
+                     if (netArr.count >= 2)
+                     {
+                         int netType = [[netArr objectAtIndex:0] intValue];
+                         
+                         if (netType == DeviceNetType_Offline || netType == DeviceNetType_Connetct)
+                         {
+                             [weakSelf setButtonEnable:NO];
+                         }
+                     }
+                 } FailBlock:^(RobotDataRequestErrorType error) {
+                     
+                 }];
             }
+                break;
         }
-        
-    } FailBlock:^(RobotDataRequestErrorType error) {
-        
-    }];
+    }
+    
+    
+    
 }
 
 - (void)beginClearSDCard
 {
+    JFG_WS(weakself);
+    
     if (self.usedSpace == 0)
     {
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips3"]];
@@ -114,16 +163,35 @@
     [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"CARRY_ON"] CancelBlock:^{
         
     } OKBlock:^{
-        [self performSelector:@selector(clearSDCardError) withObject:nil afterDelay:120.0];
-        [self setButtonEnable:NO];
+        [weakself performSelector:@selector(clearSDCardError) withObject:nil afterDelay:120.0];
+        [weakself setButtonEnable:NO];
         DataPointSeg *seg =[[DataPointSeg alloc]init];
         seg.msgId = dpMsgBase_FormatSD;
         seg.version = 0;
         [ProgressHUD showProgress:nil Interaction:YES];
-        [[JFGSDKDataPoint sharedClient] robotSetDataWithPeer:self.cid dps:@[seg] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
-        } failure:^(RobotDataRequestErrorType type) {
-            [self clearSDCardError];
-        }];
+        
+        if (self.ipAddress != nil && ![self.ipAddress isEqualToString:@""])
+        {
+            [[JfgHttp sharedHttp] get:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=sdFormat", self.ipAddress] parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+                
+                if ([[responseObject objectForKey:panoSdCardError] intValue] == 0)
+                {
+                    [weakself sdCardClearFinished];
+                }
+                
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                
+            }];
+        }
+        else
+        {
+            [[JFGSDKDataPoint sharedClient] robotSetDataWithPeer:weakself.cid dps:@[seg] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
+            } failure:^(RobotDataRequestErrorType type) {
+                [weakself clearSDCardError];
+            }];
+        }
+        
+        
     }];
 }
 
@@ -196,6 +264,26 @@
 
 #pragma mark
 #pragma mark delegate
+- (void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
+{
+    if ([self.cid isEqualToString:ask.cid])
+    {
+        [self setButtonEnable:YES];
+        self.ipAddress = ask.address;
+        
+        JFG_WS(weakself);
+        
+        [[JfgHttp sharedHttp] get:[NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=getSdInfo", self.ipAddress] parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+            
+            weakself.totalSpace = [[responseObject objectForKey:panoSdCardTotalStorage] floatValue];
+            weakself.usedSpace = [[responseObject objectForKey:panoSdCardUsedStorage] floatValue];
+            weakself.sdCardProgress.progress = weakself.usedSpace/weakself.totalSpace;
+            weakself.sdCardUseLabel.text = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_SpaceUsage"],weakself.usedSpaceStr, weakself.totalSpaceStr];
+        } failure:^(NSURLSessionDataTask *task, NSError *error) {
+            
+        }];
+    }
+}
 
 -(void)jfgNetworkChanged:(JFGNetType)netType
 {
@@ -210,6 +298,72 @@
     
 }
 
+-(void)jfgDPMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
+                                               mSeq:(uint64_t)mSeq
+                                                cid:(NSString *)cid
+                                               type:(int)type
+                                       isInitiative:(BOOL)initiative
+                                           dpMsgArr:(NSArray *)dpMsgArr
+{
+    
+    JFG_WS(weakSelf);
+    for (DataPointSeg *seg in dpMsgArr)
+    {
+        NSError *error = nil;
+        id obj = [MPMessagePackReader readData:seg.value error:&error];
+        if (error == nil)
+        {
+            switch (seg.msgId)
+            {
+                // SDCard 插拔
+                case dpMsgBase_SDStatus:
+                {
+                    if ([obj isKindOfClass:[NSArray class]])
+                    {
+                        BOOL isExistSDCard = [[obj objectAtIndex:3] boolValue];
+                        int sdCardError = [[obj objectAtIndex:2] intValue];
+                        
+                        if (isExistSDCard == NO && self.isShare == NO)
+                        {
+                            [LSAlertView disMiss];
+                            
+                            //创建一个调度时间,相对于默认时钟或修改现有的调度时间。
+                            dispatch_time_t delayInNanoSeconds =dispatch_time(DISPATCH_TIME_NOW, 0.2 * NSEC_PER_SEC);
+                            //推迟两纳秒执行
+                            dispatch_queue_t concurrentQueue =dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+                            dispatch_after(delayInNanoSeconds, concurrentQueue, ^(void){
+                                [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
+                                    [self leftButtonAction:nil];
+                                } OKBlock:^{
+                                    
+                                }];
+                            });
+                            
+                        }
+                        else // exist SDcard
+                        {
+                            if (sdCardError == 0)
+                            {
+                                weakSelf.totalSpace = [[obj objectAtIndex:0] longLongValue];
+                                weakSelf.usedSpace = [[obj objectAtIndex:1] longLongValue];
+                                weakSelf.sdCardProgress.progress = weakSelf.usedSpace/weakSelf.totalSpace;
+                                weakSelf.sdCardUseLabel.text = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_SpaceUsage"],weakSelf.usedSpaceStr, weakSelf.totalSpaceStr];
+                            }
+                        }
+                        
+                    }
+                }
+                    break;
+                case dpMsgBase_SDCardFomat:
+                {
+                    [self sdCardClearFinished];
+                }
+                    break;
+            }
+        }
+    }
+}
+
 - (void)jfgRobotSyncDataForPeer:(NSString *)peer fromDev:(BOOL)isDev msgList:(NSArray<DataPointSeg *> *)msgList
 {
     @try
@@ -218,76 +372,7 @@
         {
             for (DataPointSeg *seg in msgList)
             {
-                NSError *error = nil;
-                id obj = [MPMessagePackReader readData:seg.value error:&error];
-                if (error == nil)
-                {
-                    switch (seg.msgId)
-                    {
-                        /*
-                        case dpMsgBase_SDStatus:
-                        {
-                            if ([obj isKindOfClass:[NSArray class]])
-                            {
-                                BOOL isExistSDCard = [[obj objectAtIndex:3] boolValue];
-                                if (isExistSDCard == NO)
-                                {
-                                    [LSAlertView disMiss];
-                                    
-                                    //创建一个调度时间,相对于默认时钟或修改现有的调度时间。
-                                    dispatch_time_t delayInNanoSeconds =dispatch_time(DISPATCH_TIME_NOW, 0.2 * NSEC_PER_SEC);
-                                    //推迟两纳秒执行
-                                    dispatch_queue_t concurrentQueue =dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-                                    dispatch_after(delayInNanoSeconds, concurrentQueue, ^(void){
-                                        [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
-                                            [self leftButtonAction:nil];
-                                        } OKBlock:^{
-                                            
-                                        }];
-                                    });
-                                    
-                                    
-                                }
-                                
-                            }
-                        }
-                            break;
-                            */
-                        // SDCard 插拔
-                        case dpMsgBase_SDCardInfoList:
-                        {
-                            if ([obj isKindOfClass:[NSArray class]])
-                            {
-                                BOOL isExistSDCard = [[obj objectAtIndex:0] boolValue];
-                                
-                                if (isExistSDCard == NO && self.isShare == NO)
-                                {
-                                    [LSAlertView disMiss];
-                                    
-                                    //创建一个调度时间,相对于默认时钟或修改现有的调度时间。
-                                    dispatch_time_t delayInNanoSeconds =dispatch_time(DISPATCH_TIME_NOW, 0.2 * NSEC_PER_SEC);
-                                    //推迟两纳秒执行
-                                    dispatch_queue_t concurrentQueue =dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-                                    dispatch_after(delayInNanoSeconds, concurrentQueue, ^(void){
-                                        [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
-                                            [self leftButtonAction:nil];
-                                        } OKBlock:^{
-                                            
-                                        }];
-                                    });
-                                        
-                                }
-                                
-                            }
-                        }
-                            break;
-                        case dpMsgBase_SDCardFomat:
-                        {
-                            [self sdCardClearFinished];
-                        }
-                            break;
-                    }
-                }
+                [self handlePushMsg:seg];
             }
         }
         
@@ -295,6 +380,59 @@
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"jifeigou MicroDSCardVC %@",exception]];
     } @finally {
         
+    }
+}
+
+- (void)handlePushMsg:(DataPointSeg *)seg
+{
+    NSError *error = nil;
+    id obj = [MPMessagePackReader readData:seg.value error:&error];
+    if (error == nil)
+    {
+        switch (seg.msgId)
+        {
+                // SDCard 插拔
+            case dpMsgBase_SDCardInfoList:
+            {
+                if ([obj isKindOfClass:[NSArray class]])
+                {
+                    BOOL isExistSDCard = [[obj objectAtIndex:0] boolValue];
+                    
+                    if (isExistSDCard == NO && self.isShare == NO)
+                    {
+                        [LSAlertView disMiss];
+                        
+                        //创建一个调度时间,相对于默认时钟或修改现有的调度时间。
+                        dispatch_time_t delayInNanoSeconds =dispatch_time(DISPATCH_TIME_NOW, 0.2 * NSEC_PER_SEC);
+                        //推迟两纳秒执行
+                        dispatch_queue_t concurrentQueue =dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+                        dispatch_after(delayInNanoSeconds, concurrentQueue, ^(void){
+                            [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
+                                [self leftButtonAction:nil];
+                            } OKBlock:^{
+                                
+                            }];
+                        });
+                        
+                    }
+                    
+                }
+            }
+                break;
+            case dpMsgBase_SDStatus:
+            {
+                self.totalSpace = [[obj objectAtIndex:0] longLongValue];
+                self.usedSpace = [[obj objectAtIndex:1] longLongValue];
+                self.sdCardProgress.progress = self.usedSpace/self.totalSpace;
+                self.sdCardUseLabel.text = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_SpaceUsage"],self.usedSpaceStr, self.totalSpaceStr];
+            }
+                break;
+            case dpMsgBase_SDCardFomat:
+            {
+                [self sdCardClearFinished];
+            }
+                break;
+        }
     }
 }
 
