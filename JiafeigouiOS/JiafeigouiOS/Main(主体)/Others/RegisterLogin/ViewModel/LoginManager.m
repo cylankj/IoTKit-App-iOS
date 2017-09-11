@@ -99,12 +99,11 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
 -(void)openLoginByQQ
 {
     //self.loginStatus = JFGSDKCurrentLoginStatusLogining;
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"qqLoginStart"]];
     isAutoLogin = NO;
     [FLShareSDKHelper qqForThirdPartyLoginWithlogintResult:^(SSDKResponseState state, SSEBaseUser *user, NSError *error) {
         
-        //4815BAEA80A3698078597D124E1F1C56
         [self openLoginResultWithType:JFGSDKLoginTypeOpenLoginForQQ rspState:state baseUser:user error:error];
-       
         
     }];
 }
@@ -112,6 +111,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
 -(void)openLoginByweibo
 {
     //self.loginStatus = JFGSDKCurrentLoginStatusLogining;
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"weiboLoginStart"]];
     isAutoLogin = NO;
     [FLShareSDKHelper sinaWebForThirdPartyLoginWithlogintResult:^(SSDKResponseState state, SSEBaseUser *user, NSError *error) {
         
@@ -135,6 +135,8 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
         platformType = SSDKPlatformTypeFacebook;
     }
     
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"openLoginStart"]];
+    
     [FLShareSDKHelper thirdPartyLoginForSSDKPlatformType:platformType logintResult:^(SSDKResponseState state, SSEBaseUser *user, NSError *error) {
         
         [self openLoginResultWithType:type rspState:state baseUser:user error:error];
@@ -147,6 +149,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
                       baseUser:(SSEBaseUser *)user
                          error:(NSError *)error
 {
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"openLoginEnd"]];
     if (state==SSDKResponseStateSuccess)
     {
         
@@ -284,7 +287,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
                 currentAccount = lastAccount;
                 isAutoLogin = YES;
                 [JFGSDK userLogin:lastAccount keyword:key cerType:[ApnsManger certType]];
-                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"userLoginForSelf:%@",lastAccount]];
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"userLoginForAuto:%@",lastAccount]];
             }
             
         }else{

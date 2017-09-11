@@ -1,6 +1,6 @@
 /* ja.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.  
+Created by cylan language tool  on Wed Aug 30 17:27:03 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "接続失敗、ネットワーク環境をチェックしてください";
 "REPEAT_TIME" = "%d秒";
@@ -77,7 +77,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "INVALID_ACCOUNT" = "このアカウントは登録されていません";
 "PASSWORD_BIT" = "新しいパスワードを設定してください";
 "COMFIRM_NEW_PASS" = "新しいパスワードを確認してください";
-"PASSWORD_LESSTHAN_SIX" = "6~12文字でパスワードを入力してください";
+"PASSWORD_LESSTHAN_SIX" = "6~32文字でパスワードを入力してください";
 "ACCOUNT_ERR_3" = "登録されているメールアドレスか電話番号を入力してください";
 "LOGIN_ERR" = "ログイン失敗";
 "GET_CODE" = "検証コードをゲット";
@@ -285,6 +285,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "GIVE_UP" = "キャンセル";
 "BIND_INFO" = "デバイスの追加が完了していません。キャンセルしますか?";
 "DEVICE_ADDING" = "バインティングされています。しばらくお待ちください…";
+"DEVICE_CONNECTING_WIFI" = "接続しています、お待ちください...";
 "DEVICE_UPGRADE" = "ソフトウェアアップグレード";
 "UPDATING_LABEL" = "デバイスのソフトウェアをアップグレードしております(%d%%)";
 "UPDATING_BUTTON" = "アップグレード中";
@@ -901,20 +902,14 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Tap1_LessThan3sTips" = "3秒未満を記録し、ファイルが保存されません。";
 "Tap1_NeedsInitializedTips" = "SDカードを初期化してデータをクリアする必要がありますか？";
 "Tap1_SDCardFullyTips" = "SDカードのメモリーもう足りないです。";
-"Tap1_HomeMode" = "ホームモード";
-"Tap1_HomeMode_Opened" = "ホームモードが開かれています";
-"Tap1_Camera_TCPconnected" = "インターネット経由でアプリに接続されたカメラ";
-"Tap1_Camera_UDPconnected" = "アプリに直接接続されたカメラ";
+"Tap1_HomeMode" = "WIFIモード";
+"Tap1_HomeMode_Opened" = "WIFIモードが開かれました";
 "Tap1_Camera_Video_Auto" = "オート";
 "Tap1_Camera_Video_Fluent" = "流暢";
 "Tap1_Camera_Video_SD" = "SD";
 "Tap1_Camera_Video_HD" = "HD";
-"Tap1_File_CameraNPhone" = "カメラ + 電話アルバム";
-"Tap1_File_Camera" = "カメラ";
-"Tap1_File_Phone" = "電話アルバム";
 "Tap1_Refreshed" = "リフレッシュ";
 "Tap1_RefreshedFailed" = "リフレッシュに失敗しました";
-"Tap1_DeletedCameraNCellphoneFileTips" = "保存されたコンテンツはカメラと携帯電話から削除され、続行されますか？";
 "Tap1_Sync_NetworkChangeTips" = "モバイルネットワークに切り替え、継続？";
 "Tap1_FileDamagedTips" = "ファイルが破損しています，削除またはありません？";
 "Tap1_DeleteDownloadingTips" = "ファイルがダウンロードされていますか、削除していますか？";
@@ -975,10 +970,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Formatting" = "書式設定";
 "Fail_Record" = "記録に失敗する";
 "Tips_ShortVideo" = "長押しして短いビデオを録画する";
-"Switch_Mode_Pop" = "現在のネットワークの撮影コンテンツをダイレクトモードに切り替えてください";
-"Switch_Mode" = "撮影内容を見るにはダイレクトモードに切り替えてください";
 "Sharing_Management" = "共有管理";
-"Dont_Show_Again" = "再度表示しない";
 "Delete_Share" = "共有を削除しますか？";
 "SETTINGS_Wechat_Switch_Cancel" = "オフにすると微信のプッシュ通知を受信できなくなります。バインディングを解除したい場合、微信で「加菲狗官微服务」のアカウントのフォローを解除してください。";
 "SETTINGS_Wechat_Switch_Open" = "微信アカウント \"加菲狗官微服务\"に注目し、古い微信アカウントの成功がメッセージプッシュを受信しなくなったらバインドしてください";
@@ -1044,3 +1036,18 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "SECURE_Interval_Alarm" = "インターバルアラーム";
 "MINUTE_Cloud" = "分";
 "REPEAT_TIME_ALARM" = "秒";
+"Video_expired" = "ビデオが存在しない場合、有効期限が切れている可能性が";
+"Dont_Show_Again" = "再度表示しない";
+"Switch_Mode" = "現在のネットワークの撮影コンテンツを直接モードに切り替えてください";
+"SWITCH_VIEW_POP" = "現在の正面図は、見通しの見通しに切り替えるかどうかにかかわらず、この機能をサポートしていませんか？";
+"ENERGY_SAVE_MODE_ON" = "省電力モードがオンになっています";
+"ENERGY_SAVE_MODE" = "節電モード";
+"open_night" = "夜間のみ営業しています";
+"ENERGY_SAVE_MODE_Description" = "ドアベルメッセージを受信するのに使用できますが、ライブ、ビデオ、セキュリティ機能を表示することはできません。 「夜間にのみ開く」に設定されている場合は、22：00〜8：00の間のみ有効です。";
+"ENERGY_SAVE_MODE_POP" = "デバイスコールキーを押します。そうしないと、すぐには有効になりません。";
+"ENERGY_SAVE_MODE_ON_OFF" = "[省電力]ページで、[オン/オフ]を選択します。";
+"CALL_SUCCESS_OPEN_SAVE" = "通話が成功した後、デバイスコールキーを押して省電力モードをオンにします";
+"ENERGY_SAVE_NOTE" = "注： それは有効ではありません";
+"ENERGY_SAVE_CALL" = "コールキーを押す";
+"ENERGY_SAVE_HELP" = "ヘルプ";
+"ALLDAY_OPEN" = "終日営業";

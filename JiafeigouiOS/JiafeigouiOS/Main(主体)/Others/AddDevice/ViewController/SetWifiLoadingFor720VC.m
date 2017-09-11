@@ -49,10 +49,33 @@
     [self.animationView starAnimation];
     
     isShowOuttime = YES;
-    
+    [self startTimer];
     [JFGSDK appendStringToLogFile:@"startOuttimeCount"];
+    // Do any additional setup after loading the view.
+}
+
+-(void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    isPushed = NO;
+    [JFGSDK addDelegate:self];
+    [JFGSDK fping:@"255.255.255.255"];
+    [JFGSDK fping:@"192.168.10.255"];
+}
+
+-(void)viewDidDisappear:(BOOL)animated
+{
+    [super viewDidDisappear:animated];
+    [JFGSDK removeDelegate:self];
     
-    
+}
+
+
+-(void)startTimer
+{
+    if (timeOutTimer && timeOutTimer.isValid) {
+        [timeOutTimer invalidate];
+    }
     __weak typeof(self) weakSelf = self;
     timeCount = 0;
     timeOutTimer = [NSTimer bk_scheduledTimerWithTimeInterval:1 block:^(NSTimer *timer) {
@@ -73,22 +96,6 @@
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"setwifi:%d",timeCount]];
         
     } repeats:YES];
-    // Do any additional setup after loading the view.
-}
-
--(void)viewDidAppear:(BOOL)animated
-{
-    [super viewDidAppear:animated];
-    isPushed = NO;
-    [JFGSDK addDelegate:self];
-    [JFGSDK fping:@"255.255.255.255"];
-    [JFGSDK fping:@"192.168.10.255"];
-}
-
--(void)viewDidDisappear:(BOOL)animated
-{
-    [super viewDidDisappear:animated];
-    [JFGSDK removeDelegate:self];
 }
 
 -(void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
@@ -347,7 +354,7 @@
         _detailLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, self.animationView.bottom, self.view.width, 19)];
         _detailLabel.font = [UIFont systemFontOfSize:18];
         _detailLabel.textColor = [UIColor colorWithHexString:@"#888888"];
-        _detailLabel.text = [JfgLanguage getLanTextStrByKey:@"PLEASE_WAIT_2"];
+        _detailLabel.text = [JfgLanguage getLanTextStrByKey:@"DEVICE_CONNECTING_WIFI"];
         _detailLabel.textAlignment = NSTextAlignmentCenter;
     }
     return _detailLabel;

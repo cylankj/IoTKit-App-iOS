@@ -60,19 +60,31 @@
 
 - (void)initModel:(NSDictionary *)dict
 {
-    self.autoModel.isRecordWhenWatching = [[dict objectForKey:dpMsgVideoRecordWhenWatchingKey] boolValue];
-    self.autoModel.isWarnEnable = [[dict objectForKey:dpMsgCameraWarnEnableKey] boolValue];
-    self.autoModel.movetionDectrionType= [[dict objectForKey:dpMsgVideoAutoRecordKey] intValue];
-    
-    NSArray *sdInfos = [dict objectForKey:msgBaseSDStatusKey];
-    if (sdInfos.count >= 4)
-    {
-        self.autoModel.sdCardError = [[sdInfos objectAtIndex:2] intValue];
-        self.autoModel.isExistSDCard = [[sdInfos objectAtIndex:3] boolValue];
+    @try {
+        self.autoModel.isRecordWhenWatching = [[dict objectForKey:dpMsgVideoRecordWhenWatchingKey] boolValue];
+        self.autoModel.isWarnEnable = [[dict objectForKey:dpMsgCameraWarnEnableKey] boolValue];
+        self.autoModel.movetionDectrionType= [[dict objectForKey:dpMsgVideoAutoRecordKey] intValue];
+        
+        NSArray *sdInfos = [dict objectForKey:msgBaseSDStatusKey];
+        if (sdInfos.count >= 4)
+        {
+            self.autoModel.sdCardError = [[sdInfos objectAtIndex:2] intValue];
+            self.autoModel.isExistSDCard = [[sdInfos objectAtIndex:3] boolValue];
+        }
+        [self updateData];
+        
+    } @catch (NSException *exception) {
+        
+        self.autoModel.sdCardError = 0;
+        self.autoModel.isExistSDCard = YES;
+        [self updateData];
+        [JFGSDK appendStringToLogFile:@"DeviceAutoPhotoViewModel:数据解析异常"];
+        
+    } @finally {
+        
     }
+
     
-    
-    [self updateData];
 }
 
 

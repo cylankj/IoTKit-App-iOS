@@ -11,6 +11,7 @@
 #import <AddressBook/AddressBook.h>
 #import <JFGSDK/JFGSDK.h>
 #import "JfgConfig.h"
+#import "SFCParamModel.h"
 
 @interface CommonMethod : NSObject
 
@@ -188,7 +189,9 @@
 
 +(NSString*)deviceType;// 需要#import "sys/utsname.h"
 
-+(JFGDevBigType)devBigTypeForOS:(NSString *)os;
++(JFGDevViewType)devBigTypeForOS:(NSString *)os;
+
++(BOOL)isSingleFisheyeCameraForCid:(NSString *)cid;
 
 //全角占2个字符，半角占一个字符
 +(NSInteger)lenghtForString:(NSString *)string;
@@ -201,5 +204,10 @@
 +(UIImage *)sdwebImageCacheForKey:(NSString *)key;
 
 +(NSString *)sdwebImageDefauleCachePathForKey:(NSString *)key;
+
+//判断手机网络是否连接此设备ap
++(BOOL)isAPModelCurrentNetForCid:(NSString *)cid pid:(NSString *)pid;
+
++(SFCParamModel *)panoramicViewParamModelForCid:(NSString *)cid;
 
 @end

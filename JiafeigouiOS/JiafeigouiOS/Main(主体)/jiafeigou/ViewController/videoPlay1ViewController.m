@@ -55,8 +55,10 @@
 #import "TelephonyManager.h"
 #import "PropertyManager.h"
 #import "JfgCacheManager.h"
+#import <KVOController.h>
 
 #define RPBtnTagBase 10024
+#define ViewModeBtnTagBase 10124
 #define fpingMacCount 3
 
 typedef NS_ENUM(NSUInteger, VIEW_CONTROL_TAG)
@@ -124,9 +126,11 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     AngleView *angleV;
     BOOL historyViewScrolling;//历史录像进度条正在拖动
     BOOL isEnterBackground;
-    SFCParamModel *paramModel;
     BOOL isGetSDCard;       // 是否 获取过 SDCard ？
     BOOL isShowAngle;
+    
+    SFDisplayMode defaultDispalyMode;
+    BOOL isOpenShake;//是否开启摇一摇
 }
 
 //时间显示
@@ -205,6 +209,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 //全屏时播放按钮
 @property (nonatomic,strong)UIButton *fullPlayBtn;
 
+//全屏摇一摇按钮
+@property (nonatomic,strong)UIButton *shakeBtn;
+
 //历史视频滚动条
 @property (nonatomic,strong)HorizontalHistoryRecordView *historyView;
 
@@ -220,6 +227,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 
 @property (nonatomic,strong)UIView *rpBgView;
 
+@property (nonatomic,strong)UIView *viewModeBgView;
+
 @property (nonatomic,strong)NSDateFormatter *dateFormatter;
 
 @property (nonatomic,strong)UIButton *reqHistoryBtn;
@@ -227,6 +236,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 @property (nonatomic,strong)UIView *handTipForHistory;
 
 @property (nonatomic,strong)TelephonyManager *phonyManager;
+
+@property (nonatomic,strong)UIButton *viewModeSwitchBtn;
 
 @end
 
@@ -245,6 +256,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         isShared = YES;
     }
     playState = videoPlayStatePause;
+    defaultDispalyMode = SFM_Normal;
     [self.view addSubview:self.videoBgView];
     [self.videoBgView addSubview:self.videoPlayBgScrollerView];
     [self.view addSubview:self.snapBtn];
@@ -266,23 +278,30 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     PropertyManager *propert =[[PropertyManager alloc]init];
     propert.propertyFilePath = [[NSBundle mainBundle] pathForResource:@"properties" ofType:@"json"];
     isSupportSDCard = [propert showRowWithPid:[self.devModel.pid intValue] key:pSDCardKey];
-    isShowAngle = [propert showRowWithPid:[self.devModel.pid intValue] key:pAngleKey];
-    timeoutRequestCount = 0;
     
+    if (!isShared) {
+        isShowAngle = [PropertyManager showPropertiesRowWithPid:[self.devModel.pid intValue] key:pAngleKey];
+    }else{
+        isShowAngle = [PropertyManager showSharePropertiesRowWithPid:[self.devModel.pid intValue] key:pAngleKey];
+    }
+    timeoutRequestCount = 0;
+    if (![PropertyManager showPropertiesRowWithPid:[self.devModel.pid intValue] key:pRemoteWatchKey] || isShared) {
+        self.devModel.deepSleep = NO;
+    }
     if(self.isShow) {
         [self startVideoActionPrepare];
     }
     
-    
-    if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
+    if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360 || [CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
         
-        paramModel = [JfgCacheManager getSfcPatamModelForCid:self.devModel.uuid];
+        SFCParamModel *paramModel =[CommonMethod panoramicViewParamModelForCid:self.devModel.uuid];
         if (!paramModel) {
             //单鱼眼设备，获取坐标值
             [self getResolving];
         }
     }
 }
+
 
 -(void)viewWillAppear:(BOOL)animated
 {
@@ -291,7 +310,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [safeTipTimer invalidate];
     }
     [self getIsLive];
-    
+    [self getDeepSleep];
 }
 
 -(void)viewDidAppear:(BOOL)animated
@@ -324,6 +343,111 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [super viewDidAppear:animated];
 }
 
+
+-(void)motionEnded
+{
+    if (defaultDispalyMode == SFM_Normal && isOpenShake) {
+        
+        UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+        if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+            PanoramicIosViewRS * _remoteView = (PanoramicIosViewRS *)remoteView;
+            [_remoteView enableAutoRotation:YES];
+            [_remoteView phoneShook];
+        }
+        
+    }
+}
+
+-(void)getDeepSleep
+{
+    if ([PropertyManager showPropertiesRowWithPid:[self.devModel.pid intValue] key:pRemoteWatchKey]) {
+        [[JFGSDKDataPoint sharedClient] robotGetSingleDataWithPeer:self.cid msgIds:@[@404] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+            
+            for (NSArray *subArr in idDataList) {
+                for (DataPointSeg *seg in subArr) {
+                    
+                    id obj = [MPMessagePackReader readData:seg.value error:nil];
+                    if(seg.msgId == 404){
+                        if ([obj isKindOfClass:[NSArray class]]) {
+                            
+                            /**
+                             enbale bool 是否开启
+                             beginTime int64 开始时间，单位秒
+                             endTime int64 结束时间，单位秒
+                             */
+                            NSArray *sourceArr = obj;
+                            if (sourceArr.count > 2) {
+                                
+                                BOOL isOpen = [sourceArr[0] boolValue];
+                            
+                                int64_t beginTime = [sourceArr[1] longLongValue];
+                                int64_t endTime = [sourceArr[2] longLongValue];
+                                
+                                NSDateFormatter *dateFormatter = [[NSDateFormatter alloc]init];
+                                [dateFormatter setDateFormat:@"HH"];
+                                int currentHour = [[dateFormatter stringFromDate:[NSDate date]] intValue];
+                                // 0  -- 24
+                                // 22 -- 8
+                                
+                                int setBeginHour = (int)beginTime/60/60;
+                                int setEndHour = (int)endTime/60/60;
+                                
+                                if (isOpen) {
+                                    if (setBeginHour < setEndHour) {
+                                        //没有跨天
+                                        if (currentHour>=setBeginHour && currentHour <= setEndHour) {
+                                            self.devModel.deepSleep = YES;
+                                        }else{
+                                            self.devModel.deepSleep = NO;
+                                        }
+                                        
+                                        
+                                    }else{
+                                        //设置时间跨天了
+                                        if (currentHour >= setBeginHour || currentHour <= setEndHour) {
+                                            self.devModel.deepSleep = YES;
+                                        }else{
+                                            self.devModel.deepSleep = NO;
+                                        }
+                                        
+                                    }
+                                }else{
+                                    
+                                    self.devModel.deepSleep = NO;
+                                    
+                                }
+                                
+                                if (self.devModel.deepSleep) {
+                                    
+                                    if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
+                                        [self stopVideoPlay];
+                                    }
+                                    [self hiddenSmallWindowBottomBar];
+                                    [self hideSmallWindowPlayBtn];
+                                    [self showIdleViewForType:1];
+                                    if (isShared == NO) {
+                                        self.historyView.hidden = YES;
+                                        self.reqHistoryBtn.enabled = NO;
+                                    }
+                                }else{
+                                    [self hideIdleView];
+                                    [self historyViewState];
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    
+                }
+            }
+            
+        } failure:^(RobotDataRequestErrorType type) {
+            
+        }];
+    }
+}
+
 -(void)getResolving
 {
     [[JFGSDKDataPoint sharedClient] robotGetSingleDataWithPeer:self.devModel.uuid msgIds:@[@510] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
@@ -337,7 +461,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                     NSArray *objArr = obj;
                     if (objArr.count>4) {
                         
-                        paramModel = [[SFCParamModel alloc]init];
+                        SFCParamModel *paramModel = [[SFCParamModel alloc]init];
                         paramModel.x = [objArr[0] intValue];
                         paramModel.y = [objArr[1] intValue];
                         paramModel.r = [objArr[2] intValue];
@@ -345,6 +469,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                         paramModel.h = [objArr[4] intValue];
                         paramModel.cid = self.devModel.uuid;
                         [JfgCacheManager cachesfcParamModel:paramModel];
+                        
+                        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"圆心位置：%@",obj]];
+                        
                     }
                 }
             }
@@ -355,10 +482,101 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     }];
 }
 
+-(void)fullHistoryViewState
+{
+   
+    //支持sd卡，并且不是待机状态,不是被分享
+    self.reqHistoryBtn.hidden = YES;
+    if (isSupportSDCard && !self.devModel.safeIdle && !isShared && !self.devModel.deepSleep) {
+        
+        if (self.historyView.dataArray.count) {
+            
+            if ([self.fullScreenBottomControlBar viewWithTag:10006]) {
+                UIView *v = [self.fullScreenBottomControlBar viewWithTag:10006];
+                [v removeFromSuperview];
+                v = nil;
+            }
+            self.historyView.hidden = NO;
+            self.historyView.alpha = 1;
+            if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline) {
+                self.historyView.hidden = YES;
+            }
+            
+        }else{
+            
+            self.historyView.hidden = YES;
+            self.historyView.alpha = 0;
+            if (![self.fullScreenBottomControlBar viewWithTag:10006]) {
+                UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
+                btn.frame = CGRectMake(90, 0, 100, 50);
+                btn.x = self.fullScreenBottomControlBar.width*0.5;
+                [btn setTitle:[JfgLanguage getLanTextStrByKey:@"History_video"] forState:UIControlStateNormal];
+                [btn setTitleColor:[UIColor colorWithHexString:@"#4B9FD5"] forState:UIControlStateNormal];
+                [btn setTitleColor:[UIColor colorWithHexString:@"#cecece"] forState:UIControlStateDisabled];
+                btn.titleLabel.font = [UIFont systemFontOfSize:15];
+                btn.tag = 10006;
+                [btn addTarget:self action:@selector(reqHistoryAction) forControlEvents:UIControlEventTouchUpInside];
+                [self.fullScreenBottomControlBar addSubview:btn];
+            }else{
+                UIButton *btn = [self.fullScreenBottomControlBar viewWithTag:10006];
+                btn.enabled = YES;
+                btn.hidden = NO;
+            }
+            
+            BOOL isApModel = [CommonMethod isAPModelCurrentNetForCid:self.devModel.uuid pid:self.devModel.pid];
+            if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline || self.historyView.isLoadingData || isApModel) {
+                UIButton *btn = [self.fullScreenBottomControlBar viewWithTag:10006];
+                btn.enabled = NO;
+            }
+            
+        }
+        
+    }else if (isSupportSDCard && self.devModel.safeIdle && !isShared){
+        
+        self.historyView.hidden = YES;
+        if (self.historyView.dataArray.count) {
+            if ([self.fullScreenBottomControlBar viewWithTag:10006]) {
+                UIButton *btn = [self.fullScreenBottomControlBar viewWithTag:10006];
+                [btn removeFromSuperview];
+                btn = nil;
+            }
+        }else{
+            if ([self.fullScreenBottomControlBar viewWithTag:10006]) {
+                UIButton *btn = [self.fullScreenBottomControlBar viewWithTag:10006];
+                btn.enabled = NO;
+            }else{
+                UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
+                btn.frame = CGRectMake(90, 0, 100, 50);
+                btn.x = self.fullScreenBottomControlBar.width*0.5;
+                [btn setTitle:[JfgLanguage getLanTextStrByKey:@"History_video"] forState:UIControlStateNormal];
+                [btn setTitleColor:[UIColor colorWithHexString:@"#4B9FD5"] forState:UIControlStateNormal];
+                [btn setTitleColor:[UIColor colorWithHexString:@"#cecece"] forState:UIControlStateDisabled];
+                btn.titleLabel.font = [UIFont systemFontOfSize:15];
+                btn.tag = 10006;
+                [btn addTarget:self action:@selector(reqHistoryAction) forControlEvents:UIControlEventTouchUpInside];
+                btn.enabled = NO;
+                [self.fullScreenBottomControlBar addSubview:btn];
+            }
+            
+        }
+        
+    }else{
+        
+        if ([self.fullScreenBottomControlBar viewWithTag:10006]) {
+            UIButton *btn = [self.fullScreenBottomControlBar viewWithTag:10006];
+            [btn removeFromSuperview];
+            btn = nil;
+        }
+        self.historyView.hidden =  YES;
+    }
+    
+    
+}
+
 -(void)historyViewState
 {
     //支持sd卡，并且不是待机状态,不是被分享
-    if (isSupportSDCard && !self.devModel.safeIdle && !isShared) {
+    if (isSupportSDCard && !self.devModel.safeIdle && !isShared && !self.devModel.deepSleep) {
         
         if (self.historyView.dataArray.count) {
             
@@ -378,9 +596,11 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             self.historyView.alpha = 0;
             self.reqHistoryBtn.enabled = YES;
             
-            if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline || self.historyView.isLoadingData) {
+            BOOL isApModel = [CommonMethod isAPModelCurrentNetForCid:self.devModel.uuid pid:self.devModel.pid];
+            if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline || self.historyView.isLoadingData || isApModel) {
                 self.reqHistoryBtn.enabled = NO;
             }
+            
         }
         
     }else if (isSupportSDCard && self.devModel.safeIdle && !isShared){
@@ -444,7 +664,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnNotifyResolutionNotification" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnNotifyRTCPNotification" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnUpdateHistoryErrorCodeNotification" object:nil];
-    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+    
     [JFGSDK appendStringToLogFile:@"removeNotifacation"];
     isAddVideoNotificaiton = NO;
     [self stopVideoAction];
@@ -470,7 +690,18 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 -(void)startVideoActionPrepare
 {
     [JFGSDK appendStringToLogFile:@"startVideoAction"];
-    if ([NetworkMonitor sharedManager].currentNetworkStatu == NotReachable) {
+    if (self.devModel.deepSleep) {
+        //移除角度提示Tip
+        if (angleV) {
+            [angleV removeFromSuperview];
+            angleV = nil;
+        }
+        isCanShowHistoryView = NO;
+        [self hiddenSmallWindowBottomBar];
+        [self hideSmallWindowPlayBtn];
+        [self showIdleViewForType:1];
+        
+    }else if ([NetworkMonitor sharedManager].currentNetworkStatu == NotReachable) {
         
         [self showDisconnectViewWithText:[JfgLanguage getLanTextStrByKey:@"OFFLINE_ERR_1"]];
         playState = videoPlayStateNotNet;
@@ -496,7 +727,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                 isCanShowHistoryView = NO;
                 [self hiddenSmallWindowBottomBar];
                 [self hideSmallWindowPlayBtn];
-                [self showIdleView];
+                [self showIdleViewForType:0];
                 
             }else{
                 
@@ -519,14 +750,13 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         }
     }
     [self historyViewState];
-    //开启屏幕常亮
-    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    
 }
 
 //结束视频
 -(void)stopVideoAction
 {
-    if (!self.historyView.isLoadingData) {
+    if (!self.historyView.isLoadingData && !self.devModel.deepSleep) {
         [JFGSDK appendStringToLogFile:@"stopVideoAction"];
         if (playState == videoPlayStatePlaying) {
             self.playButton.selected = YES;
@@ -537,8 +767,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         }
         [self hiddenSmallWindowBottomBar];
         [self showSmallWindowPlayBtn];
-        playState = videoPlayStatePause;
     }
+    playState = videoPlayStatePause;
 }
 
 
@@ -566,7 +796,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                                         [self stopVideoPlay];
                                         [self hiddenSmallWindowBottomBar];
                                         [self hideSmallWindowPlayBtn];
-                                        [self showIdleView];
+                                        [self showIdleViewForType:0];
                                         if (isShared == NO) {
                                             self.historyView.hidden = YES;
                                         }
@@ -575,10 +805,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                                     [self hideIdleView];
                                     self.devModel.safeIdle = NO;
                                 }
-                                
                             }
                         }
-                        
                     }else{
                         self.devModel.safeIdle = NO;
                     }
@@ -693,6 +921,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         }
         [self.historyView requestData];
         [self performSelector:@selector(historyReqTimeout) withObject:self afterDelay:30];
+        
     }
 }
 
@@ -819,8 +1048,94 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(doorCalling:) name:JFGDoorBellIsCallingKey object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(angleChangedWithNotification:) name:angleChangedNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(doorBellSnap:) name:@"DoorBellCallSnapImage" object:nil];
+    /**
+     *  开始生成 设备旋转 通知
+     */
+    [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
+    
+    
+    /**
+     *  添加 设备旋转 通知
+     *
+     *  当监听到 UIDeviceOrientationDidChangeNotification 通知时，调用handleDeviceOrientationDidChange:方法
+     *  @param handleDeviceOrientationDidChange: handleDeviceOrientationDidChange: description
+     *
+     *  @return return value description
+     */
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleDeviceOrientationDidChange:)
+                                                 name:UIDeviceOrientationDidChangeNotification
+                                               object:nil
+     ];
+
 
 }
+
+- (void)handleDeviceOrientationDidChange:(UIInterfaceOrientation)interfaceOrientation
+{
+    //1.获取 当前设备 实例
+    UIDevice *device = [UIDevice currentDevice] ;
+    
+    
+    
+    
+    /**
+     *  2.取得当前Device的方向，Device的方向类型为Integer
+     *
+     *  必须调用beginGeneratingDeviceOrientationNotifications方法后，此orientation属性才有效，否则一直是0。orientation用于判断设备的朝向，与应用UI方向无关
+     *
+     *  @param device.orientation
+     *
+     */
+    
+    switch (device.orientation) {
+        case UIDeviceOrientationFaceUp:
+            //NSLog(@"屏幕朝上平躺");
+            break;
+            
+        case UIDeviceOrientationFaceDown:
+            //NSLog(@"屏幕朝下平躺");
+            break;
+            
+            //系統無法判斷目前Device的方向，有可能是斜置
+        case UIDeviceOrientationUnknown:
+            //NSLog(@"未知方向");
+            break;
+            
+        case UIDeviceOrientationLandscapeLeft:{
+            //NSLog(@"屏幕向左横置");//
+            
+            if (playState == videoPlayStatePlaying && windowMode == videoPlayModeSmallWindow && self.isShow && self.isInCurrentVC) {
+                [self fullScreen];
+            }
+            
+        }
+            
+            break;
+            
+        case UIDeviceOrientationLandscapeRight:
+            //NSLog(@"屏幕向右橫置");//
+            break;
+            
+        case UIDeviceOrientationPortrait:{
+            NSLog(@"屏幕直立");//
+            if (playState == videoPlayStatePlaying && windowMode == videoPlayModeFullScreen && self.isShow && self.isInCurrentVC) {
+                [self exitFullScreen];
+            }
+        }
+            break;
+            
+        case UIDeviceOrientationPortraitUpsideDown:
+            //NSLog(@"屏幕直立，上下顛倒");
+            break;
+            
+        default:
+            //NSLog(@"无法辨识");
+            break;
+    }
+    
+}
+
 
 -(void)doorBellSnap:(NSNotification *)notification
 {
@@ -851,7 +1166,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             if (self.historyView.dataArray.count) {
                 [self.historyView setHistoryTableViewOffsetByTimeStamp:historyLastestTimeStamp];
             }
-            if (!self.devModel.safeIdle && [JFGSDK currentNetworkStatus] != JFGNetTypeOffline) {
+            if (!self.devModel.safeIdle && [JFGSDK currentNetworkStatus] != JFGNetTypeOffline && !self.devModel.deepSleep) {
                 if (self.playButton.selected) {
                     self.playButton.selected = NO;
                 }
@@ -1002,7 +1317,24 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             self.fullMicBtn.enabled = NO;
             self.fullSnapBtn.enabled = YES;
             self.fullVoideBtn.enabled = YES;
-            
+            self.videoPlayBgScrollerView.hidden = NO;
+            if (self.videoPlayBgScrollerView.contentSize.width > 0) {
+                self.snapeImageView.frame = CGRectMake(0, 0, self.videoPlayBgScrollerView.contentSize.width, self.videoPlayBgScrollerView.contentSize.height);
+            }else{
+                self.snapeImageView.frame = CGRectMake(0, 0, self.videoPlayBgScrollerView.bounds.size.width, self.videoPlayBgScrollerView.bounds.size.height);
+            }
+            self.rpBgView.hidden = YES;
+            UIButton *switchViewModeBtn = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase];
+            if (switchViewModeBtn) {
+                switchViewModeBtn.enabled = NO;
+                switchViewModeBtn.hidden = NO;
+                self.viewModeBgView.hidden = NO;
+            }
+            UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+            if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+                PanoramicIosViewRS * _remoteView = (PanoramicIosViewRS *)remoteView;
+                [_remoteView setDisplayMode:SFM_Normal];
+            }
         }else{
             [self playHistoryVideoForZeroWithTimestamp:historyLastestTimeStamp];
         }
@@ -1156,14 +1488,10 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 -(void)currentHistoryVideoModel:(historyVideoDurationTimeModel *)model
 {
     currentHistoryModel = model;
-    historyLastestTimeStamp = model.startTimestamp;
+    historyLastestTimeStamp = model.startPlayTimestamp;
     isLiveVideo = NO;
     if (playState == videoPlayStatePlaying) {
-        [CylanJFGSDK playVideoByTime:model.startPlayTimestamp cid:self.cid];
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"playCid:%@",self.cid]];
-        self.fullMicBtn.enabled = NO;
-        self.fullSnapBtn.enabled = YES;
-        self.fullVoideBtn.enabled = YES;
+        [self playCurrentHistoryVideo];
     }else{
         [self playHistoryVideoForZeroWithTimestamp:model.startPlayTimestamp];
     }
@@ -1174,23 +1502,20 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         
     }else{
         [self.fullPlayBtn setImage:[UIImage imageNamed:@"full-screen_icon_play"] forState:UIControlStateNormal];
-       
     }
+    
     [self voiceAndMicBtnNomalState];
-    self.rpBgView.hidden = YES;
+    
 }
 
 //所有有历史视频的日期
 -(void)historyVideoDateLimits:(NSArray<HistoryVideoDayModel *> *)limits
 {
-
     historyVideoDateLimits = [[NSMutableArray alloc]initWithArray:limits];
     if (self.devModel.safeIdle || isShared) {
         self.historyView.hidden = YES;
         return;
     }
-    
-    
     
     if (limits.count > 0) {
         isLiveVideo = NO;
@@ -1310,10 +1635,11 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     if ([JFGSDK currentNetworkStatus] != JFGNetTypeWifi && [JFGSDK currentNetworkStatus] != JFGNetTypeOffline) {
         [self hudViewForText:[JfgLanguage getLanTextStrByKey:@"LIVE_DATA"]];
     }
-    if (windowMode == videoPlayModeFullScreen) {
-    
+    UIButton *switchViewModeBtn = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase];
+    if (switchViewModeBtn) {
+        switchViewModeBtn.enabled = YES;
     }
-    self.rpBgView.hidden = NO;
+    //
 }
 
 #pragma mark- 视频播放
@@ -1348,6 +1674,10 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     }
     if (self.historyView) {
         self.historyView.isSelectedHistory = NO;
+    }
+    UIButton *switchViewModeBtn = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase];
+    if (switchViewModeBtn) {
+        switchViewModeBtn.enabled = YES;
     }
     [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategorySoloAmbient error:nil];
 }
@@ -1430,7 +1760,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                                         [self stopVideoPlay];
                                         [self hiddenSmallWindowBottomBar];
                                         [self hideSmallWindowPlayBtn];
-                                        [self showIdleView];
+                                        [self showIdleViewForType:0];
                                         if (isShared == NO) {
                                             self.historyView.hidden = YES;
                                         }
@@ -1457,17 +1787,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                     if ([obj isKindOfClass:[NSNumber class]] || [obj isKindOfClass:[NSString class]]) {
                         
                         self.angleType = [obj intValue];
-                        UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
-                        if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
-                            PanoramicIosView * _remoteView = (PanoramicIosView *)remoteView;
-                            if (self.angleType == 1) {
-                                //挂壁
-                                [_remoteView setMountMode:MOUNT_WALL];
-                            }else{
-                                //吊顶
-                                [_remoteView setMountMode:MOUNT_TOP];
-                            }
-                        }
+                        [self switchVideoViewHangMode];
                     }
                 }
                     break;
@@ -1511,7 +1831,68 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                     
                 }
                     break;
-                    
+                case 404:{
+                    id obj = [MPMessagePackReader readData:seg.value error:nil];
+                    NSArray *sourceArr = obj;
+                    if (sourceArr.count > 2) {
+                        
+                        BOOL isOpen = [sourceArr[0] boolValue];
+                        
+                        int64_t beginTime = [sourceArr[1] longLongValue];
+                        int64_t endTime = [sourceArr[2] longLongValue];
+                        
+                        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc]init];
+                        [dateFormatter setDateFormat:@"HH"];
+                        int currentHour = [[dateFormatter stringFromDate:[NSDate date]] intValue];
+                        // 0  -- 24
+                        // 22 -- 8
+                        
+                        int setBeginHour = (int)beginTime/60/60;
+                        int setEndHour = (int)endTime/60/60;
+                        
+                        if (isOpen) {
+                            if (setBeginHour < setEndHour) {
+                                //没有跨天
+                                if (currentHour>=setBeginHour && currentHour <= setEndHour) {
+                                    self.devModel.deepSleep = YES;
+                                }else{
+                                    self.devModel.deepSleep = NO;
+                                }
+                                
+                                
+                            }else{
+                                //设置时间跨天了
+                                if (currentHour >= setBeginHour || currentHour <= setEndHour) {
+                                    self.devModel.deepSleep = YES;
+                                }else{
+                                    self.devModel.deepSleep = NO;
+                                }
+                                
+                            }
+                        }else{
+                            
+                            self.devModel.deepSleep = NO;
+                            
+                        }
+                        if (self.devModel.deepSleep) {
+                            
+                            if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
+                                [self stopVideoPlay];
+                            }
+                            [self hiddenSmallWindowBottomBar];
+                            [self hideSmallWindowPlayBtn];
+                            [self showIdleViewForType:1];
+                            if (isShared == NO) {
+                                self.historyView.hidden = YES;
+                                self.reqHistoryBtn.enabled = NO;
+                            }
+                        }else{
+                            [self hideIdleView];
+                            [self historyViewState];
+                        }
+                    }
+                }
+                    break;
                 default:
                     break;
             }
@@ -1610,7 +1991,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         CGSize size = CGSizeMake(width, height);
         
         //防止多次接受通知
-        if (playState == videoPlayStatePlaying || isStartRender) {
+        if (playState == videoPlayStatePlaying) {
             [JFGSDK appendStringToLogFile:@"isStartRender-videoPlayStatePlaying"];
             return;
         }
@@ -1619,40 +2000,129 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         
         if (self.videoPlayBgScrollerView.superview == nil) {
             [self.videoBgView addSubview:self.videoPlayBgScrollerView];
+        }else{
+            [self.videoBgView bringSubviewToFront:self.videoPlayBgScrollerView];
         }
         
         if (remoteView) {
             [remoteView removeFromSuperview];
             remoteView = nil;
         }
-        
-        //NSInteger pid = [self.devModel.pid integerValue];
+        BOOL isRS = [DevPropertyManager isRSDevForPid:self.devModel.pid];
+
         UIView *_remoteView;
-        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
+        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360 || ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera && isRS)){
+            
+            width = self.view.width;
+            height= width;
+            size = CGSizeMake(width, width);
+            PanoramicIosViewRS * __remoteView = [[PanoramicIosViewRS alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, size.width, size.height)];
+            SFCParamModel *paramModel =[CommonMethod panoramicViewParamModelForCid:self.devModel.uuid];
+        
+            if (paramModel) {
+                struct SFCParamIos param;
+                param.cx = paramModel.x;
+                param.cy = paramModel.y;
+                param.r = paramModel.r;
+                param.w = paramModel.w;
+                param.h = paramModel.h;
+                param.fov = 180;
+                [__remoteView configV360:param];
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"x:%d y:%d r:%d w:%d h:%d",paramModel.x,paramModel.y,paramModel.r,paramModel.w,paramModel.h]];
+                
+            }else{
+                struct SFCParamIos param;
+                param.cx = 640;
+                param.cy = 480;
+                param.r = 480;
+                param.w = 1280;
+                param.h = 960;
+                param.fov = 180;
+                [__remoteView configV360:param];
+               
+            }
+            if (self.angleType == 1) {
+                //挂壁
+                [__remoteView setMountMode:MOUNT_WALL];
+            }else{
+                //吊顶
+                [__remoteView setMountMode:MOUNT_TOP];
+            }
+            
+            BOOL isSupportAngleSwitch = YES;
+            if (!isShared) {
+                isSupportAngleSwitch = [PropertyManager showPropertiesRowWithPid:[self.devModel.pid intValue] key:pAngleKey];
+            }else{
+                isSupportAngleSwitch = [PropertyManager showSharePropertiesRowWithPid:[self.devModel.pid intValue] key:pAngleKey];
+            }
+            if (!isSupportAngleSwitch) {
+                self.angleType = 1;
+                [__remoteView setMountMode:MOUNT_WALL];
+            }
+            
+            //如果是支持圆柱，四分图这种视图切换，但是不支持视角切换，默认设置视角为俯视
+            if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360 && !isSupportAngleSwitch) {
+                self.angleType = 0;
+                [__remoteView setMountMode:MOUNT_TOP];
+            }
+            
+            [__remoteView setDisplayMode:defaultDispalyMode];
+            if (!isLiveVideo) {
+                [__remoteView setDisplayMode:SFM_Normal];
+            }
+            
+            UITapGestureRecognizer *panTap = [__remoteView getDoubleTapRecognizer];
+            [videoTapGesture requireGestureRecognizerToFail:panTap];
+            _remoteView = __remoteView;
+            
+            
+        }else if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
+            
             width = self.view.width;
             height= width;
             size = CGSizeMake(width, width);
             PanoramicIosView * __remoteView = [[PanoramicIosView alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, size.width, size.height)];
+            SFCParamModel *paramModel =[CommonMethod panoramicViewParamModelForCid:self.devModel.uuid];
             if (paramModel) {
-                [__remoteView configV360:SFCParamIosMake(paramModel.x, paramModel.y, paramModel.r, paramModel.w, paramModel.h, 180)];
+                struct SFCParamIos param;
+                param.cx = paramModel.x;
+                param.cy = paramModel.y;
+                param.r = paramModel.r;
+                param.w = paramModel.w;
+                param.h = paramModel.h;
+                param.fov = 180;
+                [__remoteView configV360:param];
             }else{
-                [__remoteView configV360:getSFCParamIosPreset()];
+                struct SFCParamIos param;
+                param.cx = 640;
+                param.cy = 480;
+                param.r = 480;
+                param.w = 1280;
+                param.h = 960;
+                param.fov = 180;
+                [__remoteView configV360:param];
             }
             
             _remoteView = __remoteView;
             //MODE_TOP = 0 吊顶 MODE_WALL = 1 壁挂
-        
-            if ([self.devModel.pid isEqualToString:@"81"]) {
-                //吊顶
+            
+            if (self.angleType == 1) {
+                //挂壁
                 [__remoteView setMountMode:MOUNT_WALL];
             }else{
-                if (self.angleType == 1) {
-                    //挂壁
-                    [__remoteView setMountMode:MOUNT_WALL];
-                }else{
-                    //吊顶
-                    [__remoteView setMountMode:MOUNT_TOP];
-                }
+                //吊顶
+                [__remoteView setMountMode:MOUNT_TOP];
+            }
+            
+            BOOL isSupportAngleSwitch = YES;
+            if (!isShared) {
+                isSupportAngleSwitch = [PropertyManager showPropertiesRowWithPid:[self.devModel.pid intValue] key:pAngleKey];
+            }else{
+                isSupportAngleSwitch = [PropertyManager showSharePropertiesRowWithPid:[self.devModel.pid intValue] key:pAngleKey];
+            }
+            if (!isSupportAngleSwitch) {
+                self.angleType = 0;
+                [__remoteView setMountMode:MOUNT_WALL];
             }
             
             UITapGestureRecognizer *panTap = [__remoteView getDoubleTapRecognizer];
@@ -1661,11 +2131,14 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         }else{
             _remoteView = [[VideoRenderIosView alloc] initWithFrame:CGRectMake(0, 0, size.width, size.height)];
         }
-        
+    
         _remoteView.tag = VIEW_REMOTERENDE_VIEW_TAG;
         _remoteView.backgroundColor = [UIColor blackColor];
         _remoteView.layer.edgeAntialiasingMask = YES;
         [self.videoPlayBgScrollerView addSubview:_remoteView];
+        
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"addRemoteView"]];
+        
         [CylanJFGSDK startRenderRemoteView:_remoteView];
         remoteCallViewSize = size;
         
@@ -1676,16 +2149,13 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             [self voiceAndMicBtnNomalState];
             [self fullVideoAndMicBtnNomal];
         }
-        
-        [JFGSDK appendStringToLogFile:@"onNotifyResolution remoteViewSizeFit"];
+
         [self remoteViewSizeFit];
         if (playState != videoPlayStatePlaying)
         {
             [self voiceAndMicBtnNomalState];
             [self fullVideoAndMicBtnNomal];
         }
-        
-        //[self stopLoadingAnimation];
         [self isFristIntoView];
         
         if (self.rateLabel.superview == nil) {
@@ -1699,6 +2169,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         if (windowMode == videoPlayModeSmallWindow) {
             self.videoPlayTipLabel.x = self.view.width*0.5;
             self.videoPlayTipLabel.bottom = self.videoBgView.height-8;
+            self.rpBgView.bottom = self.videoBgView.height - 47;
+            self.viewModeBgView.y = self.rpBgView.y;
         }else{
             self.videoPlayTipLabel.x = kheight*0.5;
             self.videoPlayTipLabel.bottom = self.fullScreenBottomControlBar.top-10;
@@ -1729,6 +2201,10 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             [self showSmallWindowBottomBar];
             [self performSelector:@selector(hideSmallWindowPlayBtn) withObject:nil afterDelay:3];
         }
+        
+        //开启屏幕常亮
+        [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+        
     }
     
 }
@@ -1914,7 +2390,6 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     
     }else{
         
-        
         if (statu == ReachableViaWWAN && self.isShow) {
             if (playState == videoPlayStatePlaying) {
                 
@@ -1922,7 +2397,6 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                 
             }
         }
-        
     }
 }
 
@@ -1945,26 +2419,32 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 //停止视频播放
 -(void)stopVideoPlay
 {
-    if (playState == videoPlayStatePlaying) {
+    if (playState == videoPlayStatePlaying ) {
         [self snapScreen];
         [CylanJFGSDK setAudio:YES openMic:NO openSpeaker:NO];
     }
+    
+    if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
+        [CylanJFGSDK stopRenderView:NO withCid:self.cid];
+        if (self.cid) {
+            [CylanJFGSDK disconnectVideo:self.cid];
+        }else{
+            [CylanJFGSDK disconnectVideo:@""];
+        }
+    }
+    
     self.rateLabel.hidden = YES;
     [self voiceAndMicBtnDisableState];
     playState = videoPlayStatePause;
-    [CylanJFGSDK stopRenderView:NO withCid:self.cid];
-    
-    if (self.cid) {
-        [CylanJFGSDK disconnectVideo:self.cid];
-    }else{
-        [CylanJFGSDK disconnectVideo:@""];
-    }
     
     UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
     if (remoteView) {
         if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
             PanoramicIosView *rvc = (PanoramicIosView *)remoteView;
             [rvc stopRender];
+        }else if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+            PanoramicIosViewRS *rpv = (PanoramicIosViewRS *)remoteView;
+            [rpv stopRender];
         }
         [remoteView removeFromSuperview];
         remoteView = nil;
@@ -1972,7 +2452,6 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     }
   
     isStartRender = NO;
-    
     self.videoPlayTipLabel.hidden = YES;
     self.snapeImageView.hidden = NO;
     self.snapeImageView.left = 0;
@@ -1981,8 +2460,12 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [self stopLoadingAnimation];
     [self stopTimeoutRequest];
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(onNotifyResolutionOvertime) object:nil];
-    [self hiddenSmallWindowBottomBar];
-    //[self.renderLock unlock];
+    if (windowMode == videoPlayModeSmallWindow) {
+        [self hiddenSmallWindowBottomBar];
+    }
+    
+    //关闭屏幕常亮
+    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
 }
 
 
@@ -1991,13 +2474,12 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 //等比缩放
 - (void)remoteViewSizeFit
 {
-    
+    CGFloat ratio = remoteCallViewSize.height/remoteCallViewSize.width;
+    CGFloat width = 0;
+    CGFloat height = 0;
     BOOL isRS = [DevPropertyManager isRSDevForPid:self.devModel.pid];
-    if (isRS) {
-    
-        CGFloat ratio = remoteCallViewSize.height/remoteCallViewSize.width;
-        CGFloat width;
-        CGFloat height = 0;
+    if (isRS || [CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360) {
+        
         if (windowMode == videoPlayModeFullScreen) {
             height = self.view.bounds.size.width;
             width = height/ratio;
@@ -2006,109 +2488,71 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             height = width * ratio;
         }
         
-        if (windowMode == videoPlayModeFullScreen) {
-            if (height < self.view.bounds.size.width) {
-                height = self.view.bounds.size.width;
-                width = height/ratio;
-            }
-        }
-        
-        [self.videoPlayBgScrollerView setContentSize:CGSizeMake(self.videoBgView.bounds.size.width, height)];
-        
-        UIView *remoteView =[self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
-        if (windowMode == videoPlayModeSmallWindow) {
-            
-            self.videoBgView.height = height;
-            self.videoPlayBgScrollerView.height = height;
-            self.playButton.y = self.videoBgView.height*0.5;
-            self.historyView.top = self.videoBgView.height;
-            self.loadingBgView.height = self.videoBgView.height;
-            self.loadingImageView1.y = self.loadingBgView.height*0.5;
-            self.reqHistoryBtn.top = self.videoBgView.height;
-            UIView *handTip = [self.handTipForHistory viewWithTag:12879];
-            if (handTip) {
-                handTip.top = self.videoBgView.height+64+20;
-            }
-        }
-        if (remoteView) {
-            
-            remoteView.frame = CGRectMake(0, 0, width, height);
-            remoteView.x = self.videoPlayBgScrollerView.width*0.5;
-            if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
-            
-                if (windowMode == videoPlayModeFullScreen) {
-                    remoteView.height = self.view.width;
-                }
-                PanoramicIosView *rpv = (PanoramicIosView *)remoteView;
-                [rpv detectOrientationChange];
-                
-            }
-        }
-        [self layoutBottomBtn];
-        self.snapeImageView.frame = remoteView.bounds;
-        self.snapeImageView.hidden = YES;
-        [self.videoPlayBgScrollerView setContentOffset:CGPointMake(0, 0)];
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"remoteViewSize:%@" ,NSStringFromCGRect(remoteView.frame)]];
-        
     }else{
-        
-        
-        CGFloat ratio = 1.0;
-        CGFloat width;
         
         if (windowMode == videoPlayModeFullScreen) {
             width = self.view.bounds.size.height;
         }else{
             width = self.view.bounds.size.width;
         }
-        
-        ratio = remoteCallViewSize.height/remoteCallViewSize.width;
-        CGFloat height = width * ratio;
-        
+        height = width * ratio;
         if (windowMode == videoPlayModeFullScreen) {
             if (height < self.view.bounds.size.width) {
-                
                 height = self.view.bounds.size.width;
                 width = height/ratio;
-                
             }
         }
-        [self.videoPlayBgScrollerView setContentSize:CGSizeMake(width, height)];
-        
-        if (windowMode == videoPlayModeSmallWindow) {
-            
-            self.videoBgView.height = height;
-            self.videoPlayBgScrollerView.height = height;
-            self.playButton.y = self.videoBgView.height*0.5;
-            self.historyView.top = self.videoBgView.height;
-            self.loadingBgView.height = self.videoBgView.height;
-            self.loadingImageView1.y = self.loadingBgView.height*0.5;
-            self.reqHistoryBtn.top = self.videoBgView.height;
-            UIView *handTip = [self.handTipForHistory viewWithTag:12879];
-            if (handTip) {
-                handTip.top = self.videoBgView.height+64+20;
-            }
-        }
-        
-        UIView *remoteView =[self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
-        if (remoteView) {
-            remoteView.frame = CGRectMake(0, 0, width, height);
-            if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
-                
-                if (windowMode == videoPlayModeFullScreen) {
-                    remoteView.height = self.view.width;
-                    [self.videoPlayBgScrollerView setContentSize:CGSizeMake(self.videoBgView.bounds.size.width, self.view.width)];
-                }
-                PanoramicIosView *rpv = (PanoramicIosView *)remoteView;
-                [rpv detectOrientationChange];
-            }
-        }
-        
-        [self layoutBottomBtn];
-        self.snapeImageView.frame = self.videoPlayBgScrollerView.bounds;
-        [self.videoPlayBgScrollerView setContentOffset:CGPointMake(0, 0)];
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"remoteViewSize:%@" ,NSStringFromCGRect(remoteView.frame)]];
     }
+    
+    UIView *remoteView =[self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+    if (windowMode == videoPlayModeFullScreen && ![remoteView isKindOfClass:[VideoRenderIosView class]] ) {
+        width = self.view.bounds.size.height;
+        height = self.view.bounds.size.width;
+    }
+    
+    [self.videoPlayBgScrollerView setContentSize:CGSizeMake(self.videoBgView.bounds.size.width, height)];
+    
+    if (windowMode == videoPlayModeSmallWindow) {
+        
+        self.videoBgView.height = height;
+        self.videoPlayBgScrollerView.height = height;
+        self.playButton.y = height*0.5;
+        self.historyView.top = height;
+        self.loadingBgView.height = height;
+        self.loadingImageView1.y = height*0.5;
+        self.reqHistoryBtn.top = height;
+        UIView *handTip = [self.handTipForHistory viewWithTag:12879];
+        if (handTip) {
+            handTip.top = self.videoBgView.height+64+20;
+        }
+    }
+    if (remoteView) {
+        
+        remoteView.frame = CGRectMake(0, 0, width, height);
+        remoteView.x = self.videoPlayBgScrollerView.width*0.5;
+        if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
+            
+            if (windowMode == videoPlayModeFullScreen) {
+                remoteView.height = self.view.width;
+            }
+            PanoramicIosView *rpv = (PanoramicIosView *)remoteView;
+            [rpv detectOrientationChange];
+            
+        }else if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+            
+            if (windowMode == videoPlayModeFullScreen) {
+                remoteView.height = self.view.width;
+            }
+            PanoramicIosViewRS *rpv = (PanoramicIosViewRS *)remoteView;
+            [rpv detectOrientationChange];
+        }
+    }
+    [self layoutBottomBtn];
+    self.snapeImageView.frame = remoteView.bounds;
+    self.snapeImageView.hidden = YES;
+    [self.videoPlayBgScrollerView setContentOffset:CGPointMake(0, 0)];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"remoteViewSize:%@" ,NSStringFromCGRect(remoteView.frame)]];
+    
     if (windowMode == videoPlayModeSmallWindow) {
         
         CGSize size = CGSizeMake(self.videoBgView.width, self.videoBgView.height);
@@ -2171,6 +2615,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         PanoramicIosView *_remoteView =(PanoramicIosView *)remoteView;
         image = [_remoteView takeSnapshot];
         
+    }else if (remoteView && [remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+        PanoramicIosViewRS *_remoteView =(PanoramicIosViewRS *)remoteView;
+        image = [_remoteView takeSnapshot];
     }else{
        image = [CylanJFGSDK imageForSnapshot];
     }
@@ -2257,6 +2704,17 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     }
 }
 
+
+-(void)shakeBtnAction:(UIButton *)sender
+{
+    if (sender.selected) {
+        isOpenShake = NO;
+    }else{
+        isOpenShake = YES;
+    }
+    sender.selected = !sender.selected;
+}
+
 -(void)snap
 {
     //防止连续点击
@@ -2269,8 +2727,22 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 {
     if (playState == videoPlayStatePlaying) {
         
-        UIImage *image = [CylanJFGSDK imageForSnapshot];
         
+        
+        UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+        UIImage *image = nil;
+        
+        if (remoteView && [remoteView isKindOfClass:[PanoramicIosView class]]) {
+            
+            PanoramicIosView *_remoteView =(PanoramicIosView *)remoteView;
+            image = [_remoteView takeSnapshot];
+            
+        }else if (remoteView && [remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+            PanoramicIosViewRS *_remoteView =(PanoramicIosViewRS *)remoteView;
+            image = [_remoteView takeSnapshot];
+        }else{
+            image = [CylanJFGSDK imageForSnapshot];
+        }
         
         
         if (image) {
@@ -2351,9 +2823,14 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 
 
 //设置安全待机跳转事件
--(void)gotoIdleSetting
+-(void)gotoIdleSetting:(UIButton *)sender
 {
-    [[NSNotificationCenter defaultCenter] postNotificationName:JFGGotoSettingKey object:nil];
+    if (sender.tag == 1000) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:JFGGotoSettingKey object:nil];
+    }else{
+        [[NSNotificationCenter defaultCenter] postNotificationName:JFGGotoDeepSleepKey object:nil];
+    }
+    
 }
 
 //无网络连接，重试按钮事件
@@ -2371,6 +2848,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                 [self startLiveVideo];
             }else{
                 [self playCurrentHistoryVideo];
+                [self voiceAndMicBtnNomalState];
             }
             return;
         }
@@ -2589,38 +3067,6 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [self hudViewForText:[JfgLanguage getLanTextStrByKey:@"History_video_Firstly"]];
     }
     
-//    if (!isHasSDCard) {
-//        //没有sd卡
-//        
-//        [self hudViewForText:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_NoSDCardTips"]];
-//        
-//        return;
-//    }else{
-//        if (sdCardErrorCode != 0) {
-//            
-//            [self hudViewForText:[JfgLanguage getLanTextStrByKey:@"VIDEO_SD_DESC"]];
-//            
-//            return;
-//        }
-//    }
-//    
-//    //有可使用的sd卡，但是没有获取到录像数据
-//    if (!self.historyView.dataArray.count) {
-//    
-//        NSString *ts = @"";
-//        if (self.historyView.isLoadHistoryData) {
-//            ts = [JfgLanguage getLanTextStrByKey:@"NO_CONTENTS_2"];
-//        }else{
-//            ts = [JfgLanguage getLanTextStrByKey:@"History_video_Firstly"];
-//        }
-//        [self hudViewForText:ts];
-//        return;
-//    }
-//    
-//   
-    
-    
-    
 }
 
 
@@ -2720,15 +3166,14 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             [self startLiveVideo];
         }else{
             [self playCurrentHistoryVideo];
+            [self voiceAndMicBtnNomalState];
         }
         sender.selected = YES;
         
         if ([JFGSDK currentNetworkStatus] != JFGNetTypeWifi && [JFGSDK currentNetworkStatus] != JFGNetTypeOffline) {
              [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"LIVE_DATA"]];
         }
-        
         //点击播放按钮才开始加载历史视频数据
-        
         
     }else{
         //暂停
@@ -2765,6 +3210,18 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         }else{
             self.snapeImageView.frame = CGRectMake(0, 0, self.videoPlayBgScrollerView.bounds.size.width, self.videoPlayBgScrollerView.bounds.size.height);
         }
+        self.rpBgView.hidden = YES;
+        UIButton *switchViewModeBtn = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase];
+        if (switchViewModeBtn) {
+            switchViewModeBtn.enabled = NO;
+            switchViewModeBtn.hidden = NO;
+            self.viewModeBgView.hidden = NO;
+        }
+        UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+        if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+            PanoramicIosViewRS * _remoteView = (PanoramicIosViewRS *)remoteView;
+            [_remoteView setDisplayMode:SFM_Normal];
+        }
     }
 }
 
@@ -2779,6 +3236,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             [self startLiveVideo];
         }else{
             [self playCurrentHistoryVideo];
+            [self voiceAndMicBtnNomalState];
         }
         sender.selected = YES;
         if ([JFGSDK currentNetworkStatus] != JFGNetTypeWifi && [JFGSDK currentNetworkStatus] != JFGNetTypeOffline) {
@@ -2798,6 +3256,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     }
     [self fullVoiceAndMicBtnDisableState];
     self.playButton.selected = sender.selected;
+
 //    int64_t delayInSeconds = 1.0;
 //    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
 //    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
@@ -2841,13 +3300,20 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         if (playState == videoPlayStatePlaying) {
             [CylanJFGSDK playVideoByTime:historyLastestTimeStamp cid:self.cid];
             [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"playCid:%@",self.cid]];
-            // [CylanJFGSDK switchLiveVideo:NO beigenTime:currentHistoryModel.startTimestamp];
-            [self voiceAndMicBtnNomalState];
-            
             self.fullMicBtn.enabled = NO;
             self.fullSnapBtn.enabled = YES;
             self.fullVoideBtn.enabled = YES;
-            //[self fullVoiceAndMicBtnDisableState];
+            self.rpBgView.hidden = YES;
+            UIButton *switchViewModeBtn = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase];
+            if (switchViewModeBtn) {
+                switchViewModeBtn.enabled = NO;
+            }
+            self.viewModeBgView.hidden = NO;
+            UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+            if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+                PanoramicIosViewRS * _remoteView = (PanoramicIosViewRS *)remoteView;
+                [_remoteView setDisplayMode:SFM_Normal];
+            }
             
         }else{
             [self playHistoryVideoForZeroWithTimestamp:historyLastestTimeStamp];
@@ -2900,6 +3366,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     self.microphoneBtn.selected = NO;
     self.voiceButton.enabled = YES;
     self.microphoneBtn.enabled = YES;
+    if (self.viewModeSwitchBtn && isLiveVideo) {
+        self.viewModeSwitchBtn.enabled = YES;
+    }
     self.snapBtn.enabled = YES;
     isTalkBack = NO;
     isAudio = NO;
@@ -2945,6 +3414,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     self.fullMicBtn.enabled = NO;
     self.fullSnapBtn.enabled = NO;
     self.fullVoideBtn.enabled = NO;
+    if (self.viewModeSwitchBtn) {
+        self.viewModeSwitchBtn.enabled = NO;
+    }
 }
 
 -(void)fullVideoAndMicBtnNomal
@@ -2955,7 +3427,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     self.fullMicBtn.enabled = YES;
     self.fullSnapBtn.enabled = YES;
     self.fullPlayBtn.enabled = YES;
-    
+    if (self.viewModeSwitchBtn && isLiveVideo) {
+        self.viewModeSwitchBtn.enabled = YES;
+    }
     if (!isLiveVideo) {
         self.fullMicBtn.enabled = NO;
     }
@@ -2996,45 +3470,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [self.fullScreenBottomControlBar addSubview:self.historyView];
         self.historyView.viewType = ViewTypeFullMode;
         [self.historyView reloadData];
-        
-        if (self.historyView.dataArray.count) {
-           
-            if (self.historyView.dataArray != 0 && !isShared) {
-                self.historyView.alpha = 1;
-                self.historyView.hidden = NO;
-            }else{
-                self.historyView.hidden = YES;
-            }
-            if ([self.fullScreenBottomControlBar viewWithTag:10006]) {
-                UIView *v = [self.fullScreenBottomControlBar viewWithTag:10006];
-                [v removeFromSuperview];
-                v = nil;
-            }
-            
-        }else{
-            
-            if (isHasSDCard) {
-                self.reqHistoryBtn.hidden = YES;
-                
-                if (![self.fullScreenBottomControlBar viewWithTag:10006]) {
-                    UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
-                    btn.frame = CGRectMake(90, 0, 100, 50);
-                    btn.x = self.fullScreenBottomControlBar.width*0.5;
-                    [btn setTitle:[JfgLanguage getLanTextStrByKey:@"History_video"] forState:UIControlStateNormal];
-                    [btn setTitleColor:[UIColor colorWithHexString:@"#4B9FD5"] forState:UIControlStateNormal];
-                    [btn setTitleColor:[UIColor colorWithHexString:@"#cecece"] forState:UIControlStateDisabled];
-                    btn.titleLabel.font = [UIFont systemFontOfSize:15];
-                    btn.tag = 10006;
-                    [btn addTarget:self action:@selector(reqHistoryAction) forControlEvents:UIControlEventTouchUpInside];
-                    [self.fullScreenBottomControlBar addSubview:btn];
-                }
-                
-                
-    
-            }
-            
-            self.historyView.hidden = YES;
-        }
+        [self fullHistoryViewState];
         
     }
     
@@ -3070,6 +3506,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [keyWindows addSubview:self.fullShadeView];
     [self.videoPlayTipLabel removeFromSuperview];
     [self.rpBgView removeFromSuperview];
+    [self.viewModeBgView removeFromSuperview];
     
     [UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveLinear animations:^{
     
@@ -3095,17 +3532,20 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         
     } completion:^(BOOL finished) {
         
-    
         self.videoPlayTipLabel.x = kheight*0.5;
         self.videoPlayTipLabel.bottom = self.fullScreenBottomControlBar.top-10;
         self.rpBgView.right = kheight - 15;
         self.rpBgView.bottom = self.fullScreenBottomControlBar.top-10;
         self.rpBgView.hidden = NO;
         self.rpBgView.alpha = 1;
+        self.viewModeBgView.y = self.rpBgView.y;
+        self.viewModeBgView.left = 18;
+        self.viewModeBgView.alpha = 1;
         [self.videoBgView addSubview:self.videoPlayTipLabel];
         [self.videoBgView addSubview:self.fullScreenTopControlBar];
         [self.videoBgView addSubview:self.fullScreenBottomControlBar];
         [self.videoBgView addSubview:self.rpBgView];
+        [self.videoBgView addSubview:self.viewModeBgView];
         [self.fullShadeView removeFromSuperview];
         
         self.loadingBgView.frame = self.videoBgView.bounds;
@@ -3117,7 +3557,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     UIView *remoteView =[self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
     if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
         PanoramicIosView *panView = (PanoramicIosView *)remoteView;
-        NSLog(@"PanoramicIosViewsize:%@",NSStringFromCGRect(panView.frame));
+        [panView detectOrientationChange];
+    }else if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+        PanoramicIosViewRS *panView = (PanoramicIosViewRS *)remoteView;
         [panView detectOrientationChange];
     }
     
@@ -3132,11 +3574,12 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     }
     
     //remove一次后按钮设置状态相关属性会丢失
-   
-   
-    //NSLog(@"videoViewFrame:%@",NSStringFromCGRect(self.videoBgView.frame));
-    //NSLog(@"remoteFrame:%@",NSStringFromCGRect(remoteView.frame));
-    //[self remoteViewSizeFit];
+    if (defaultDispalyMode == SFM_Normal) {
+        self.shakeBtn.enabled = YES;
+    }else{
+        self.shakeBtn.enabled = NO;
+    }
+
     //三秒后自动隐藏工具栏
     [self performSelector:@selector(hideFullVideoPlayBar) withObject:nil afterDelay:3];
 }
@@ -3163,10 +3606,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         if (self.historyView.dataArray.count) {
             self.historyView.alpha = 1;
             self.historyView.hidden = NO;
+            self.reqHistoryBtn.hidden = YES;
         }else{
-            if (isHasSDCard) {
-                self.reqHistoryBtn.hidden = NO;
-            }
+            self.reqHistoryBtn.hidden = NO;
             self.historyView.alpha = 0;
             self.historyView.hidden = YES;
         }
@@ -3190,6 +3632,11 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         if (self.videoPlayBgScrollerView.contentSize.width < self.videoPlayBgScrollerView.frame.size.width) {
             self.videoPlayBgScrollerView.contentSize = self.videoBgView.bounds.size;
         }
+        if (self.videoPlayBgScrollerView.superview == nil) {
+            
+            [self.videoBgView addSubview:self.videoPlayBgScrollerView];
+            
+        }
         [JFGSDK appendStringToLogFile:@"exitFullScreen remoteViewSizeFit"];
         [self remoteViewSizeFit];
         self.snapeImageView.frame = CGRectMake(0, 0, self.videoPlayBgScrollerView.contentSize.width, self.videoPlayBgScrollerView.contentSize.height);
@@ -3209,15 +3656,23 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         
         [self.videoPlayTipLabel removeFromSuperview];
         [self.rpBgView removeFromSuperview];
+        [self.viewModeBgView removeFromSuperview];
         [self hideRpLeftBtn];
+        [self closeViewModelAnimation:NO];
+        
         self.rpBgView.hidden = NO;
         self.rpBgView.alpha = 1;
+        self.viewModeBgView.alpha = 1;
         self.rpBgView.right = self.videoBgView.width-20;
         self.rpBgView.bottom = self.videoBgView.height - 47;
+        self.viewModeBgView.y = self.rpBgView.y;
+        self.viewModeBgView.left = 18;
         self.videoPlayTipLabel.x = self.view.width*0.5;
         self.videoPlayTipLabel.bottom = self.videoBgView.height-8;
         [self.videoBgView addSubview:self.videoPlayTipLabel];
         [self.videoBgView addSubview:self.rpBgView];
+        [self.videoBgView addSubview:self.viewModeBgView];
+        
     }];
     
     [self.playButton setImage:[UIImage imageNamed:@"camera_btn_play"] forState:UIControlStateNormal];
@@ -3227,6 +3682,10 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
         PanoramicIosView *panView = (PanoramicIosView *)remoteView;
         [panView detectOrientationChange];
+    
+    }else if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+        PanoramicIosViewRS *rpv = (PanoramicIosViewRS *)remoteView;
+        [rpv detectOrientationChange];
     }
     
     @try {
@@ -3245,6 +3704,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [self showSmallWindowBottomBar];
     }else{
         [self showSmallWindowPlayBtn];
+        self.rpBgView.hidden = YES;//动画会导致切换的时候消失不自然
+        [self hiddenSmallWindowBottomBar];
     }
 }
 
@@ -3264,6 +3725,11 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         self.rpBgView.hidden = NO;
     }else{
         self.rpBgView.hidden = YES;
+        UIButton *switchViewModeBtn = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase];
+        if (switchViewModeBtn) {
+            switchViewModeBtn.enabled = NO;
+            switchViewModeBtn.hidden = NO;
+        }
     }
     
     if (isShared == NO) {
@@ -3276,10 +3742,12 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [self.videoBgView addSubview:self.videoBottomBar];
         [self.videoBgView addSubview:self.rpBgView];
         [self.videoBgView addSubview:self.playButton];
+        [self.videoBgView addSubview:self.viewModeBgView];
     }
     [self.videoBgView bringSubviewToFront:self.videoBottomBar];
     [self.videoBgView bringSubviewToFront:self.videoPlayTipLabel];
     [self.videoBgView bringSubviewToFront:self.rpBgView];
+    [self.videoBgView bringSubviewToFront:self.viewModeBgView];
 
     [UIView animateWithDuration:0.5 animations:^{
         self.videoBottomBar.alpha = 1;
@@ -3292,6 +3760,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             self.videoBottomBar.bottom = self.videoBgView.bottom;
         }
         self.rpBgView.alpha = 1;
+        self.viewModeBgView.alpha = 1;
     }];
 }
 
@@ -3326,6 +3795,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [self.videoBgView addSubview:self.playButton];
         [self.videoBgView addSubview:self.videoBottomBar];
         [self.videoBgView addSubview:self.rpBgView];
+        [self.videoBgView addSubview:self.viewModeBgView];
     }
     [self.videoBgView bringSubviewToFront:self.playButton];
     [self stopLoadingAnimation];
@@ -3347,6 +3817,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         
         self.videoBottomBar.alpha = 0;
         self.rpBgView.alpha = 0;
+        self.viewModeBgView.alpha = 0;
         self.videoBottomBar.top = self.videoBgView.height+10;
  
     } completion:^(BOOL finished) {
@@ -3354,7 +3825,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         self.videoBottomBar.hidden = YES;
         self.rpBgView.hidden = YES;
         [self hideRpLeftBtn];
-        
+        [self closeViewModelAnimation:NO];
     }];
     
     if (windowMode == videoPlayModeFullScreen){
@@ -3385,10 +3856,11 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     }else{
         self.historyView.hidden = YES;
     }
-    
+    self.rpBgView.hidden = NO;
     [UIView animateWithDuration:0.5 animations:^{
         self.videoPlayTipLabel.bottom = Kwidth-self.fullScreenBottomControlBar.height-10;
         self.rpBgView.top = [UIScreen mainScreen].bounds.size.width-self.fullScreenBottomControlBar.height - 10 -22;
+        self.viewModeBgView.y = self.rpBgView.y;
     }];
     
     [UIView animateWithDuration:0.5 animations:^{
@@ -3417,6 +3889,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [UIView animateWithDuration:0.7 animations:^{
         self.videoPlayTipLabel.bottom = Kwidth - 10;
         self.rpBgView.top = Kwidth;
+        self.viewModeBgView.top = Kwidth;
     }];
     
     [UIView animateWithDuration:0.5 animations:^{
@@ -3428,25 +3901,29 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     } completion:^(BOOL finished) {
         
         [self hideRpLeftBtn];
+        [self closeViewModelAnimation:NO];
         
     }];
 }
 
 //显示待机视图
--(void)showIdleView
+-(void)showIdleViewForType:(int)type
 {
     if (self.idleModeBgView.superview == nil || self.idleModeBgView.hidden == YES ) {
+        
         [self.videoBgView addSubview:self.idleModeBgView];
         self.idleModeBgView.hidden = NO;
         self.videoBgView.backgroundColor = [UIColor colorWithHexString:@"#31506f"];
         
-        [self idleModelSubView];
+        [self idleModelSubViewForType:type];
         [self hiddenSmallWindowBottomBar];
         [self hideSmallWindowPlayBtn];
         [self hideDisconnectNetView];
         [self stopLoadingAnimation];
         [self.videoPlayTipLabel removeFromSuperview];
         [self historyViewState];
+    }else{
+        [self.videoBgView bringSubviewToFront:self.idleModeBgView];
     }
    
 }
@@ -3516,7 +3993,6 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 }
 
 
-
 -(void)hideDisconnectNetView
 {
     UIView *bgView = [self.videoBgView viewWithTag:123451];
@@ -3532,14 +4008,10 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         
         CGFloat height = 0;
         //NSInteger pid = [self.devModel.pid integerValue];
-        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
+        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360 || [CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
             height = self.view.width;
         }else{
             NSString *key = [NSString stringWithFormat:@"remoteSize_%@",self.devModel.uuid];
-            /*
-             
-             [[NSUserDefaults standardUserDefaults] setObject:NSStringFromCGSize(size) forKey:key];
-             */
             NSString *sizeStr = [[NSUserDefaults standardUserDefaults] objectForKey:key];
             if (sizeStr) {
                 CGSize size = CGSizeFromString(sizeStr);
@@ -3553,7 +4025,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         _videoBgView.backgroundColor = [UIColor blackColor];
         _videoBgView.clipsToBounds = YES;
         _videoBgView.userInteractionEnabled = YES;
-       
+    
     }
     return _videoBgView;
 }
@@ -3594,17 +4066,23 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     return _idleModeBgView;
 }
 
--(void)idleModelSubView
+-(void)idleModelSubViewForType:(int)type
 {
     UIImageView *idleImageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, 0, 40, 40)];
     idleImageView.center = CGPointMake(self.idleModeBgView.width*0.5, 20);
     idleImageView.image = [UIImage imageNamed:@"camera_icon_standby"];
+    if (type == 1) {
+        idleImageView.image = [UIImage imageNamed:@"pic_powersaving"];
+    }
     [self.idleModeBgView addSubview:idleImageView];
     
     UILabel *label = [[UILabel alloc]initWithFrame:CGRectMake(self.idleModeBgView.width*0.5-320*0.5, idleImageView.bottom+17, 320, 35*0.5)];
     label.font = [UIFont systemFontOfSize:16];
     label.textColor = [UIColor whiteColor];
     label.text = [JfgLanguage getLanTextStrByKey:@"Tap1_Camera_Video_Standby"];
+    if (type == 1) {
+        label.text = [JfgLanguage getLanTextStrByKey:@"ENERGY_SAVE_MODE_ON"];
+    }
     label.textAlignment = NSTextAlignmentCenter;
     [self.idleModeBgView addSubview:label];
     
@@ -3612,12 +4090,13 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     //被分享设备不显示前往设置按钮
     if (!isShared) {
         UIButton *gotoSet = [UIButton buttonWithType:UIButtonTypeCustom];
+        gotoSet.tag = type+1000;
         gotoSet.frame = CGRectMake(self.idleModeBgView.width*0.5-152*0.5, label.bottom, 152, 30);
         [gotoSet setTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_Video_Standby_OffTips"] forState:UIControlStateNormal];
         [gotoSet setTitleColor:[UIColor colorWithHexString:@"#36bdff"] forState:UIControlStateNormal];
         gotoSet.titleLabel.font = [UIFont systemFontOfSize:13];
         gotoSet.titleLabel.textAlignment = NSTextAlignmentCenter;
-        [gotoSet addTarget:self action:@selector(gotoIdleSetting) forControlEvents:UIControlEventTouchUpInside];
+        [gotoSet addTarget:self action:@selector(gotoIdleSetting:) forControlEvents:UIControlEventTouchUpInside];
         [self.idleModeBgView addSubview:gotoSet];
     }
     [self.videoPlayBgScrollerView removeFromSuperview];
@@ -4139,11 +4618,13 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         self.fullSnapBtn.right = _fullScreenTopControlBar.width-20;
         self.fullMicBtn.right = self.fullSnapBtn.left-15;
         self.fullVoideBtn.right = self.fullMicBtn.left-15;
+        self.shakeBtn.right = self.fullVoideBtn.left - 15;
         
         [_fullScreenTopControlBar addSubview:self.fullMicBtn];
         [_fullScreenTopControlBar addSubview:self.fullVoideBtn];
         [_fullScreenTopControlBar addSubview:self.fullSnapBtn];
         
+        [_fullScreenTopControlBar addSubview:self.shakeBtn];
     }
     return _fullScreenTopControlBar;
 }
@@ -4157,6 +4638,22 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [_fullSnapBtn addTarget:self action:@selector(snap) forControlEvents:UIControlEventTouchUpInside];
     }
     return _fullSnapBtn;
+}
+
+-(UIButton *)shakeBtn
+{
+    if (!_shakeBtn) {
+        _shakeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _shakeBtn.frame = CGRectMake(0, 0, 50, 50);
+        [_shakeBtn setImage:[UIImage imageNamed:@"icon_xunhuan_close"] forState:UIControlStateNormal];
+        [_shakeBtn setImage:[UIImage imageNamed:@"icon_xunhuan_open"] forState:UIControlStateSelected];
+        [_shakeBtn setImage:[UIImage imageNamed:@"icon_xunhuan_close_disable"] forState:UIControlStateDisabled];
+        [_shakeBtn addTarget:self action:@selector(shakeBtnAction:) forControlEvents:UIControlEventTouchUpInside];
+        if ([CommonMethod devBigTypeForOS:self.devModel.pid] != JFGDevBigType360) {
+            _shakeBtn.frame = CGRectMake(0, 0, 0, 0);
+        }
+    }
+    return _shakeBtn;
 }
 
 -(UIButton *)fullMicBtn
@@ -4251,7 +4748,6 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         _reqHistoryBtn.hidden = YES;
         [_reqHistoryBtn addTarget:self action:@selector(reqHistoryAction) forControlEvents:UIControlEventTouchUpInside];
         [_reqHistoryBtn setBackgroundImage:[UIImage imageNamed:@"btn_cam_history"] forState:UIControlStateNormal];
-        
     }
     return _reqHistoryBtn;
 }
@@ -4323,6 +4819,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [btn addTarget:self action:@selector(handTipDone) forControlEvents:UIControlEventTouchUpInside];
         [bgview addSubview:btn];
         
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(handTipDone)];
+        [_handTipForHistory addGestureRecognizer:tap];
         [_handTipForHistory addSubview:bgview];
         
     }
@@ -4389,12 +4887,13 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                 [btn setTitle:_title forState:UIControlStateNormal];
                 [btn setTitleColor:[UIColor colorWithHexString:@"#ffffff"] forState:UIControlStateNormal];
                 btn.titleLabel.font = [UIFont systemFontOfSize:12];
-                btn.backgroundColor = [UIColor colorWithWhite:0 alpha:0.2];
+                btn.backgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
                 btn.layer.masksToBounds = YES;
                 btn.layer.cornerRadius = 3;
                 btn.tag = RPBtnTagBase+idx;
                 [btn addTarget:self action:@selector(setRpAction:) forControlEvents:UIControlEventTouchUpInside];
                 [_rpBgView addSubview:btn];
+                
             }];
         }
     }
@@ -4438,14 +4937,11 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 -(void)setRpAction:(UIButton *)sender
 {
     //防止刚点按就消失了
-    if (windowMode == videoPlayModeSmallWindow) {
+    if (windowMode != videoPlayModeSmallWindow) {
         
-//        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(hideVideoPlayBar) object:nil];
-//        [self performSelector:@selector(hideVideoPlayBar) withObject:nil afterDelay:5];
-        
-    }else{
         [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(hideFullVideoPlayBar) object:nil];
         [self performSelector:@selector(hideFullVideoPlayBar) withObject:nil afterDelay:5];
+        
     }
     
     UIButton *leftBtn = [self.rpBgView viewWithTag:RPBtnTagBase+1];
@@ -4453,6 +4949,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     if (sender.tag == RPBtnTagBase+2) {
         //点按伸缩图标
         if (leftBtn.left == sender.left) {
+            [self closeViewModelAnimation:NO];
             //需要展开
             [UIView animateWithDuration:0.5 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseIn animations:^{
                 
@@ -4541,7 +5038,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     UIButton *leftBtn2 = [self.rpBgView viewWithTag:RPBtnTagBase+2];
     UIButton *leftBtn1 = [self.rpBgView viewWithTag:RPBtnTagBase+1];
     UIButton *leftBtn = [self.rpBgView viewWithTag:RPBtnTagBase];
-    if (leftBtn2.left != leftBtn.left) {
+    if (leftBtn2 && leftBtn1 && leftBtn && leftBtn2.left != leftBtn.left) {
         leftBtn.left = leftBtn1.left = leftBtn2.left;
         leftBtn.alpha = leftBtn1.alpha = 0;
     }
@@ -4565,52 +5062,29 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"ap_angleChnaed:%d",angleType]];
         self.angleType = angleType;
-        UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
-        if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
-            
-            PanoramicIosView *pv = (PanoramicIosView *)remoteView;
-            if (self.angleType == 1) {
-                //挂壁
-                [pv setMountMode:MOUNT_WALL];
-            }else{
-                //吊顶
-                [pv setMountMode:MOUNT_TOP];
-            }
-        }
+        [self switchVideoViewHangMode];
         
     }else{
         
+        self.angleType = angleType;
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"angleChnaed:%d",angleType]];
-        DataPointSeg * seg = [[DataPointSeg alloc]init];
-        NSError * error = nil;
-        seg.msgId = dpMsgCamera_Angle;
-        seg.value = [MPMessagePackWriter writeObject:[NSString stringWithFormat:@"%d",angleType] error:&error];
-        NSArray * dps = @[seg];
-        
-        __weak typeof(self) weakSelf = self;
-        [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dps success:^(NSMutableDictionary *dic) {
-            
-            weakSelf.angleType = [[dic objectForKey:dpMsgCameraAngleKey] intValue];
-            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
-            if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
-                
-                UIView *remoteView = [weakSelf.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
-                if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
-                    
-                    PanoramicIosView *pv = (PanoramicIosView *)remoteView;
-                    if (weakSelf.angleType == 1) {
-                        //挂壁
-                        [pv setMountMode:MOUNT_WALL];
-                    }else{
-                        //吊顶
-                        [pv setMountMode:MOUNT_TOP];
-                    }
-                }
-            }
-            
-        } failed:^(RobotDataRequestErrorType error) {
-            
-        }];
+        [self switchVideoViewHangMode];
+//        DataPointSeg * seg = [[DataPointSeg alloc]init];
+//        NSError * error = nil;
+//        seg.msgId = dpMsgCamera_Angle;
+//        seg.value = [MPMessagePackWriter writeObject:[NSString stringWithFormat:@"%d",angleType] error:&error];
+//        NSArray * dps = @[seg];
+//        
+//        __weak typeof(self) weakSelf = self;
+//        [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dps success:^(NSMutableDictionary *dic) {
+//            
+//            weakSelf.angleType = [[dic objectForKey:dpMsgCameraAngleKey] intValue];
+//            [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+//            
+//            
+//        } failed:^(RobotDataRequestErrorType error) {
+//            
+//        }];
     }
 }
 #pragma mark- 引导tip
@@ -4758,6 +5232,345 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         _phonyManager.delegate = self;
     }
     return _phonyManager;
+}
+
+-(UIView *)viewModeBgView
+{
+    if (!_viewModeBgView) {
+        _viewModeBgView = [[UIView alloc]initWithFrame:CGRectMake(18, self.rpBgView.top, 174, 30)];
+        _viewModeBgView.backgroundColor = [UIColor clearColor];
+        _viewModeBgView.hidden = YES;
+        _viewModeBgView.y = self.rpBgView.y;
+        
+        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360) {
+            
+            NSArray *imagesNamal = @[@"icon_view_switch",@"icon_circular",@"icon_column",@"icon_four"];
+            NSArray *imagesSelected = @[@"",@"icon_circular_hl",@"icon_column_hl",@"icon_four_hl"];
+            
+            for (int i=0; i<4; i++) {
+                
+                UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
+                btn.frame = CGRectMake(0, 0, 30, 30);
+                btn.backgroundColor = [UIColor clearColor];
+                btn.tag = ViewModeBtnTagBase+i;
+                
+                [btn setImage:[UIImage imageNamed:imagesNamal[i]] forState:UIControlStateNormal];
+                [btn setImage:[UIImage imageNamed:imagesSelected[i]] forState:UIControlStateSelected];
+                if (i==0) {
+                    [btn setImage:[UIImage imageNamed:@"icon_view_switch_disable@"] forState:UIControlStateDisabled];
+                    [btn setImage:[UIImage imageNamed:@"icon_view_switch_press"] forState:UIControlStateHighlighted];
+                    [btn addTarget:self action:@selector(openOrCloseViewMode:) forControlEvents:UIControlEventTouchUpInside];
+                    btn.selected = NO;
+                    btn.alpha = 1;
+                    self.viewModeSwitchBtn = btn;
+                }else{
+                   
+                    btn.alpha = 0;
+                    [btn addTarget:self action:@selector(viewModeSwitchForBtn:) forControlEvents:UIControlEventTouchUpInside];
+                }
+                
+                
+                if (defaultDispalyMode == SFM_Normal && i==1) {
+                    btn.selected = YES;
+                }else if (defaultDispalyMode == SFM_Cylinder && i==2){
+                    btn.selected = YES;
+                }else if (defaultDispalyMode == SFM_Quad && i==3){
+                    btn.selected = YES;
+                }
+                
+                [_viewModeBgView addSubview:btn];
+                
+            }
+            
+            if (self.angleType == 1) {
+                UIButton *btn = [_viewModeBgView viewWithTag:ViewModeBtnTagBase+1];
+                UIButton *btn1 = [_viewModeBgView viewWithTag:ViewModeBtnTagBase+2];
+                UIButton *btn2 = [_viewModeBgView viewWithTag:ViewModeBtnTagBase+3];
+                btn.selected = YES;
+                btn1.selected = NO;
+                btn2.selected = NO;
+            }
+            
+            [self addKvoForRPBgView];
+            
+        }else{
+            
+            _viewModeBgView.frame = CGRectMake(0, 0, 0, 0);
+            _viewModeBgView.backgroundColor = [UIColor clearColor];
+            
+        }
+        
+        
+    }
+    return _viewModeBgView;
+}
+
+-(void)openViewModel
+{
+    [self hideRpLeftBtn];
+    
+    UIButton *btn  = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase];
+    UIButton *btn1 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+1];
+    UIButton *btn2 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+2];
+    UIButton *btn3 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+3];
+    if (btn1.alpha == 0) {
+        
+        [UIView animateWithDuration:0.5 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseIn animations:^{
+            
+            btn1.left = btn.right+15;
+            btn2.left = btn1.right+15;
+            btn3.left = btn2.right+15;
+            btn1.alpha = btn2.alpha = btn3.alpha = 1;
+            
+        } completion:^(BOOL finished) {
+            
+        }];
+        btn.selected = YES;
+    }
+}
+
+-(void)closeViewModelAnimation:(BOOL)animation
+{
+    UIButton *btn = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase];
+    UIButton *btn1 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+1];
+    UIButton *btn2 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+2];
+    UIButton *btn3 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+3];
+    
+    if (btn && btn1 && btn2 && btn3) {
+        if (btn3.alpha == 1) {
+            
+            if (animation) {
+                [UIView animateWithDuration:0.5 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseIn animations:^{
+                    
+                    btn1.left = btn.left;
+                    btn2.left = btn.left;
+                    btn3.left = btn.left;
+                    btn1.alpha = btn2.alpha = btn3.alpha = 0;
+                    
+                } completion:^(BOOL finished) {
+                    
+                }];
+            }else{
+                
+                btn1.left = btn.left;
+                btn2.left = btn.left;
+                btn3.left = btn.left;
+                btn1.alpha = btn2.alpha = btn3.alpha = 0;
+                
+            }
+            btn.selected = NO;
+            
+        }
+    }
+    
+    
+    
+}
+
+-(void)addKvoForRPBgView
+{
+    __weak typeof(self) weakSelf = self;
+    [self.KVOController observe:self.rpBgView keyPath:@"hidden" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionInitial block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
+        
+        if (!isLiveVideo && weakSelf.rpBgView.hidden) {
+            
+        }else{
+            weakSelf.viewModeBgView.hidden = weakSelf.rpBgView.hidden;
+        }
+    }];
+    
+}
+
+#pragma mark- 视图模式切换事件
+-(void)viewModeSwitchForBtn:(UIButton *)sender
+{
+    if (sender.selected) {
+        return;
+    }
+    
+    if (self.angleType == 1) {
+
+        if (windowMode == videoPlayModeSmallWindow) {
+            
+            __weak typeof(self) weakSelf = self;
+            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"SWITCH_VIEW_POP"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                
+            } OKBlock:^{
+                
+                BOOL isAPModel = [CommonMethod isAPModelCurrentNetForCid:weakSelf.devModel.uuid pid:weakSelf.devModel.pid];
+                if (isAPModel) {
+                    
+                    weakSelf.angleType = 0;
+                    [weakSelf switchVideoViewHangMode];
+                    [weakSelf hudViewForText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                    
+                }else{
+                    
+                    DataPointSeg *seg = [[DataPointSeg alloc]init];
+                    seg.msgId = 509;
+                    seg.value = [MPMessagePackWriter writeObject:@"0" error:nil];
+                    //509
+                    [[JFGSDKDataPoint sharedClient] robotSetDataWithPeer:self.devModel.uuid dps:@[seg] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
+                        
+                        for (DataPointIDVerRetSeg *_seg in dataList) {
+                            
+                            if (_seg.ret == 0) {
+                                
+                                weakSelf.angleType = 0;
+                                [weakSelf switchVideoViewHangMode];
+                                [weakSelf hudViewForText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                                
+                            }
+                        }
+                        
+                    } failure:^(RobotDataRequestErrorType type) {
+                        
+                    }];
+                }
+                
+                
+            }];
+            
+        }else{
+            
+            __weak typeof(self) weakSelf = self;
+            [LSAlertView showAlertForTransformRotateWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"SWITCH_VIEW_POP"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                
+            } OKBlock:^{
+                
+                BOOL isAPModel = [CommonMethod isAPModelCurrentNetForCid:weakSelf.devModel.uuid pid:weakSelf.devModel.pid];
+                if (isAPModel) {
+                    
+                    weakSelf.angleType = 0;
+                    [weakSelf switchVideoViewHangMode];
+                    [weakSelf hudViewForText:@"SCENE_SAVED"];
+                    
+                }else{
+                    
+                    DataPointSeg *seg = [[DataPointSeg alloc]init];
+                    seg.msgId = 509;
+                    seg.value = [MPMessagePackWriter writeObject:[NSNumber numberWithInt:0] error:nil];
+                    //509
+                    [[JFGSDKDataPoint sharedClient] robotSetDataWithPeer:self.devModel.uuid dps:@[seg] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
+                        
+                        for (DataPointIDVerRetSeg *_seg in dataList) {
+                            
+                            if (_seg.ret == 0) {
+                                
+                                weakSelf.angleType = 0;
+                                [weakSelf switchVideoViewHangMode];
+                                [weakSelf hudViewForText:@"SCENE_SAVED"];
+                                
+                            }
+                        }
+                        
+                    } failure:^(RobotDataRequestErrorType type) {
+                        
+                    }];
+                }
+                
+                
+            }];
+        }
+        return;
+    }
+    
+    UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+    PanoramicIosViewRS * _remoteView = nil;
+    if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+        _remoteView = (PanoramicIosViewRS *)remoteView;
+    }
+    if (!_remoteView) {
+        return;
+    }
+    if (sender.tag == ViewModeBtnTagBase+1) {
+        //圆※
+        [_remoteView setDisplayMode:SFM_Normal];
+        defaultDispalyMode = SFM_Normal;
+        self.shakeBtn.enabled = YES;
+        [self closeViewModelAnimation:YES];
+    }else if (sender.tag == ViewModeBtnTagBase+2){
+        //圆柱体
+        [_remoteView setDisplayMode:SFM_Cylinder];
+        defaultDispalyMode = SFM_Cylinder;
+        self.shakeBtn.enabled = NO;
+        [self closeViewModelAnimation:YES];
+    }else if (sender.tag == ViewModeBtnTagBase+3){
+        //四分
+        [_remoteView setDisplayMode:SFM_Quad];
+        defaultDispalyMode = SFM_Quad;
+        self.shakeBtn.enabled = NO;
+        [self closeViewModelAnimation:YES];
+    }
+    UIButton *btn1 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+1];
+    UIButton *btn2 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+2];
+    UIButton *btn3 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+3];
+    btn3.selected = NO;
+    btn2.selected = NO;
+    btn1.selected = NO;
+    sender.selected = YES;
+}
+
+//设置默认显示模式为圆形
+-(void)defaultViewMode
+{
+    UIButton *btn1 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+1];
+    UIButton *btn2 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+2];
+    UIButton *btn3 = [self.viewModeBgView viewWithTag:ViewModeBtnTagBase+3];
+    btn1.selected = YES;
+    btn2.selected = NO;
+    btn3.selected = NO;
+    UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+    if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+        PanoramicIosViewRS * _remoteView = (PanoramicIosViewRS *)remoteView;
+        
+        [_remoteView setDisplayMode:SFM_Normal];
+        defaultDispalyMode = SFM_Normal;
+    }
+}
+
+-(void)switchVideoViewHangMode
+{
+    if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360) {
+        [self defaultViewMode];
+    }
+    UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+
+    if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
+        PanoramicIosView * _remoteView = (PanoramicIosView *)remoteView;
+        if (self.angleType == 1) {
+            //挂壁
+            [_remoteView setMountMode:MOUNT_WALL];
+        }else{
+            //吊顶
+            [_remoteView setMountMode:MOUNT_TOP];
+        }
+    }else if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+        PanoramicIosViewRS * _remoteView = (PanoramicIosViewRS *)remoteView;
+        if (self.angleType == 1) {
+            //挂壁
+            [_remoteView setMountMode:MOUNT_WALL];
+            [self defaultViewMode];
+        }else{
+            //吊顶
+            [_remoteView setMountMode:MOUNT_TOP];
+        }
+    }
+}
+
+-(void)openOrCloseViewMode:(UIButton *)sender
+{
+    if (windowMode == videoPlayModeFullScreen) {
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(hideFullVideoPlayBar) object:nil];
+        [self performSelector:@selector(hideFullVideoPlayBar) withObject:nil afterDelay:5];
+    }
+    if (sender.selected) {
+        [self closeViewModelAnimation:YES];
+        sender.selected = NO;
+    }else{
+        [self openViewModel];
+        sender.selected = YES;
+    }
 }
 
 -(void)dealloc

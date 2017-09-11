@@ -26,8 +26,8 @@
 
 +(BOOL)isRSDevForPid:(NSString *)pid
 {
-    BOOL isSupport = NO;
-    NSArray *supportPids = @[@"38",@"39",@"49"];
+    BOOL isSupport = NO;//38 39 81 49 50
+    NSArray *supportPids = @[@"38",@"39",@"49",@"50",@"81"];
     for (NSString *_pid in supportPids) {
         if ([_pid isEqualToString:pid]) {
             isSupport = YES;

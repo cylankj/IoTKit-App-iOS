@@ -358,7 +358,6 @@
 -(void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-    
 }
 
 -(void)initView
@@ -589,7 +588,7 @@
         for (MessageModel *model in delList) {
             DataPointIDVerSeg *seg = [[DataPointIDVerSeg alloc]init];
             seg.msgId = model.realyMsgID;
-            seg.version = model.timestamp*1000;
+            seg.version = model._version;
             [segList addObject:seg];
         }
         
@@ -1248,7 +1247,7 @@
         cell.imgv3.fileName = [NSString stringWithFormat:@"%.0f_3.jpg",messageModel.timestamp];
         cell.imgv1.deviceVersion = cell.imgv2.deviceVersion = cell.imgv3.deviceVersion = messageModel.deviceVersion;
         cell.imgv1.selectedIndexPath = cell.imgv2.selectedIndexPath = cell.imgv3.selectedIndexPath = indexPath;
-        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
+        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera || [CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360 || [CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeEyeCamera) {
             
             cell.imgv1.isPanorama =  cell.imgv2.isPanorama = cell.imgv3.isPanorama = YES;
             
@@ -1338,7 +1337,7 @@
         }
         cell.timestamp = messageModel._version;
         
-        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
+        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera || [CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360 || [CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeEyeCamera) {
             
             cell.imgv1.isPanorama =  cell.imgv2.isPanorama = YES;
             
@@ -1390,7 +1389,7 @@
         if ([messageModel.tly isKindOfClass:[NSString class]]) {
             cell.imgv1.tly = [messageModel.tly intValue];
         }
-        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera) {
+        if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeSinglefisheyeCamera || [CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360 || [CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigTypeEyeCamera) {
             
             cell.imgv1.isPanorama = YES;
             

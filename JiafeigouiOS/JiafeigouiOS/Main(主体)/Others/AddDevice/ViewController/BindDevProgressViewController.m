@@ -26,6 +26,8 @@
 #import "VideoPlayFor720ViewController.h"
 #import "UIColor+HexColor.h"
 #import "LSAlertView.h"
+#import "JFGGrayPolicyManager.h"
+#import "PropertyManager.h"
 
 @interface BindDevProgressViewController ()<JFGSDKBindDeviceDelegate,UIAlertViewDelegate,JFGSDKCallbackDelegate>
 {
@@ -38,6 +40,7 @@
 @property (nonatomic,strong)BindProgressAnimationView *animationView;
 @property (nonatomic, strong) JFGSDKBindingDevice *bindingDeviceSDK;
 @property (nonatomic,strong)UILabel *detailLabel;
+@property (nonatomic,strong)PropertyManager *propertyTool;
 
 @property (nonatomic, strong) DevicesViewModel *devicesVM;
 @property (nonatomic, strong) NSMutableArray *cacheCidList;
@@ -102,9 +105,6 @@ int const timeoutDuration = 90; // 90秒 超时
     // Do any additional setup after loading the view.
 }
 
-
-
-
 -(void)getCacheCidList
 {
     NSArray *cidlist = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
@@ -113,7 +113,6 @@ int const timeoutDuration = 90; // 90秒 超时
         [self.cacheCidList addObject:[NSString stringWithString:model.uuid]];
     }
 }
-
 
 -(void)viewDidAppear:(BOOL)animated
 {
@@ -156,15 +155,16 @@ int const timeoutDuration = 90; // 90秒 超时
         if (weakSelf.navigationController){
             for (UIViewController *temp in weakSelf.navigationController.viewControllers)
             {
-                if ([temp isKindOfClass:[AddDeviceMainViewController class]])
+                if ([temp isKindOfClass:[AddDeviceMainViewController class]] || [temp isKindOfClass:[VideoPlayFor720ViewController class]])
                 {
                     [weakSelf.navigationController popToViewController:temp animated:YES];
-                }else if ([temp isKindOfClass:[VideoPlayFor720ViewController class]]){
-                    [weakSelf.navigationController popToViewController:temp animated:YES];
+                    return ;
                 }
             }
+            [weakSelf.navigationController popViewControllerAnimated:YES];
             
         }else{
+            
             [weakSelf dismissViewControllerAnimated:YES completion:nil];
         }
     }];
@@ -215,7 +215,9 @@ int const timeoutDuration = 90; // 90秒 超时
 {
        //[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(netConnectTimeout) object:nil];
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"deviceIsOnline[%d]   isReceiveRsp [%d]",self.deviceIsOnline,self.isBindSuccess]];
-    [self.devicesVM setDevicesDefaultDataWithCid:cid]; // 设置 默认值
+
+    //设置默认值方法已经转移到JFGBoundDevicesMsg.m类中的#setDefaultValue方法。（次数设置，因为cidList还没有返回，会导致设置失败，而且pType绑定的时候并不准确）
+    
     [self setSettingsRedDot:cid]; // 红点
     if (!self.isPushedToSuccess)
     {
@@ -347,6 +349,8 @@ int const timeoutDuration = 90; // 90秒 超时
 
 -(void)fjgBindDeviceSuccessForPeer:(NSString *)peer
 {
+    //重置灰度时间
+    [JFGGrayPolicyManager resetGrayTime];
     self.isBindSuccess = YES;
     if ([peer isKindOfClass:[NSString class]] && ![peer isEqualToString:@""]) {
         self.cid = [NSString stringWithString:peer];
@@ -356,6 +360,10 @@ int const timeoutDuration = 90; // 90秒 超时
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"bindSuccess:%@",peer?peer:nil]];
     [self pushToBindSuccessVC:peer];
     [self checkDeviceNetStatue];
+    
+    //记录新增加的设备cid，用于刷新cid列表时候，设置默认值
+    [[JFGBoundDevicesMsg sharedDeciceMsg] addNewDeviceForCid:self.cid];
+    
 }
 
 -(void)jfgDeviceList:(NSArray<JFGSDKDevice *> *)deviceList
@@ -386,10 +394,27 @@ int const timeoutDuration = 90; // 90秒 超时
 
 - (void)setSettingsRedDot:(NSString *)peer
 {
-    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowAutoPhotoRedDot(peer)];
-    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowRecordRedDot(peer)];
-    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowSafeAIRedDot(peer)];
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    BOOL isOpenDeepSleep = NO;//绑定后是否会自动开启省电休眠模式
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc]init];
+    [dateFormatter setDateFormat:@"HH"];
+    NSString *hour = [dateFormatter stringFromDate:[NSDate date]];
+    if ([hour intValue]>=22 || [hour intValue] <=8) {
+        isOpenDeepSleep = YES;
+    }
+    
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pRemoteWatchKey] && isOpenDeepSleep) {
+        //绑定设备后，会自动设置默认22：00 -- 8：00开启省电休眠模式，如果设备支持此功能，且在这个时间段绑定设备，设置默认之后，就会进入休眠，所有设置功能不可用，小红点也不显示
+    }else{
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowAutoPhotoRedDot(peer)];
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowRecordRedDot(peer)];
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowSafeAIRedDot(peer)];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+    }
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pRemoteWatchKey]) {
+         [[NSUserDefaults standardUserDefaults] setBool:YES forKey:isShowDeepSleepRedDot(peer)];
+    }
 }
 
 -(void)checkDeviceNetStatue
@@ -495,6 +520,16 @@ int const timeoutDuration = 90; // 90秒 超时
         _detailLabel.textAlignment = NSTextAlignmentCenter;
     }
     return _detailLabel;
+}
+
+- (PropertyManager *)propertyTool
+{
+    if (_propertyTool == nil)
+    {
+        _propertyTool = [[PropertyManager alloc] init];
+        _propertyTool.propertyFilePath = [[NSBundle mainBundle] pathForResource:@"properties" ofType:@"json"];
+    }
+    return _propertyTool;
 }
 
 - (void)didReceiveMemoryWarning {

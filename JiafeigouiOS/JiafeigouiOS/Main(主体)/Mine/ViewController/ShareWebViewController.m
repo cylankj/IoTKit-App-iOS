@@ -79,7 +79,7 @@
         }else{
             title = [JfgLanguage getLanTextStrByKey:@"Tap1_Shared_Title"];
         }
-        [self shareToThirdpartyPlatform:platformType url:self.h5Url image:self.thumdImage title:title contentType:SSDKContentTypeImage];
+        [self shareToThirdpartyPlatform:platformType url:self.h5Url image:self.thumdImage title:title contentType:SSDKContentTypeWebPage];
         
     } cancel:^{
         

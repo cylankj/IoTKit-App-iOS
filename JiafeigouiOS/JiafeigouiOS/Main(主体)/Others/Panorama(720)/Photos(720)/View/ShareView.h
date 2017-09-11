@@ -27,4 +27,6 @@ typedef NS_ENUM(NSInteger, shareType) {
 
 - (void)showShareView:(void (^)(SSDKPlatformType))clickedBlock cancel:(void (^)())cancelBlock;
 
+- (void)dismissShareView;
+
 @end

@@ -10,7 +10,6 @@
 #import "FLTipsBaseView.h"
 #import "JFGBoundDevicesMsg.h"
 #import <JFGSDK/JFGSDKVideoView.h>
-#import "JFGSDKRenderView.h"
 #import "SFCParamModel.h"
 
 #define VideoPlayViewShowingNotification @"VideoPlayViewShowingNotification"
@@ -55,5 +54,7 @@ typedef NS_ENUM(NSInteger,videoPlayContentMode){
 -(void)removeAllNotification;
 -(void)removeHistoryDelegate;
 -(void)setHistoryVideoForTimestamp:(uint64_t)timestamp;
+//摇一摇结束调用
+-(void)motionEnded;
 
 @end

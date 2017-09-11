@@ -640,7 +640,13 @@ int maxLength = 24;
         } else {
             
             if (errorType == 187) {
-                [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"RET_EEDITUSERINFO_EMAIL"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"I_KNOW"] OtherButtonTitle:nil CancelBlock:nil OKBlock:nil];
+                [ProgressHUD dismiss];
+                [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"RET_EEDITUSERINFO_EMAIL"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"I_KNOW"] OtherButtonTitle:nil CancelBlock:^{
+                    
+                } OKBlock:^{
+                    
+                }];
+                
             }else if(errorType == 189){
                 [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"EMAIL_2"]];
             }else{

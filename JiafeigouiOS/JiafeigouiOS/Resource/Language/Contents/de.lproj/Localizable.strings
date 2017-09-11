@@ -1,6 +1,6 @@
 /* de.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.  
+Created by cylan language tool  on Wed Aug 30 17:27:03 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Verbindung fehlgeschlagen, bitte Internet überprüfen";
 "REPEAT_TIME" = "%d Sekunde";
@@ -77,7 +77,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "INVALID_ACCOUNT" = "Dieser Account nicht registriert";
 "PASSWORD_BIT" = "Neues Passwort erstellen";
 "COMFIRM_NEW_PASS" = "Neues Passwort wiederholen";
-"PASSWORD_LESSTHAN_SIX" = "Bitte ein 6 bis 12-stelliges Passwort eingeben";
+"PASSWORD_LESSTHAN_SIX" = "Bitte ein 6 bis 32-stelliges Passwort eingeben";
 "ACCOUNT_ERR_3" = "Bitte den gültigen Account eingeben";
 "LOGIN_ERR" = "Einloggen fehlgeschlagen";
 "GET_CODE" = "Code";
@@ -285,6 +285,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "GIVE_UP" = "Aufgeben";
 "BIND_INFO" = "Gerät nicht fertig hinzugefügt, möchten Sie aufgeben?";
 "DEVICE_ADDING" = "Hinzugefügt, bitte warten…";
+"DEVICE_CONNECTING_WIFI" = "Verbinden, bitte warten ...";
 "DEVICE_UPGRADE" = "Software-Upgrade";
 "UPDATING_LABEL" = "Software wird aktualisiert(%d%%)";
 "UPDATING_BUTTON" = "Update läuft";
@@ -901,20 +902,14 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Tap1_LessThan3sTips" = "Aufnahme weniger als 3s, Dateien werden nicht gespeichert.";
 "Tap1_NeedsInitializedTips" = "SD-Karte muss initialisiert werden und die Daten werden gelöscht.";
 "Tap1_SDCardFullyTips" = "Voll besetzt";
-"Tap1_HomeMode" = "Home Modus";
-"Tap1_HomeMode_Opened" = "Start-Modus geöffnet wurde";
-"Tap1_Camera_TCPconnected" = "Kamera mit App über Internet verbunden";
-"Tap1_Camera_UDPconnected" = "Kamera verbunden mit App direkt";
+"Tap1_HomeMode" = "WIFI-Modus";
+"Tap1_HomeMode_Opened" = "Der WIFI-Modus wurde geöffnet";
 "Tap1_Camera_Video_Auto" = "Auto";
 "Tap1_Camera_Video_Fluent" = "Fließend";
 "Tap1_Camera_Video_SD" = "SD";
 "Tap1_Camera_Video_HD" = "HD";
-"Tap1_File_CameraNPhone" = "Camera + Telefon album";
-"Tap1_File_Camera" = "Camera";
-"Tap1_File_Phone" = "Telefon album";
 "Tap1_Refreshed" = "Refreshed";
 "Tap1_RefreshedFailed" = "Refresh failed";
-"Tap1_DeletedCameraNCellphoneFileTips" = "Die gespeicherten Inhalte werden von der Kamera und Handy gelöscht werden, weitergehen?";
 "Tap1_Sync_NetworkChangeTips" = "Umschalten auf Mobilfunknetz, weiter?";
 "Tap1_FileDamagedTips" = "Datei ist beschädigt, löschen?";
 "Tap1_DeleteDownloadingTips" = "Das Herunterladen von Dateien, zu löschen?";
@@ -975,10 +970,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Formatting" = "Formatierung";
 "Fail_Record" = "Fehler beim Aufzeichnen";
 "Tips_ShortVideo" = "Lange drückt ein kurzes Video aufnehmen";
-"Switch_Mode_Pop" = "Bitte schalten Sie den aktuellen Netzwerkaufnahmemittel in den Direktmodus";
-"Switch_Mode" = "Bitte wechseln Sie zum direkten Modus, um den Aufnahmeinhalt anzuzeigen";
 "Sharing_Management" = "Teilen Management";
-"Dont_Show_Again" = "Nicht wieder zeigen";
 "Delete_Share" = "Aktien löschen?";
 "SETTINGS_Wechat_Switch_Cancel" = "Nach dem Deaktivieren werden Sie die Wechat-Benachrichtigung nicht mehr erhalten. Möchten Sie die Verbindung trennen, bitte gehen Sie zu Wechat und das offizielle Konto \"加菲狗官微服务\" nicht mehr folgen.";
 "SETTINGS_Wechat_Switch_Open" = "Bitte konzentriere dich auf das WeChat-Konto \"加菲狗官微服务\" und binden, nach dem Erfolg des alten WeChat-Kontos wird die Meldung nicht mehr erhalten";
@@ -1044,3 +1036,18 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "SECURE_Interval_Alarm" = "Intervallalarm";
 "MINUTE_Cloud" = "min";
 "REPEAT_TIME_ALARM" = "sekunde";
+"Video_expired" = "Video existiert nicht, vielleicht abgelaufen";
+"Dont_Show_Again" = "Nicht wieder zeigen";
+"Switch_Mode" = "Bitte schalten Sie den aktuellen Netzwerkaufnahmemittel in den Direktmodus";
+"SWITCH_VIEW_POP" = "Die aktuelle Frontansicht unterstützt diese Funktion nicht, egal ob die Ansicht überspringen soll?";
+"ENERGY_SAVE_MODE_ON" = "Energiesparmodus eingeschaltet";
+"ENERGY_SAVE_MODE" = "Energiesparmodus";
+"open_night" = "Nur nachts geöffnet";
+"ENERGY_SAVE_MODE_Description" = "Kann verwendet werden, um die Türklingel Nachricht zu erhalten, kann aber nicht verwenden, um Live-, Video-, Sicherheits-Features zu sehen. Wenn auf \"Nur nachts geöffnet\", nur gültig von 22:00 bis 8:00 Uhr.";
+"ENERGY_SAVE_MODE_POP" = "Drücken Sie die Anruftaste, sonst wird sie nicht sofort wirksam.";
+"ENERGY_SAVE_MODE_ON_OFF" = "Wählen Sie auf der Seite Power Saver die Option Ein / Aus";
+"CALL_SUCCESS_OPEN_SAVE" = "Drücken Sie die Gerätetaste, um den Energiesparmodus einzuschalten, nachdem der Anruf erfolgreich war";
+"ENERGY_SAVE_NOTE" = "Hinweis : Das wird nicht wirksam";
+"ENERGY_SAVE_CALL" = "Drücken Sie die Anruftaste";
+"ENERGY_SAVE_HELP" = "Hilfe";
+"ALLDAY_OPEN" = "Ganztägig geöffnet";

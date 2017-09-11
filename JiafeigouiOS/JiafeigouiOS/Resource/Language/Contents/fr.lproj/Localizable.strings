@@ -1,6 +1,6 @@
 /* fr.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.  
+Created by cylan language tool  on Wed Aug 30 17:27:03 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Connexion impossible, absence réseau";
 "REPEAT_TIME" = "%d secondes";
@@ -285,6 +285,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "GIVE_UP" = "Abandonner";
 "BIND_INFO" = "L\'appareil n\'a pas été rajouté, confirmer l\'abandon ?";
 "DEVICE_ADDING" = "En cours rajout, patienter…";
+"DEVICE_CONNECTING_WIFI" = "Connexion, patienter…";
 "DEVICE_UPGRADE" = "Mise à jour";
 "UPDATING_LABEL" = "Mise à jour en cours (%d%%)";
 "UPDATING_BUTTON" = "Mise à jour en cours";
@@ -901,20 +902,14 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Tap1_LessThan3sTips" = "Enregistrement moins de 3s, les fichiers ne seront pas sauvegardés.";
 "Tap1_NeedsInitializedTips" = "Carte SD doit être initialisé et les données seraient effacées, bien sûr à continuer?";
 "Tap1_SDCardFullyTips" = "Entièrement occupé";
-"Tap1_HomeMode" = "Accueil mode";
-"Tap1_HomeMode_Opened" = "Le mode d\'accueil a été ouvert";
-"Tap1_Camera_TCPconnected" = "Appareil photo connecté à app via Internet";
-"Tap1_Camera_UDPconnected" = "Appareil photo connecté à app directement";
+"Tap1_HomeMode" = "Mode WIFI";
+"Tap1_HomeMode_Opened" = "Le mode WIFI a été ouvert";
 "Tap1_Camera_Video_Auto" = "Auto";
 "Tap1_Camera_Video_Fluent" = "Courant";
 "Tap1_Camera_Video_SD" = "SD";
 "Tap1_Camera_Video_HD" = "HD";
-"Tap1_File_CameraNPhone" = "Caméra + Téléphone album";
-"Tap1_File_Camera" = "Caméra";
-"Tap1_File_Phone" = "Téléphone album";
 "Tap1_Refreshed" = "Refreshed";
 "Tap1_RefreshedFailed" = "Refresh failed";
-"Tap1_DeletedCameraNCellphoneFileTips" = "Le contenu enregistré sera supprimé de la caméra et du téléphone portable, continuez?";
 "Tap1_Sync_NetworkChangeTips" = "Switched au réseau mobile, continuer?";
 "Tap1_FileDamagedTips" = "Le fichier est endommagé, supprimer?";
 "Tap1_DeleteDownloadingTips" = "Téléchargement de fichiers, supprimer?";
@@ -975,10 +970,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Formatting" = "Mise en forme";
 "Fail_Record" = "Échec de l\'enregistrement";
 "Tips_ShortVideo" = "Appuyez longuement pour enregistrer une courte vidéo";
-"Switch_Mode_Pop" = "Passez le contenu actuel de la prise de vue réseau au mode direct";
-"Switch_Mode" = "Passez en mode direct pour afficher le contenu de la prise de vue";
 "Sharing_Management" = "Partage de la gestion";
-"Dont_Show_Again" = "Ne plus afficher";
 "Delete_Share" = "Supprimer partager?";
 "SETTINGS_Wechat_Switch_Cancel" = "Vous ne pouvez recevoir plus les messages poussés de Wechat si vous le fermez.Si vous voulez annuler la liaison, veuillez annuler tout  à bord \"加菲狗官微服务\".";
 "SETTINGS_Wechat_Switch_Open" = "Concentrez-vous sur le compte WeChat \"加菲狗官微服务\" et liez, après que le succès de l\'ancien compte WeChat ne recevra plus le message push";
@@ -1044,3 +1036,18 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "SECURE_Interval_Alarm" = "Alarme Intervalle";
 "MINUTE_Cloud" = "minutes";
 "REPEAT_TIME_ALARM" = "secondes";
+"Video_expired" = "La vidéo n\'existe pas, peut-être expiré";
+"Dont_Show_Again" = "Ne plus afficher";
+"Switch_Mode" = "Passez le contenu actuel de la prise de vue réseau au mode direct";
+"SWITCH_VIEW_POP" = "La vue avant actuelle ne prend pas en charge cette fonctionnalité, que ce soit pour passer à la vue de vue?";
+"ENERGY_SAVE_MODE_ON" = "Mode d\'économie d\'énergie activé";
+"ENERGY_SAVE_MODE" = "Mode économie d\'énergie";
+"open_night" = "Ouvert uniquement la nuit";
+"ENERGY_SAVE_MODE_Description" = "Peut être utilisé pour recevoir le message de la porte, mais ne peut pas l\'utiliser pour afficher des vidéos en direct, des fonctions de sécurité. Si réglé sur \"Ouvrir uniquement la nuit\", uniquement en vigueur de 22h00 à 8h00.";
+"ENERGY_SAVE_MODE_POP" = "Appuyez sur la touche d\'appel de l\'appareil, sinon cela ne prendra pas effet immédiatement.";
+"ENERGY_SAVE_MODE_ON_OFF" = "Sur la page Économiseur d\'énergie, sélectionnez Activé / Désactivé.";
+"CALL_SUCCESS_OPEN_SAVE" = "Appuyez sur la touche d\'appel de l\'appareil pour activer le mode d\'économie d\'énergie une fois l\'appel réussi";
+"ENERGY_SAVE_NOTE" = "Note: Cela ne prend pas effet";
+"ENERGY_SAVE_CALL" = "Appuyez sur la touche d\'appel";
+"ENERGY_SAVE_HELP" = "Aide";
+"ALLDAY_OPEN" = "Ouvert toute la journée";

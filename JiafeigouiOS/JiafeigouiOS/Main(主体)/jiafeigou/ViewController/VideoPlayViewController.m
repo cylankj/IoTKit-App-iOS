@@ -28,6 +28,8 @@
 #import "LSAlertView.h"
 #import <KVOController.h>
 #import "jfgConfigManager.h"
+#import <AudioToolbox/AudioToolbox.h>
+#import "DeepSleepVC.h"
 
 @interface VideoPlayViewController ()<TimeChangeMonitorDelegate,UIScrollViewDelegate,UIGestureRecognizerDelegate,JFGSDKCallbackDelegate,MessageVCDelegate>
 {
@@ -103,6 +105,33 @@
     if (self.devModel.unReadMsgCount > 0) {
         [self transToMsgVC];
     }
+    
+    if ([CommonMethod devBigTypeForOS:self.devModel.pid] == JFGDevBigType360) {
+        // 设置允许摇一摇功能
+        [UIApplication sharedApplication].applicationSupportsShakeToEdit = YES;
+        //  让此控制器成为第一响应者
+        [self becomeFirstResponder];
+    }
+}
+
+
+- (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    NSLog(@"开始摇动");
+    return;
+}
+
+- (void)motionCancelled:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    NSLog(@"取消摇动");
+    return;
+}
+
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    if (event.subtype == UIEventSubtypeMotionShake) { // 判断是否是摇动结束
+        NSLog(@"摇动结束");
+        //AudioServicesPlaySystemSound(kSystemSoundID_Vibrate); 震动
+        [self.videoPlay motionEnded];
+    }
+    return;
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -176,6 +205,15 @@
     [[TimeChangeMonitor sharedManager] addDelegate:self];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(settingAction) name:JFGGotoSettingKey object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(gotoDeepSleep) name:JFGGotoDeepSleepKey object:nil];
+}
+
+-(void)gotoDeepSleep
+{
+    DeepSleepVC *vc = [[DeepSleepVC alloc]init];
+    vc.cid = self.cid;
+    vc.hidesBottomBarWhenPushed = YES;
+    [self.navigationController pushViewController:vc animated:YES];
 }
 
 - (void)checkDoorBattery
@@ -389,6 +427,11 @@
     }else{
         deviceSetting.alis = self.devModel.alias;
     }
+    
+//    DeepSleepVC *vc = [[DeepSleepVC alloc]init];
+//    vc.cid = self.cid;
+//    vc.hidesBottomBarWhenPushed = YES;
+    
     [self.navigationController pushViewController:deviceSetting animated:YES];
 }
 

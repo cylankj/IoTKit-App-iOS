@@ -36,6 +36,7 @@
 #import "JfgConfig.h"
 #import "Cf720WiFiAnimationVC.h"
 #import "WifiModeFor720CFResultVC.h"
+#import "DeepSleepVC.h"
 
 @interface DeviceSettingVC()<autoPhotoVCDelegate,UIAlertViewDelegate,JFGSDKCallbackDelegate, setAngleDelegate, safeDelegate,AddDeviceGuideVCNextActionDelegate>
 {
@@ -170,8 +171,6 @@
     [self initNavigation];
 }
 
-
-
 - (void)initViewLayout
 {
     [self.settingTableView mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -286,6 +285,12 @@
             deviGuide.delegate = self;
             [self.navigationController pushViewController:deviGuide animated:YES];
         }
+    }else if ([cellID isEqualToString:deepsleep]){
+        //省电模式
+        DeepSleepVC *sleepVC = [DeepSleepVC new];
+        sleepVC.cid = self.cid;
+        [self.navigationController pushViewController:sleepVC animated:YES];
+        
     }
 
 }
@@ -396,6 +401,8 @@
         case productType_CesBell_V2:
         case productType_CatEye:
         case productType_CesBell:
+        case productType_RSDoorBell:
+        case productType_KKS_DoorBell:
         {
             AddDeviceGuideViewController * wifiConf = [AddDeviceGuideViewController new];
             wifiConf.pType = self.pType;

@@ -52,7 +52,6 @@
 {
     // 顶部 导航设置
     [self.leftButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
-    
     self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"SECURE"];
 }
 

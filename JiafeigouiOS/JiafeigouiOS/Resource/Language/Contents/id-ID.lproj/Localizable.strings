@@ -1,6 +1,6 @@
 /* id-ID.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.  
+Created by cylan language tool  on Wed Aug 30 17:27:03 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Tidak terhubung ke jaringan";
 "REPEAT_TIME" = "%d detik";
@@ -285,6 +285,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "GIVE_UP" = "Keluar";
 "BIND_INFO" = "Sedang menambahkan perangkat, konfirmasi keluar?";
 "DEVICE_ADDING" = "Sedang menambahkan , silahkan tunggu..";
+"DEVICE_CONNECTING_WIFI" = "Menghubungkan , silahkan tunggu..";
 "DEVICE_UPGRADE" = "Tingkatkan perangkat";
 "UPDATING_LABEL" = "Sedang memperbarui(%d%%)";
 "UPDATING_BUTTON" = "Sedang memperbarui";
@@ -901,20 +902,14 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Tap1_LessThan3sTips" = "Merekam kurang dari 3s, file tidak akan disimpan.";
 "Tap1_NeedsInitializedTips" = "kebutuhan kartu SD diinisialisasi dan data akan dibersihkan, pasti untuk melanjutkan?";
 "Tap1_SDCardFullyTips" = "Terisi penuh";
-"Tap1_HomeMode" = "Mode rumah";
-"Tap1_HomeMode_Opened" = "Modus rumah telah dibuka";
-"Tap1_Camera_TCPconnected" = "Kamera terhubung dengan app via internet";
-"Tap1_Camera_UDPconnected" = "Kamera terhubung dengan app langsung";
+"Tap1_HomeMode" = "Mode WIFI";
+"Tap1_HomeMode_Opened" = "Mode WIFI telah dibuka";
 "Tap1_Camera_Video_Auto" = "Auto";
 "Tap1_Camera_Video_Fluent" = "Fasih";
 "Tap1_Camera_Video_SD" = "SD";
 "Tap1_Camera_Video_HD" = "HD";
-"Tap1_File_CameraNPhone" = "Kamera + Telepon album";
-"Tap1_File_Camera" = "Kamera";
-"Tap1_File_Phone" = "Telepon album";
 "Tap1_Refreshed" = "Refreshed";
 "Tap1_RefreshedFailed" = "Refresh failed";
-"Tap1_DeletedCameraNCellphoneFileTips" = "konten yang disimpan akan dihapus dari kamera dan ponsel, terus?";
 "Tap1_Sync_NetworkChangeTips" = "Beralih ke jaringan seluler, terus?";
 "Tap1_FileDamagedTips" = "File rusak, menghapus?";
 "Tap1_DeleteDownloadingTips" = "Mendownload file, menghapus?";
@@ -975,10 +970,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Formatting" = "Format";
 "Fail_Record" = "Gagal mencatat";
 "Tips_ShortVideo" = "Tekan lama untuk merekam video singkat";
-"Switch_Mode_Pop" = "Tolong aktifkan konten pemotretan jaringan ke mode langsung";
-"Switch_Mode" = "Silahkan beralih ke mode langsung untuk melihat konten pemotretan";
 "Sharing_Management" = "Manajemen berbagi";
-"Dont_Show_Again" = "Jangan tampilkan lagi";
 "Delete_Share" = "Hapus berbagi?";
 "SETTINGS_Wechat_Switch_Cancel" = "Jika ditutup, maka tidak bisa menerima dorongan WeChat. Unbinding dengan unfollowing \"加菲狗官微服务\".";
 "SETTINGS_Wechat_Switch_Open" = "Harap fokus pada akun WeChat \"加菲狗官微服务\" dan mengikat, setelah kesuksesan akun WeChat lama tidak akan lagi menerima pesan push.";
@@ -1044,3 +1036,18 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "SECURE_Interval_Alarm" = "Alarm Interval";
 "MINUTE_Cloud" = "menit";
 "REPEAT_TIME_ALARM" = "detik";
+"Video_expired" = "Video tidak ada, Mungkin kedaluwarsa";
+"Dont_Show_Again" = "Jangan tampilkan lagi";
+"Switch_Mode" = "Tolong aktifkan konten pemotretan jaringan ke mode langsung";
+"SWITCH_VIEW_POP" = "Tampilan depan saat ini tidak mendukung fitur ini, apakah akan beralih untuk mengabaikan tampilan?";
+"ENERGY_SAVE_MODE_ON" = "Mode hemat daya dinyalakan";
+"ENERGY_SAVE_MODE" = "Mode hemat daya";
+"open_night" = "Hanya buka di malam hari";
+"ENERGY_SAVE_MODE_Description" = "Bisa digunakan untuk menerima pesan bel, tapi tidak bisa digunakan untuk melihat live, video, fitur keamanan. Jika diatur ke \"Buka hanya di malam hari\", hanya efektif dari pukul 22:00 sampai 8:00.";
+"ENERGY_SAVE_MODE_POP" = "Tekan tombol panggil perangkat, jika tidak maka tidak akan berlaku segera.";
+"ENERGY_SAVE_MODE_ON_OFF" = "Pada halaman Power Saver, pilih On / Off";
+"CALL_SUCCESS_OPEN_SAVE" = "Tekan tombol panggil perangkat untuk mengaktifkan mode hemat daya setelah panggilan berhasil";
+"ENERGY_SAVE_NOTE" = "Catatan : Itu tidak berlaku";
+"ENERGY_SAVE_CALL" = "Tekan tombol panggil";
+"ENERGY_SAVE_HELP" = "Bantuan";
+"ALLDAY_OPEN" = "Buka sepanjang hari";

@@ -1,6 +1,6 @@
 /* ru.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.  
+Created by cylan language tool  on Wed Aug 30 17:27:03 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Отсутствует подключение к сети";
 "REPEAT_TIME" = "%d секунды";
@@ -77,7 +77,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "INVALID_ACCOUNT" = "Данный аккаунт еще не зарегистрирован";
 "PASSWORD_BIT" = "Новый пароль";
 "COMFIRM_NEW_PASS" = "Снова введите новый пароль";
-"PASSWORD_LESSTHAN_SIX" = "Пожалуйста, введите пароль от 6 до 12 символов";
+"PASSWORD_LESSTHAN_SIX" = "Пожалуйста, введите пароль от 6 до 32 символов";
 "ACCOUNT_ERR_3" = "Пожалуйста, войдите в учётную запись";
 "LOGIN_ERR" = "Ошибка при регистрации";
 "GET_CODE" = "Отправить";
@@ -285,6 +285,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "GIVE_UP" = "Выход";
 "BIND_INFO" = "Добавление оборудования не завершено, уверены что хотите отменить?";
 "DEVICE_ADDING" = "Добавление, пожалуйста, подождите…";
+"DEVICE_CONNECTING_WIFI" = "Подключение, пожалуйста, подождите ...";
 "DEVICE_UPGRADE" = "Устройство обновлено";
 "UPDATING_LABEL" = "Программное обеспечение устройства обновляется(%d%%)";
 "UPDATING_BUTTON" = "Обновляется";
@@ -901,20 +902,14 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Tap1_LessThan3sTips" = "Запись менее 3 секунд, файлы не будут сохранены.";
 "Tap1_NeedsInitializedTips" = "потребности карты SD для инициализации и данные будут очищены, обязательно продолжить?";
 "Tap1_SDCardFullyTips" = "Полностью занятый";
-"Tap1_HomeMode" = "WIFI режим";
-"Tap1_HomeMode_Opened" = "Режим WIFI был открыт";
-"Tap1_Camera_TCPconnected" = "Камера связана с приложением через интернет";
-"Tap1_Camera_UDPconnected" = "Камера связана напрямую с приложением";
+"Tap1_HomeMode" = "Режим WIFI";
+"Tap1_HomeMode_Opened" = "Режим WIFI открыт";
 "Tap1_Camera_Video_Auto" = "Авто";
 "Tap1_Camera_Video_Fluent" = "беглый";
 "Tap1_Camera_Video_SD" = "SD";
 "Tap1_Camera_Video_HD" = "HD";
-"Tap1_File_CameraNPhone" = "Камера + Телефон альбом";
-"Tap1_File_Camera" = "Камера";
-"Tap1_File_Phone" = "Телефон альбом";
 "Tap1_Refreshed" = "Refreshed";
 "Tap1_RefreshedFailed" = "Refresh failed";
-"Tap1_DeletedCameraNCellphoneFileTips" = "Сохраненный контент будет удален с камеры и мобильного телефона, продолжить?";
 "Tap1_Sync_NetworkChangeTips" = "Переключиться на мобильную сеть, продолжить?";
 "Tap1_FileDamagedTips" = "Файл поврежден, удалить?";
 "Tap1_DeleteDownloadingTips" = "Загрузка файлов, удаление?";
@@ -975,10 +970,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Formatting" = "форматирование";
 "Fail_Record" = "Не удалось записать";
 "Tips_ShortVideo" = "Длительное нажатие для записи короткого видео";
-"Switch_Mode_Pop" = "Переключите текущий сетевой видеоконтент на прямой режим";
-"Switch_Mode" = "Перейдите в режим прямого просмотра для просмотра";
 "Sharing_Management" = "совместное управление";
-"Dont_Show_Again" = "Больше не показывать";
 "Delete_Share" = "Удалить общий доступ?";
 "SETTINGS_Wechat_Switch_Cancel" = "WeChat сообщения не доставят при закрытии. Перейтите к WeChat и перестаньте следить за официальным аккаунтом \"加菲狗官微服务\" если хотите отменить привязку.";
 "SETTINGS_Wechat_Switch_Open" = "Пожалуйста, сосредоточьтесь на учетной записи WeChat \"加菲狗官微服务\" и свяжите ее, после того как успех старой учетной записи WeChat больше не получит сообщение push";
@@ -1044,3 +1036,18 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "SECURE_Interval_Alarm" = "Интервальная сигнализация";
 "MINUTE_Cloud" = "минута";
 "REPEAT_TIME_ALARM" = "секунды";
+"Video_expired" = "Видео не существует, возможно, истек";
+"Dont_Show_Again" = "Больше не показывать";
+"Switch_Mode" = "Переключите текущий сетевой видеоконтент на прямой режим";
+"SWITCH_VIEW_POP" = "Текущий вид спереди не поддерживает эту функцию, нужно ли переключать на просмотр вида?";
+"ENERGY_SAVE_MODE_ON" = "Включен режим энергосбережения";
+"ENERGY_SAVE_MODE" = "Режим энергосбережения";
+"open_night" = "Открывать только ночью";
+"ENERGY_SAVE_MODE_Description" = "Может использоваться для приема сообщения с дверным звонком, но не может использоваться для просмотра живых, видео, функций безопасности. Если установлено значение «Открыть только ночью», действует только с 22:00 до 8:00.";
+"ENERGY_SAVE_MODE_POP" = "Hажмите клавишу вызова устройства, иначе она не вступит в силу немедленно.";
+"ENERGY_SAVE_MODE_ON_OFF" = "На странице Power Saver выберите Вкл. / Выкл.";
+"CALL_SUCCESS_OPEN_SAVE" = "Нажмите клавишу вызова устройства, чтобы включить режим энергосбережения после успешного завершения вызова";
+"ENERGY_SAVE_NOTE" = "Примечание : Это не вступает в силу";
+"ENERGY_SAVE_CALL" = "Нажмите клавишу вызова";
+"ENERGY_SAVE_HELP" = "помощь";
+"ALLDAY_OPEN" = "Откройте весь день";

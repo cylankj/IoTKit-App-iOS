@@ -34,6 +34,7 @@
 #import "ShareVideoViewController.h"
 #import "NSTimer+FLExtension.h"
 #import <ShareSDKExtension/ShareSDK+Extension.h>
+#import "JFGAlbumManager.h"
 
 extern NSInteger supportDirection;
 
@@ -83,6 +84,7 @@ extern NSInteger supportDirection;
 @property (nonatomic, strong) JFGDownLoadTool *downloadTool;
 @property (nonatomic, strong) TYDownloadModel *tyDownLoadModel;
 @property (nonatomic, strong) YBPopupMenu *popUpMenu;
+@property (nonatomic, weak)ShareView *shareView;
 
 @end
 
@@ -104,9 +106,6 @@ extern NSInteger supportDirection;
     
     self.clickTimes = 0;
     self.isShowTool = YES; // Default YES
-    
-    [JFGSDK addDelegate:self];
-    
     [self initView];
     
 }
@@ -115,18 +114,22 @@ extern NSInteger supportDirection;
 {
     [super viewWillAppear:animated];
     supportDirection = DeviceDirectionTypeALL;
-    
     [UIApplication sharedApplication].idleTimerDisabled = YES;
     [self screenDiretionChanged:NO isAnimation:NO];
-    
     
     // 重新 设置下这个 坐标 解决 坐标错乱
     CGFloat width = self.sharedButton.left - self.backButton.right;
     CGFloat height = 17.0;
     CGFloat x = self.backButton.right;
     CGFloat y = (self.topBgView.height - height + 20)*0.5;
-    
     self.titleTimeLabel.frame = CGRectMake(x, y, width, height);
+}
+
+-(void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [JFGSDK addDelegate:self];
+    [self initLoadMedia];
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -138,11 +141,13 @@ extern NSInteger supportDirection;
     [UIApplication sharedApplication].idleTimerDisabled = NO;
     
     supportDirection = DeviceDirectionTypePortrait;
-    if (self.panoMediaType == mediaTypeVideo)
-    {
-        [self.panoPlayer stopPlay];
+    //防止呼叫等其他页面插入时候，menu不消失
+    if (self.popUpMenu) {
+        [self.popUpMenu dismiss];
     }
-    
+    if (self.shareView) {
+        [self.shareView dismissShareView];
+    }
 }
 
 - (void)viewDidDisappear:(BOOL)animated
@@ -152,6 +157,14 @@ extern NSInteger supportDirection;
     [self forceRecoverToPortrait];
     supportDirection = DeviceDirectionTypePortrait;
     [JFGSDK removeDelegate:self];
+    
+    if (self.panoMediaType == mediaTypeVideo)
+    {
+        [self.panoPlayer stopPlay];
+        [self.pano720View removeFromSuperview];
+        self.pano720View = nil;
+    }
+    
 }
 
 - (void)initView
@@ -195,9 +208,10 @@ extern NSInteger supportDirection;
     
     [self resetViewFrame];
 
-    [self initLoadMedia];
+    
     
 }
+
 
 - (void)initLoadMedia
 {
@@ -566,21 +580,26 @@ extern NSInteger supportDirection;
         TYDownloadModel *curDownloadModel = [self currentDownModel];
         NSString *firstTitle = nil;
         
-        if ([self isDownloadComplete])
-        {
-            firstTitle = [JfgLanguage getLanTextStrByKey:@"Tap1_Album_Downloaded"];
-        }
-        else
-        {
-            if (curDownloadModel.state == TYDownloadStateRunning)
-            {
-                firstTitle = [NSString stringWithFormat:@"%02d%%",(int)(curDownloadModel.progress.progress*100)];
+        if (self.originType == SourceTypeMSGPhoto) {
+            firstTitle = [JfgLanguage getLanTextStrByKey:@"SAVE_PHONE"];
+        }else{
+            if ([self isDownloadComplete] ){
+                
+                firstTitle = [JfgLanguage getLanTextStrByKey:@"Tap1_Album_Downloaded"];
+                
+            }else{
+                
+                if (curDownloadModel.state == TYDownloadStateRunning){
+                    
+                    firstTitle = [NSString stringWithFormat:@"%02d%%",(int)(curDownloadModel.progress.progress*100)];
+                }else{
+                    
+                    firstTitle = [JfgLanguage getLanTextStrByKey:@"Tap1_Album_Download"];
+                }
             }
-            else
-            {
-                firstTitle = [JfgLanguage getLanTextStrByKey:@"Tap1_Album_Download"];
-            }
         }
+        
+        
         
         YBPopupMenu *popupMenu = [YBPopupMenu showAtPoint:CGPointMake(self.moreButton.x, self.topBgView.bottom) titles:@[firstTitle, [JfgLanguage getLanTextStrByKey:@"DELETE"]] icons:@[@"details_icon_down",@"album_icon_delete"] menuWidth:149 delegate:nil];
         self.popUpMenu = popupMenu;
@@ -591,6 +610,9 @@ extern NSInteger supportDirection;
         popupMenu.delegate = self;
         popupMenu.offset = 2;
         popupMenu.firstCellCanClicked = ![self isDownloadComplete];
+        if (self.originType == SourceTypeMSGPhoto) {
+            popupMenu.firstCellCanClicked = YES;
+        }
         popupMenu.secondCellCanClicked = YES;
         
         
@@ -838,7 +860,7 @@ extern NSInteger supportDirection;
             }
             
         }else if (sType == SSDKPlatformSubTypeQQFriend || sType == SSDKPlatformSubTypeQZone){
-            if (![ShareSDK isClientInstalled:sType]) {
+            if (![ShareSDK isClientInstalled:SSDKPlatformSubTypeQQFriend]) {
                 NSString *als = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap0_Login_NoInstalled"],@"QQ"];
                 [ProgressHUD showText:als];
                 return;
@@ -858,6 +880,7 @@ extern NSInteger supportDirection;
     } cancel:^{
         
     }];
+    self.shareView = share;
 }
 
 - (void)photoButtonAction:(UIButton *)sender
@@ -966,13 +989,23 @@ extern NSInteger supportDirection;
     [self.view bringSubviewToFront:self.bottomBgView];
     [self.view bringSubviewToFront:self.topBgView];
     
+    if (self.pano720View.superview == nil) {
+        [self.view addSubview:self.pano720View];
+        [self.pano720View mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.top.equalTo(self.view).with.offset(0);
+            make.left.equalTo(self.view).with.offset(0);
+            make.width.equalTo(self.view);
+            make.height.equalTo(self.view);
+        }];
+        [self.view bringSubviewToFront:self.topBgView];
+        [self.view bringSubviewToFront:self.bottomBgView];
+    }
     [self.panoPlayer startRenderForView:self.pano720View];
 }
 
 -(void)jfgSDKPlayerFinished:(JFGSDKPlayer *)player
 {
     self.sliderView.value = 1.0;
-    
     [self initLoadMedia];
 }
 
@@ -1196,20 +1229,32 @@ extern NSInteger supportDirection;
         {
             case 0:
             {
-                if ([self currentDownModel].state == TYDownloadStateRunning)
-                {
-                    JFG_WS(weakSelf);
-                    [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Album_CancelDownloadTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:nil OKBlock:^{
-                            [weakSelf.downloadTool suspendWithDownloadModel:weakSelf.panoModel.urlString];
+                
+                if (self.originType == SourceTypeMSGPhoto) {
+                    //__weak typeof(self) weakSelf = self;
+                    [JFGAlbumManager jfgWriteImage:self.thumbNailImage toPhotosAlbum:nil completionHandler:^(UIImage *image, NSError *error) {
+                        if (error == nil) {
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SAVED_PHOTOS"]];
+                        }
                     }];
-                }
-                else
-                {
-                    if ([self.myDelegate respondsToSelector:@selector(donwloadWithModel:)])
+                }else{
+                    
+                    if ([self currentDownModel].state == TYDownloadStateRunning)
                     {
-                        [self.myDelegate donwloadWithModel:self.panoModel];
+                        JFG_WS(weakSelf);
+                        [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Album_CancelDownloadTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:nil OKBlock:^{
+                            [weakSelf.downloadTool suspendWithDownloadModel:weakSelf.panoModel.urlString];
+                        }];
+                    }
+                    else
+                    {
+                        if ([self.myDelegate respondsToSelector:@selector(donwloadWithModel:)])
+                        {
+                            [self.myDelegate donwloadWithModel:self.panoModel];
+                        }
                     }
                 }
+                
                 
             }
                 break;

@@ -200,6 +200,7 @@
 -(void)isHasUnreadCount
 {
     BOOL isWebChatRedPoint = [[NSUserDefaults standardUserDefaults] boolForKey:JFGIsAlwaysShowWebchatRedPointKey];
+    
     if ([OemManager oemType] == oemTypeDoby) {
         isWebChatRedPoint = YES;
         [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGIsAlwaysShowWebchatRedPointKey];
@@ -207,6 +208,8 @@
     if (unreadCount == 0 && addFriendReqCount == 0 && !isNewFeedback && isWebChatRedPoint) {
         [self.tabBarController.tabBar hideBadgeOnItemIndex:2];
     }else{
+        
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"unreadCount:%d addFriendReqCount:%d isNewFeedback:%d isWebChatRedPoint:%d",unreadCount,addFriendReqCount,isNewFeedback,isWebChatRedPoint]];
         [self.tabBarController.tabBar showBadgeOnItemIndex:2];
     }
 }
@@ -526,7 +529,8 @@
 
 
 #pragma mark -UITableViewDelegate
--(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
     return 62.0;
 }
 
@@ -601,7 +605,6 @@
             FriendsMainVC *friends = [FriendsMainVC new];
             friends.hidesBottomBarWhenPushed = YES;
             [self.navigationController pushViewController:friends animated:YES];
-           
         }
             break;
         case 1:
@@ -620,12 +623,9 @@
         }
             break;
         case 3:{
-            
-            
             JFGSettingViewController * device = [[JFGSettingViewController alloc]init];
             device.hidesBottomBarWhenPushed = YES;
             [self.navigationController pushViewController:device animated:YES];
-
         }
             break;
         default:

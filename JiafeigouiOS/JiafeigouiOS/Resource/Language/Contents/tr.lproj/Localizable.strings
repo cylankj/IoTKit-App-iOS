@@ -1,6 +1,6 @@
 /* tr.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.  
+Created by cylan language tool  on Wed Aug 30 17:27:03 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Ağa bağlı değil";
 "REPEAT_TIME" = "%d saniye";
@@ -285,6 +285,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "GIVE_UP" = "Çıkış";
 "BIND_INFO" = "Cihaz ekleme, çıkış onaylansın mı?";
 "DEVICE_ADDING" = "Ekleniyor, lütfen bekleyin…";
+"DEVICE_CONNECTING_WIFI" = "Bağlanıyor, lütfen bekleyin ...";
 "DEVICE_UPGRADE" = "Cihaz yükseltme";
 "UPDATING_LABEL" = "Güncelleme(%d%%)";
 "UPDATING_BUTTON" = "Güncelleme";
@@ -901,20 +902,14 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Tap1_LessThan3sTips" = "3s daha az kayıt dosyaları kaydedilmez.";
 "Tap1_NeedsInitializedTips" = "SD kartının başlatılması gerekiyor ve veriler silinecek, emin misiniz?";
 "Tap1_SDCardFullyTips" = "tamamen işgal";
-"Tap1_HomeMode" = "Ev modu";
-"Tap1_HomeMode_Opened" = "Ev modu açılmış";
-"Tap1_Camera_TCPconnected" = "Kamera internet üzerinden uygulama ile bağlantı kurdu";
-"Tap1_Camera_UDPconnected" = "Kamera uygulamayla doğrudan bağlantılı";
+"Tap1_HomeMode" = "WIFI modu";
+"Tap1_HomeMode_Opened" = "WIFI modu açıldı";
 "Tap1_Camera_Video_Auto" = "Oto";
 "Tap1_Camera_Video_Fluent" = "Akıcı";
 "Tap1_Camera_Video_SD" = "SD";
 "Tap1_Camera_Video_HD" = "HD";
-"Tap1_File_CameraNPhone" = "Kamera + Telefon albümü";
-"Tap1_File_Camera" = "Kamera";
-"Tap1_File_Phone" = "Telefon albümü";
 "Tap1_Refreshed" = "Tazelenmiş";
 "Tap1_RefreshedFailed" = "Refresh failed";
-"Tap1_DeletedCameraNCellphoneFileTips" = "Kaydedilen içerik kamera ve cep telefonu silinecektir, devam?";
 "Tap1_Sync_NetworkChangeTips" = "Mobil şebekeye geçildi, devam et?";
 "Tap1_FileDamagedTips" = "Dosya bozuk, silinsin mi?";
 "Tap1_DeleteDownloadingTips" = "Dosya indiriliyor, silmek mi?";
@@ -975,10 +970,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Formatting" = "Biçimlendirme";
 "Fail_Record" = "Kayıt başarısız";
 "Tips_ShortVideo" = "Kısa bir video kaydetmek için uzun basın";
-"Switch_Mode_Pop" = "Lütfen geçerli şebeke çekim içeriğini doğrudan moda geçirin";
-"Switch_Mode" = "Çekim içeriğini görüntülemek için lütfen doğrudan moda geçin";
 "Sharing_Management" = "Paylaşım yönetimi";
-"Dont_Show_Again" = "Tekrar gösterme";
 "Delete_Share" = "Paylaşımı silinsin mi?";
 "SETTINGS_Wechat_Switch_Cancel" = "Kapanırsa, WeChat itilmesini kabul edemezsiniz. \"加菲狗官微服务\" nı takip etmeden kaldırılmasını.";
 "SETTINGS_Wechat_Switch_Open" = "Lütfen eski WeChat hesabının başarısı artık mesajı zorla almazsak WeChat hesabına \"加菲狗官微服务\" na odaklanın ve bağlayın.";
@@ -1044,3 +1036,18 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "SECURE_Interval_Alarm" = "Aralık Alarmı";
 "MINUTE_Cloud" = "dakika";
 "REPEAT_TIME_ALARM" = "saniye";
+"Video_expired" = "Video yok, Belki süresi doldu";
+"Dont_Show_Again" = "Tekrar gösterme";
+"Switch_Mode" = "Lütfen geçerli şebeke çekim içeriğini doğrudan Doğrudan mod";
+"SWITCH_VIEW_POP" = "Geçerli ön görünüm, bu özelliği desteklemez, isterse görünümün görünümüne geçilsin mi?";
+"ENERGY_SAVE_MODE_ON" = "Güç tasarrufu modu açık";
+"ENERGY_SAVE_MODE" = "Güç tasarrufu modu";
+"open_night" = "Sadece gece açık";
+"ENERGY_SAVE_MODE_Description" = "Kapı zili mesajını almak için kullanılabilir, ancak canlı, video, güvenlik özelliklerini görüntülemek için kullanamazsınız. \"Sadece gece açık\" olarak ayarlanırsa, yalnızca 22: 00-08: 00 saatleri arasında geçerlidir.";
+"ENERGY_SAVE_MODE_POP" = "Cihaz çağrı tuşuna basın; aksi takdirde derhal etkinleşmeyecektir.";
+"ENERGY_SAVE_MODE_ON_OFF" = "Güç Tasarrufu sayfasında Açık / Kapalı\'yı seçin.";
+"CALL_SUCCESS_OPEN_SAVE" = "Çağrı başarılı olduğunda güç tasarrufu modunu açmak için cihaz çağrı tuşuna basın";
+"ENERGY_SAVE_NOTE" = "Not : Bu geçerli değil";
+"ENERGY_SAVE_CALL" = "Arama tuşuna basın";
+"ENERGY_SAVE_HELP" = "Yardım";
+"ALLDAY_OPEN" = "Bütün gün açık";

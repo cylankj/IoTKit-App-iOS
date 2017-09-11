@@ -145,14 +145,6 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>wx292ae57e5ab2316d</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
 				<string>QQ41F08F1E</string>
 			</array>
 		</dict>
@@ -170,6 +162,14 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>fb1698182270477390</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wx81d893be5216671c</string>
 			</array>
 		</dict>
 	</array>
@@ -220,6 +220,12 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>MOBAppKey</key>
+	<string>
+1b30098aa990c</string>
+	<key>MOBAppSecret</key>
+	<string>
+ee1c23ec9b28f191dc79eb6176d39152</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -259,6 +265,6 @@
 	<key>certType</key>
 	<string>com.jiafeigou.pushnew.dev</string>
 	<key>oemname</key>
-	<string>cylan</string>
+	<string>zhongxing</string>
 </dict>
 </plist>

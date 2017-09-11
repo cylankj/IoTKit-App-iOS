@@ -1,6 +1,6 @@
 /* pt.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.  
+Created by cylan language tool  on Wed Aug 30 17:27:03 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Falha de conexão. Verifique a rede";
 "REPEAT_TIME" = "%d segs";
@@ -77,7 +77,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "INVALID_ACCOUNT" = "Conta não registrada";
 "PASSWORD_BIT" = "Nova senha";
 "COMFIRM_NEW_PASS" = "Confirmar nova senha";
-"PASSWORD_LESSTHAN_SIX" = "Insira uma senha de 6 a 12 caracteres";
+"PASSWORD_LESSTHAN_SIX" = "Insira uma senha de 6 a 32 caracteres";
 "ACCOUNT_ERR_3" = "Digite sua conta";
 "LOGIN_ERR" = "Falha no login";
 "GET_CODE" = "Obter código";
@@ -285,6 +285,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "GIVE_UP" = "Sair";
 "BIND_INFO" = "Adição de dispositivo não foi concluída. Deseja sair?";
 "DEVICE_ADDING" = "Adicionando. Por favor aguarde...";
+"DEVICE_CONNECTING_WIFI" = "Conectando. Por favor aguarde...";
 "DEVICE_UPGRADE" = "Atualização do dispositivo";
 "UPDATING_LABEL" = "Atualizando o software do dispositivo (%d%%)";
 "UPDATING_BUTTON" = "Atualizando";
@@ -901,20 +902,14 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Tap1_LessThan3sTips" = "Gravando menos de 3s, os arquivos não serão salvos.";
 "Tap1_NeedsInitializedTips" = "Cartão SD precisa ser inicializado e os dados seriam limpos, com certeza continuar?";
 "Tap1_SDCardFullyTips" = "Totalmente ocupado";
-"Tap1_HomeMode" = "Modo Home";
-"Tap1_HomeMode_Opened" = "Modo Outdoor foi aberto";
-"Tap1_Camera_TCPconnected" = "Câmera conectada com o app via internet";
-"Tap1_Camera_UDPconnected" = "Câmara ligada ao app directamente";
+"Tap1_HomeMode" = "Modo Wi-Fi";
+"Tap1_HomeMode_Opened" = "O modo WIFI foi aberto";
 "Tap1_Camera_Video_Auto" = "Auto";
 "Tap1_Camera_Video_Fluent" = "Fluente";
 "Tap1_Camera_Video_SD" = "SD";
 "Tap1_Camera_Video_HD" = "HD";
-"Tap1_File_CameraNPhone" = "Câmera + Telefone album";
-"Tap1_File_Camera" = "Câmera";
-"Tap1_File_Phone" = "Telefone album";
 "Tap1_Refreshed" = "Refreshed";
 "Tap1_RefreshedFailed" = "Refresh failed";
-"Tap1_DeletedCameraNCellphoneFileTips" = "O conteúdo salvo será excluído da câmera e celular, continuar?";
 "Tap1_Sync_NetworkChangeTips" = "Comutado para rede móvel, continuar?";
 "Tap1_FileDamagedTips" = "Arquivo está danificado, apagar?";
 "Tap1_DeleteDownloadingTips" = "Download de arquivos, excluir?";
@@ -975,10 +970,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Formatting" = "Formatação";
 "Fail_Record" = "Falha ao gravar";
 "Tips_ShortVideo" = "Pressão longa para gravar um pequeno vídeo";
-"Switch_Mode_Pop" = "Mude o conteúdo atual da filmagem de rede para o modo direto";
-"Switch_Mode" = "Mude para o modo direto para ver o conteúdo de filmagem";
 "Sharing_Management" = "Gerenciamento de compartilhamento";
-"Dont_Show_Again" = "Não mostrar novamente";
 "Delete_Share" = "Excluir compartilhamento?";
 "SETTINGS_Wechat_Switch_Cancel" = "Desligar não vai receber mais mensagens empurradas. Se quiser se desvincular, por favor vá ao Wechat e cancele o seguimento do número público\"加菲狗官微服务\".";
 "SETTINGS_Wechat_Switch_Open" = "Concentre-se na conta WeChat \"加菲狗官微服务\" e vincule, depois que o sucesso da antiga conta WeChat não receberá mais a mensagem push";
@@ -1044,3 +1036,18 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "SECURE_Interval_Alarm" = "Alarme Intervalo";
 "MINUTE_Cloud" = "min";
 "REPEAT_TIME_ALARM" = "segs";
+"Video_expired" = "O vídeo não existe, talvez expirou";
+"Dont_Show_Again" = "Não mostrar novamente";
+"Switch_Mode" = "Mude o conteúdo atual da filmagem de rede para o modo direto";
+"SWITCH_VIEW_POP" = "A vista frontal atual não suporta esse recurso, seja para mudar para vista panorâmica?";
+"ENERGY_SAVE_MODE_ON" = "Modo de economia de energia ativado";
+"ENERGY_SAVE_MODE" = "Modo de economia de energia";
+"open_night" = "Só abre à noite";
+"ENERGY_SAVE_MODE_Description" = "Pode ser usado para receber a mensagem da campainha, mas não pode usar para ver vídeos ao vivo, de segurança. Se configurado para \"Abrir apenas à noite\", só é efetivo das 22:00 às 8:00.";
+"ENERGY_SAVE_MODE_POP" = "Pressione a tecla de chamada do dispositivo, caso contrário, não ocorrerá imediatamente.";
+"ENERGY_SAVE_MODE_ON_OFF" = "Na página Economia de energia, selecione Ativado / Desativado.";
+"CALL_SUCCESS_OPEN_SAVE" = "Pressione a tecla de chamada do dispositivo para ligar o modo de economia de energia após a conclusão da chamada";
+"ENERGY_SAVE_NOTE" = "Nota : Isso não entra em vigor";
+"ENERGY_SAVE_CALL" = "Pressione a tecla de chamada";
+"ENERGY_SAVE_HELP" = "Ajuda";
+"ALLDAY_OPEN" = "Aberto o dia todo";

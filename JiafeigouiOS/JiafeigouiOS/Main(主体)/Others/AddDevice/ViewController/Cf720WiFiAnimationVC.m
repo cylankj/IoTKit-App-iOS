@@ -28,7 +28,9 @@
 #define Width 270*kScreen_Scale
 
 @interface Cf720WiFiAnimationVC ()
-
+{
+    BOOL isGotoConfigWifiVC;
+}
 @property(nonatomic, strong)UIImageView * circle1;
 @property(nonatomic, strong)UILabel * label1;
 @property(nonatomic, strong)UIImageView * circle2;
@@ -67,6 +69,7 @@
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
+    isGotoConfigWifiVC = NO;
     [self connectedAP];
     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault];
 }
@@ -75,21 +78,26 @@
 {
     BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.cidStr];
     if (isAP) {
-        if (self.isAPModel) {
-            
-            WifiModeFor720CFResultVC *resultVC = [WifiModeFor720CFResultVC new];
-            resultVC.isAPModeFinished = YES;
-            [self.navigationController pushViewController:resultVC animated:YES];
-        }else{
-            
-            ConfigWiFiViewController *configWifi = [ConfigWiFiViewController new];
-            configWifi.cid = self.cidStr;
-            configWifi.pType = productType_720;
-            configWifi.configType = configWifiType_resetWifi;
-            configWifi.isCamare = YES;
-            [self.navigationController pushViewController:configWifi animated:YES];
-            
+        
+        if (!isGotoConfigWifiVC) {
+            if (self.isAPModel) {
+                
+                WifiModeFor720CFResultVC *resultVC = [WifiModeFor720CFResultVC new];
+                resultVC.isAPModeFinished = YES;
+                [self.navigationController pushViewController:resultVC animated:YES];
+            }else{
+                
+                ConfigWiFiViewController *configWifi = [ConfigWiFiViewController new];
+                configWifi.cid = self.cidStr;
+                configWifi.pType = productType_720;
+                configWifi.configType = configWifiType_resetWifi;
+                configWifi.isCamare = YES;
+                [self.navigationController pushViewController:configWifi animated:YES];
+                
+            }
+            isGotoConfigWifiVC = YES;
         }
+        
         
     }
     return isAP;

@@ -329,14 +329,11 @@ void (^OKBlock) (void) = nil;
             _cancelButton.tag = CANCEL_BTN_TAG;
             [_cancelButton addTarget:self action:@selector(alertHide:) forControlEvents:UIControlEventTouchUpInside];
         }
+        if (_cancelButton.superview == nil) [_alertView addSubview:_cancelButton];
     }
-    if (_cancelButton.superview == nil) [_alertView addSubview:_cancelButton];
-
     if (Other)
     {
-        
         if (_otherButton == nil) {
-            
             _otherButton = [UIButton buttonWithType:UIButtonTypeCustom];
             [_otherButton.titleLabel setFont:ALERT_OTHERBTN_FONT];
             [_otherButton.titleLabel setTextAlignment:NSTextAlignmentCenter];

@@ -22,6 +22,7 @@
 #import "FileManager.h"
 #import "LSAlertView.h"
 #import "JfgCacheManager.h"
+#import "JFGGrayPolicyManager.h"
 
 ////设置门磁推送开关
 //class MsgClientSetMagWarnReq:public MsgHeader{
@@ -72,50 +73,6 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-#pragma mark- 设置门磁 主动推送开关 状态
-
--(void)jfgEfamilyMsg:(id)msg
-{
-    if ([msg isKindOfClass:[NSArray class]]) {
-        
-        NSArray *sourceArr = msg;
-        if(sourceArr.count >=5){
-            
-            int msgid = [sourceArr[0] intValue];
-            if (msgid == 16921) {
-                
-                int64_t _rqed = [sourceArr[3] longLongValue];
-                if (rqed == _rqed) {
-                    return;
-                }
-                rqed = _rqed;
-                
-                BOOL old = [[NSUserDefaults standardUserDefaults] boolForKey:@"JFGMagWarnStatue"];
-                int error = [sourceArr[4] boolValue];
-                
-                if (error != 0) {
-                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"NO_NETWORK_4"]];
-                }else{
-                    //SCENE_SAVED
-                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
-                    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"JFGMagWarnStatue"];
-                    [[NSUserDefaults standardUserDefaults] setBool:!old forKey:@"JFGMagWarnStatue"];
-                    [[NSUserDefaults standardUserDefaults]synchronize];
-                }
-               
-                int64_t delayInSeconds = 1.0;
-                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
-                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-                    
-                    [ProgressHUD dismiss];
-                    
-                });
-                
-            }
-            
-        }
-    }
-}
 
 #pragma mark  view
 
@@ -235,6 +192,8 @@
 -(void)jfgDeviceUnBind:(JFGErrorType)errorType
 {
     if (errorType == JFGErrorTypeNone) {
+        
+        [JFGGrayPolicyManager resetGrayTime];
         if (!self.isShare)
         {
             [self.deviceSettingVM sendOpenHotWireMsg];

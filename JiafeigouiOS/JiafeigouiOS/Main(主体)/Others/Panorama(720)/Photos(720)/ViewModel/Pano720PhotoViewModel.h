@@ -86,4 +86,8 @@ typedef NS_ENUM(NSInteger, DeleteModel) {
                      deleteModel:(DeleteModel)delModel
                          success:(void (^)(NSURLSessionDataTask *task, id responseObject))success
                          failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure;
+
+#pragma mark dataHandle
+- (NSMutableArray *)handleModelData:(NSArray *)dataArr;
+
 @end

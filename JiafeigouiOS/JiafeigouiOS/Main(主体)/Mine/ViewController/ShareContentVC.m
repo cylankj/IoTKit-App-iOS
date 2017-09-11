@@ -94,6 +94,11 @@
             self.devicesTableView.height = self.view.height-64;
         }];
         self.devicesTableView.mj_footer.hidden = NO;
+        
+        if (self.selectAllBtn.selected) {
+            [self selectAllAction];
+        }
+        
     }else{
         [self.devicesTableView setEditing:YES animated:YES];
         [UIView animateWithDuration:0.3 animations:^{

@@ -30,4 +30,6 @@
 
 -(void)clearDeviceList;
 
+-(void)addNewDeviceForCid:(NSString *)cid;
+
 @end

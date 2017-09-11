@@ -11,7 +11,8 @@
 #import "JfgGlobal.h"
 #import "UIButton+Addition.h"
 #import "PilotLampStateVC.h"
-
+#import "VideoPlayFor720ViewController.h"
+#import "AddDeviceMainViewController.h"
 
 @interface AddDeviceErrorVC()
 
@@ -55,23 +56,40 @@
 {
     if (self.errorType == BindResultType_Success)
     {
-        [self.navigationController popToRootViewControllerAnimated:YES];
+        if (self.navigationController) {
+            [self.navigationController popToRootViewControllerAnimated:YES];
+        }else{
+            [self dismissViewControllerAnimated:YES completion:nil];
+        }
         
-    }else if (self.errorType == 600){
         
+    }else{
+        
+        BOOL isAlwaysJumped = NO;
         for (UIViewController *temp in self.navigationController.viewControllers)
         {
             if ([temp isKindOfClass:[AddDeviceGuideViewController class]])
             {
                 [self.navigationController popToViewController:temp animated:YES];
+                isAlwaysJumped = YES;
+                break;
             }
         }
-    }else{
-        for (UIViewController *temp in self.navigationController.viewControllers)
-        {
-            if ([temp isKindOfClass:[AddDeviceGuideViewController class]])
-            {
-                [self.navigationController popToViewController:temp animated:YES];
+        if (!isAlwaysJumped) {
+            if (self.navigationController) {
+                for (UIViewController *temp in self.navigationController.viewControllers)
+                {
+                    if ([temp isKindOfClass:[AddDeviceMainViewController class]] || [temp isKindOfClass:[VideoPlayFor720ViewController class]])
+                    {
+                        [self.navigationController popToViewController:temp animated:YES];
+                        return ;
+                    }
+                }
+                [self.navigationController popViewControllerAnimated:YES];
+                
+            }else{
+                
+                [self dismissViewControllerAnimated:YES completion:nil];
             }
         }
     }

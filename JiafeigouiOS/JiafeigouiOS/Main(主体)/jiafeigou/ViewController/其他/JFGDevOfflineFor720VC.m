@@ -31,6 +31,13 @@
     [self initView];
 }
 
+-(void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent];
+}
+
+
 -(void)backAction
 {
     [self dismissViewControllerAnimated:YES completion:nil];

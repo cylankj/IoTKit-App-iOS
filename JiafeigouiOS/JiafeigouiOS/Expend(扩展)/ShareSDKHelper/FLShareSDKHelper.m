@@ -61,112 +61,216 @@ static BOOL isRegister = NO;
      *  在此事件中写入连接代码。第四个参数则为配置本地社交平台时触发，根据返回的平台类型来配置平台信息。
      *  如果您使用的时服务端托管平台信息时，第二、四项参数可以传入nil，第三项参数则根据服务端托管平台来决定要连接的社交SDK。
      */
+    [ShareSDK registerActivePlatforms:@[@(SSDKPlatformTypeSinaWeibo),
+                                        @(SSDKPlatformTypeQQ),
+                                        @(SSDKPlatformTypeWechat),
+                                        @(SSDKPlatformTypeTwitter),
+                                        @(SSDKPlatformTypeFacebook),
+                                        @(SSDKPlatformTypeFacebookMessenger)] onImport:^(SSDKPlatformType platformType) {
+                                            
+                                            switch (platformType)
+                                            {
+                                                case SSDKPlatformTypeWechat:
+                                                    [ShareSDKConnector connectWeChat:[WXApi class]];
+                                                    break;
+                                                case SSDKPlatformTypeQQ:
+                                                    [ShareSDKConnector connectQQ:[QQApiInterface class] tencentOAuthClass:[TencentOAuth class]];
+                                                    break;
+                                                case SSDKPlatformTypeSinaWeibo:
+                                                    [ShareSDKConnector connectWeibo:[WeiboSDK class]];
+                                                    break;
+                                                case SSDKPlatformTypeFacebook:
+                                                    [ShareSDKConnector connectFacebookMessenger:[FBSDKMessengerSharer class]];
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                            
+                                        } onConfiguration:^(SSDKPlatformType platformType, NSMutableDictionary *appInfo) {
+                                            
+                                            switch (platformType)
+                                            {
+                                                case SSDKPlatformTypeSinaWeibo:
+                                                    //设置新浪微博应用信息,其中authType设置为使用SSO＋Web形式授权
+                                                    if ([OemManager oemType] == oemTypeDoby) {
+                                                        //1821035549
+                                                        [appInfo SSDKSetupSinaWeiboByAppKey:@"2444488421"
+                                                                                  appSecret:@"dfba216fe44f0d6613cdda1557790a31"
+                                                                                redirectUri:@"https://api.weibo.com/oauth2/default.html"
+                                                                                   authType:SSDKAuthTypeWeb];
+                                                    }else{
+                                                        [appInfo SSDKSetupSinaWeiboByAppKey:@"1315129656"
+                                                                                  appSecret:@"5feab23e093b43f220bccf7fbab8f6c5"
+                                                                                redirectUri:@"https://api.weibo.com/oauth2/default.html"
+                                                                                   authType:SSDKAuthTypeWeb];
+                                                    }
+                                                    
+                                                    break;
+                                                    
+                                                case SSDKPlatformTypeWechat:
+                                                    //设置微信应用信息
+                                                    if ([OemManager oemType] == oemTypeDoby) {
+                                                        //
+                                                        [appInfo SSDKSetupWeChatByAppId:@"wx81d893be5216671c"
+                                                                              appSecret:@"b867a2e433701bc00dffda2099655d7e"];
+                                                        
+                                                    }else{
+                                                        [appInfo SSDKSetupWeChatByAppId:@"wx3081bcdae8a842cf"
+                                                                              appSecret:@"d93676ab7db1876c06800dee3f33fbc2"];
+                                                    }
+                                                    
+                                                    break;
+                                                case SSDKPlatformTypeQQ:
+                                                    //设置QQ应用信息
+                                                    //1104534926
+                                                    //eePT24ZjUbNtk15J
+                                                    if ([OemManager oemType] == oemTypeDoby){
+                                                        [appInfo SSDKSetupQQByAppId:@"1106284318"
+                                                                             appKey:@"SclSnTkp5NBWOhRi"
+                                                                           authType:SSDKAuthTypeBoth];
+                                                    }else{
+                                                        [appInfo SSDKSetupQQByAppId:@"1103156296"
+                                                                             appKey:@"lfQJHRh8dDCJtwHu"
+                                                                           authType:SSDKAuthTypeBoth];
+                                                    }
+                                                    break;
+                                                case SSDKPlatformTypeFacebook:
+                                                    //107704292745179  38053202e1a5fe26c80c753071f0b573
+                                                    //1866682200216878  202470e7abebe2cd768432fa3e96914e
+                                                    //设置Facebook应用信息，其中authType设置为只用SSO形式授权
+                                                    //
+                                                    if ([OemManager oemType] == oemTypeDoby) {
+                                                        [appInfo SSDKSetupFacebookByApiKey:@"1698182270477391" appSecret:@"cdb4c9fafd8cb88baba5ad91ee9529fc"  authType:SSDKAuthTypeBoth];
+                                                    }else{
+                                                        [appInfo SSDKSetupFacebookByApiKey:@"1866682200216878" appSecret:@"202470e7abebe2cd768432fa3e96914e"  authType:SSDKAuthTypeBoth];
+                                                    }
+                                                    
+                                                    break;
+                                                    
+                                                case SSDKPlatformTypeTwitter:
+                                                    
+                                                    if ([OemManager oemType] == oemTypeDoby) {
+                                                        [appInfo SSDKSetupTwitterByConsumerKey:@"P4mZddIEumAsk7OnzNWpcrQy8" consumerSecret:@"1T5Pg7UBRVkq6OSvOs9EBEGiMXVLYmAeOdW3HPTazuqjWyzRAm"
+                                                                                   redirectUri:@"http://www.cylan.com.cn"];
+                                                    }else{
+                                                        [appInfo SSDKSetupTwitterByConsumerKey:@"kCEeFDWzz5xHi8Ej9Wx6FWqRL" consumerSecret:@"Ih4rUwyhKreoHqzd9BeIseAKHoNRszi2rT2udlMz6ssq9LeXw5"
+                                                                                   redirectUri:@"http://www.jfgou.com"];
+                                                    }
+                                                    break;
+                                                    
+                                                default:
+                                                    break;
+                                            }
+                                            
+                                            
+                                        }];
     
     
-    [ShareSDK registerApp:@"9bccc566e729"
-          activePlatforms:@[@(SSDKPlatformTypeSinaWeibo),
-                            @(SSDKPlatformTypeQQ),
-                            @(SSDKPlatformTypeWechat),
-                            @(SSDKPlatformTypeTwitter),
-                            @(SSDKPlatformTypeFacebook),
-                            @(SSDKPlatformTypeFacebookMessenger)]
-                 onImport:^(SSDKPlatformType platformType) {
-                     
-                     switch (platformType)
-                     {
-                         case SSDKPlatformTypeWechat:
-                             [ShareSDKConnector connectWeChat:[WXApi class]];
-                             break;
-                         case SSDKPlatformTypeQQ:
-                             [ShareSDKConnector connectQQ:[QQApiInterface class] tencentOAuthClass:[TencentOAuth class]];
-                             break;
-                         case SSDKPlatformTypeSinaWeibo:
-                             [ShareSDKConnector connectWeibo:[WeiboSDK class]];
-                             break;
-                         case SSDKPlatformTypeFacebook:
-                             [ShareSDKConnector connectFacebookMessenger:[FBSDKMessengerSharer class]];
-                             break;
-                         default:
-                             break;
-                     }
-                     
-                 }
-          onConfiguration:^(SSDKPlatformType platformType, NSMutableDictionary *appInfo) {
-              
-              switch (platformType)
-              {
-                  case SSDKPlatformTypeSinaWeibo:
-                      //设置新浪微博应用信息,其中authType设置为使用SSO＋Web形式授权
-                      if ([OemManager oemType] == oemTypeDoby) {
-                          //1821035549
-                          [appInfo SSDKSetupSinaWeiboByAppKey:@"2444488421"
-                                                    appSecret:@"dfba216fe44f0d6613cdda1557790a31"
-                                                  redirectUri:@"https://api.weibo.com/oauth2/default.html"
-                                                     authType:SSDKAuthTypeWeb];
-                      }else{
-                          [appInfo SSDKSetupSinaWeiboByAppKey:@"1315129656"
-                                                    appSecret:@"5feab23e093b43f220bccf7fbab8f6c5"
-                                                  redirectUri:@"https://api.weibo.com/oauth2/default.html"
-                                                     authType:SSDKAuthTypeWeb];
-                      }
-                      
-                      break;
-                  
-                  case SSDKPlatformTypeWechat:
-                      //设置微信应用信息
-                      if ([OemManager oemType] == oemTypeDoby) {
-                          //
-                          [appInfo SSDKSetupWeChatByAppId:@"wx292ae57e5ab2316d"
-                                                appSecret:@"8d99286b4f23ca56fa60c5f1defd6116"];
-                          
-                      }else{
-                          [appInfo SSDKSetupWeChatByAppId:@"wx3081bcdae8a842cf"
-                                                appSecret:@"d93676ab7db1876c06800dee3f33fbc2"];
-                      }
-                      
-                      break;
-                  case SSDKPlatformTypeQQ:
-                      //设置QQ应用信息
-                      //1104534926
-                      //eePT24ZjUbNtk15J
-                      if ([OemManager oemType] == oemTypeDoby){
-                          [appInfo SSDKSetupQQByAppId:@"1106284318"
-                                               appKey:@"SclSnTkp5NBWOhRi"
-                                             authType:SSDKAuthTypeBoth];
-                      }else{
-                          [appInfo SSDKSetupQQByAppId:@"1103156296"
-                                               appKey:@"lfQJHRh8dDCJtwHu"
-                                             authType:SSDKAuthTypeBoth];
-                      }
-                      break;
-                  case SSDKPlatformTypeFacebook:
-                      //107704292745179  38053202e1a5fe26c80c753071f0b573
-                      //1866682200216878  202470e7abebe2cd768432fa3e96914e
-                      //设置Facebook应用信息，其中authType设置为只用SSO形式授权
-                      //
-                      if ([OemManager oemType] == oemTypeDoby) {
-                          [appInfo SSDKSetupFacebookByApiKey:@"1698182270477391" appSecret:@"cdb4c9fafd8cb88baba5ad91ee9529fc"  authType:SSDKAuthTypeBoth];
-                      }else{
-                          [appInfo SSDKSetupFacebookByApiKey:@"1866682200216878" appSecret:@"202470e7abebe2cd768432fa3e96914e"  authType:SSDKAuthTypeBoth];
-                      }
-                      
-                      break;
-                      
-                  case SSDKPlatformTypeTwitter:
-                      
-                      if ([OemManager oemType] == oemTypeDoby) {
-                          [appInfo SSDKSetupTwitterByConsumerKey:@"P4mZddIEumAsk7OnzNWpcrQy8" consumerSecret:@"1T5Pg7UBRVkq6OSvOs9EBEGiMXVLYmAeOdW3HPTazuqjWyzRAm"
-                                                     redirectUri:@"http://www.cylan.com.cn"];
-                      }else{
-                          [appInfo SSDKSetupTwitterByConsumerKey:@"kCEeFDWzz5xHi8Ej9Wx6FWqRL" consumerSecret:@"Ih4rUwyhKreoHqzd9BeIseAKHoNRszi2rT2udlMz6ssq9LeXw5"
-                                                     redirectUri:@"http://www.jfgou.com"];
-                      }
-                    break;
-                      
-                  default:
-                      break;
-              }
-          }];
+    
+//    [ShareSDK registerApp:@"9bccc566e729"
+//          activePlatforms:@[@(SSDKPlatformTypeSinaWeibo),
+//                            @(SSDKPlatformTypeQQ),
+//                            @(SSDKPlatformTypeWechat),
+//                            @(SSDKPlatformTypeTwitter),
+//                            @(SSDKPlatformTypeFacebook),
+//                            @(SSDKPlatformTypeFacebookMessenger)]
+//                 onImport:^(SSDKPlatformType platformType) {
+//                     
+//                     switch (platformType)
+//                     {
+//                         case SSDKPlatformTypeWechat:
+//                             [ShareSDKConnector connectWeChat:[WXApi class]];
+//                             break;
+//                         case SSDKPlatformTypeQQ:
+//                             [ShareSDKConnector connectQQ:[QQApiInterface class] tencentOAuthClass:[TencentOAuth class]];
+//                             break;
+//                         case SSDKPlatformTypeSinaWeibo:
+//                             [ShareSDKConnector connectWeibo:[WeiboSDK class]];
+//                             break;
+//                         case SSDKPlatformTypeFacebook:
+//                             [ShareSDKConnector connectFacebookMessenger:[FBSDKMessengerSharer class]];
+//                             break;
+//                         default:
+//                             break;
+//                     }
+//                     
+//                 }
+//          onConfiguration:^(SSDKPlatformType platformType, NSMutableDictionary *appInfo) {
+//              
+//              switch (platformType)
+//              {
+//                  case SSDKPlatformTypeSinaWeibo:
+//                      //设置新浪微博应用信息,其中authType设置为使用SSO＋Web形式授权
+//                      if ([OemManager oemType] == oemTypeDoby) {
+//                          //1821035549
+//                          [appInfo SSDKSetupSinaWeiboByAppKey:@"2444488421"
+//                                                    appSecret:@"dfba216fe44f0d6613cdda1557790a31"
+//                                                  redirectUri:@"https://api.weibo.com/oauth2/default.html"
+//                                                     authType:SSDKAuthTypeWeb];
+//                      }else{
+//                          [appInfo SSDKSetupSinaWeiboByAppKey:@"1315129656"
+//                                                    appSecret:@"5feab23e093b43f220bccf7fbab8f6c5"
+//                                                  redirectUri:@"https://api.weibo.com/oauth2/default.html"
+//                                                     authType:SSDKAuthTypeWeb];
+//                      }
+//                      
+//                      break;
+//                  
+//                  case SSDKPlatformTypeWechat:
+//                      //设置微信应用信息
+//                      if ([OemManager oemType] == oemTypeDoby) {
+//                          //
+//                          [appInfo SSDKSetupWeChatByAppId:@"wx81d893be5216671c"
+//                                                appSecret:@"b867a2e433701bc00dffda2099655d7e"];
+//                          
+//                      }else{
+//                          [appInfo SSDKSetupWeChatByAppId:@"wx3081bcdae8a842cf"
+//                                                appSecret:@"d93676ab7db1876c06800dee3f33fbc2"];
+//                      }
+//                      
+//                      break;
+//                  case SSDKPlatformTypeQQ:
+//                      //设置QQ应用信息
+//                      //1104534926
+//                      //eePT24ZjUbNtk15J
+//                      if ([OemManager oemType] == oemTypeDoby){
+//                          [appInfo SSDKSetupQQByAppId:@"1106284318"
+//                                               appKey:@"SclSnTkp5NBWOhRi"
+//                                             authType:SSDKAuthTypeBoth];
+//                      }else{
+//                          [appInfo SSDKSetupQQByAppId:@"1103156296"
+//                                               appKey:@"lfQJHRh8dDCJtwHu"
+//                                             authType:SSDKAuthTypeBoth];
+//                      }
+//                      break;
+//                  case SSDKPlatformTypeFacebook:
+//                      //107704292745179  38053202e1a5fe26c80c753071f0b573
+//                      //1866682200216878  202470e7abebe2cd768432fa3e96914e
+//                      //设置Facebook应用信息，其中authType设置为只用SSO形式授权
+//                      //
+//                      if ([OemManager oemType] == oemTypeDoby) {
+//                          [appInfo SSDKSetupFacebookByApiKey:@"1698182270477391" appSecret:@"cdb4c9fafd8cb88baba5ad91ee9529fc"  authType:SSDKAuthTypeBoth];
+//                      }else{
+//                          [appInfo SSDKSetupFacebookByApiKey:@"1866682200216878" appSecret:@"202470e7abebe2cd768432fa3e96914e"  authType:SSDKAuthTypeBoth];
+//                      }
+//                      
+//                      break;
+//                      
+//                  case SSDKPlatformTypeTwitter:
+//                      
+//                      if ([OemManager oemType] == oemTypeDoby) {
+//                          [appInfo SSDKSetupTwitterByConsumerKey:@"P4mZddIEumAsk7OnzNWpcrQy8" consumerSecret:@"1T5Pg7UBRVkq6OSvOs9EBEGiMXVLYmAeOdW3HPTazuqjWyzRAm"
+//                                                     redirectUri:@"http://www.cylan.com.cn"];
+//                      }else{
+//                          [appInfo SSDKSetupTwitterByConsumerKey:@"kCEeFDWzz5xHi8Ej9Wx6FWqRL" consumerSecret:@"Ih4rUwyhKreoHqzd9BeIseAKHoNRszi2rT2udlMz6ssq9LeXw5"
+//                                                     redirectUri:@"http://www.jfgou.com"];
+//                      }
+//                    break;
+//                      
+//                  default:
+//                      break;
+//              }
+//          }];
     
 
     isRegister = YES;
@@ -528,7 +632,7 @@ static BOOL isRegister = NO;
         if (contentType == SSDKContentTypeImage) {
             [parameters SSDKSetupWeChatParamsByText:@"" title:title url:[NSURL URLWithString:url] thumbImage:nil image:image musicFileURL:nil extInfo:nil fileData:nil emoticonData:nil type:SSDKContentTypeImage forPlatformSubType:shareType];
         }else{
-            [parameters SSDKSetupWeChatParamsByText:@"" title:[JfgLanguage getLanTextStrByKey:@"Tap1_Shared_Title"] url:[NSURL URLWithString:url] thumbImage:image image:nil musicFileURL:nil extInfo:nil fileData:nil emoticonData:nil type:SSDKContentTypeWebPage forPlatformSubType:shareType];
+            [parameters SSDKSetupWeChatParamsByText:@"" title:title url:[NSURL URLWithString:url] thumbImage:image image:nil musicFileURL:nil extInfo:nil fileData:nil emoticonData:nil type:SSDKContentTypeWebPage forPlatformSubType:shareType];
         }
         
         
@@ -536,7 +640,6 @@ static BOOL isRegister = NO;
     
         //新浪微博
         [parameters SSDKSetupSinaWeiboShareParamsByText:[OemManager appName] title:title image:image url:[NSURL URLWithString:url] latitude:0 longitude:0 objectID:nil type:SSDKContentTypeAuto];
-        //[[self class] shareForSinaweibo:image];
         
     }else if (shareType == SSDKPlatformSubTypeQQFriend || shareType == SSDKPlatformSubTypeQZone){
         
@@ -566,7 +669,7 @@ static BOOL isRegister = NO;
              if (error.code == 0) {
                  [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_SuccessTips"]];
              }else{
-                 [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"]];
+                 //[ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"]];
              }
              NSLog(@"shareError:%@",error);
          } else {
@@ -578,12 +681,12 @@ static BOOL isRegister = NO;
                  }
                  case SSDKResponseStateFail:
                  {
-                     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"]];
+                     //[ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"]];
                      break;
                  }
                  case SSDKResponseStateCancel:
                  {
-                     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"]];
+                     //[ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap3_ShareDevice_FailTips"]];
                      break;
                  }
                  default:
@@ -598,7 +701,6 @@ static BOOL isRegister = NO;
 +(void)shareForSinaweibo:(UIImage *)image
 {
     NSMutableDictionary *sharePatam = [NSMutableDictionary dictionary];
-    //[sharePatam SSDKEnableUseClientShare];
     [sharePatam SSDKSetupShareParamsByText:@"shareContent" images:[CommonMethod thumbnailWithImageWithoutScale:image size:CGSizeMake(500, 500)] url:[NSURL URLWithString:@"http://cylan.jfg.com"] title:@"title" type:SSDKContentTypeAuto];
     
     [ShareSDK share:SSDKPlatformTypeSinaWeibo parameters:sharePatam onStateChanged:^(SSDKResponseState state, NSDictionary *userData, SSDKContentEntity *contentEntity, NSError *error) {

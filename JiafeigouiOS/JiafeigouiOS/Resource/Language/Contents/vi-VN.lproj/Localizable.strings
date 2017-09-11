@@ -1,6 +1,6 @@
 /* vi-VN.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.  
+Created by cylan language tool  on Wed Aug 30 17:27:03 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Chưa kết nối";
 "REPEAT_TIME" = "%d giây";
@@ -285,6 +285,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "GIVE_UP" = "Thoát";
 "BIND_INFO" = "Đang thêm thiết bị, bạn muốn thoát?";
 "DEVICE_ADDING" = "Đang thêm, hãy đợi…";
+"DEVICE_CONNECTING_WIFI" = "Đang kết nối, hãy đợi…";
 "DEVICE_UPGRADE" = "Nâng cấp thiết bị";
 "UPDATING_LABEL" = "Cập nhật(%d%%)";
 "UPDATING_BUTTON" = "Đang cập nhật";
@@ -901,20 +902,14 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Tap1_LessThan3sTips" = "Ghi dưới 3 giây, tệp sẽ không được lưu.";
 "Tap1_NeedsInitializedTips" = "Thẻ SD cần được khởi tạo và dữ liệu sẽ bị xóa, chắc chắn để tiếp tục?";
 "Tap1_SDCardFullyTips" = "Chiếm đóng hoàn toàn";
-"Tap1_HomeMode" = "chế độ nhà";
-"Tap1_HomeMode_Opened" = "Chế độ nhà đã được mở";
-"Tap1_Camera_TCPconnected" = "Máy ảnh được kết nối với ứng dụng qua internet";
-"Tap1_Camera_UDPconnected" = "Máy ảnh được kết nối trực tiếp với ứng dụng";
+"Tap1_HomeMode" = "Chế độ WIFI";
+"Tap1_HomeMode_Opened" = "Chế độ WIFI đã được mở";
 "Tap1_Camera_Video_Auto" = "Auto";
 "Tap1_Camera_Video_Fluent" = "Fluent";
 "Tap1_Camera_Video_SD" = "SD";
 "Tap1_Camera_Video_HD" = "HD";
-"Tap1_File_CameraNPhone" = "Camera + Album điện thoại";
-"Tap1_File_Camera" = "Camera";
-"Tap1_File_Phone" = "Album điện thoại";
 "Tap1_Refreshed" = "Đã làm mới";
 "Tap1_RefreshedFailed" = "Refresh failed";
-"Tap1_DeletedCameraNCellphoneFileTips" = "Nội dung đã lưu sẽ bị xóa khỏi máy ảnh và điện thoại di động, tiếp tục?";
 "Tap1_Sync_NetworkChangeTips" = "Chuyển sang mạng di động, tiếp tục?";
 "Tap1_FileDamagedTips" = "Tệp bị hỏng, xoá?";
 "Tap1_DeleteDownloadingTips" = "Tải file, xóa?";
@@ -975,10 +970,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Formatting" = "Định dạng";
 "Fail_Record" = "Không ghi";
 "Tips_ShortVideo" = "Bấm dài để ghi lại một đoạn video ngắn";
-"Switch_Mode_Pop" = "Vui lòng chuyển đổi nội dung chụp mạng hiện tại sang chế độ trực tiếp";
-"Switch_Mode" = "Hãy chuyển sang chế độ trực tiếp để xem nội dung chụp";
 "Sharing_Management" = "Quản lý chia sẻ";
-"Dont_Show_Again" = "Không hiển thị lại";
 "Delete_Share" = "Xóa chia sẻ?";
 "SETTINGS_Wechat_Switch_Cancel" = "Nếu đóng cửa, nó không thể nhận được WeChat đẩy. Hủy bỏ nó bằng cách hủy theo dõi \"加菲狗官微服务\".";
 "SETTINGS_Wechat_Switch_Open" = "Hãy tập trung vào tài khoản WeChat \"加菲狗官微服务\" và ràng buộc, sau khi thành công của tài khoản WeChat cũ sẽ không còn nhận được thông báo push";
@@ -1044,3 +1036,18 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "SECURE_Interval_Alarm" = "Báo động Khoảng cách";
 "MINUTE_Cloud" = "Phút";
 "REPEAT_TIME_ALARM" = "giây";
+"Video_expired" = "Video không tồn tại, Có thể đã hết hạn";
+"Dont_Show_Again" = "Không hiển thị lại";
+"Switch_Mode" = "Vui lòng chuyển đổi nội dung chụp mạng hiện tại sang chế độ trực tiếp";
+"SWITCH_VIEW_POP" = "Chế độ xem trước hiện tại không hỗ trợ tính năng này, cho dù chuyển sang bỏ tầm nhìn?";
+"ENERGY_SAVE_MODE_ON" = "Đã bật chế độ tiết kiệm năng lượng";
+"ENERGY_SAVE_MODE" = "Chế độ tiết kiệm điện";
+"open_night" = "Chỉ mở cửa vào ban đêm";
+"ENERGY_SAVE_MODE_Description" = "Có thể được sử dụng để nhận được tin nhắn chuông, nhưng không thể sử dụng để xem trực tiếp, video, tính năng bảo mật. Nếu bạn đặt \"Mở chỉ vào ban đêm\", chỉ có hiệu lực từ 22:00 đến 8:00.";
+"ENERGY_SAVE_MODE_POP" = "Hãy bấm phím gọi điện thoại, nếu không nó sẽ không có hiệu lực ngay lập tức.";
+"ENERGY_SAVE_MODE_ON_OFF" = "Trên trang Tiết kiệm năng lượng, chọn Bật / Tắt";
+"CALL_SUCCESS_OPEN_SAVE" = "Bấm phím gọi điện thoại để bật chế độ tiết kiệm điện sau khi cuộc gọi thành công";
+"ENERGY_SAVE_NOTE" = "Lưu ý : Điều đó không có hiệu lực";
+"ENERGY_SAVE_CALL" = "Nhấn phím gọi";
+"ENERGY_SAVE_HELP" = "Trợ giúp";
+"ALLDAY_OPEN" = "Mở cửa cả ngày";

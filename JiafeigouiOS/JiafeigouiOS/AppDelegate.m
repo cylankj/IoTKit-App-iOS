@@ -47,8 +47,7 @@
 #import "BaseNavgationViewController.h"
 #import "OemManager.h"
 #import "LSAlertView.h"
-#import <AFNetworking.h>
-
+#import "MsgFor720ViewController.h"
 
 #define USERGETUISDK 1   //是否使用个推sdk
 
@@ -175,6 +174,7 @@
         NSDictionary *apsInfo = [pushInfo objectForKey:@"aps"];
         if(apsInfo)
         {
+            [JFGSDK appendStringToLogFile:@"didFinishLaunchingWithOptions"];
             [self apnsMsgHandle:apsInfo isFromFinishLauch:YES];
         }
         
@@ -183,16 +183,6 @@
     //扬声器改变通知处理
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(routeChange:)  name:AVAudioSessionRouteChangeNotification object:[AVAudioSession sharedInstance]];
 
-#if DEBUG 
-    //内存泄漏监控
-    
-    //iOS自带悬浮窗调试工具   http://www.cocoachina.com/ios/20170712/19817.html
-    id overlayClass = NSClassFromString(@"UIDebuggingInformationOverlay");
-    [overlayClass performSelector:NSSelectorFromString(@"prepareDebuggingOverlay")];
-#endif
-    
-
-    
     return YES;
 }
 
@@ -240,6 +230,7 @@
 
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo
 {
+    [JFGSDK appendStringToLogFile:@"didReceiveRemoteNotification"];
     [self apnsMsgHandle:userInfo isFromFinishLauch:NO];
 }
 
@@ -345,37 +336,8 @@
         
     });
     
-    //[self afNetWorkingTest];
     
     return tabController;
-}
-
-
--(void)afNetWorkingTest
-{
-    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
-    /**
-     "act": "get_token",             // string
-     "account": "register account", // string
-     "app_id": "",
-     */
-    NSMutableDictionary *dict = [NSMutableDictionary new];
-    [dict setObject:@"get_token" forKey:@"act"];
-    [dict setObject:@"18503060168" forKey:@"account"];
-    [dict setObject:@"" forKey:@"app_id"];
-    
-    
-    NSString *url = [NSString stringWithFormat:@"http://yf.jfgou.com?act=get_token&account=18503060168&app_id="""];
-    
-    [manager GET:url parameters:dict progress:^(NSProgress * _Nonnull downloadProgress) {
-        
-    } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-        
-        NSLog(@"%@",responseObject);
-        
-    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-        NSLog(@"%@",error);
-    }];
 }
 
 // 接收apns消息 处理
@@ -390,9 +352,7 @@
         if (isFromFinishLauch)
         {
             customStr = [pushDict objectForKey:@"custom"];
-        }
-        else
-        {
+        }else{
             customStr = [pushDict valueForKeyPath:@"aps.custom"];
         }
         
@@ -409,11 +369,6 @@
                 {
                     switch ([[apsArray objectAtIndex:0] intValue])
                     {
-                        case JfgMsgType_EfamlActiveCall:
-                        {
-                            
-                        }
-                            break;
                         case JfgMsgType_BellActiveCall:
                         {
                             
@@ -436,24 +391,45 @@
                             break;
                         default:
                         {
-                            VideoPlayViewController *videoPlayVC = [[VideoPlayViewController alloc] initWithMessage];
-                            videoPlayVC.cid = [apsArray objectAtIndex:2];
+                            JiafeigouDevStatuModel *devModel = nil;
                             NSMutableArray * deviList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
                             for (JiafeigouDevStatuModel *model in deviList) {
                                 if ([model.uuid isEqualToString:[apsArray objectAtIndex:2]]) {
                                     if (model.unReadMsgCount == 0) {
                                         model.unReadMsgCount = 1;
                                     }
-                                    videoPlayVC.devModel = model;
+                                    devModel = model;
                                     break;
                                 }
                             }
-                            UIWindow * window = [UIApplication sharedApplication].keyWindow;
-                            UITabBarController * barCon = (UITabBarController *)window.rootViewController;
-                            barCon.selectedIndex = 0;
-                            UINavigationController * nav = barCon.viewControllers[0];
-                            videoPlayVC.hidesBottomBarWhenPushed = YES;
-                            [nav pushViewController:videoPlayVC animated:YES];
+                            
+                            if (devModel) {
+                                
+                                if ([CommonMethod devBigTypeForOS:devModel.pid] == JFGDevBigTypeEyeCamera) {
+                                    
+                                    MsgFor720ViewController *msg = [MsgFor720ViewController new];
+                                    msg.cid = devModel.uuid;
+                                    msg.devModel = devModel;
+                                    UIWindow * window = [UIApplication sharedApplication].keyWindow;
+                                    UITabBarController * barCon = (UITabBarController *)window.rootViewController;
+                                    barCon.selectedIndex = 0;
+                                    UINavigationController * nav = barCon.viewControllers[0];
+                                    msg.hidesBottomBarWhenPushed = YES;
+                                    [nav pushViewController:msg animated:YES];
+                                    
+                                }else{
+                                    
+                                    VideoPlayViewController *videoPlayVC = [[VideoPlayViewController alloc] initWithMessage];
+                                    videoPlayVC.cid = [apsArray objectAtIndex:2];
+                                    videoPlayVC.devModel = devModel;
+                                    UIWindow * window = [UIApplication sharedApplication].keyWindow;
+                                    UITabBarController * barCon = (UITabBarController *)window.rootViewController;
+                                    barCon.selectedIndex = 0;
+                                    UINavigationController * nav = barCon.viewControllers[0];
+                                    videoPlayVC.hidesBottomBarWhenPushed = YES;
+                                    [nav pushViewController:videoPlayVC animated:YES];
+                                }
+                            }                
                         }
                             break;
                     }
@@ -481,7 +457,10 @@
         return;
     }
     
-    if ([[NSDate date]timeIntervalSince1970] - timestamp > 30) {
+    uint64_t time = [[NSDate date] timeIntervalSince1970];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"apns推送时间：%lld  当前时间:%lld",timestamp,time]];
+    
+    if (time - timestamp > 30) {
         
         static BOOL isIntoDoorBellRecordVC = NO;
         if (!isIntoDoorBellRecordVC) {

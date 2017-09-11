@@ -213,6 +213,28 @@ NSString *const panoPhotoListKey = @"files";
     return nil;
 }
 
+- (NSArray *)deleteModelsWithoutKeep:(NSArray *)keepModels
+{
+    NSMutableArray *localModelArr = [self localModels];
+    
+    for (int i = 0; i < localModelArr.count; i ++)
+    {
+        Pano720PhotoModel *localModel = [localModelArr objectAtIndex:i];
+        
+        for (int j = 0; j < keepModels.count; j ++)
+        {
+            Pano720PhotoModel *keepModel = [keepModels objectAtIndex:j];
+            
+            if ([keepModel.fileName isEqualToString:localModel.fileName])
+            {
+                [localModelArr removeObject:localModel];
+            }
+        }
+    }
+
+    return localModelArr;
+}
+
 - (long long)beginTimeFromUrl:(NSString *)urlStr
 {
     
@@ -320,7 +342,28 @@ NSString *const panoPhotoListKey = @"files";
     {
         case DeleteModel_Keep:
         {
+            NSArray *localFileArr = [self deleteModelsWithoutKeep:models];
             
+            for (int i = 0; i < localFileArr.count; i ++)
+            {
+                Pano720PhotoModel *model = (Pano720PhotoModel *)[localFileArr objectAtIndex:i];
+                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"delete Local File %@", model.fileName]];
+                NSString *filePath = [[FileManager jfgPano720PhotoDirPath:self.cid] stringByAppendingPathComponent:model.fileName];
+                if ([[NSFileManager defaultManager] fileExistsAtPath:filePath])
+                {
+                    [[NSFileManager defaultManager] removeItemAtPath:filePath error:nil];
+                }
+                
+                if (i == localFileArr.count - 1)
+                {
+                    if (success)
+                    {
+                        success(nil,nil);
+                    }
+                }
+            }
+            
+            return;
         }
             break;
         case DeleteModel_Delete:
@@ -383,11 +426,33 @@ NSString *const panoPhotoListKey = @"files";
     {
         case DeleteModel_Keep:
         {
+            NSMutableString *fileNameStr = [NSMutableString string];
+            
+//            NSArray *deleteArr = [self deleteModelsWithoutKeep:models];
+            
+            for (Pano720PhotoModel *model in models)
+            {
+                [fileNameStr appendString:[NSString stringWithFormat:@"&filename=%@",model.fileName]];
+            }
+            
+            NSString *URLString = [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=fileDelete&enwarn=0&deltype=%ld%@",self.ipAddress,delModel, fileNameStr];
+            
+            [[JfgHttp sharedHttp] get:URLString parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+                if (success)
+                {
+                    success(task, responseObject);
+                }
+            } failure:^(NSURLSessionDataTask *task, NSError *error) {
+                if (failure)
+                {
+                    failure(task, error);
+                }
+            }];
         }
             break;
         case DeleteModel_DeleteAll:
         {
-            NSString *URLString = [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=fileDelete&deltype=%ld",self.ipAddress,delModel];
+            NSString *URLString = [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=fileDelete&enwarn=0&deltype=%ld",self.ipAddress,delModel];
             
             [[JfgHttp sharedHttp] get:URLString parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
                 if (success)
@@ -412,7 +477,7 @@ NSString *const panoPhotoListKey = @"files";
                 [fileNameStr appendString:[NSString stringWithFormat:@"&filename=%@",model.fileName]];
             }
             
-            NSString *URLString = [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=fileDelete&deltype=%ld%@",self.ipAddress,delModel, fileNameStr];
+            NSString *URLString = [NSString stringWithFormat:@"http://%@/cgi/ctrl.cgi?Msg=fileDelete&enwarn=0&deltype=%ld%@",self.ipAddress,delModel, fileNameStr];
             
             [[JfgHttp sharedHttp] get:URLString parameters:nil progress:nil success:^(NSURLSessionDataTask *task, id responseObject) {
                 if (success)
@@ -450,7 +515,7 @@ NSString *const panoPhotoListKey = @"files";
             }
         } failure:nil];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        
+        failure(task, error);
     }];
 }
 

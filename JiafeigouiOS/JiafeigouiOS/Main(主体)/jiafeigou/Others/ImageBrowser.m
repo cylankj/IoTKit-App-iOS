@@ -35,6 +35,8 @@
 #import "LSAlertView.h"
 #import "FLShareSDKHelper.h"
 #import "JfgCacheManager.h"
+#import "DevPropertyManager.h"
+#import "PropertyManager.h"
 
 #define ImageViewTag_0 633
 #define ImageViewTag_1 1+633
@@ -143,27 +145,41 @@
   
         [self.bigScrollView addSubview:imageV];
         
+        NSString *pid = @"";
+        NSArray *devList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
+        for (JiafeigouDevStatuModel *model in devList) {
+            if ([model.uuid isEqualToString:cid]) {
+                pid = model.pid;
+                break;
+            }
+        }
         
-        PanoramicIosView * remoteView = [[PanoramicIosView alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, Kwidth, Kwidth)];
+        BOOL isRS = [DevPropertyManager isRSDevForPid:pid];
         
-        SFCParamModel *paramModel = [JfgCacheManager getSfcPatamModelForCid:cid];
+        UIView *_remoteView = [[PanoramicIosView alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, Kwidth, Kwidth)];
+        
+        if ([CommonMethod devBigTypeForOS:pid] == JFGDevBigType360 || ([CommonMethod devBigTypeForOS:pid] == JFGDevBigTypeSinglefisheyeCamera && isRS)){
+            _remoteView = [[PanoramicIosViewRS alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, Kwidth, Kwidth)];
+        }
+        
+        SFCParamModel *paramModel =[CommonMethod panoramicViewParamModelForCid:self.cid];
+        struct SFCParamIos param;
         if (paramModel) {
-            [remoteView configV360:SFCParamIosMake(paramModel.x, paramModel.y, paramModel.r, paramModel.w, paramModel.h, 180)];
+            param.cx = paramModel.x;
+            param.cy = paramModel.y;
+            param.r = paramModel.r;
+            param.w = paramModel.w ;
+            param.h = paramModel.h;
+            param.fov = 180;
         }else{
-            [remoteView configV360:getSFCParamIosPreset()];
+            param.cx = 640;
+            param.cy = 480;
+            param.r = 480;
+            param.w = 1280;
+            param.h = 960;
+            param.fov = 180;
+            
         }
-        //[remoteView setMountMode:MOUNT_TOP];
-        [remoteView loadUIImage:oldImageView.image];
-        [imageV addSubview:remoteView];
-        //MODE_TOP = 0 吊顶 MODE_WALL = 1 壁挂
-        if (tly == 1) {
-            //挂壁
-            [remoteView setMountMode:MOUNT_WALL];
-        }else{
-            //吊顶
-            [remoteView setMountMode:MOUNT_TOP];
-        }
-        
         
         //给每个大图加上单击手势
         UITapGestureRecognizer * tap = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(tapBigImageView:)];
@@ -171,10 +187,52 @@
         tap.numberOfTouchesRequired = 1;
         [imageV addGestureRecognizer:tap];
         
+        if ([_remoteView isKindOfClass:[PanoramicIosView class]]) {
+            PanoramicIosView *remoteView = (PanoramicIosView *)_remoteView;
+            [remoteView configV360:param];
+            [remoteView loadUIImage:oldImageView.image];
+            if (tly == 1) {
+                //挂壁
+                [remoteView setMountMode:MOUNT_WALL];
+            }else{
+                //吊顶
+                [remoteView setMountMode:MOUNT_TOP];
+            }
+            BOOL isSupportAngleSwitch = YES;
+            
+            isSupportAngleSwitch = [PropertyManager showSharePropertiesRowWithPid:[pid intValue] key:pAngleKey];
+            
+            if (!isSupportAngleSwitch) {
+                [remoteView setMountMode:MOUNT_WALL];
+            }
+            UITapGestureRecognizer *panTap = [remoteView getDoubleTapRecognizer];
+            [tap requireGestureRecognizerToFail:panTap];
+            
+        }else{
+            PanoramicIosViewRS *remoteView = (PanoramicIosViewRS *)_remoteView;
+            [remoteView configV360:param];
+            [remoteView loadUIImage:oldImageView.image];
+            if (tly == 1) {
+                //挂壁
+                [remoteView setMountMode:MOUNT_WALL];
+            }else{
+                //吊顶
+                [remoteView setMountMode:MOUNT_TOP];
+            }
+            BOOL isSupportAngleSwitch = YES;
+            
+            isSupportAngleSwitch = [PropertyManager showSharePropertiesRowWithPid:[pid intValue] key:pAngleKey];
+            
+            if (!isSupportAngleSwitch) {
+                [remoteView setMountMode:MOUNT_WALL];
+            }
+            UITapGestureRecognizer *panTap = [remoteView getDoubleTapRecognizer];
+            [tap requireGestureRecognizerToFail:panTap];
+        }
         
-        UITapGestureRecognizer *panTap = [remoteView getDoubleTapRecognizer];
-        [tap requireGestureRecognizerToFail:panTap];
         
+        [imageV addSubview:_remoteView];
+        //MODE_TOP = 0 吊顶 MODE_WALL = 1 壁挂    
     }
     [self initPreview];
     showTopBottomView = NO;

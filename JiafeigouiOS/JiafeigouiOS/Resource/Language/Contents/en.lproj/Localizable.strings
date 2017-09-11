@@ -1,6 +1,6 @@
 /* en.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.  
+Created by cylan language tool  on Wed Aug 30 17:27:03 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Not network connected";
 "REPEAT_TIME" = "%d seconds";
@@ -285,6 +285,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "GIVE_UP" = "Quit";
 "BIND_INFO" = "Adding is not finished,sure to quit?";
 "DEVICE_ADDING" = "Adding, please wait…";
+"DEVICE_CONNECTING_WIFI" = "Connecting, please wait…";
 "DEVICE_UPGRADE" = "Device software update";
 "UPDATING_LABEL" = "Updating(%d%%)";
 "UPDATING_BUTTON" = "Updating";
@@ -903,18 +904,12 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Tap1_SDCardFullyTips" = "Fully occupied";
 "Tap1_HomeMode" = "WIFI mode";
 "Tap1_HomeMode_Opened" = "WIFI mode has been opened";
-"Tap1_Camera_TCPconnected" = "Camera connected with app via internet";
-"Tap1_Camera_UDPconnected" = "Camera connected with app directly";
 "Tap1_Camera_Video_Auto" = "Auto";
 "Tap1_Camera_Video_Fluent" = "Fluent";
 "Tap1_Camera_Video_SD" = "SD";
 "Tap1_Camera_Video_HD" = "HD";
-"Tap1_File_CameraNPhone" = "Camera + Phone album";
-"Tap1_File_Camera" = "Camera";
-"Tap1_File_Phone" = "Phone album";
 "Tap1_Refreshed" = "Refreshed";
 "Tap1_RefreshedFailed" = "Refresh failed";
-"Tap1_DeletedCameraNCellphoneFileTips" = "The saved content will be deleted from camera and cellphone, continue?";
 "Tap1_Sync_NetworkChangeTips" = "Switched to mobile network,continue?";
 "Tap1_FileDamagedTips" = "File is damaged, delete?";
 "Tap1_DeleteDownloadingTips" = "File downloading, delete?";
@@ -975,10 +970,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Formatting" = "Formatting";
 "Fail_Record" = "Fail to record";
 "Tips_ShortVideo" = "Long press to record short video";
-"Switch_Mode_Pop" = "please switch current network shooting content to direct mode";
-"Switch_Mode" = "please switch to direct mode to view shooting content";
 "Sharing_Management" = "Sharing Management";
-"Dont_Show_Again" = "Don\'t show again";
 "Delete_Share" = "Delete share?";
 "SETTINGS_Wechat_Switch_Cancel" = "If closed, it cannot receive WeChat push. Unbinding it by unfollowing \“加菲狗官微服务\”.";
 "SETTINGS_Wechat_Switch_Open" = "Please focus on the  WeChat account \"加菲狗官微服务\" and bind, after the success of the old WeChat account will no longer receive the message push";
@@ -1044,3 +1036,18 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "SECURE_Interval_Alarm" = "Interval Alarm";
 "MINUTE_Cloud" = "min";
 "REPEAT_TIME_ALARM" = "sec";
+"Video_expired" = "Video does not exist, Maybe expired";
+"Dont_Show_Again" = "Don\'t show again";
+"Switch_Mode" = "please switch current network shooting content to LAN mode";
+"SWITCH_VIEW_POP" = "The current front view does not support this feature, whether to switch to overlook view?";
+"ENERGY_SAVE_MODE_ON" = "Energy saving mode is on";
+"ENERGY_SAVE_MODE" = "Energy saving mode";
+"open_night" = "Only open at night";
+"ENERGY_SAVE_MODE_Description" = "Can receive the doorbell message, but cannot view live, record, security features. If set to \"Open only at night\", only effective from 22:00 to 8:00.";
+"ENERGY_SAVE_MODE_POP" = "Press the device call key, or it will not take effect immediately.";
+"ENERGY_SAVE_MODE_ON_OFF" = "In the energy saving mode, select on or off";
+"CALL_SUCCESS_OPEN_SAVE" = "After press the device call key, it will turn on or off energy saving mode";
+"ENERGY_SAVE_NOTE" = "Note: That does not take effect";
+"ENERGY_SAVE_CALL" = "Press the call key";
+"ENERGY_SAVE_HELP" = "Help";
+"ALLDAY_OPEN" = "Whole day open";

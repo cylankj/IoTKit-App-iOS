@@ -31,8 +31,8 @@
 
 
 #pragma mark ***UIWebView 加载方法***
-- (void)webViewWithLoadRequestWithURL:(NSURL *)url Fram:(CGRect)fram{
-    
+- (void)webViewWithLoadRequestWithURL:(NSURL *)url Fram:(CGRect)fram
+{
     self.frame = fram;
     self.UIDelegate = self;
     self.navigationDelegate = self;
@@ -45,30 +45,23 @@
     if ([keyPath isEqualToString:@"estimatedProgress"]) {
         
         if (object == self) {
-            
-          
             NSLog(@"webLoadingProgress:%f",self.estimatedProgress);
         }else{
             [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
-            
         }
         
     }
     else if ([keyPath isEqualToString:@"title"])
     {
         if (object == self) {
-            
-           
             NSLog(@"webTitle:%@",self.title);
         }
         else
         {
             [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
-            
         }
     }
     else {
-        
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     }
 }
@@ -107,7 +100,6 @@
     }
     NSLog(@"webTitle:%@",self.title);
     if (self.webDelegate && [self.webDelegate respondsToSelector:@selector(akWebViewTitle:)]) {
-        
         [self.webDelegate akWebViewTitle:self.title];
     }
 }

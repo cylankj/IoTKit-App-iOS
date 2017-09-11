@@ -68,7 +68,9 @@ typedef NS_ENUM(NSInteger, controlTag) {
 @property (nonatomic, strong) NSMutableArray *downloadArr; // need download models
 @property (nonatomic, strong) NSMutableArray *videoDownloadArr; // video download models
 @property (nonatomic, strong) NSMutableArray *thumbNailArr;
+@property (nonatomic, strong) NSMutableArray *keepDeselectedArr;    // keep Deselect model
 
+@property (nonatomic, assign) NSInteger allCanSelectedRows;
 @property (nonatomic, assign) BOOL isFirstPing;
 
 @end
@@ -521,8 +523,7 @@ typedef NS_ENUM(NSInteger, controlTag) {
         
         return resultArr;
     }
-    
-    
+
     return nil;
     
 }
@@ -616,6 +617,23 @@ typedef NS_ENUM(NSInteger, controlTag) {
     return nil;
 }
 
+//
+- (BOOL)isPanoModel:(Pano720PhotoModel *)model inPanoModels:(NSArray *)modelArr
+{
+    for (int i = 0; i < modelArr.count; i ++)
+    {
+        Pano720PhotoModel *modelInArr = [modelArr objectAtIndex:i];
+        
+        JFGLog(@"modelInarr name[%@]  modelName [%@]", modelInArr.fileName, model.fileName);
+        
+        if ([model.fileName isEqualToString:modelInArr.fileName])
+        {
+            return YES;
+        }
+    }
+    
+    return NO;
+}
 
 #pragma mark
 #pragma mark download
@@ -824,6 +842,15 @@ typedef NS_ENUM(NSInteger, controlTag) {
         [selectedModels addObject:panoModel];
     }
     
+    if (self.keepDeselectedArr.count > 0 && self.delModel == DeleteModel_DeleteAll)
+    {
+        self.delModel = DeleteModel_Keep;
+        [selectedModels removeAllObjects];
+        [selectedModels addObjectsFromArray:self.keepDeselectedArr];
+        [self.keepDeselectedArr removeAllObjects];
+    }
+    
+    
     JFG_WS(weakSelf);
     
     switch (self.pano720VM.fileExistType)
@@ -835,7 +862,7 @@ typedef NS_ENUM(NSInteger, controlTag) {
                 [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_DeleteDownloadingTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
                     
                 } OKBlock:^{
-                    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_DeletedCameraNCellphoneFileTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
+                    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"PHOTO_DELE_POP"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
                         
                     } OKBlock:^{
                         [weakSelf.pano720VM deleteFileWithModels:selectedModels deleteModel:weakSelf.delModel success:^(NSURLSessionDataTask *task, id responseObject) {
@@ -852,7 +879,7 @@ typedef NS_ENUM(NSInteger, controlTag) {
             }
             else // 直接删除
             {
-                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_DeletedCameraNCellphoneFileTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"PHOTO_DELE_POP"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
                     
                 } OKBlock:^{
                     [weakSelf.pano720VM deleteFileWithModels:selectedModels deleteModel:weakSelf.delModel success:^(NSURLSessionDataTask *task, id responseObject) {
@@ -901,7 +928,6 @@ typedef NS_ENUM(NSInteger, controlTag) {
                 
                 for (NSInteger j = 0; j < rows.count; j ++)
                 {
-                    
                     Pano720PhotoModel *model = [[self.dataArray objectAtIndex:i] objectAtIndex:j];
                     for (NSInteger h = 0; h < selectedModels.count; h ++)
                     {
@@ -915,6 +941,13 @@ typedef NS_ENUM(NSInteger, controlTag) {
                 }
                 
                 [self.dataArray replaceObjectAtIndex:i withObject:rows];
+                int64_t delayInSeconds = 1.0;
+                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                    
+                    [self.panoTableView reloadData];
+                    
+                });
             }
         }
             break;
@@ -928,7 +961,9 @@ typedef NS_ENUM(NSInteger, controlTag) {
             break;
         case DeleteModel_Keep:
         {
+            [self.dataArray removeAllObjects];
             
+            [self.dataArray addObjectsFromArray:[self.pano720VM handleModelData:selectedModels]];
         }
             break;
         default:
@@ -963,6 +998,7 @@ typedef NS_ENUM(NSInteger, controlTag) {
         }
     }
     self.bottomBiew.deleteButton.enabled = [self.panoTableView indexPathsForSelectedRows]>0;
+    self.allCanSelectedRows = [[self.panoTableView indexPathsForSelectedRows] count];
 }
 
 //- (void)showMenu:(UITapGestureRecognizer *)gueseture
@@ -1311,30 +1347,29 @@ typedef NS_ENUM(NSInteger, controlTag) {
                 [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_DeleteDownloadingTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
                     
                 } OKBlock:^{
-                    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_DeletedCameraNCellphoneFileTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
+                    [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"PHOTO_DELE_POP"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
                         
                     } OKBlock:^{
                         [weakSelf.pano720VM deleteFileWithModels:@[panoModel] deleteModel:DeleteModel_Delete success:^(NSURLSessionDataTask *task, id responseObject) {
                             [weakSelf deleteAlreadyDeletedModels:@[panoModel]];
                         } failure:^(NSURLSessionDataTask *task, NSError *error) {
-                            
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tips_DeleteFail"]];
                         }];
                     }];
                 }];
             }
             else // 直接删除
             {
-                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_DeletedCameraNCellphoneFileTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"PHOTO_DELE_POP"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Button_Sure"] CancelBlock:^{
                     
                 } OKBlock:^{
                     [weakSelf.pano720VM deleteFileWithModels:@[panoModel] deleteModel:DeleteModel_Delete success:^(NSURLSessionDataTask *task, id responseObject) {
                         [weakSelf deleteAlreadyDeletedModels:@[panoModel]];
                     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-                        
+                        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tips_DeleteFail"]];
                     }];
                 }];
             }
-            
         }
             break;
             
@@ -1357,6 +1392,16 @@ typedef NS_ENUM(NSInteger, controlTag) {
     if (self.panoTableView.editing == YES)
     {
         self.bottomBiew.deleteButton.enabled = [self.panoTableView indexPathsForSelectedRows]>0;
+        
+        if (self.delModel == DeleteModel_DeleteAll)
+        {
+            Pano720PhotoModel *selectModel = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
+            if ([self isPanoModel:selectModel inPanoModels:self.keepDeselectedArr])
+            {
+                [self.keepDeselectedArr removeObject:selectModel];
+            }
+        }
+        
         return;
     }
     
@@ -1380,9 +1425,27 @@ typedef NS_ENUM(NSInteger, controlTag) {
     
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
 }
+
 - (void)tableView:(UITableView *)tableView didDeselectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    self.bottomBiew.deleteButton.enabled = [self.panoTableView indexPathsForSelectedRows]>0;
+    if (self.panoTableView.editing == YES)
+    {
+        self.bottomBiew.deleteButton.enabled = [self.panoTableView indexPathsForSelectedRows]>0;
+        
+        if (self.delModel == DeleteModel_DeleteAll)
+        {
+            Pano720PhotoModel *panoModel = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
+            
+            JFGLog(@"Deselect Model name  %@", panoModel.fileName);
+            
+            if (![self isPanoModel:panoModel inPanoModels:self.keepDeselectedArr])
+            {
+                [self.keepDeselectedArr addObject:panoModel];
+            }
+            
+        }
+        
+    }
 }
 
 #pragma mark
@@ -1549,4 +1612,14 @@ typedef NS_ENUM(NSInteger, controlTag) {
     }
     return _videoDownloadArr;
 }
+
+- (NSMutableArray *)keepDeselectedArr
+{
+    if (_keepDeselectedArr == nil)
+    {
+        _keepDeselectedArr = [[NSMutableArray alloc] initWithCapacity:2];
+    }
+    return _keepDeselectedArr;
+}
+
 @end

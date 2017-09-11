@@ -14,41 +14,18 @@
 #import "CommonMethod.h"
 #import "jfgConfigManager.h"
 #import "JfgTypeDefine.h"
+#import "JFGGrayPolicyManager.h"
+#import "DevicesViewModel.h"
 
-/*
-
-终端类型定义
-define("OS_SERVER",                             -1); 用于显示系统消息图标
-define("OS_IOS_PHONE",                          0);
-define("OS_PC",                                 1);
-define("OS_ANDROID_PHONE",                      2);
-define("OS_CAMARA_ANDROID_SERVICE",             3);                   备注: 2015.11.23，已废弃可复用
-define("OS_CAMERA_ANDROID",                     4); //DOG-72          备注：Android 3G摄像头
-define("OS_CAMERA_UCOS",                        5); //DOG-1W-V1       备注：WiFi摄像头 UCOS
-define("OS_DOOR_BELL",                          6); //DOG-BELL        备注：门铃 WiFi主板
-define("OS_CAMERA_UCOS_V2",                     7); //DOG-1W-V2       备注：WiFi摄像头 UCOS
-define("OS_EFAML",                              8); //DOG-iHOME       备注：中控
-define("OS_TEMP_HUMI",                          9);                   备注：温湿度        2016.9.9, 已废弃可复用
-define("OS_IR",                                10);                   备注：红外感应      2016.9.9, 已废弃可复用
-define("OS_MAGNET",                            11); //DOG-EN-MG       备注：中控 门磁
-define("OS_AIR_DETECTOR",                      12);                   备注：中控 空气检测 2016.9.9, 已废弃可复用
-define("OS_CAMERA_UCOS_V3",                    13); //DOG-1W-V3       备注：WiFi摄像头
-define("OS_DOOR_BELL_CAM",                     14); //DOG-ML-CAM      备注：摄像头主板
-define("OS_DOOR_BELL_V2",                      15); //DOG-BELL-V2     备注：Wifi狗主板,门铃功能 2015.10.28 zll
-define("OS_CAMERA_ANDROID_4G",                 16); //DOG-82          备注：Android 4G摄像头
-define("OS_CAMERA_CC3200",                     17); //DOG-CAM-CC3200  备注：乐视狗使用门铃包DOG-CAM-CC3200
-define("OS_CAMERA_HS",                         18); //DOG-2W          备注：WiFi摄像头 海思       2016.9.21
-define("OS_CAMERA_ZY",                         19); //DOG-3W          备注：WiFi摄像头 乔安 智源  2016.9.21
-define("OS_CAMERA_GK",                         20); //DOG-4W          备注：WiFi摄像头 国科       2016.9.21
-define("OS_CAMERA_5W",                         21); //DOG-5W          备注：双鱼眼
-
-*/
 
 
 @interface JFGBoundDevicesMsg()<JFGSDKCallbackDelegate,LoginManagerDelegate>
 
 @property (nonatomic,strong)NSMutableArray *devicesList;
 @property (nonatomic,strong)NSMutableArray *delDeviceList;
+@property (nonatomic,strong)NSMutableArray *newDevCidList;
+@property (nonatomic,strong)DevicesViewModel *devicesVM;
+@property (nonatomic,strong)NSArray *devList;
 
 @end
 
@@ -130,6 +107,7 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
                 model.deviceType = JFGDeviceTypePanoramicCamera;
                 break;
             case 3:
+            case 6:
             case 7:
                 model.deviceType = JFGDeviceTypeDoorBell;
                 break;
@@ -180,7 +158,9 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
                     newModel.safeFence = model.safeFence;
                     newModel.doorcOpen = model.doorcOpen;
                     newModel.unReadPhotoCount = model.unReadPhotoCount;
-                    
+                    newModel.iconPath = model.iconPath;
+                    newModel.offlineIconPath = model.offlineIconPath;
+                    [self iconPathForModel:newModel];
                     break;
                     
                 }
@@ -192,8 +172,67 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
         
     }
     
-    
+    [JFGGrayPolicyManager reqGrayPolicy];
+    [self setDefaultValue];
     [[NSNotificationCenter defaultCenter] postNotificationName:BoundDevicesRefreshNotification object:nil];
+}
+
+-(void)iconPathForModel:(JiafeigouDevStatuModel *)devModel
+{
+    if (devModel.iconPath == nil || devModel.offlineIconPath == nil || [devModel.iconPath isEqualToString:@""] || [devModel.offlineIconPath isEqualToString:@""]) {
+        
+        NSString *iconPath = @"";
+        NSString *offlinePath = @"";
+        BOOL isFinished = NO;
+        for (NSArray *subArr in self.devList) {
+            
+            for (AddDevConfigModel *model in subArr) {
+                
+                for (NSNumber *os in model.osList) {
+                    
+                    if ([os integerValue] == [devModel.pid integerValue]) {
+                        iconPath = model.homeIconName;
+                        offlinePath = model.homeDisableIconName;
+                        isFinished = YES;
+                        break;
+                    }
+                    
+                }
+                if (isFinished) {
+                    break;
+                }
+            }
+            if (isFinished) {
+                break;
+            }
+            
+        }
+        devModel.iconPath = iconPath;
+        devModel.offlineIconPath = offlinePath;
+        
+    }
+    
+
+}
+
+-(void)setDefaultValue
+{
+    for (JiafeigouDevStatuModel *model in self.devicesList) {
+        for (NSString *cid in [self.newDevCidList copy]) {
+            
+            if ([cid isEqualToString:model.uuid]) {
+                
+                self.devicesVM.pType = (productType)[model.pid intValue];
+                [self.devicesVM setDevicesDefaultDataWithCid:cid]; // 设置 默认值
+                if ([self.newDevCidList containsObject:cid]) {
+                    [self.newDevCidList removeObject:cid];
+                }
+                
+            }
+            
+        }
+    }
+    
 }
 
 -(void)setValueFor720WithModel:(JiafeigouDevStatuModel *)model
@@ -261,6 +300,19 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
 {
     if ([cid isKindOfClass:[NSString class]]) {
         [self.delDeviceList addObject:cid];
+    }
+}
+
+
+-(void)addNewDeviceForCid:(NSString *)cid
+{
+    if ([cid isKindOfClass:[NSString class]]) {
+        for (NSString *alwaysCid in self.newDevCidList) {
+            if ([alwaysCid isEqualToString:cid]) {
+                return;
+            }
+        }
+        [self.newDevCidList addObject:cid];
     }
 }
 
@@ -355,6 +407,31 @@ define("OS_CAMERA_5W",                         21); //DOG-5W          备注：�
         _delDeviceList = [[NSMutableArray alloc]init];
     }
     return _delDeviceList;
+}
+
+-(NSMutableArray *)newDevCidList
+{
+    if (!_newDevCidList) {
+        _newDevCidList = [NSMutableArray new];
+    }
+    return _newDevCidList;
+}
+
+- (DevicesViewModel *)devicesVM
+{
+    if (_devicesVM == nil)
+    {
+        _devicesVM = [[DevicesViewModel alloc] init];
+    }
+    return _devicesVM;
+}
+
+-(NSArray *)devList
+{
+    if (!_devList) {
+        _devList = [[NSArray alloc]initWithArray:[jfgConfigManager getAllDevModel]];
+    }
+    return _devList;
 }
 
 @end

@@ -9,7 +9,7 @@
 #import "PropertyManager.h"
 #import "NSDictionary+FLExtension.h"
 #import <JFGSDK/JFGSDK.h>
-
+#import "JFGGrayPolicyManager.h"
 
 NSString *const pPIDKey = @"PID";
 NSString *const pCidKey = @"CID";
@@ -49,6 +49,7 @@ NSString *const pApConnectting = @"APCONNECTTING";
 NSString *const pLowBattery = @"POWER";
 NSString *const pAiRecognition = @"AI_RECOGNITION";
 NSString *const pAlarmDuration = @"INTERVAL_ALARM";
+NSString *const pRemoteWatchKey = @"REMOTE_VIEW";//是否支持省电模式
 
 @interface PropertyManager()
 
@@ -57,6 +58,12 @@ NSString *const pAlarmDuration = @"INTERVAL_ALARM";
 @end
 
 @implementation PropertyManager
+
+-(NSArray <NSDictionary *>*)propertyArr
+{
+    NSArray *propertyArr = [self.propertyDict objectForKey:@"pList"];
+    return propertyArr;
+}
 
 - (BOOL)showRowWithPid:(NSInteger)pID key:(NSString *)rowKey
 {
@@ -72,7 +79,14 @@ NSString *const pAlarmDuration = @"INTERVAL_ALARM";
             if ([aproperty.allKeys containsObject:rowKey])
             {
                 result = [[aproperty objectForKey:rowKey] boolValue];
-                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"showKey:[%@]  showValue[%d]",rowKey, result]];
+                if ([rowKey isEqualToString:pAiRecognition]) {
+                    if ([JFGGrayPolicyManager isSupportAIForCurrentAcount] && result) {
+                        return result;
+                    }else{
+                        result = NO;
+                    }
+                }
+                //[JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"showKey:[%@]  showValue[%d]",rowKey, result]];
                 return result;
             }
         }
@@ -108,13 +122,45 @@ NSString *const pAlarmDuration = @"INTERVAL_ALARM";
             if ([aproperty.allKeys containsObject:rowKey])
             {
                 result = [[aproperty objectForKey:rowKey] boolValue];
-                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"showKey:[%@]  showValue[%d]",rowKey, result]];
+                
+                //AI识别加入灰度发布测试
+                if ([rowKey isEqualToString:pAiRecognition]) {
+                    if ([JFGGrayPolicyManager isSupportAIForCurrentAcount] && result) {
+                        return result;
+                    }else{
+                        result = NO;
+                    }
+                }
+                
+                //[JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"showKey:[%@]  showValue[%d]",rowKey, result]];
                 return result;
             }
         }
     }
     
     return result;
+}
+
+-(NSString *)propertyWithPid:(NSInteger)pID key:(NSString *)rowKey
+{
+    NSString *property = @"";
+    
+    NSArray *propertyArr = [self.propertyDict objectForKey:@"pList"];
+    
+    for (NSInteger i = 0; i < propertyArr.count; i ++)
+    {
+        NSDictionary *aproperty = [propertyArr objectAtIndex:i];
+        
+        if ([[aproperty objectForKey:pOSKey] integerValue] == pID || [[aproperty objectForKey:pPIDKey] integerValue] == pID)
+        {
+            if ([aproperty.allKeys containsObject:rowKey])
+            {
+                property = [aproperty objectForKey:rowKey];
+                break;
+            }
+        }
+    }
+    return property;
 }
 
 #pragma mark getter

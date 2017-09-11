@@ -82,13 +82,18 @@
         [_delegate fetchDataArray:[self createDataWithProductType:type Cid:cid]]; //获取 初始数据
     }
     
+    if ([PropertyManager showPropertiesRowWithPid:self.pType key:pHotWireless])
+    {
+        [self pingRequest];
+    }
+    
     switch (self.pType)
     {
-        case productType_IPCam:
-        case productType_IPCam_V2:
-        {
-            [self pingRequest];
-        }
+//        case productType_IPCam:
+//        case productType_IPCam_V2:
+//        {
+//            [self pingRequest];
+//        }
         default:
         {
             [[dataPointMsg shared] packSingleDataPointMsg:self.dpsArray withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic) {
@@ -99,6 +104,7 @@
                 
                 [self initModel:dic];
                 [self update];
+                
             } FailBlock:^(RobotDataRequestErrorType error) {
                 
             }];
@@ -134,6 +140,19 @@
             }
         }
         
+        
+        NSArray *deepSleepArr = [dict objectForKey:dpMsgBellDeepSleepKey];
+        if ([deepSleepArr isKindOfClass:[NSArray class]]) {
+            
+            if (deepSleepArr.count > 2) {
+                
+                self.settingModel.isPowerSavingEnable = [[deepSleepArr objectAtIndex:0] boolValue];
+                self.settingModel.powerSavingBeginTime = [[deepSleepArr objectAtIndex:1] longLongValue];
+                self.settingModel.powerSavingEndTime = [[deepSleepArr objectAtIndex:2] longLongValue];
+                
+            }
+            
+        }
         
         
         self.settingModel.isMobile = [[dict objectForKey:msgBaseMobileKey] boolValue];
@@ -222,64 +241,6 @@
     {
         switch (type)
         {
-            /*
-            case productType_3G:
-            case productType_3G_2X:
-            case productType_4G:
-            {
-                [self.groupArray addObjectsFromArray:[self mobileDogSettingsArray]];
-            }
-                break;
-            case productType_DoorBell:
-            case productType_CesBell:
-            case productType_CesBell_V2:
-            case productType_CatEye:
-            {
-                [self.groupArray addObjectsFromArray:[self doorBellSettingsArray]];
-                
-            }
-                break;
-            case productType_Mag:
-            {
-                [self.groupArray addObjectsFromArray:[self magSettingsArray]];
-            }
-                break;
-            case productType_Efamily:
-            {
-                [self.groupArray addObjectsFromArray:[self efamilySettingsArray]];
-            }
-                break;
-            case productType_Camera_HS:
-            case productType_Camera_ZY:
-            case productType_CesCamera:
-            case productType_Camera_GK:
-            {
-                [self.groupArray addObjectsFromArray:[self panoramaDogSettingsArray]];
-            }
-                break;
-            case productType_FreeCam:
-            {
-                [self.groupArray addObjectsFromArray:[self freeCamSettingsArray]];
-            }
-                break;
-            case productType_720:
-            case productType_720p:
-            {
-                [self.groupArray addObjectsFromArray:[self ap720CameraSettingArray]];
-            }
-                break;
-            case productType_RS_180:
-            {
-                [self.groupArray addObjectsFromArray:[self rsSettingsArray]];
-            }
-                break;
-            case productType_IPCam:
-            {
-                [self.groupArray addObjectsFromArray:[self ipCamSettingsArray]];
-            }
-                break;
-            case productType_RS_120:
-            */
             default:
             {
                 [self.groupArray addObjectsFromArray:[self dogSettingsArray]];
@@ -317,6 +278,7 @@
     
     NSMutableArray *section0 = [self section0Arr];
     NSMutableArray *section1 = [self section1Arr];
+    NSMutableArray *section1_1 = [self section1_1Arr];
     NSMutableArray *section2 = [self section2Arr];
     NSMutableArray *sdCardSection = [self sectionSDCardArr];
     NSMutableArray *section3 = [self section3Arr];
@@ -330,6 +292,9 @@
     if (section1.count > 0)
     {
         [dogSettings addObject:section1];
+    }
+    if (section1_1.count) {
+        [dogSettings addObject:section1_1];
     }
     if (section2.count > 0)
     {
@@ -525,6 +490,29 @@
     }
     
     return (section1.count>0)?section1:nil;
+}
+
+
+-(NSMutableArray *)section1_1Arr
+{
+    NSMutableArray *section1 = [NSMutableArray arrayWithCapacity:1];
+    
+    if ([self.propertyTool showRowWithPid:self.pType key:pRemoteWatchKey]) {
+        
+        //deepsleep
+        [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             @"install_icon_power_saving",cellIconImageKey,
+                             [JfgLanguage getLanTextStrByKey:@"ENERGY_SAVE_MODE"],cellTextKey,
+                             deepsleep, cellUniqueID,
+                             @"",cellDetailTextKey,
+                             @0,cellshowSwitchKey,
+                             @(self.settingModel.isCellCanClick), canClickCellKey,
+                             @(self.settingModel.isShowDeepSleepRedDot), cellRedDotInRight,
+                             nil]];
+        
+    }
+    
+    return section1;
 }
 
 - (NSMutableArray *)section2Arr
@@ -1700,15 +1688,23 @@
     if ([self.cid isEqualToString:ask.cid])
     {
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"recevie fpingResponse"]];
+        
+        if ([PropertyManager showPropertiesRowWithPid:self.pType key:pHotWireless])
+        {
+            self.settingModel.ipAdress = ask.address;
+            self.settingModel.isInLocalNet = YES;
+        }
+        
+        
         switch (self.pType)
         {
-            case productType_IPCam:
-            case productType_IPCam_V2:
-            {
-                self.settingModel.ipAdress = ask.address;
-                self.settingModel.isInLocalNet = YES;
-            }
-                break;
+//            case productType_IPCam:
+//            case productType_IPCam_V2:
+//            {
+//                self.settingModel.ipAdress = ask.address;
+//                self.settingModel.isInLocalNet = YES;
+//            }
+//                break;
             case productType_720p:
             case productType_720:
             {
@@ -1850,7 +1846,7 @@
                                 
                                 if (self.settingModel.sdCardError == 0)
                                 {
-                                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips3"]];
+                                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SD_INFO_3"]];
                                 }
                                 else
                                 {
@@ -1903,45 +1899,48 @@
                                        isInitiative:(BOOL)initiative
                                            dpMsgArr:(NSArray *)dpMsgArr
 {
-    for (DataPointSeg *seg in dpMsgArr)
-    {
-        NSError *error = nil;
-        id obj = [MPMessagePackReader readData:seg.value error:&error];
+    if ([cid isEqualToString:self.cid]) {
         
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"socket dpID[%llu]  value[%@]", seg.msgId, obj]];
-        
-        if (error == nil)
+        for (DataPointSeg *seg in dpMsgArr)
         {
-            switch (seg.msgId)
+            NSError *error = nil;
+            id obj = [MPMessagePackReader readData:seg.value error:&error];
+            
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"socket dpID[%llu]  value[%@]", seg.msgId, obj]];
+            
+            if (error == nil)
             {
-                // SDCard 插拔
-                case dpMsgBase_SDStatus:
+                switch (seg.msgId)
                 {
-                    if ([obj isKindOfClass:[NSArray class]])
+                        // SDCard 插拔
+                    case dpMsgBase_SDStatus:
                     {
-                        BOOL isExistSDCard = [[obj objectAtIndex:3] intValue];
-                        if (isExistSDCard == NO)
+                        if ([obj isKindOfClass:[NSArray class]])
                         {
-                            //show hub sdCard was pulled out
-                            if (initiative)
+                            BOOL isExistSDCard = [[obj objectAtIndex:3] intValue];
+                            if (isExistSDCard == NO)
                             {
-                                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"]];
+                                //show hub sdCard was pulled out
+                                if (initiative)
+                                {
+                                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"]];
+                                }
                             }
+                            
+                            self.settingModel.isExistSDCard = isExistSDCard;
+                            self.settingModel.sdCardError = [[obj objectAtIndex:2] intValue];
+                            
                         }
-                        
-                        self.settingModel.isExistSDCard = isExistSDCard;
-                        self.settingModel.sdCardError = [[obj objectAtIndex:2] intValue];
-                        
                     }
+                        break;
+                    default:
+                        break;
                 }
-                break;
-                default:
-                break;
             }
         }
+        [self update];
+        
     }
-    
-    [self update];
 }
 
 
@@ -1970,8 +1969,12 @@
             case productType_CesBell_V2:
             {
                 [_dpsArray addObjectsFromArray:@[@(dpMsgBase_Net)]];
+                if ([PropertyManager showPropertiesRowWithPid:self.pType key:pSDCardKey]) {
+                    [_dpsArray addObject:@(dpMsgBase_SDStatus)];
+                }
             }
                 break;
+                
             case productType_WIFI:
             case productType_CatEye:
             case productType_3G:
@@ -1990,9 +1993,9 @@
                                                  @(dpMsgBase_SIMInfo),
                                                  @(dpMsgCamera_Angle),
                                                  @(dpMsgCamera_WarnEnable),
-                                                 @(dpMsgBase_isWiredNetAvailable),
+                                                @(dpMsgBase_isWiredNetAvailable),
                                                  @(dpMsgBase_isUsingWiredNet)
-                                                 ]];
+                                                 ,@(dpMsgBell_deepSleep)]];
             }
                 break;
         }

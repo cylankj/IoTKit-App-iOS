@@ -10,7 +10,8 @@
 #import <UIKit/UIKit.h>
 #import "JFGTypeDefine.h"
 #import "JFGSDKCallbackDelegate.h"
-
+#import "JFGSDKPlayVideoDelegate.h"
+#import "JFGSDKRenderView.h"
 
 @interface JFGSDK : NSObject
 

@@ -17,10 +17,12 @@
 #import "CommonMethod.h"
 #import "JfgLanguage.h"
 #import <KVOController.h>
+#import "JfgTimeFormat.h"
 #import "JfgDataTool.h"
 #import "JfgMsgDefine.h"
 #import "JFGTakePhotoButton.h"
 #import "UIButton+Addition.h"
+#import "UpgradeDeviceVC.h"
 #import "JFGTimepieceView.h"
 #import "NSTimer+FLExtension.h"
 #import "UIAlertView+FLExtension.h"
@@ -158,12 +160,12 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [self initData];
     [self btnDisenableStatue];//设备状态显示
     [JFGSDK addDelegate:self];
+    
     [self initView];
     BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
     if (!isAP) {
         [self startFping];
     }
-    //[self mnAI];
 }
 
 //显示升级页面
@@ -197,7 +199,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         [self.videoBgImageView addSubview:updateLabel];
     }
     isUpdateing = YES;
-    
 }
 
 -(void)viewWillAppear:(BOOL)animated
@@ -359,7 +360,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
            
         }
        
-        
     }else{
         
         self.micBtn.enabled = YES;
@@ -374,19 +374,26 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                 
                     //客户端移动网络在线
                     __weak typeof(self) weakSelf = self;
+                    
+                    if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
+                        [weakSelf stopVideoPlay];
+                    }
+                    
                     [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_Firmware_DataTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"CARRY_ON"] CancelBlock:^{
                         
-                        if ([JFGSDK currentNetworkStatus] == JFGNetTypeWifi) {
-                            if (playState != videoPlayStatePlaying && playState != videoPlayStatePlayPreparing) {
-                                [weakSelf startLiveVideo];
-                            }
-                        }else{
-                            
-                            if (playState == videoPlayStatePlaying) {
-                                [self stopVideoPlay];
-                            }
-                            [weakSelf showAgainView];
+//                        if ([JFGSDK currentNetworkStatus] == JFGNetTypeWifi) {
+//                            if (playState != videoPlayStatePlaying && playState != videoPlayStatePlayPreparing) {
+//                                [weakSelf startLiveVideo];
+//                            }
+//                        }else{
+//                            
+//                            
+//                        }
+                        if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
+                            [weakSelf stopVideoPlay];
                         }
+                        [weakSelf showAgainView];
+                        
                         
                     } OKBlock:^{
                         
@@ -412,14 +419,20 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     
                     if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline) {
                         //离线
-                        if (playState == videoPlayStatePlaying) {
+                        if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
                             [self stopVideoPlay];
                         }
                         [self showTipView:[JfgLanguage getLanTextStrByKey:@"Tap1_DisconnectedPleaseCheck"]];
                         [self showAgainView];
                     }else{
                         //客户端wifi连接
-                        [self showStatusTipForWiFiMode:YES batteryCapacity:self.devModel.Battery];
+                        
+                        int barrt = batteryRl;
+                        if (barrt<=0) {
+                            barrt = self.devModel.Battery;
+                        }
+                        
+                        [self showStatusTipForWiFiMode:YES batteryCapacity:barrt];
                         if (playState != videoPlayStatePlaying && playState != videoPlayStatePlayPreparing) {
                             [self startLiveVideo];
                         }
@@ -496,18 +509,71 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     if ([ask.cid isEqualToString:self.devModel.uuid] && isDidAppear) {
         
         [self stopFping];
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"ip:%@ cid:%@",ask.address,ask.cid]];
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720 fpingResult:[ip:%@ cid:%@]",ask.address,ask.cid]];
         if (devIpAddr && [devIpAddr isEqualToString:ask.address]) {
             return;
         }
         devIpAddr = ask.address;
-        NSLog(@"devIpAddr:%@",devIpAddr);
         //[ProgressHUD showText:@"局域网ip地址获取成功"];
         [self reqForBattaryAndSDCard];
         [self videoRecordstatusRequest];
+        
+        
+        [JFGSDK checkTagDeviceVersionForCid:self.devModel.uuid];
     }
 }
 
+
+//- (void)jfgDevVersionUpgradInfo:(JFGSDKDeviceVersionInfo *)info
+//{
+//    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"isHaveNewPackage [%d]", info.hasNewPkg]];
+//    if (info.hasNewPkg)
+//    {
+//        [self showAlterView];
+//    }
+//}
+
+// 区块升级包 版本检测 回调
+-(void)jfgDevCheckTagDeviceVersion:(NSString *)version
+                          describe:(NSString *)describe
+                          tagInfos:(NSArray <JFGSDKDevUpgradeInfoT *> *)infos
+                               cid:(NSString *)cid
+                         errorType:(JFGErrorType)errorType
+{
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"isHaveNewPackage [%d]", infos.count > 0]];
+
+    if (infos.count > 0 && [self.devModel.uuid isEqualToString:cid])
+    {
+        [self showAlterView];
+    }
+}
+
+- (void)showAlterView
+{
+    if (isDidAppear)
+    {
+        NSUserDefaults *stdDefault = [NSUserDefaults standardUserDefaults];
+        double showedTime = [[stdDefault objectForKey:[NSString stringWithFormat:@"_showUpgradeViewTime_%@",self.devModel.uuid]] doubleValue];
+        BOOL isToday = [JfgTimeFormat isToday:showedTime];
+        
+        if (!isToday)
+        {
+            [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Device_UpgradeTips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                
+            } OKBlock:^{
+                UpgradeDeviceVC *upgradeDevice = [[UpgradeDeviceVC alloc] init];
+                upgradeDevice.cid = self.devModel.uuid;
+                upgradeDevice.pType = (productType)[self.devModel.pid intValue];
+                [self.navigationController pushViewController:upgradeDevice animated:YES];
+            }];
+            
+            [stdDefault setObject:@([[NSDate date] timeIntervalSince1970]) forKey:[NSString stringWithFormat:@"_showUpgradeViewTime_%@",self.devModel.uuid]];
+            
+        }
+        
+        [stdDefault synchronize];
+    }
+}
 
 -(void)requestForUrl:(NSString *)url success:(void (^)(id _Nullable responseObject))success failure:(void (^)(NSError * _Nonnull))failure
 {
@@ -569,6 +635,8 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             //移动网络
             [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"Tap1_SwitchedNetwork"]];
         }
+        [self stopVideoPlay];
+        [self showAgainView];
         devIpAddr = nil;
     }
     
@@ -615,9 +683,9 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             if ([responseObject isKindOfClass:[NSDictionary class]]) {
                 NSDictionary *dict = responseObject;
                 int battery = [dict[@"battery"] intValue];
+                batteryRl = battery;
                 if (isPrower) {
                     [weakSelf showStatusTipForWiFiMode:isWifi batteryCapacity:200];
-                    batteryRl = battery;
                 }else{
                     [weakSelf showStatusTipForWiFiMode:isWifi batteryCapacity:battery];
                 }
@@ -670,6 +738,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     [weakSelf videoRPModelViewDeal:resolution];
                 }
                 [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"720Dev_resolution:[%@]",dict]];
+                
             }
             
         } failure:^(NSError * _Nonnull error) {
@@ -901,10 +970,49 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             }
             //格式化失败
             [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
+            
+        }else if (seg.msgId == 222){
+            
+            if ([obj2 isKindOfClass:[NSArray class]]){
+                
+                NSArray *sourArr = obj2;
+                if (sourArr.count) {
+                    isHaveSDCard = [[obj2 objectAtIndex:0] boolValue];
+                    if (initiative && !isHaveSDCard && isDidAppear) {
+                        //主动上报
+                        //MSG_SD_OFF
+                        //__weak typeof(self) weakSelf = self;
+                        [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                            
+                        } OKBlock:^{
+                            
+                        }];
+                        
+                    }
+                }
+            }
         }
     }
 }
 
+
+- (void)jfgRobotSyncDataForPeer:(NSString *)peer fromDev:(BOOL)isDev msgList:(NSArray<DataPointSeg *> *)msgList
+{
+     if ([peer isEqualToString:self.devModel.uuid]) {
+         for (DataPointSeg *seg in msgList) {
+             
+             if (seg.msgId == 505 || seg.msgId == 222){
+                 
+                 //被分享设备不处理报警消息
+                 JiafeigouDevStatuModel *mode = self.devModel;
+                 if (mode.shareState == DevShareStatuOther) {
+                     return;
+                 }
+                 self.warnRedPoint.hidden = NO;
+             }
+         }
+     }
+}
 
 
 -(void)sdCardForward
@@ -920,9 +1028,9 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         //电池电量
         id obj = [MPMessagePackReader readData:seg.value error:nil];
         if ([obj isKindOfClass:[NSNumber class]]) {
+            batteryRl =  [obj intValue];
             if (isPrower) {
                 [self showStatusTipForWiFiMode:isWifi batteryCapacity:200];
-                batteryRl =  [obj intValue];
             }else{
                 [self showStatusTipForWiFiMode:isWifi batteryCapacity:[obj intValue]];
             }
@@ -952,7 +1060,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     if ([self isShowLowBattaryTip] && batteryRl<20 && isDidAppear) {
                         
                         //__weak typeof(self) weakSelf = self;
-                        [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"DOOR_LOW_BATTERY"] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                        [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"DOOR_LOW_BATTERY"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
 
                         } OKBlock:^{
  
@@ -990,7 +1098,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                 int secouds = [sourceArr[1] intValue];
                 int videoType = [sourceArr[2] intValue];
                 
-                if (ret != 0) {
+                if (ret != 0 || ret == -1) {
                     //没有录像
                     if (recordState != VideoRecordStatueNone ) {
                         [self stopVideoViewRefresh];
@@ -1000,6 +1108,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     self.settingBtn.enabled = YES;
                     [[NSNotificationCenter defaultCenter] postNotificationName:@"DevFor720VideoStatues" object:[NSDictionary dictionaryWithObjects:@[[NSNumber numberWithInt:-1],self.devModel.uuid] forKeys:@[@"videoType",@"uuid"]]];
                     return;
+                    
                 }
                 
                 
@@ -1011,6 +1120,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     }
                     recordState = VideoRecordStatueNone;
                     self.settingBtn.enabled = YES;
+                    
                 }else if(videoType == 1){
                     //8s短视频，视频录制开始回调
                     if (isCarameMode) {
@@ -1148,7 +1258,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
          int，     fileSize  文件大小, bit。
          string，  md5  文件的md5值
          */
-       
         int ret = 0;
         if (arr.count>0 ) {
             
@@ -2073,7 +2182,9 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(void)stopLongVideoRecode
 {
-    [self stopVideoRecordingReqForLong:YES];
+    if (recordState != VideoRecordStatueNone) {
+        [self stopVideoRecordingReqForLong:YES];
+    }
 }
 
 #pragma mark- 短视频录制相关
@@ -2084,7 +2195,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(void)stopShortVideoRecode
 {
-    [self stopVideoRecordingReqForLong:NO];
+    if (recordState != VideoRecordStatueNone) {
+        [self stopVideoRecordingReqForLong:NO];
+    }
+    
 }
 
 #pragma mark- 拍照
@@ -2112,8 +2226,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                         weakSelf.cameraRedPoint.hidden = NO;
                         [weakSelf showCantLoadImageTip];
                         [weakSelf carameAnimation];
-                        
-                        
                     }else{
                         [weakSelf videoOrPhotoFailedDealForVideo:NO ret:ret];
                     }
@@ -2125,7 +2237,9 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                 
             } failure:^(NSError * _Nonnull error) {
                 
-                NSLog(@"%@",error);
+                
+                NSString *url = [CommonMethod urlForLANFor720DevWithReqType:JFG720DevLANReqUrlTypeSnapShot ipAdd:devIpAddr];
+                NSLog(@"%@ errorUrl:%@",error,url);
                 [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(caremaReqOvertime) object:nil];
                 [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_RecordingFailed"]];
                 [weakSelf stopVideoViewRefresh];
@@ -2177,10 +2291,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     animation.duration = 0.4;// 动画时间
     
     NSMutableArray *values = [NSMutableArray array];
-    
     [values addObject:[NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7, 0.7, 1.0)]];
-    
-    
     [values addObject:[NSValue valueWithCATransform3D:CATransform3DMakeScale(1, 1, 1.0)]];
     
     // 这三个数字，我只研究了前两个，所以最后一个数字我还是按照它原来写1.0；前两个是控制view的大小的；
@@ -2428,6 +2539,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         [self.videoBgImageView bringSubviewToFront:self.againBgView];
     }
     self.againBgView.hidden = NO;
+    [self stopLoadingAnimation];
 }
 
 -(void)hiddenAgainView
@@ -2470,7 +2582,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         return;
     }
     isWifi = wifiMode;
-    batteryRl = battery;
     if (self.statusShowBgView.superview == nil) {
         [self.videoBgImageView addSubview:self.statusShowBgView];
         [self.statusShowBgView addSubview:self.statusNetIcon];
@@ -2505,7 +2616,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             if ([self isShowLowBattaryTip] && !isPrower && isDidAppear) {
                 
                 //__weak typeof(self) weakSelf = self;
-                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"DOOR_LOW_BATTERY"]  CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"DOOR_LOW_BATTERY"]  CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
                     
                 } OKBlock:^{
                     
@@ -2516,7 +2627,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
             }
             
         }
-        self.statusBatteryLabel.text =[NSString stringWithFormat:@"%d%%",battery];
+        self.statusBatteryLabel.text = [NSString stringWithFormat:@"%d%%",battery];
     }
 }
 
@@ -2570,9 +2681,8 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         if (!isCantShow && isShowLanAleartForPhoto) {
             
             isShowLanAleartForPhoto = NO;
-            
             //__weak typeof(self) weakSelf = self;
-            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Switch_Mode_Pop"]  CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"SURE"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Dont_Show_Again"] CancelBlock:^{
+            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Switch_Mode"]  CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"SURE"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"Dont_Show_Again"] CancelBlock:^{
                 
             } OKBlock:^{
                 

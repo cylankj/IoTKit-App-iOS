@@ -34,6 +34,7 @@ NSString *const JFGAccountLoginStatueSaveKey = @"JFGAccountLoginStatueSaveKey";
 NSString *const JFGAccountLoginOutKey = @"JFGAccountLoginOutKey_";
 
 NSString *const JFGGotoSettingKey = @"JFGGotoSettingKey_";
+NSString *const JFGGotoDeepSleepKey = @"JFGGotoDeepSleepKey_";
 NSString *const JFGSettingOpenSafety = @"JFGSettingOpenSafety_";
 
 NSString *const JFGDelExporePicKey = @"JFGDelExporePicKey_";
@@ -61,14 +62,12 @@ NSString *const JFG720DevDelAllPhotoNotificationKey = @"JFG720DevDelAllPhotoNoti
 NSString *const buglyAppID = @"900022745";
 
 //摄像头大类，用于直播相关页面跳转
-typedef NS_ENUM(NSInteger,JFGDevBigType) {
-    
-    JFGDevBigTypeWifiCamare,//WiFi摄像头
-    JFGDevBigType3GCamera,//3G摄像头
-    JFGDevBigTypeDoorbell,//门铃
+typedef NS_ENUM(NSInteger,JFGDevViewType) {
+
     JFGDevBigTypeSinglefisheyeCamera,//单鱼眼
     JFGDevBigTypeEyeCamera,//双鱼眼
-    JFGDevBigTypeUnknow,
+    JFGDevBigTypeSquareness,//矩形
+    JFGDevBigType360,//360度设备，支持更种模式切换（圆柱，圆，四分屏幕）
     
 };
 

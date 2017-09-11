@@ -299,8 +299,11 @@
                          msgBaseIpAdressKey,
                          msgBaseUpgradeStatusKey,
                          nil];
-    
-    return [baseKeys objectAtIndex:msgID - dpBaseBegin];
+    int index = (int)msgID - dpBaseBegin;
+    if (baseKeys.count > index) {
+        return [baseKeys objectAtIndex:index];
+    }
+    return @"";
 }
 
 // 返回 DataPoint 视频功能  key
@@ -314,7 +317,11 @@
                           dpMsgVideoDiretionKey,
                           dpMsgVideoRecordWhenWatchingKey,
                           nil];
-    return [videoKeys objectAtIndex:msgID - dpVideoBegin];
+    int index = (int)msgID - dpVideoBegin;
+    if (videoKeys.count > index) {
+        return [videoKeys objectAtIndex:index];
+    }
+    return @"";
 }
 
 // 返回 DataPoint 门铃功能  key
@@ -324,8 +331,14 @@
                           dpMsgBellBeginKey,
                           dpMsgBellCallMsgKey,
                           dpMsgBellLeaveMsgKey,
+                          dpMsgBellCallMsgV3Key,
+                          dpMsgBellDeepSleepKey,
                           nil];
-    return [videoKeys objectAtIndex:msgID - dpBellBegin];
+    int index = (int)msgID - dpBellBegin;
+    if (videoKeys.count > index) {
+        return [videoKeys objectAtIndex:index];
+    }
+    return @"";
 }
 
 // 返回 DataPoint 摄像头功能 key
@@ -349,8 +362,11 @@
                            dpMsgCameraWarnDurKey,
                            dpMsgCameraAIRecgnitionKey,
                            nil];
-    
-    return [cameraKeys objectAtIndex:msgID - dpCameraBegin];
+    int index = (int)msgID - dpCameraBegin;
+    if (cameraKeys.count > index) {
+        return [cameraKeys objectAtIndex:index];
+    }
+    return @"";
 }
 
 // 返回 DataPoint 账号功能 key
@@ -361,8 +377,11 @@
                            dpMsgAccountBindKey,
                            dpMsgAccountWonderKey,
                            nil];
-    
-    return [cameraKeys objectAtIndex:msgID - dpAccountBegin];
+    int index = (int)msgID - dpAccountBegin;
+    if (cameraKeys.count > index) {
+        return [cameraKeys objectAtIndex:index];
+    }
+    return @"";
 }
 
 @end

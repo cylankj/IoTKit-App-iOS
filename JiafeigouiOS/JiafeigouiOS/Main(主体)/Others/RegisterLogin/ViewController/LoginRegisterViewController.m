@@ -1160,7 +1160,7 @@
     if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline) {
         [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"OFFLINE_ERR_1"]];
         
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"currentNetworkStatus:%d",[JFGSDK currentNetworkStatus]]];
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"currentNetworkStatus:%ld",(long)[JFGSDK currentNetworkStatus]]];
         
         return;
     }
@@ -1217,14 +1217,14 @@
         
         if ([FLShareSDKHelper isInstalledQQ]) {
             [[LoginManager sharedManager] openLoginByQQ];
-            [self performSelector:@selector(loginTimeOut) withObject:nil afterDelay:15];
+            //[self performSelector:@selector(loginTimeOut) withObject:nil afterDelay:15];
         }else{
             [ProgressHUD showText:[NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap0_Login_NoInstalled"],@"QQ"]];
         }
         
     }else{
         [[LoginManager sharedManager] openLoginByType:JFGSDKLoginTypeOpenLoginForTwitter];
-        [self performSelector:@selector(loginTimeOut) withObject:nil afterDelay:15];
+        //[self performSelector:@selector(loginTimeOut) withObject:nil afterDelay:15];
     }
     
     
@@ -1240,7 +1240,7 @@
         [[LoginManager sharedManager] openLoginByType:JFGSDKLoginTypeOpenLoginForFacebook];
     }
     
-    [self performSelector:@selector(loginTimeOut) withObject:nil afterDelay:15];
+    //[self performSelector:@selector(loginTimeOut) withObject:nil afterDelay:15];
 }
 
 

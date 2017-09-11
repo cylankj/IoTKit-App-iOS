@@ -441,7 +441,7 @@
             [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGDoorBellIsCallingKey];
             [[NSNotificationCenter defaultCenter] postNotificationName:JFGDoorBellIsCallingKey object:call.cid];
             //30s 后恢复为呼叫状态，防止其他页面忘记恢复
-            [self performSelector:@selector(resetDoorBellCallStatues) withObject:nil afterDelay:30];
+            //[self performSelector:@selector(resetDoorBellCallStatues) withObject:nil afterDelay:30];
             DoorVideoVC *doorVideo = [[DoorVideoVC alloc] init];
             doorVideo.pType = productType_DoorBell;
             doorVideo.cid = call.cid;

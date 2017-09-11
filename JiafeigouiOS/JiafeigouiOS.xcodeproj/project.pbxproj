@@ -181,6 +181,7 @@
 		58F5528D1D51E194002B4959 /* SearchFriendsView.m in Sources */ = {isa = PBXBuildFile; fileRef = 58F5528C1D51E194002B4959 /* SearchFriendsView.m */; };
 		58F5528F1D5210B0002B4959 /* MessageUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58F5528E1D5210B0002B4959 /* MessageUI.framework */; };
 		8F0077FA1EEFC433009AC343 /* WebChatBindViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F0077F91EEFC433009AC343 /* WebChatBindViewController.m */; };
+		8F05988C1F481E1100AF3FD1 /* MOBFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F05988B1F481E1100AF3FD1 /* MOBFoundation.framework */; };
 		8F0DF3BE1EE299810008285A /* BaseNavgationViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F0DF3BD1EE299810008285A /* BaseNavgationViewController.m */; };
 		8F12E51F1DF7E40C006115AA /* JFGEquipmentAuthority.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F12E51E1DF7E40C006115AA /* JFGEquipmentAuthority.m */; };
 		8F1333031E4D8B250057A6FA /* FBSDKMessengerShareKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F1333021E4D8B250057A6FA /* FBSDKMessengerShareKit.framework */; };
@@ -198,6 +199,7 @@
 		8F17E3EF1D1277180022B9DE /* BindProgressAnimationView.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F17E3E91D1277180022B9DE /* BindProgressAnimationView.m */; };
 		8F17E3F61D1293340022B9DE /* SetDevNicNameViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F17E3F51D1293340022B9DE /* SetDevNicNameViewController.m */; };
 		8F1926641D18D67600CAAD9D /* SafaButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F1926631D18D67600CAAD9D /* SafaButton.m */; };
+		8F1ADB361F41A9F400B6A448 /* JFGGrayPolicyManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F1ADB351F41A9F400B6A448 /* JFGGrayPolicyManager.m */; };
 		8F1D59D01DF110F60038E529 /* AddFriedHelloViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F1D59CF1DF110F60038E529 /* AddFriedHelloViewController.m */; };
 		8F1F664A1E7CFF77009E60A9 /* robotForwardDataModel.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F1F66491E7CFF77009E60A9 /* robotForwardDataModel.m */; };
 		8F1F664D1E7D1678009E60A9 /* JFGMsgRobotForwardDataModel.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F1F664C1E7D1678009E60A9 /* JFGMsgRobotForwardDataModel.m */; };
@@ -208,6 +210,10 @@
 		8F235DA21CFC0C8900339AD8 /* jiafeigouTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 8F235DA01CFC0C8900339AD8 /* jiafeigouTableViewCell.xib */; };
 		8F25D6C61DFFC74A00294CE9 /* UIImageView+JFGImageView.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F25D6C51DFFC74A00294CE9 /* UIImageView+JFGImageView.m */; };
 		8F266EC41D3CD1A3002D97F1 /* JFGBaseViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F266EC31D3CD1A3002D97F1 /* JFGBaseViewController.m */; };
+		8F27DE3F1F4D33E200FD8DCF /* DeepSleepVC.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F27DE3E1F4D33E200FD8DCF /* DeepSleepVC.m */; };
+		8F27DE421F4D72E000FD8DCF /* help_powersaving_ch.gif in Resources */ = {isa = PBXBuildFile; fileRef = 8F27DE401F4D72E000FD8DCF /* help_powersaving_ch.gif */; };
+		8F27DE431F4D72E000FD8DCF /* help_powersaving_en.gif in Resources */ = {isa = PBXBuildFile; fileRef = 8F27DE411F4D72E000FD8DCF /* help_powersaving_en.gif */; };
+		8F27DE461F4D730800FD8DCF /* DeepSleepHelpVC.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F27DE451F4D730800FD8DCF /* DeepSleepHelpVC.m */; };
 		8F287E451E52B11E00145BEB /* CheckingEmailViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F287E441E52B11E00145BEB /* CheckingEmailViewController.m */; };
 		8F29EF371CF42DF400863EB7 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F29EF361CF42DF400863EB7 /* AudioToolbox.framework */; };
 		8F29EF391CF42E0300863EB7 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F29EF381CF42E0300863EB7 /* CoreVideo.framework */; };
@@ -332,7 +338,6 @@
 		8FCBE8451EB957D6007FB361 /* UINavigationController+PLeak.m in Sources */ = {isa = PBXBuildFile; fileRef = 8FCBE83B1EB957D6007FB361 /* UINavigationController+PLeak.m */; };
 		8FCBE8461EB957D6007FB361 /* UIView+PLeak.m in Sources */ = {isa = PBXBuildFile; fileRef = 8FCBE83D1EB957D6007FB361 /* UIView+PLeak.m */; };
 		8FCBE8471EB957D6007FB361 /* UIViewController+PLeak.m in Sources */ = {isa = PBXBuildFile; fileRef = 8FCBE83F1EB957D6007FB361 /* UIViewController+PLeak.m */; };
-		8FCBE8761EB9AE01007FB361 /* JFGSDKRenderView.m in Sources */ = {isa = PBXBuildFile; fileRef = 8FCBE8751EB9AE01007FB361 /* JFGSDKRenderView.m */; };
 		8FCBE8791EB9CCC6007FB361 /* PilotLampStateVC.m in Sources */ = {isa = PBXBuildFile; fileRef = 8FCBE8781EB9CCC6007FB361 /* PilotLampStateVC.m */; };
 		8FCCC5F61EC9A4E3006D34EE /* MSRefreshAutoNormalFooter.m in Sources */ = {isa = PBXBuildFile; fileRef = 8FCCC5F51EC9A4E3006D34EE /* MSRefreshAutoNormalFooter.m */; };
 		8FD1A0941D8FCF0E008CBFAF /* JFGHelpViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8FD1A0931D8FCF0E008CBFAF /* JFGHelpViewController.m */; };
@@ -839,6 +844,7 @@
 		864ADE20E17BD6953AF49266 /* Pods-JiafeigouiOS.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-JiafeigouiOS.release.xcconfig"; path = "Pods/Target Support Files/Pods-JiafeigouiOS/Pods-JiafeigouiOS.release.xcconfig"; sourceTree = "<group>"; };
 		8F0077F81EEFC433009AC343 /* WebChatBindViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebChatBindViewController.h; sourceTree = "<group>"; };
 		8F0077F91EEFC433009AC343 /* WebChatBindViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebChatBindViewController.m; sourceTree = "<group>"; };
+		8F05988B1F481E1100AF3FD1 /* MOBFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MOBFoundation.framework; sourceTree = "<group>"; };
 		8F0DF3BC1EE299810008285A /* BaseNavgationViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseNavgationViewController.h; sourceTree = "<group>"; };
 		8F0DF3BD1EE299810008285A /* BaseNavgationViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BaseNavgationViewController.m; sourceTree = "<group>"; };
 		8F10D55D1D1B750700D8B5AC /* JfgTypeDefine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JfgTypeDefine.h; sourceTree = "<group>"; };
@@ -872,6 +878,8 @@
 		8F17E3F51D1293340022B9DE /* SetDevNicNameViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SetDevNicNameViewController.m; sourceTree = "<group>"; };
 		8F1926621D18D67600CAAD9D /* SafaButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SafaButton.h; sourceTree = "<group>"; };
 		8F1926631D18D67600CAAD9D /* SafaButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SafaButton.m; sourceTree = "<group>"; };
+		8F1ADB341F41A9F400B6A448 /* JFGGrayPolicyManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JFGGrayPolicyManager.h; sourceTree = "<group>"; };
+		8F1ADB351F41A9F400B6A448 /* JFGGrayPolicyManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JFGGrayPolicyManager.m; sourceTree = "<group>"; };
 		8F1D59CE1DF110F60038E529 /* AddFriedHelloViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AddFriedHelloViewController.h; sourceTree = "<group>"; };
 		8F1D59CF1DF110F60038E529 /* AddFriedHelloViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AddFriedHelloViewController.m; sourceTree = "<group>"; };
 		8F1F66481E7CFF77009E60A9 /* robotForwardDataModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = robotForwardDataModel.h; sourceTree = "<group>"; };
@@ -891,6 +899,12 @@
 		8F25D6C51DFFC74A00294CE9 /* UIImageView+JFGImageView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImageView+JFGImageView.m"; sourceTree = "<group>"; };
 		8F266EC21D3CD1A3002D97F1 /* JFGBaseViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JFGBaseViewController.h; sourceTree = "<group>"; };
 		8F266EC31D3CD1A3002D97F1 /* JFGBaseViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JFGBaseViewController.m; sourceTree = "<group>"; };
+		8F27DE3D1F4D33E200FD8DCF /* DeepSleepVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DeepSleepVC.h; sourceTree = "<group>"; };
+		8F27DE3E1F4D33E200FD8DCF /* DeepSleepVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DeepSleepVC.m; sourceTree = "<group>"; };
+		8F27DE401F4D72E000FD8DCF /* help_powersaving_ch.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = help_powersaving_ch.gif; sourceTree = "<group>"; };
+		8F27DE411F4D72E000FD8DCF /* help_powersaving_en.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = help_powersaving_en.gif; sourceTree = "<group>"; };
+		8F27DE441F4D730800FD8DCF /* DeepSleepHelpVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DeepSleepHelpVC.h; sourceTree = "<group>"; };
+		8F27DE451F4D730800FD8DCF /* DeepSleepHelpVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DeepSleepHelpVC.m; sourceTree = "<group>"; };
 		8F287E431E52B11E00145BEB /* CheckingEmailViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CheckingEmailViewController.h; sourceTree = "<group>"; };
 		8F287E441E52B11E00145BEB /* CheckingEmailViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CheckingEmailViewController.m; sourceTree = "<group>"; };
 		8F29EF361CF42DF400863EB7 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -1104,8 +1118,6 @@
 		8FCBE83D1EB957D6007FB361 /* UIView+PLeak.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIView+PLeak.m"; sourceTree = "<group>"; };
 		8FCBE83E1EB957D6007FB361 /* UIViewController+PLeak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIViewController+PLeak.h"; sourceTree = "<group>"; };
 		8FCBE83F1EB957D6007FB361 /* UIViewController+PLeak.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIViewController+PLeak.m"; sourceTree = "<group>"; };
-		8FCBE8741EB9AE01007FB361 /* JFGSDKRenderView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JFGSDKRenderView.h; sourceTree = "<group>"; };
-		8FCBE8751EB9AE01007FB361 /* JFGSDKRenderView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JFGSDKRenderView.m; sourceTree = "<group>"; };
 		8FCBE8771EB9CCC6007FB361 /* PilotLampStateVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PilotLampStateVC.h; sourceTree = "<group>"; };
 		8FCBE8781EB9CCC6007FB361 /* PilotLampStateVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PilotLampStateVC.m; sourceTree = "<group>"; };
 		8FCCC5F41EC9A4E3006D34EE /* MSRefreshAutoNormalFooter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MSRefreshAutoNormalFooter.h; sourceTree = "<group>"; };
@@ -1392,6 +1404,7 @@
 				8F5FD3441E4B1D1500057C1C /* ShareSDKConfigFile.framework in Frameworks */,
 				58C380351D30C7880066505D /* MediaPlayer.framework in Frameworks */,
 				8F5FD3491E4B1D1500057C1C /* QQConnector.framework in Frameworks */,
+				8F05988C1F481E1100AF3FD1 /* MOBFoundation.framework in Frameworks */,
 				C71034E61D12863A006AC458 /* MobileCoreServices.framework in Frameworks */,
 				8F29EF451CF42E4C00863EB7 /* AVFoundation.framework in Frameworks */,
 				C71A47B51D01323300DE7604 /* JavaScriptCore.framework in Frameworks */,
@@ -1865,6 +1878,10 @@
 				8F0077F91EEFC433009AC343 /* WebChatBindViewController.m */,
 				58CF1B7E1F32B62100DE8ABB /* AIRecognitionVC.h */,
 				58CF1B7F1F32B62100DE8ABB /* AIRecognitionVC.m */,
+				8F27DE3D1F4D33E200FD8DCF /* DeepSleepVC.h */,
+				8F27DE3E1F4D33E200FD8DCF /* DeepSleepVC.m */,
+				8F27DE441F4D730800FD8DCF /* DeepSleepHelpVC.h */,
+				8F27DE451F4D730800FD8DCF /* DeepSleepHelpVC.m */,
 			);
 			path = ViewControllers;
 			sourceTree = "<group>";
@@ -2608,6 +2625,8 @@
 		58E8733C1EB469DE00EC3E1E /* gif */ = {
 			isa = PBXGroup;
 			children = (
+				8F27DE401F4D72E000FD8DCF /* help_powersaving_ch.gif */,
+				8F27DE411F4D72E000FD8DCF /* help_powersaving_en.gif */,
 				8F3290121F2F2566006FB216 /* doby_hans.gif */,
 				8F3290101F2F2553006FB216 /* doby_en.gif */,
 				8F32900C1F2F24F3006FB216 /* bell_doby_en.gif */,
@@ -2683,6 +2702,8 @@
 				C7F7DD0B1D1B7E0A0052F875 /* ImageBrowser.m */,
 				8FC98ECA1DD8111600100C37 /* JFGBigImageView.h */,
 				8FC98ECB1DD8111600100C37 /* JFGBigImageView.m */,
+				8F1ADB341F41A9F400B6A448 /* JFGGrayPolicyManager.h */,
+				8F1ADB351F41A9F400B6A448 /* JFGGrayPolicyManager.m */,
 			);
 			path = Others;
 			sourceTree = "<group>";
@@ -2779,6 +2800,7 @@
 		8F5FD3171E4B1D1500057C1C /* ShareSDK */ = {
 			isa = PBXGroup;
 			children = (
+				8F05988B1F481E1100AF3FD1 /* MOBFoundation.framework */,
 				8F5FD3181E4B1D1500057C1C /* ShareSDK.framework */,
 				8F5FD3191E4B1D1500057C1C /* Support */,
 			);
@@ -3007,8 +3029,6 @@
 				8FE054111CFFD7D200F845C3 /* NothingDevTipView.m */,
 				8F1926621D18D67600CAAD9D /* SafaButton.h */,
 				8F1926631D18D67600CAAD9D /* SafaButton.m */,
-				8FCBE8741EB9AE01007FB361 /* JFGSDKRenderView.h */,
-				8FCBE8751EB9AE01007FB361 /* JFGSDKRenderView.m */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -3769,7 +3789,6 @@
 				TargetAttributes = {
 					58D1A86B1CE47C3200ECFB06 = {
 						CreatedOnToolsVersion = 7.3;
-						DevelopmentTeam = HD96H7YVW6;
 						ProvisioningStyle = Manual;
 						SystemCapabilities = {
 							com.apple.BackgroundModes = {
@@ -3835,6 +3854,8 @@
 				8F32900F1F2F2525006FB216 /* bell_doby_hans.gif in Resources */,
 				8F5FD3431E4B1D1500057C1C /* ShareSDKConfigFile.bundle in Resources */,
 				8F5FD3541E4B1D1500057C1C /* ShareSDK.bundle in Resources */,
+				8F27DE421F4D72E000FD8DCF /* help_powersaving_ch.gif in Resources */,
+				8F27DE431F4D72E000FD8DCF /* help_powersaving_en.gif in Resources */,
 				581CDF4B1E828B0900E2843F /* oemConfig.plist in Resources */,
 				8F3D07A81EFA547F00A987F3 /* zhilian_en.gif in Resources */,
 				581816FF1CE5704B00747243 /* InfoPlist.strings in Resources */,
@@ -4031,6 +4052,7 @@
 				8FFBC87D1D6D91AB0003952E /* SMPageControl.m in Sources */,
 				8F4FF3561D17C9FD001FAB16 /* videoPlay1ViewController.m in Sources */,
 				8FB996651EEE8CB70015962D /* UITabBar+badge.m in Sources */,
+				8F27DE461F4D730800FD8DCF /* DeepSleepHelpVC.m in Sources */,
 				8F1445CC1E7B8BEC008156F4 /* JFGTakePhotoButton.m in Sources */,
 				5899CDE21D1E6055006D3080 /* SearchTableView.m in Sources */,
 				8F1373DD1F3066120050BF22 /* JFGDevOfflineFor720VC.m in Sources */,
@@ -4094,6 +4116,7 @@
 				5897358E1D2E387E00D55C01 /* ChatButton.m in Sources */,
 				C73231231D6C4E7B00C22CCE /* ChangePwdViewController.m in Sources */,
 				8FE6B7E31CF4655900100B50 /* FTBase64.m in Sources */,
+				8F1ADB361F41A9F400B6A448 /* JFGGrayPolicyManager.m in Sources */,
 				589D39241E7A9F5C00613F8E /* Pano720TableViewCell.m in Sources */,
 				8F78658E1DFA9DB200B92D8C /* JFGDataPointValueModel.m in Sources */,
 				58974EA61D22188C00233ED2 /* DeviceAutoPhotoVC.m in Sources */,
@@ -4268,8 +4291,8 @@
 				8FD1A0941D8FCF0E008CBFAF /* JFGHelpViewController.m in Sources */,
 				5875FA8C1D11442400C2898F /* AddDeviceMainViewController.m in Sources */,
 				C71A47B81D01541100DE7604 /* DJActionSheet.m in Sources */,
-				8FCBE8761EB9AE01007FB361 /* JFGSDKRenderView.m in Sources */,
 				8F17E3EF1D1277180022B9DE /* BindProgressAnimationView.m in Sources */,
+				8F27DE3F1F4D33E200FD8DCF /* DeepSleepVC.m in Sources */,
 				C7616E731D34D1970042711E /* DoorBellCell.m in Sources */,
 				8FE6B7DB1CF4655900100B50 /* FLLog.m in Sources */,
 				588747831D2CFCA100514D17 /* RecordButton.m in Sources */,
@@ -4454,7 +4477,7 @@
 				CODE_SIGN_IDENTITY = "";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = HD96H7YVW6;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -4500,10 +4523,9 @@
 					"$(PROJECT_DIR)/JiafeigouiOS/Vendor/GtSdkLib",
 					"$(PROJECT_DIR)/JiafeigouiOS/Vendor/GtSdkLib-noidfa",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.jiafeigou.pushnew;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE = "dd008c99-57f7-4751-af69-dcb3f484c050";
-				PROVISIONING_PROFILE_SPECIFIER = jiafeigouAppstoreDevNew;
+				PROVISIONING_PROFILE = "";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				TARGETED_DEVICE_FAMILY = 1;
 				USER_HEADER_SEARCH_PATHS = "";
 			};
@@ -4564,7 +4586,6 @@
 					"$(PROJECT_DIR)/JiafeigouiOS/Vendor/GtSdkLib",
 					"$(PROJECT_DIR)/JiafeigouiOS/Vendor/GtSdkLib-noidfa",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.jiafeigou.pushnew;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				TARGETED_DEVICE_FAMILY = 1;

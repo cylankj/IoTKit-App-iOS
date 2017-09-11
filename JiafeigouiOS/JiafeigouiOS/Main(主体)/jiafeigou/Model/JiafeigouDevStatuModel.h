@@ -55,6 +55,9 @@ typedef enum{
 //安全待机
 @property (nonatomic,assign)BOOL safeIdle;
 
+//省电模式
+@property (nonatomic,assign)BOOL deepSleep;
+
 //安全防护
 @property (nonatomic,assign)BOOL safeFence;
 
@@ -71,5 +74,8 @@ typedef enum{
 @property (nonatomic,assign)int shareCount;
 
 @property (nonatomic,copy)NSString *pid;
+
+@property (nonatomic,copy)NSString *iconPath;//该设备在线时候Icon
+@property (nonatomic,copy)NSString *offlineIconPath;//该设备离线时候Icon
 
 @end

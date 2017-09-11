@@ -25,6 +25,7 @@
 #import "CommonMethod.h"
 #import "PilotLampStateVC.h"
 #import "LSAlertView.h"
+#import "PropertyManager.h"
 
 #define kScreen_Scale [UIScreen mainScreen].bounds.size.width/375.0f
 #define kTop 100*kScreen_Scale
@@ -76,20 +77,9 @@
         [self.view addSubview:self.declareBtn];
     }
     
-    self.isCamare = NO;
-    NSArray *wifiListOS = @[@6,@15,@17,@22,@24,@25,@26,@27,@28,@42,@44,@46,@50,@52];
-    for (NSNumber *os in wifiListOS) {
-        if ([os integerValue] == self.pType) {
-            self.isCamare = YES;
-            break;
-        }
-    }
-    
-    if (!self.isCamare) {
-        [self.view addSubview:self.wifiListButton];
-        [self.view insertSubview:self.wifiListButton aboveSubview:self.wifiNameTF];
-    }
-    
+    [self.view addSubview:self.wifiListButton];
+    [self.view insertSubview:self.wifiListButton aboveSubview:self.wifiNameTF];
+    self.wifiListButton.hidden = YES;
     [self.view addSubview:self.exitBtn];
     [JFGSDK addDelegate:self];
     //fping获取设备信息
@@ -119,14 +109,51 @@
 
 -(void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
 {
-    self.cid = ask.cid;
-    self.macStr = ask.mac;
-    self.ipAddress = ask.address;
-    //65开头设备不显示获取wifi列表按钮（FreeCam）
-    if (ask.cid && [[ask.cid substringWithRange:NSMakeRange(0, 2)] isEqualToString:@"65"]) {
-        [self.wifiListButton removeFromSuperview];
-        [JFGSDK removeDelegate:self];
+    //AP直连
+    if ([[CommonMethod currentConnecttedWifi] hasPrefix:@"DOG"] || [[CommonMethod currentConnecttedWifi] hasPrefix:@"BELL"]) {
+        self.cid = ask.cid;
+        self.macStr = ask.mac;
+        self.ipAddress = ask.address;
+        [self devTypeWithCid:self.cid];
+        
+    }else{
+        if ([self.cid isKindOfClass:[NSString class]] && [self.cid isEqualToString:ask.cid]) {
+            self.macStr = ask.mac;
+            self.ipAddress = ask.address;
+            [self devTypeWithCid:self.cid];
+        }
     }
+}
+
+-(void)devTypeWithCid:(NSString *)cid
+{
+
+    if (cid && ![cid isEqualToString:@""]) {
+        
+        BOOL isDoor = NO;
+        PropertyManager *pm = [[PropertyManager alloc]init];
+        pm.propertyFilePath = [[NSBundle mainBundle] pathForResource:@"properties" ofType:@"json"];
+        NSArray *propertyArr = [pm propertyArr];
+        for (NSDictionary *dict in propertyArr) {
+            NSString *pr = dict[pCidPrefixKey];
+            if ([cid hasPrefix:pr]) {
+                
+                NSString *pid = dict[pOSKey];
+                //以下门铃设备不显示wifi下拉列表
+                NSArray *wifiListOS = @[@15,@17,@22,@24,@25,@26,@27,@28,@42,@44,@46,@50,@52];
+                for (NSNumber *os in wifiListOS) {
+                    if ([os integerValue] == [pid intValue]) {
+                        isDoor = YES;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        
+        self.wifiListButton.hidden = isDoor;
+    }
+    
 }
 
 #pragma mark - 按钮事件
@@ -238,8 +265,6 @@
         cacheWifiListDict = [[NSDictionary alloc]initWithDictionary:dict];
         [dict writeToFile:path atomically:YES];
     }
-    
-    
 }
 
 -(NSDictionary *)getWifiInfo

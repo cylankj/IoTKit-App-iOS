@@ -134,9 +134,9 @@ NSString *const portKey = @"Jfgsdk_post";
         case oemTypeCell_C: // 不显示 协议
         {
             if ([JfgLanguage languageType] == LANGUAGE_TYPE_CHINESE) {
-                helpUrl = [NSString stringWithFormat:@"https://%@:8081/helps/zh-rCN_doby.html",[self getdomainURLString]];
+                helpUrl = [NSString stringWithFormat:@"https://%@:8081/helps/zh-rCN_zhongxing.html",[self getdomainURLString]];
             }else{
-                helpUrl = [NSString stringWithFormat:@"https://%@:8081/helps/en_doby.html",[self getdomainURLString]];
+                helpUrl = [NSString stringWithFormat:@"https://%@:8081/helps/en_zhongxing.html",[self getdomainURLString]];
             }
             
         }

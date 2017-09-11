@@ -32,7 +32,9 @@
 #import <net/if.h>
 #import "LSAlertView.h"
 #import <SDWebImage/SDImageCache.h>
-
+#import "PropertyManager.h"
+#import "JFGBoundDevicesMsg.h"
+#import "JfgCacheManager.h"
 
 #define HANZI_START 19968
 #define HANZI_COUNT 20902
@@ -284,6 +286,23 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     return NO;
 }
 
++(BOOL)isAPModelCurrentNetForCid:(NSString *)cid pid:(NSString *)pid
+{
+    PropertyManager *_propertyTool = [[PropertyManager alloc] init];
+    _propertyTool.propertyFilePath = [[NSBundle mainBundle] pathForResource:@"properties" ofType:@"json"];
+    NSString *str = [_propertyTool propertyWithPid:[pid intValue] key:pSsidPrefix];
+    
+    if ([cid isKindOfClass:[NSString class]] && cid.length>6) {
+        
+        NSString *ap = [NSString stringWithFormat:@"%@%@",str,[cid substringFromIndex:6]];
+        NSString * currentwifi = [CommonMethod currentConnecttedWifi];
+        if ([currentwifi isEqualToString:ap]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 + (BOOL)isConnectedAPWithPid:(int)productID Cid:(NSString *)cid
 {
     NSString * currentwifi = [CommonMethod currentConnecttedWifi];
@@ -321,6 +340,9 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     }
     return ap;
 }
+
+
+
 + (BOOL)isConnecttedDeviceWifiWithPid:(int)productID
 {
     NSString *currentWifi = [CommonMethod currentConnecttedWifi];
@@ -970,24 +992,48 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     return dict;
 }
 
-+(JFGDevBigType)devBigTypeForOS:(NSString *)os
++(BOOL)isSingleFisheyeCameraForCid:(NSString *)cid
 {
-    if (
-           [os isEqualToString:@"10"]
-        || [os isEqualToString:@"18"]
-        || [os isEqualToString:@"19"]
-        || [os isEqualToString:@"20"]
-        || [os isEqualToString:@"36"]
-        || [os isEqualToString:@"39"]
-        || [os isEqualToString:@"50"]
-        || [os isEqualToString:@"47"]
-        || [os isEqualToString:@"81"]
-        ) {
-        return JFGDevBigTypeSinglefisheyeCamera;
-    }else if ([os isEqualToString:@"21"] || [os isEqualToString:@"1089"]){
-        return JFGDevBigTypeEyeCamera;
+     NSArray *devicesList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
+    for (JiafeigouDevStatuModel *model in devicesList) {
+        
+        if ([model.uuid isEqualToString:cid]) {
+            
+            if ([[self class] devBigTypeForOS:model.pid] ==JFGDevBigTypeSinglefisheyeCamera) {
+                return YES;
+            }else{
+                return NO;
+            }
+            
+        }
+        
     }
-    return JFGDevBigTypeUnknow;
+    return NO;
+}
+
++(JFGDevViewType)devBigTypeForOS:(NSString *)os
+{
+    
+    PropertyManager *_propertyTool = [[PropertyManager alloc] init];
+    _propertyTool.propertyFilePath = [[NSBundle mainBundle] pathForResource:@"properties" ofType:@"json"];
+    NSString *str = [_propertyTool propertyWithPid:[os intValue] key:pViewShapeKey];
+    if ([os isEqualToString:@"21"] || [os isEqualToString:@"1089"]) {
+        return JFGDevBigTypeEyeCamera;
+    }else if (
+              [os isEqualToString:@"10"] ||
+              [os isEqualToString:@"18"] ||
+              [os isEqualToString:@"20"] ||
+              [os isEqualToString:@"36"] ||
+              [os isEqualToString:@"39"] ||
+              [os isEqualToString:@"47"] ||
+              [os isEqualToString:@"49"]){
+        //10、18、36、20、39、49、47鱼缸
+        return JFGDevBigType360;
+    }else if ([str isEqualToString:@"圆形"] || [str isEqualToString:@"圆形（切掉上下部分）"] || [str isEqualToString:@"鱼缸"]){
+        return JFGDevBigTypeSinglefisheyeCamera;
+    }else{
+        return JFGDevBigTypeSquareness;
+    }
 }
 
 +(NSInteger)lenghtForString:(NSString *)string
@@ -1062,6 +1108,17 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     
     return newimage;
     
+}
+
++(SFCParamModel *)panoramicViewParamModelForCid:(NSString *)cid
+{
+    SFCParamModel *paramModel = [JfgCacheManager getSfcPatamModelForCid:cid];
+    if (paramModel) {
+        if (paramModel.x >1920 ||paramModel.y>1500 ||paramModel.r >1500 ) {
+            paramModel = nil;
+        }
+    }
+    return paramModel;
 }
 
 @end

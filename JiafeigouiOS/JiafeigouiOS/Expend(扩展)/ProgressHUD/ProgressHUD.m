@@ -249,9 +249,13 @@
 //            
 //        }
         //---------------------------------------------------------------------------------------------------------------------------------------------
+        
+        
         if (image == nil)
         {
             image = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 28, 28)];
+        }else{
+            image.transform = CGAffineTransformIdentity;
         }
         if (image.superview == nil) [hud addSubview:image];
     }

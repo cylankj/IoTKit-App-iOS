@@ -35,6 +35,10 @@
 #import "FileManager.h"
 #import "jfgConfigManager.h"
 #import "JfgCacheManager.h"
+#import "JFGGrayPolicyManager.h"
+#import "DoorVideoVC.h"
+#import "FLLog.h"
+#import "PropertyManager.h"
 
 @interface jiafeigouTableView()<MXScrollViewDelegate,NetworkMonitorDelegate,LoginManagerDelegate>
 {
@@ -166,6 +170,7 @@
 {
     if (errorType == JFGErrorTypeNone) {
         
+        [JFGGrayPolicyManager resetGrayTime];
         [ProgressHUD dismiss];
         [JFGSDK refreshDeviceList];
         [JFGSDK fping:@"255.255.255.255"];
@@ -185,10 +190,12 @@
         
         
     }else{
+        
         if (delCid) {
             [[JFGBoundDevicesMsg sharedDeciceMsg] removeDelDeviceCid:delCid];
         }
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"NO_NETWORK_4"]];
+        
     }
     
     
@@ -224,7 +231,7 @@
         
         for (JiafeigouDevStatuModel *mode in self.dataArray) {
             mode.netType = JFGNetTypeOffline;
-            mode.unReadMsgCount = 0;
+            //mode.unReadMsgCount = 0;
         }
         
         [self reloadData];
@@ -329,36 +336,18 @@
     }else{
 
         cell.deviceNickLabel.text = dev.uuid;
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"devCid:%@",dev.uuid]];
+       
         
     }
     
     
-    UIImage *iconImage = [UIImage imageNamed:@"ico_camera"];
-    UIImage *disableIconImage = [UIImage imageNamed:@"ico_camera_Disabled"];
-    BOOL isFinished = NO;
-    for (NSArray *subArr in self.devList) {
-        
-        for (AddDevConfigModel *model in subArr) {
-            
-            for (NSNumber *os in model.osList) {
-                
-                if ([os integerValue] == [dev.pid integerValue]) {
-                    iconImage = [UIImage imageNamed:model.homeIconName];
-                    disableIconImage = [UIImage imageNamed:model.homeDisableIconName];
-                    isFinished = YES;
-                    break;
-                }
-                
-            }
-            if (isFinished) {
-                break;
-            }
-        }
-        if (isFinished) {
-            break;
-        }
-        
+    UIImage *iconImage = [UIImage imageNamed:dev.iconPath];
+    UIImage *disableIconImage = [UIImage imageNamed:dev.offlineIconPath];
+    if (!iconImage) {
+        iconImage = [UIImage imageNamed:@"ico_camera"];
+    }
+    if (!disableIconImage) {
+        disableIconImage = [UIImage imageNamed:@"ico_camera_Disabled"];
     }
     
     if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
@@ -367,8 +356,7 @@
         if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera && [CommonMethod isConnectedAPWithPid:productType_720 Cid:dev.uuid]) {
             cell.deviceImageView.image = iconImage;
         }
-        
-        
+       
     }else{
         cell.deviceImageView.image = iconImage;
     }
@@ -389,7 +377,7 @@
         cell.shareImageView.hidden = YES;
         showShareIcon = YES;
     }
-    NSLog(@"showShareIcon:%d",showShareIcon);
+    //NSLog(@"showShareIcon:%d",showShareIcon);
     //右侧图标
     if (dev.netType == JFGNetTypeOffline || dev.netType == JFGNetTypeConnect) {
         cell.iconImage1.hidden = YES;
@@ -642,6 +630,8 @@
 
     }
     //[JFGSDK appendStringToLogFile:@"执行刷新cell"];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cellForRow[uuid:%@ pid:%@ net:%ld]",dev.uuid,dev.pid,dev.netType]];
+    
     return cell;
 }
 
@@ -656,7 +646,7 @@
     
     if (dev.deviceType == JFGDeviceTypeDoorBell) {
         
-        if (dev.unReadMsgCount == 0) {
+        if (dev.unReadMsgCount == 0 || dev.netType == JFGNetTypeOffline) {
             msgString = [JfgLanguage getLanTextStrByKey:@"Tap1_NoMessages"];
             timeString = @"";
             isHiddenRedPoint = YES;
@@ -671,13 +661,13 @@
         int unreadCount = 0;
         if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
             //双鱼眼
-            unreadCount = dev.unReadMsgCount+dev.unReadPhotoCount;
-            NSLog(@"unReadMsgCount:%d unReadPhotoCount:%d",dev.unReadMsgCount,dev.unReadPhotoCount);
+            unreadCount = (int)dev.unReadMsgCount+(int)dev.unReadPhotoCount;
+            FLLog(@"unReadMsgCount:%d unReadPhotoCount:%d",dev.unReadMsgCount,dev.unReadPhotoCount);
         }else{
-            unreadCount = dev.unReadMsgCount;
+            unreadCount = (int)dev.unReadMsgCount;
         }
         
-        if (unreadCount == 0) {
+        if (unreadCount == 0 || dev.netType == JFGNetTypeOffline) {
             
             msgString = [JfgLanguage getLanTextStrByKey:@"Tap1_NoMessages"];
             timeString = @"";
@@ -697,9 +687,9 @@
         
         if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
             //双鱼眼
-            int unreadCount = dev.unReadMsgCount+dev.unReadPhotoCount;
-            NSLog(@"unReadMsgCount:%d unReadPhotoCount:%d",dev.unReadMsgCount,dev.unReadPhotoCount);
-            if (unreadCount == 0) {
+            int unreadCount = (int)dev.unReadMsgCount+(int)dev.unReadPhotoCount;
+            FLLog(@"unReadMsgCount:%d unReadPhotoCount:%d",(int)dev.unReadMsgCount,(int)dev.unReadPhotoCount);
+            if (unreadCount == 0 || dev.netType == JFGNetTypeOffline) {
                 
                 msgString = [JfgLanguage getLanTextStrByKey:@"Tap1_NoMessages"];
                 timeString = @"";
@@ -753,8 +743,16 @@
                 video.devModel = dev;
                 video.hidesBottomBarWhenPushed = YES;
                 [viewControler.navigationController pushViewController:video animated:YES];
-               
-                
+//                DoorVideoVC *doorVideo = [[DoorVideoVC alloc] init];
+//                doorVideo.pType = productType_DoorBell;
+//                doorVideo.cid = dev.uuid;
+//                doorVideo.actionType = doorActionTypeUnActive;
+//                doorVideo.isOnline = YES;
+//                ///[cid]/[timestamp].jpg
+//                doorVideo.hidesBottomBarWhenPushed = YES;
+//                doorVideo.imageUrl = @"";
+//                //doorVideo.actionType =
+//                [viewControler.navigationController pushViewController:doorVideo animated:YES];
             }
                 break;
 //            case JFGDeviceTypeDoorBell:
@@ -781,6 +779,7 @@
            
             
             case JFGDeviceTypePanoramicCamera:{
+                
                 if ([CommonMethod devBigTypeForOS:dev.pid] == JFGDevBigTypeEyeCamera) {
                     
                     VideoPlayFor720ViewController *videoFor720 = [[VideoPlayFor720ViewController alloc]init];
@@ -985,7 +984,7 @@
     
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"current:%.0f lastTime:%.0f",curTime,self.dpReqForLastTimeInterval]];
         
-        if (curTime - self.dpReqForLastTimeInterval > 5) {
+        if (curTime - self.dpReqForLastTimeInterval > 2) {
             [self messageList];
             self.dpReqForLastTimeInterval = curTime;
         }
@@ -1047,6 +1046,9 @@
         //不是被分享设备，获取设备最新一条报警消息时间
         if (mode.shareState != DevShareStatuOther){
             [msgIDArr addObject:[NSNumber numberWithInt:dpMsgCamera_WarnMsg]];
+            if ([PropertyManager showPropertiesRowWithPid:[mode.pid intValue] key:pRemoteWatchKey]) {
+                [msgIDArr addObject:@404];
+            }
         }else{
             if (isDoorBell) {
                 [msgIDArr addObject:[NSNumber numberWithInt:dpMsgBell_callMsg]];
@@ -1058,6 +1060,7 @@
             [msgIDArr removeAllObjects];
             [msgIDArr addObject:[NSNumber numberWithInt:dpMsgBase_Net]];
             [msgIDArr addObject:[NSNumber numberWithInt:dpMsgCamera_WarnMsg]];
+            [msgIDArr addObject:[NSNumber numberWithInt:dpMsgCamera_WarnEnable]];
             //获取720设备的电量
             [self battrayFor720WithCid:mode.uuid];
         }
@@ -1124,6 +1127,57 @@
                                         
                                     }
                                 }
+                            }
+                        }
+                            break;
+                        case 404:{
+                            id obj = [MPMessagePackReader readData:seg.value error:nil];
+                            if ([obj isKindOfClass:[NSArray class]]) {
+                                
+                                NSArray *sourceArr = obj;
+                                if (sourceArr.count>2) {
+                                    
+                                    BOOL isOpen = [sourceArr[0] boolValue];
+                                    
+                                    int64_t beginTime = [sourceArr[1] longLongValue];
+                                    int64_t endTime = [sourceArr[2] longLongValue];
+                                    
+                                    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc]init];
+                                    [dateFormatter setDateFormat:@"HH"];
+                                    int currentHour = [[dateFormatter stringFromDate:[NSDate date]] intValue];
+                                    // 0  -- 24
+                                    // 22 -- 8
+                                    
+                                    int setBeginHour = (int)beginTime/60/60;
+                                    int setEndHour = (int)endTime/60/60;
+                                    
+                                    if (isOpen) {
+                                        if (setBeginHour < setEndHour) {
+                                            //没有跨天
+                                            if (currentHour>=setBeginHour && currentHour <= setEndHour) {
+                                                model.deepSleep = YES;
+                                            }else{
+                                                model.deepSleep = NO;
+                                            }
+                                            
+                                            
+                                        }else{
+                                            //设置时间跨天了
+                                            if (currentHour >= setBeginHour || currentHour <= setEndHour) {
+                                                model.deepSleep = YES;
+                                            }else{
+                                                model.deepSleep = NO;
+                                            }
+                                            
+                                        }
+                                    }else{
+                                        
+                                        model.deepSleep = NO;
+                                        
+                                    }
+                                    
+                                }
+                                
                             }
                         }
                             break;

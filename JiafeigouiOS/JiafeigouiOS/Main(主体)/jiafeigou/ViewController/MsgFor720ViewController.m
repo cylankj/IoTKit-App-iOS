@@ -45,7 +45,7 @@
     self.messageVC.editButton.y = self.titleLabel.y;
     self.messageVC.editButton.right = self.view.width - 15;
     [self.messageVC.editButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [self.messageVC.editButton setTitleColor:[UIColor colorWithHexString:@"#aaaaaa"] forState:UIControlStateDisabled];
+    [self.messageVC.editButton setTitleColor:[[UIColor whiteColor] colorWithAlphaComponent:0.3] forState:UIControlStateDisabled];
     [self.topBarBgView addSubview:self.messageVC.editButton];
 }
 

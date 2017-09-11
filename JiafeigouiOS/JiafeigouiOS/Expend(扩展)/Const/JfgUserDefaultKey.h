@@ -33,6 +33,7 @@ NSString *const adShowTimeKey = @"_adShowTime";
 #define isShowAutoPhotoRedDot(cid) [NSString stringWithFormat:@"_isAutoPhotoSafeRedDot_%@",cid]  // 自动录像
 #define isShowDelayPhotoRedDot(cid) [NSString stringWithFormat:@"_isDelayPhotoSafeRedDot_%@",cid]  // 延迟摄影
 #define isShowRecordRedDot(cid) [NSString stringWithFormat:@"_isShowRecordRedDot_%@",cid]
+#define isShowDeepSleepRedDot(cid) [NSString stringWithFormat:@"_isShowDeepSleepRedDot_%@",cid]
 
 // 安全防护 AI 小红点
 #define isShowSafeAIRedDot(cid)  [NSString stringWithFormat:@"_isShowSafeAIRedDot_%@",cid]

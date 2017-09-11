@@ -36,6 +36,9 @@
 #import <SDWebImageDownloader.h>
 #import "UpgradeDeviceVC.h"
 #import "FLProressHUD.h"
+#import "SFCParamModel.h"
+#import "JfgCacheManager.h"
+#import "DevPropertyManager.h"
 
 @interface DoorVideoVC ()<JFGSDKPlayVideoDelegate, JFGSDKCallbackDelegate>
 {
@@ -52,6 +55,10 @@
     BOOL isLowSpeed;
     
     BOOL isDidApper;
+    
+    NSString *pid;
+    
+    BOOL isPlaying;
 }
 
 @property (nonatomic, strong)DoorVideoSrollView *doorVideoScrollView;
@@ -148,42 +155,91 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     [self initView];
-    [self initNavigationView];
+    //[self initNavigationView];
     [JFGSDK addDelegate:self];
     [self playMusic];
+    if ([CommonMethod isSingleFisheyeCameraForCid:self.cid]) {
+        
+        if (![CommonMethod panoramicViewParamModelForCid:self.cid]) {
+            //单鱼眼设备，获取坐标值
+            [self getResolving];
+        }
+    }
+    
+    NSArray *devicesList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
+    for (JiafeigouDevStatuModel *model in devicesList) {
+        if ([model.uuid isEqualToString:self.cid]) {
+            pid = model.pid;
+            break;
+        }
+    }
+    
+    /**
+     *  开始生成 设备旋转 通知
+     */
+    [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
+    
+    
+   
+}
+
+- (void)handleDeviceOrientationDidChange:(UIInterfaceOrientation)interfaceOrientation
+{
+    //1.获取 当前设备 实例
+    UIDevice *device = [UIDevice currentDevice] ;
+    /**
+     *  2.取得当前Device的方向，Device的方向类型为Integer
+     *
+     *  必须调用beginGeneratingDeviceOrientationNotifications方法后，此orientation属性才有效，否则一直是0。orientation用于判断设备的朝向，与应用UI方向无关
+     *
+     *  @param device.orientation
+     *
+     */
+    switch (device.orientation) {
+        case UIDeviceOrientationFaceUp:
+            //NSLog(@"屏幕朝上平躺");
+            break;
+        case UIDeviceOrientationFaceDown:
+            //NSLog(@"屏幕朝下平躺");
+            break;
+        case UIDeviceOrientationUnknown:
+            //NSLog(@"未知方向");//系統無法判斷目前Device的方向，有可能是斜置
+            break;
+        case UIDeviceOrientationLandscapeLeft:{
+            //NSLog(@"屏幕向左横置");//
+            if (isConnected && !_isFullScreen && isDidApper) {
+                [self rotateScreen];
+            }
+        }
+            break;
+        case UIDeviceOrientationLandscapeRight:
+            //NSLog(@"屏幕向右橫置");//
+            break;
+        case UIDeviceOrientationPortrait:{
+            //NSLog(@"屏幕直立");//
+            if (isConnected && _isFullScreen && isDidApper) {
+                [self recoverScreen];
+            }
+        }
+            break;
+        case UIDeviceOrientationPortraitUpsideDown:
+            //NSLog(@"屏幕直立，上下顛倒");
+            break;
+        default:
+            //NSLog(@"无法辨识");
+            break;
+    }
+    
 }
 
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
     [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGDoorBellIsCallingKey];
-    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
     isDidApper = YES;
+    [self addVideoNotifacation];
     [self jfgFpingRequest];
 }
-
-- (void)viewWillAppear:(BOOL)animated
-{
-    [super viewWillAppear:animated];
-    [self addVideoNotifacation];
-    [self setNeedsStatusBarAppearanceUpdate];
-    // 禁用 iOS7 返回手势
-    if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
-        self.navigationController.interactivePopGestureRecognizer.enabled = NO;
-    }
-    
-}
-
-- (void)viewWillDisappear:(BOOL)animated
-{
-    [super viewWillDisappear:animated];
-    
-    [self stopMusic];
-    [[NSUserDefaults standardUserDefaults] setObject:self.cid forKey:JFGDoorBellIsPlayingCid];
-   
-}
-
-
 
 -(void)viewDidDisappear:(BOOL)animated
 {
@@ -197,9 +253,60 @@
     }
     [[NSUserDefaults standardUserDefaults] setBool:NO forKey:JFGDoorBellIsCallingKey];
     [[NSUserDefaults standardUserDefaults] setObject:@"" forKey:JFGDoorBellIsPlayingCid];
-    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     isDidApper = NO;
     [JFGSDK removeDelegate:self];
+    [self removeVideoNotifacation];
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self setNeedsStatusBarAppearanceUpdate];
+    // 禁用 iOS7 返回手势
+    if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
+        self.navigationController.interactivePopGestureRecognizer.enabled = NO;
+    }
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    
+    [self stopMusic];
+    [[NSUserDefaults standardUserDefaults] setObject:self.cid forKey:JFGDoorBellIsPlayingCid];
+}
+
+-(void)getResolving
+{
+    [[JFGSDKDataPoint sharedClient] robotGetSingleDataWithPeer:self.cid msgIds:@[@510] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+        
+        for (NSArray *subArr in idDataList) {
+            for (DataPointSeg *seg in subArr) {
+                
+                id obj = [MPMessagePackReader readData:seg.value error:nil];
+                if ([obj isKindOfClass:[NSArray class]]) {
+                    
+                    NSArray *objArr = obj;
+                    if (objArr.count>4) {
+                        
+                        SFCParamModel *paramModel = [[SFCParamModel alloc]init];
+                        paramModel = [[SFCParamModel alloc]init];
+                        paramModel.x = [objArr[0] intValue];
+                        paramModel.y = [objArr[1] intValue];
+                        paramModel.r = [objArr[2] intValue];
+                        paramModel.w = [objArr[3] intValue];
+                        paramModel.h = [objArr[4] intValue];
+                        paramModel.cid = self.cid;
+                        [JfgCacheManager cachesfcParamModel:paramModel];
+                    }
+                }
+            }
+        }
+        
+    } failure:^(RobotDataRequestErrorType type) {
+        
+    }];
 }
 
 -(void)applicationDidEnterBackground
@@ -218,6 +325,15 @@
 }
 
 
+-(void)removeVideoNotifacation
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnRecvDisconnectNotification" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnNotifyResolutionNotification" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"JFGSDKOnNotifyRTCPNotification" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
+}
+
 -(void)addVideoNotifacation
 {
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(onRecvDisconnectForRemote:) name:@"JFGSDKOnRecvDisconnectNotification" object:nil];
@@ -228,7 +344,19 @@
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(onNotificatyRTCP:) name:@"JFGSDKOnNotifyRTCPNotification" object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationDidEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
+    
+    /**
+     *  添加 设备旋转 通知
+     */
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleDeviceOrientationDidChange:)
+                                                 name:UIDeviceOrientationDidChangeNotification
+                                               object:nil
+     ];
+
 }
+
+
 
 #pragma mark view
 
@@ -238,9 +366,9 @@
     [self.view addSubview:self.shadeImageView];
     [self.view addSubview:self.bottomShadeImageView];
     [self.view addSubview:self.fullScreenButton];
-    
+    [self.leftButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:self.halfScreenButton];
-    [self.view addSubview:self.nickNameLabel];
+    //[self.view addSubview:self.nickNameLabel];
     [self.view addSubview:self.flowSpeedButton];
     [self layoutVideoView];
     NSMutableArray *list = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
@@ -252,10 +380,11 @@
     }
     
     if (self.nickName) {
-        self.nickNameLabel.text = self.nickName;
+        self.titleLabel.text = self.nickName;
     }else{
-        self.nickNameLabel.text = self.cid;
+        self.titleLabel.text = self.cid;
     }
+    
     [self.doorVideoScrollView addSubview:self.snapImageView];
     [self.doorVideoScrollView sendSubviewToBack:self.snapImageView];
     
@@ -270,7 +399,7 @@
             
         }else{
             
-            int64_t delayInSeconds = 2;
+            int64_t delayInSeconds = 3;
             dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
             dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
                 
@@ -316,11 +445,13 @@
             
             if (imageResetCount < 10) {
                 
-                int64_t delayInSeconds = 2;
+                int64_t delayInSeconds = 3;
                 dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
                 dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
                     
-                    [self resetHeadImageViewForUrl:imageURL];
+                    if (isDidApper) {
+                        [self resetHeadImageViewForUrl:imageURL];
+                    }
                     
                 });
                 imageResetCount ++;
@@ -472,10 +603,13 @@
         
         [self.voiceButton setImage:[UIImage imageNamed:@"door_talk_enable_full"] forState:UIControlStateNormal];
         [self.voiceButton setImage:[UIImage imageNamed:@"door_talk_disable_full"] forState:UIControlStateSelected];
+        
+        
     }
     else
     {
-        self.holdOnButton.frame = CGRectMake((Kwidth - 80.0)*0.5, doorScrollRect.size.height + 0.17*kheight, 80, 80);
+        self.holdOnButton.frame = CGRectMake((Kwidth - 80.0)*0.5,(kheight - 64 - doorScrollRect.size.height)*0.5-40, 80, 80);
+        self.holdOnButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         [self.holdOnButton setImage:[UIImage imageNamed:@"door_holdon"] forState:UIControlStateNormal];
         self.holdOnButton.transform = CGAffineTransformIdentity;
         
@@ -488,6 +622,8 @@
         [self.voiceButton setImage:[UIImage imageNamed:@"door_talk_enable"] forState:UIControlStateNormal];
         [self.voiceButton setImage:[UIImage imageNamed:@"door_talk_disable"] forState:UIControlStateSelected];
         self.voiceButton.transform = CGAffineTransformIdentity;
+        
+        
     }
 }
 
@@ -594,7 +730,7 @@
         self.flowSpeedButton.frame = CGRectMake(self.view.width - 15 - self.flowSpeedButton.width, self.view.height-15-self.flowSpeedButton.height, self.flowSpeedButton.width, self.flowSpeedButton.height);
         
         self.shadeImageView.frame = CGRectMake(0, 0, self.doorVideoScrollView.height, 60);
-        
+        self.loadingImageView.center = CGPointMake(self.view.bounds.size.width*0.5, self.view.bounds.size.height*0.5);
         //scroller滚动，改变坐标使其相对静止
 //        self.nickNameLabel.top = contentOffset.y+10;
 //        self.halfScreenButton.top = contentOffset.y+10;
@@ -608,23 +744,24 @@
         //        self.halfScreenButton.hidden = YES;
         self.nickNameLabel.hidden = YES;
         
-        self.halfScreenButton.frame = CGRectMake(10, 34, self.halfScreenButton.width, self.halfScreenButton.height);
-        self.flowSpeedButton.frame = CGRectMake(self.doorVideoScrollView.width - 15 - self.flowSpeedButton.width,  20 + 15, self.flowSpeedButton.width, self.flowSpeedButton.height);
-        self.fullScreenButton.frame = CGRectMake(self.doorVideoScrollView.width - 12 - self.fullScreenButton.width, self.doorVideoScrollView.height - self.fullScreenButton.height, self.fullScreenButton.width, self.fullScreenButton.height);
-        self.shadeImageView.frame = CGRectMake(0, 0, self.doorVideoScrollView.width, 60);
-        self.bottomShadeImageView.frame = CGRectMake(0, self.doorVideoScrollView.height - self.bottomShadeImageView.height, self.doorVideoScrollView.width, self.bottomShadeImageView.height);
+        self.halfScreenButton.frame = CGRectMake(10, 34+64, self.halfScreenButton.width, self.halfScreenButton.height);
+        self.flowSpeedButton.frame = CGRectMake(self.doorVideoScrollView.width - 18 - self.flowSpeedButton.width,  14+64, self.flowSpeedButton.width, self.flowSpeedButton.height);
+        
+        self.fullScreenButton.frame = CGRectMake(self.doorVideoScrollView.width - 12 - self.fullScreenButton.width, self.doorVideoScrollView.height - self.fullScreenButton.height+64, self.fullScreenButton.width, self.fullScreenButton.height);
+        
+        self.shadeImageView.frame = CGRectMake(0, 64, self.doorVideoScrollView.width, 60);
+        self.bottomShadeImageView.frame = CGRectMake(0, self.doorVideoScrollView.height - self.bottomShadeImageView.height+64, self.doorVideoScrollView.width, self.bottomShadeImageView.height);
+        self.loadingImageView.center = CGPointMake(self.doorVideoScrollView.bounds.size.width*0.5, self.doorVideoScrollView.bounds.size.height*0.5+self.doorVideoScrollView.origin.y);
     }
-    
 }
 
+#pragma mark- --------------------横竖屏切换 -----------------------------------
 // 旋转屏幕 到 横屏
 - (void)rotateScreen
 {
     if (!isConnected) {
         return;
     }
-    //[self.doorVideoScrollView setZoomScale:1];
-    //[self remoteViewSizeFit];
     
     _isFullScreen = YES;
     
@@ -641,26 +778,23 @@
         self.flowSpeedButton.transform = CGAffineTransformMakeRotation(90 * (M_PI / 180.0f));
         self.doorVideoScrollView.frame = CGRectMake(0, 0, Kwidth, kheight);
         self.doorVideoScrollView.isFullScreen = YES;
+        self.halfScreenButton.hidden = NO;
         
-        
-        [self updateFrame:_isFullScreen];
-        [self layoutVideoView];
         [self zoomScale];
-        
+        [self remoteViewSizeFit];
         
     } completion:^(BOOL finished) {
         
     }];
    
 }
+
+
 /**
  *  恢复 到 竖屏
  */
 - (void)recoverScreen
 {
-    //[self.doorVideoScrollView setZoomScale:1];
-    //[self remoteViewSizeFit];
-    
     _isFullScreen = NO;
     if (self.doorVideoScrollView.isFullScreen == NO)
     {
@@ -676,10 +810,10 @@
         self.nickNameLabel.transform = CGAffineTransformIdentity;
         self.flowSpeedButton.transform = CGAffineTransformIdentity;
         self.doorVideoScrollView.isFullScreen = NO;
+        self.halfScreenButton.hidden = YES;
         self.doorVideoScrollView.frame = doorScrollRect;
-        [self updateFrame:_isFullScreen];
-        [self layoutVideoView];
         [self zoomScale];
+        [self remoteViewSizeFit];
         
     } completion:^(BOOL finished) {
 
@@ -747,6 +881,7 @@
                 self.redDotBgImageView.transform = CGAffineTransformMakeScale(1.0, 1.0);
                 self.greenDotImageView.transform = CGAffineTransformMakeScale(1.0, 1.0);
                 self.doorBellImageView.frame = CGRectMake((Kwidth - 80)*0.5, doorScrollRect.size.height + kheight *0.17 , 80, 80);
+                self.doorBellImageView.y = self.holdOnButton.y;
                 [self startSharkAnimation];
             }
         }
@@ -787,7 +922,7 @@
         [[NSNotificationCenter defaultCenter] postNotificationName:@"DoorBellCallSnapImage" object:dict];
     }
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(playOuttime) object:nil];
-    
+    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
 }
 
 -(void)saveSnapImage:(UIImage *)snapImage
@@ -850,7 +985,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
         [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationFade];
     }
     
-    [self remoteViewSizeFit];
+    
 }
 
 
@@ -900,14 +1035,88 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     NSDictionary *dict = notification.object;
     if (dict) {
     
+        
+        
         int width = [[dict objectForKey:@"width"] intValue];
         int height = [[dict objectForKey:@"height"] intValue];
         
         CGSize size = CGSizeMake(width, height);
         UIView *remoteView = [self.doorVideoScrollView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+    
         if (!remoteView) {
             [LSAlertView disMiss]; // 防止 联通 弹框还存在
-            remoteView = [[VideoRenderIosView alloc] initWithFrame:CGRectMake(0, 0, size.width, size.height)];
+            UIView *_remoteView;
+//            if ([CommonMethod isSingleFisheyeCameraForCid:self.cid]) {
+
+//                
+//            }else
+            BOOL isRS = [DevPropertyManager isRSDevForPid:pid];
+                
+            if ([CommonMethod devBigTypeForOS:pid] == JFGDevBigType360 || ([CommonMethod devBigTypeForOS:pid] == JFGDevBigTypeSinglefisheyeCamera && isRS)){
+                
+                width = self.view.width;
+                height= width;
+                size = CGSizeMake(width, width);
+                PanoramicIosViewRS * __remoteView = [[PanoramicIosViewRS alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, size.width, size.height)];
+                SFCParamModel *paramModel =[CommonMethod panoramicViewParamModelForCid:self.cid];
+                if (paramModel) {
+                    struct SFCParamIos param;
+                    param.cx = paramModel.x;
+                    param.cy = paramModel.y;
+                    param.r = paramModel.r;
+                    param.w = paramModel.w;
+                    param.h = paramModel.h;
+                    param.fov = 180;
+                    [__remoteView configV360:param];
+                }else{
+                    struct SFCParamIos param;
+                    param.cx = 640;
+                    param.cy = 480;
+                    param.r = 480;
+                    param.w = 1280;
+                    param.h = 960;
+                    param.fov = 180;
+                    [__remoteView configV360:param];
+                }
+                [__remoteView setMountMode:MOUNT_WALL];
+                [__remoteView setDisplayMode:SFM_Normal];
+                _remoteView = __remoteView;
+                
+            }else if ([CommonMethod devBigTypeForOS:pid] == JFGDevBigTypeSinglefisheyeCamera){
+                
+                width = self.view.width;
+                height= width;
+                size = CGSizeMake(width, width);
+                PanoramicIosView * __remoteView = [[PanoramicIosView alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, size.width, size.height)];
+                SFCParamModel *paramModel =[CommonMethod panoramicViewParamModelForCid:self.cid];
+                if (paramModel) {
+                    struct SFCParamIos param;
+                    param.cx = paramModel.x;
+                    param.cy = paramModel.y;
+                    param.r = paramModel.r;
+                    param.w = paramModel.w;
+                    param.h = paramModel.h;
+                    param.fov = 180;
+                    [__remoteView configV360:param];
+                }else{
+                    struct SFCParamIos param;
+                    param.cx = 640;
+                    param.cy = 480;
+                    param.r = 480;
+                    param.w = 1280;
+                    param.h = 960;
+                    param.fov = 180;
+                    [__remoteView configV360:param];
+                }
+                _remoteView = __remoteView;
+                [__remoteView setMountMode:MOUNT_WALL];
+                
+            }else{
+                
+                _remoteView = [[VideoRenderIosView alloc] initWithFrame:CGRectMake(0, 0, size.width, size.height)];
+                
+            }
+            remoteView = _remoteView;
             remoteView.tag = VIEW_REMOTERENDE_VIEW_TAG;
             remoteView.backgroundColor = [[UIColor clearColor] colorWithAlphaComponent:0.5];
             remoteView.layer.edgeAntialiasingMask = YES;
@@ -929,17 +1138,16 @@ NSString *sharkAnimationKey = @"sharkAnimation";
             
         }
     
-        //[self stopLoadingAnimation];
         [self.doorVideoScrollView bringSubviewToFront:remoteView];
-//        [self.doorVideoScrollView bringSubviewToFront:self.doorVideoScrollView.flowSpeedButton];
-//        [self.doorVideoScrollView bringSubviewToFront:self.doorVideoScrollView.fullScreenButton];
-//        [self.doorVideoScrollView insertSubview:remoteView belowSubview:self.doorVideoScrollView.shadeImageView];
         self.voiceButton.enabled = YES;
         self.cameraButton.enabled = YES;
         self.fullScreenButton.hidden = NO;
+        
         videoSize = CGSizeMake(width, height);
         isConnected = YES;
         [self remoteViewSizeFit];
+        
+        [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
     }
     
 }
@@ -1101,46 +1309,87 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (!isConnected) {
         return;
     }
-    CGFloat ratio = 1.0;
-    CGFloat width;
-    if (_isFullScreen) {
-        width = self.view.bounds.size.height;
-    }else{
-        width = self.view.bounds.size.width;
-    }
-    ratio = videoSize.height/videoSize.width;
-    CGFloat height = width * ratio;
     
-    if (!_isFullScreen) {
-        
-        if (height < self.doorVideoScrollView.height) {
-            
-            height = self.doorVideoScrollView.height;
-            width = height/ratio;
-            
-        }
-        
-    }else{
-        if (height < self.doorVideoScrollView.width) {
-            
-            height = self.doorVideoScrollView.width;
-            width = height/ratio;
-            
+    NSArray *devicesList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
+    JiafeigouDevStatuModel *devModel = nil;
+    for (JiafeigouDevStatuModel *model in devicesList) {
+        if ([model.uuid isEqualToString:self.cid]) {
+            devModel = model;
+            break;
         }
     }
     
-    self.snapImageView.frame = CGRectMake(0, 0, width, height);
+    CGSize remoteCallViewSize = videoSize;
+    
+    CGFloat ratio = remoteCallViewSize.height/remoteCallViewSize.width;
+    CGFloat width = 0;
+    CGFloat height = 0;
+    BOOL isRS = [DevPropertyManager isRSDevForPid:pid];
+    if (isRS || [CommonMethod devBigTypeForOS:pid] == JFGDevBigType360) {
+        
+        if (_isFullScreen) {
+            height = self.view.bounds.size.width;
+            width = height/ratio;
+        }else{
+            width = self.view.bounds.size.width;
+            height = width * ratio;
+        }
+        
+    }else{
+        
+        if (_isFullScreen) {
+            width = self.view.bounds.size.height;
+        }else{
+            width = self.view.bounds.size.width;
+        }
+        height = width * ratio;
+        if (_isFullScreen) {
+            if (height < self.view.bounds.size.width) {
+                
+                height = self.view.bounds.size.width;
+                width = height/ratio;
+                
+            }
+        }
+    }
+    
     UIView *remoteView =[self.doorVideoScrollView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
-    if (remoteView) {
-        remoteView.frame = CGRectMake(0, 0, width, height);
-        [self.doorVideoScrollView bringSubviewToFront:remoteView];
+    if (_isFullScreen && ![remoteView isKindOfClass:[VideoRenderIosView class]]) {
+        width = self.view.bounds.size.height;
+        height = self.view.bounds.size.width;
     }
     
     [self.doorVideoScrollView setContentSize:CGSizeMake(width, height)];
+    if (!_isFullScreen) {
+        self.doorVideoScrollView.height = height;
+    }
+    if (remoteView) {
+        
+        remoteView.frame = CGRectMake(0, 0, width, height);
+        remoteView.x = width*0.5;
+        if ([remoteView isKindOfClass:[PanoramicIosView class]]) {
+            
+            PanoramicIosView *rpv = (PanoramicIosView *)remoteView;
+            [rpv detectOrientationChange];
+            
+        }else if ([remoteView isKindOfClass:[PanoramicIosViewRS class]]){
+            
+            PanoramicIosViewRS *rpv = (PanoramicIosViewRS *)remoteView;
+            [rpv detectOrientationChange];
+        }
+        [self.doorVideoScrollView bringSubviewToFront:remoteView];
+    }
+    self.snapImageView.frame = remoteView.bounds;
+    self.snapImageView.hidden = YES;
     [self.doorVideoScrollView setContentOffset:CGPointMake(0, 0)];
- 
-    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"remoteViewSize:%@",NSStringFromCGRect(remoteView.frame)]];
-    
+    if (_isFullScreen) {
+        if (width>self.view.height) {
+            
+            [self.doorVideoScrollView setContentOffset:CGPointMake((width-self.view.height*0.5), 0)];
+        }
+    }
+    [self layoutVideoView];
+    [self updateFrame:_isFullScreen];
 }
 
 #pragma mark property
@@ -1151,16 +1400,15 @@ NSString *sharkAnimationKey = @"sharkAnimation";
         //720   576
         CGFloat rota = 576.0/720.0;
         CGFloat height =rota*Kwidth;
-        _doorVideoScrollView = [[DoorVideoSrollView alloc] initWithFrame:CGRectMake(0, 0, Kwidth, height)];
+        _doorVideoScrollView = [[DoorVideoSrollView alloc] initWithFrame:CGRectMake(0, 64, Kwidth, height)];
         _doorVideoScrollView.backgroundColor = [UIColor lightGrayColor];
         _doorVideoScrollView.scrollEnabled = YES;
         _doorVideoScrollView.bounces = NO;
-//        _doorVideoScrollView.maximumZoomScale = 3.0;
-//        _doorVideoScrollView.minimumZoomScale = 1.0;
         _doorVideoScrollView.bouncesZoom = NO;
         [self.fullScreenButton addTarget:self action:@selector(rotateScreen) forControlEvents:UIControlEventTouchUpInside];
         [self.halfScreenButton addTarget:self action:@selector(recoverScreen) forControlEvents:UIControlEventTouchUpInside];
-        doorScrollRect = CGRectMake(0, 0, Kwidth, height);
+        doorScrollRect = CGRectMake(0, 64, Kwidth, height);
+        
     }
     return _doorVideoScrollView;
 }
@@ -1253,7 +1501,9 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_holdOnButton == nil)
     {
         _holdOnButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        _holdOnButton.frame = CGRectMake((Kwidth - 80.0)*0.5, self.doorVideoScrollView.height + 0.17*kheight, 80, 80);
+        _holdOnButton.frame = CGRectMake((Kwidth - 80.0)*0.5,(self.view.bounds.size.height-64-self.doorVideoScrollView.height), 80, 80);
+        _holdOnButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        
         [_holdOnButton setImage:[UIImage imageNamed:@"door_holdon"] forState:UIControlStateNormal];
         [_holdOnButton setImage:[UIImage imageNamed:@"door_holdon_full"] forState:UIControlStateSelected];
         [_holdOnButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
@@ -1296,6 +1546,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_doorBellImageView == nil)
     {
         _doorBellImageView = [[UIImageView alloc] initWithFrame:CGRectMake((Kwidth - 80)*0.5, doorScrollRect.size.height + kheight *0.17 , 80, 80)];
+        _doorBellImageView.y = self.holdOnButton.y;
         _doorBellImageView.image = [UIImage imageNamed:@"door_bellImage"];
         _doorBellImageView.userInteractionEnabled = YES;
         
@@ -1450,7 +1701,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 {
     if (_shadeImageView == nil)
     {
-        _shadeImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 60)];
+        _shadeImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 64, self.view.width, 60)];
         _shadeImageView.image = [UIImage imageNamed:@"camera_sahdow"];
     }
     return _shadeImageView;
@@ -1485,6 +1736,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
         _halfScreenButton = [UIButton buttonWithType:UIButtonTypeCustom];
         _halfScreenButton.frame = CGRectMake(0, 15, 30, 30);
         [_halfScreenButton setImage:[UIImage imageNamed:@"qr_backbutton_normal"] forState:UIControlStateNormal];
+        _halfScreenButton.hidden = YES;
     }
     return _halfScreenButton;
 }

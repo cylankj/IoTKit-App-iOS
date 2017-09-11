@@ -54,6 +54,7 @@ NSString *const angle = @"_angle";
 NSString *const indirector = @"_indirector";
 NSString *const hangup = @"_hangup";
 NSString *const ntsc = @"_ntsc";
+NSString *const deepsleep = @"_deepsleep";
 
 // 设备信息 cell 唯一id
 NSString *const deviceName = @"_deviceName";

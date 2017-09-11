@@ -1,6 +1,6 @@
 /* zh-Hant.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.  
+Created by cylan language tool  on Wed Aug 30 17:27:03 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "連接失敗，請檢查網路";
 "REPEAT_TIME" = "%d秒";
@@ -77,7 +77,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "INVALID_ACCOUNT" = "此帳號尚未註冊";
 "PASSWORD_BIT" = "設置新密碼";
 "COMFIRM_NEW_PASS" = "重新輸入新密碼";
-"PASSWORD_LESSTHAN_SIX" = "請輸入6~12位密碼";
+"PASSWORD_LESSTHAN_SIX" = "請輸入6~32位密碼";
 "ACCOUNT_ERR_3" = "請輸入帳號綁定的電子郵件";
 "LOGIN_ERR" = "登錄失敗";
 "GET_CODE" = "獲取驗證碼";
@@ -285,6 +285,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "GIVE_UP" = "放棄";
 "BIND_INFO" = "新增設備尚未完成，是否放棄？";
 "DEVICE_ADDING" = "正在绑定，請稍候…";
+"DEVICE_CONNECTING_WIFI" = "正在連接，請稍候…";
 "DEVICE_UPGRADE" = "設備軟體升級";
 "UPDATING_LABEL" = "正在更新設備軟體(%d%%)";
 "UPDATING_BUTTON" = "正在更新";
@@ -901,20 +902,14 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Tap1_LessThan3sTips" = "錄製少於3秒，將不保存內容";
 "Tap1_NeedsInitializedTips" = "設備SD卡需要先初始化，但會刪除卡內數據，確定初始化嗎？";
 "Tap1_SDCardFullyTips" = "SD卡存儲空間已滿";
-"Tap1_HomeMode" = "家居模式";
-"Tap1_HomeMode_Opened" = "家居模式已開啟";
-"Tap1_Camera_TCPconnected" = "攝像機通過網絡與客戶端相連";
-"Tap1_Camera_UDPconnected" = "攝像機直接與客戶端相連";
+"Tap1_HomeMode" = "連接WiFi";
+"Tap1_HomeMode_Opened" = "連接WiFi已開啟";
 "Tap1_Camera_Video_Auto" = "自動";
 "Tap1_Camera_Video_Fluent" = "流暢";
 "Tap1_Camera_Video_SD" = "標清";
 "Tap1_Camera_Video_HD" = "高清";
-"Tap1_File_CameraNPhone" = "相機+手機相冊";
-"Tap1_File_Camera" = "相機";
-"Tap1_File_Phone" = "手機相冊";
 "Tap1_Refreshed" = "刷新成功";
 "Tap1_RefreshedFailed" = "刷新失敗";
-"Tap1_DeletedCameraNCellphoneFileTips" = "將同步刪除相機和手機內保存內容，確認刪除？";
 "Tap1_Sync_NetworkChangeTips" = "已切換為數據網絡，是否繼續同步？";
 "Tap1_FileDamagedTips" = "文件已損壞，是否刪除？";
 "Tap1_DeleteDownloadingTips" = "文件正在下載中，是否刪除？";
@@ -975,10 +970,7 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "Formatting" = "格式化過程中";
 "Fail_Record" = "錄像失敗";
 "Tips_ShortVideo" = "長按錄製短視頻";
-"Switch_Mode_Pop" = "當前網絡拍攝內容請到設置切換至直連模式查看";
-"Switch_Mode" = "拍攝內容請切換至直連模式查看";
 "Sharing_Management" = "分享管理";
-"Dont_Show_Again" = "不再提示";
 "Delete_Share" = "是否刪除分享";
 "SETTINGS_Wechat_Switch_Cancel" = "關閉將無法接收微信推送。想取消綁定請前往微信取消關注“加菲狗官微服务”公眾號。";
 "SETTINGS_Wechat_Switch_Open" = "請在新的微信號上關注“加菲狗官微服务”並綁定，成功後舊的微信號將不再接收消息推送";
@@ -1044,3 +1036,18 @@ Created by cylan language tool  on Thu Aug 03 14:56:17 CST 2017.
 "SECURE_Interval_Alarm" = "報警間隔";
 "MINUTE_Cloud" = "分鐘";
 "REPEAT_TIME_ALARM" = "秒";
+"Video_expired" = "視頻不存在，可能已過期";
+"Dont_Show_Again" = "不再提示";
+"Switch_Mode" = "當前網絡拍攝內容請到設置切換至直連查看";
+"SWITCH_VIEW_POP" = "當前平視視角不支持使用該功能，是否切換至俯視？";
+"ENERGY_SAVE_MODE_ON" = "已開啟省電模式";
+"ENERGY_SAVE_MODE" = "省電模式";
+"open_night" = "只在夜間開啟";
+"ENERGY_SAVE_MODE_Description" = "開啟後可接收門鈴消息，但不可使用查看直播、錄像、安全防護功能。若設置為“只在夜間開啟”，則只在22:00到8:00間生效。";
+"ENERGY_SAVE_MODE_POP" = "請按下設備呼叫鍵，否則無法立刻生效。";
+"ENERGY_SAVE_MODE_ON_OFF" = "在省電模式頁，選擇開啟/關閉";
+"CALL_SUCCESS_OPEN_SAVE" = "按下設備呼叫鍵呼叫成功後即開啟／關閉省電模式";
+"ENERGY_SAVE_NOTE" = "注：表示未生效";
+"ENERGY_SAVE_CALL" = "請按下呼叫鍵";
+"ENERGY_SAVE_HELP" = "幫助";
+"ALLDAY_OPEN" = "全天開啟";

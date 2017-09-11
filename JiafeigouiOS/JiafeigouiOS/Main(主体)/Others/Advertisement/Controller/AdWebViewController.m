@@ -21,6 +21,7 @@
 @interface AdWebViewController ()<AKWebViewDelegate>
 {
     NSString *webImageUrl;
+    UIImage *fristWebImage;
 }
 @property (nonatomic,strong)AKWebView *_akwebView;
 @property (nonatomic,strong)WebviewProgressLine *progressLine;
@@ -59,6 +60,13 @@
     
         if (response && [response isKindOfClass:[NSString class]]) {
             webImageUrl = response;
+            
+            dispatch_async(dispatch_get_global_queue(0, 0), ^{
+                 NSData *imgData = [NSData dataWithContentsOfURL:[NSURL URLWithString:webImageUrl]];
+                fristWebImage = [UIImage imageWithData:imgData];
+            });
+           
+            
         }
         
     }];
@@ -110,7 +118,16 @@
     ShareView *sv = [[ShareView alloc]initWithLandScape:NO];
     [sv showShareView:^(SSDKPlatformType platformType) {
         
-        [FLShareSDKHelper shareToThirdpartyPlatform:platformType url:self.url image:nil title:self.titleLabel.text contentType:SSDKContentTypeWebPage];
+        UIImage* image = nil;
+        if (fristWebImage) {
+            image = fristWebImage;
+        }else{
+            NSDictionary *infoPlist = [[NSBundle mainBundle] infoDictionary];
+            NSString *icon = [[infoPlist valueForKeyPath:@"CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconFiles"] lastObject];
+            image = [UIImage imageNamed:icon];
+        }
+        
+        [FLShareSDKHelper shareToThirdpartyPlatform:platformType url:self.url image:image title:self.titleLabel.text contentType:SSDKContentTypeWebPage];
         
     } cancel:^{
         

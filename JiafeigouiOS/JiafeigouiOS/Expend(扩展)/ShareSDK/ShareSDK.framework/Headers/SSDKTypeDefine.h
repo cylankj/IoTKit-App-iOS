@@ -225,6 +225,14 @@ typedef NS_ENUM(NSUInteger, SSDKPlatformType){
      */
     SSDKPlatformTypeDingTalk            = 52,
     /**
+     *  youtube
+     */
+    SSDKPlatformTypeYouTube             = 53,
+    /**
+     *  美拍
+     */
+    SSDKPlatformTypeMeiPai              = 54,
+    /**
      *  易信
      */
     SSDKPlatformTypeYiXin               = 994,
@@ -291,7 +299,11 @@ typedef NS_ENUM(NSUInteger, SSDKResponseState){
     /**
      *  取消
      */
-    SSDKResponseStateCancel     = 3
+    SSDKResponseStateCancel     = 3,
+    
+    
+    //视频文件开始上传
+    SSDKResponseStateBeginUPLoad = 4
 };
 
 /**
@@ -337,8 +349,43 @@ typedef NS_ENUM(NSUInteger, SSDKContentType){
     /**
      *  文件类型(暂时仅微信可用)
      */
-    SSDKContentTypeFile         = 7
+    SSDKContentTypeFile         = 7,
+    
+    //图片类型 仅FacebookMessage 分享图片并需要明确结果时 注此类型分享后不会显示应用名称与icon
+    //v3.6.2 增加
+    SSDKContentTypeFBMessageImages = 8,
+    
+    //图片类型 仅FacebookMessage 分享视频并需要明确结果时 注此类型分享后不会显示应用名称与icon
+    //所分享的视频地址必须为相册地址
+    //v3.6.2 增加
+    SSDKContentTypeFBMessageVideo = 9,
+    
+    //3.6.3 小程序分享(暂时仅微信可用)
+    SSDKContentTypeMiniProgram  = 10
 
+};
+
+
+/**
+ YouTube 视频的隐私状态
+ */
+typedef NS_ENUM(NSUInteger, SSDKPrivacyStatus){
+    
+    /**
+     *  私有（只有自己可以观看）
+     */
+    SSDKPrivacyStatusPublic = 0,
+    /**
+     *  公开（任何人都可以搜索和观看）
+     */
+    SSDKPrivacyStatusPrivate = 1,
+    
+    /**
+     *  不公开（知道链接的人可以观看）
+     */
+    SSDKPrivacyStatusUnlisted = 2
+    
+    
 };
 
 /**
@@ -414,5 +461,13 @@ typedef void(^SSDKCallApiStateChangedHandler)(SSDKResponseState state, id data, 
  *  @param authorizeStateChangedHandler 授权状态回调
  */
 typedef void(^SSDKNeedAuthorizeHandler)(SSDKAuthorizeStateChangedHandler authorizeStateChangedHandler);
+
+/**
+ *  HTTP上传数据情况
+ *
+ *  @param totalBytes  总字节数
+ *  @param loadedBytes 上传字节数据
+ */
+typedef void(^SSDKHttpUploadProgressHandler) (int64_t totalBytes, int64_t loadedBytes);
 
 #endif

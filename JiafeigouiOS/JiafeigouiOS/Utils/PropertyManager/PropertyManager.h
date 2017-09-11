@@ -46,6 +46,7 @@ extern NSString *const pApConnectting;
 extern NSString *const pLowBattery;
 extern NSString *const pAiRecognition;      // AI 识别
 extern NSString *const pAlarmDuration;      // 报警时间  间隔
+extern NSString *const pRemoteWatchKey;     // 省电模式
 
 @interface PropertyManager : BaseViewModel
 
@@ -56,5 +57,9 @@ extern NSString *const pAlarmDuration;      // 报警时间  间隔
 + (BOOL)showSharePropertiesRowWithPid:(NSInteger)pID key:(NSString *)rowKey;
 
 - (BOOL)showRowWithPid:(NSInteger)pID key:(NSString *)rowKey;
+
+-(NSString *)propertyWithPid:(NSInteger)pID key:(NSString *)rowKey;
+
+-(NSArray <NSDictionary *>*)propertyArr;
 
 @end

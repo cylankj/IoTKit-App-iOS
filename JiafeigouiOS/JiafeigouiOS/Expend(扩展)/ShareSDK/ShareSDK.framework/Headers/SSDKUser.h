@@ -8,6 +8,8 @@
 
 #import <Foundation/Foundation.h>
 #import "SSDKTypeDefine.h"
+#import <MOBFoundation/IMOBFSocialUser.h>
+#import <MOBFoundation/MOBFDataModel.h>
 
 @class SSDKCredential;
 
@@ -32,12 +34,12 @@ typedef NS_ENUM(NSUInteger, SSDKGender){
 /**
  *  用户信息
  */
-@interface SSDKUser : NSObject
+@interface SSDKUser : MOBFDataModel <IMOBFSocialUser>
 
 /**
  *  平台类型
  */
-@property (nonatomic) SSDKPlatformType platformType;
+@property (nonatomic) NSInteger platformType;
 
 /**
  *  授权凭证， 为nil则表示尚未授权
@@ -62,7 +64,7 @@ typedef NS_ENUM(NSUInteger, SSDKGender){
 /**
  *  性别
  */
-@property (nonatomic) SSDKGender gender;
+@property (nonatomic) NSInteger gender;
 
 /**
  *  用户主页

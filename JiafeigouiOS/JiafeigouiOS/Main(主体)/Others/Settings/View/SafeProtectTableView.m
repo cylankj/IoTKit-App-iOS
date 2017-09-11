@@ -253,7 +253,7 @@ typedef NS_ENUM(NSInteger, pickerTag) {
     }
     else if ([uniuqeIDStr isEqualToString:idCellWarnEndTime])
     {
-        [self showDatePickerView:pickerTag_beginTime];
+        [self showDatePickerView:pickerTag_endTime];
         return;
     }
     else if ([uniuqeIDStr isEqualToString:idCellAlramDutaion])

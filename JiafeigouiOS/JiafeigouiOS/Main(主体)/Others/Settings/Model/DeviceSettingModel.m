@@ -305,6 +305,11 @@
     return [[NSUserDefaults standardUserDefaults] boolForKey:isShowDelayPhotoRedDot(self.cid)];
 }
 
+-(BOOL)isShowDeepSleepRedDot
+{
+    return [[NSUserDefaults standardUserDefaults] boolForKey:isShowDeepSleepRedDot(self.cid)];
+}
+
 - (BOOL)isShowWxRedDot
 {
     return ![[NSUserDefaults standardUserDefaults] boolForKey:JFGIsAlwaysShowWebchatRedPointKey];;

@@ -27,9 +27,20 @@ void DefineFLLog(const char *file, int lineNumber, const char *functionName, NSS
     
     va_end (ap);
     
-    NSString *fileName = [[NSString stringWithUTF8String:file] lastPathComponent];
-    fprintf(stderr, "\n********starLog******* \n $file$: %s   line: %d \n $func$: %s  \n $content$: %s",  [fileName UTF8String],lineNumber,functionName,[content UTF8String]);
+    //NSString *fileName = [[NSString stringWithUTF8String:file] lastPathComponent];
+    //fprintf(stderr, "\n********starLog******* \n $file$: %s   line: %d \n $func$: %s  \n $content$: %s",  [fileName UTF8String],lineNumber,functionName,[content UTF8String]);
     
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];\
+    
+    [dateFormatter setDateStyle:NSDateFormatterMediumStyle];\
+    
+    [dateFormatter setTimeStyle:NSDateFormatterShortStyle];\
+    
+    [dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss.SSSSSS"]; \
+    
+    NSString *str = [dateFormatter stringFromDate:[NSDate date]];
+    
+    fprintf(stderr, "%s %s +%d %s",[str UTF8String],functionName,lineNumber,[content UTF8String]);
     if([logString isEqualToString:@""])
         logString = content;
     else

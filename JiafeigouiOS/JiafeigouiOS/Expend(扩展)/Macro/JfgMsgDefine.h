@@ -64,6 +64,7 @@ NSString *const msgBaseUsingWiredNetKey = @"_usingWiredNet";
 NSString *const msgBaseIpAdressKey = @"_ipAdrss";
 NSString *const msgBaseUpgradeStatusKey = @"_upgradeStatus";
 
+
 typedef NS_ENUM(NSInteger, dpMsgBase){
     dpMsgBase_Begin = dpBaseBegin,            //基础功能定义 开始 不使用  200
     dpMsgBase_Net,                            //网络类型
@@ -119,11 +120,14 @@ typedef NS_ENUM(NSInteger, dpMsgVideo) {
 NSString *const dpMsgBellBeginKey = @"_bellBegin";
 NSString *const dpMsgBellCallMsgKey = @"_bellCallMsg";
 NSString *const dpMsgBellLeaveMsgKey = @"_bellLeaveMsg";
+NSString *const dpMsgBellCallMsgV3Key = @"_dpMsgBellCallMsgV3Key";
+NSString *const dpMsgBellDeepSleepKey = @"_deepsleepStatus";
 
 typedef NS_ENUM(NSInteger, dpMsgBell) {
     dpMsgBell_callMsg = dpBellBegin + 1, // 400
     dpMsgBell_leaveMsg,
     dpMsgBell_callMsgV3,
+    dpMsgBell_deepSleep, // 省电模式
 };
 
 #pragma mark
@@ -156,7 +160,7 @@ typedef NS_ENUM(NSInteger, dpMsgCamera){
     dpMsgCamera_WarnMsg,                        //报警消息2.0版
     dpMsgCamera_TimeLapse,                      //延迟摄影 设置
     dpMsgCamera_Wonder,                         //前每日精彩 废弃不用了
-    dpMsgCamera_isLive,                         //待机
+    dpMsgCamera_isLive = 508,                         //待机
     dpMsgCamera_Angle,                          //全景 平视、俯视
     dpMsgCamera_CameraCoord,
     dpMsgCamera_WarnAndWonder,

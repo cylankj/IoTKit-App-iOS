@@ -12,6 +12,7 @@
 #import "JfgMsgDefine.h"
 #import "dataPointMsg.h"
 #import "JfgGlobal.h"
+#import "PropertyManager.h"
 
 @interface DevicesViewModel()
 
@@ -30,12 +31,22 @@
     
     if (cid != nil && ![cid isEqualToString:@""])
     {
+        //绑定设备时候，并不知道设备的os，所以根据cid前缀判断是否是睿视门铃，这个东西默认移动报警关闭
+        if ([cid hasPrefix:@"6009"]) {
+            self.pType = productType_RSDoorBell;
+        }else if ([cid hasPrefix:@"6007"]){
+            self.pType = productType_IPCam_V2;
+        }else if ([cid hasPrefix:@"6006"]){
+            self.pType = productType_IPCam;
+        }
+        
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"set default property ,cid is %@",cid]];
         [[dataPointMsg shared] setdpDataWithCid:cid dps:self.dps success:^(NSMutableDictionary *dic) {
             [JFGSDK appendStringToLogFile:@"set default property success"];
         } failed:^(RobotDataRequestErrorType error) {
             [JFGSDK appendStringToLogFile:@"set default property failed"];
         }];
+        
     }
     else
     {
@@ -59,6 +70,9 @@
                  {
                      case productType_IPCam:
                      case productType_IPCam_V2:
+                     case productType_RSDoorBell:
+                     case productType_KKS_DoorBell:
+                     case productType_RS_360_pano:
                      {
                          autoMotion = MotionDetectNever;
                      }
@@ -81,7 +95,6 @@
              
          }
          
-         
      } FailBlock:^(RobotDataRequestErrorType error) {
          
      }];
@@ -102,7 +115,7 @@
 {
     if (_dps == nil)
     {
-        NSArray *msgIds = [NSArray arrayWithObjects:@(dpMsgCamera_WarnEnable),
+        NSMutableArray *msgIds = [NSMutableArray arrayWithObjects:@(dpMsgCamera_WarnEnable),
                                                     @(dpMsgCamera_WarnTime),
                                                     @(dpMsgCamera_isLive),
                                                     @(dpMsgBase_LED),
@@ -120,6 +133,10 @@
                            nil];
 
         
+        if ([PropertyManager showPropertiesRowWithPid:self.pType key:pRemoteWatchKey]) {
+            [msgIds addObject:@(dpMsgBell_deepSleep)];
+        }
+        
         _dps = [[NSMutableArray alloc] initWithCapacity:5];
         
         for (NSInteger i = 0; i < msgIds.count; i ++)
@@ -134,6 +151,10 @@
                     switch (self.pType)
                     {
                         case productType_RSDoorBell:
+                        case productType_RS_360_pano:
+                        case productType_KKS_DoorBell:
+                        case productType_IPCam:
+                        case productType_IPCam_V2:
                         {
                             seg.value = [MPMessagePackWriter writeObject:@0 error:nil];
                         }
@@ -141,7 +162,7 @@
                             
                         default:
                         {
-                            seg.value = [MPMessagePackWriter writeObject:@(self.devicesModel.safeProtectModel.isWarnEnable) error:nil];
+                            seg.value = [MPMessagePackWriter writeObject:@1 error:nil];
                         }
                             break;
                     }
@@ -160,7 +181,6 @@
                     break;
                 case dpMsgBase_LED:
                 {
-                    
                     seg.value = [MPMessagePackWriter writeObject:@(self.devicesModel.deviceSettingModel.isOpenIndicator) error:nil];
                 }
                     break;
@@ -203,6 +223,8 @@
                     {
                         case productType_IPCam_V2:
                         case productType_IPCam:
+                        case productType_RSDoorBell:
+                        case productType_RS_360_pano:
                         {
                             autoMotion = MotionDetectNever;
                         }
@@ -235,6 +257,11 @@
                     seg.value = [MPMessagePackWriter writeObject:@[] error:nil];
                 }
                     break;
+                case dpMsgBell_deepSleep:{
+                    seg.value = [MPMessagePackWriter writeObject:@[@(true),@(22*60*60),@(8*60*60)] error:nil];
+                }
+                    break;
+                    
                 default:
                     break;
             }

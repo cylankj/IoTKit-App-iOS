@@ -246,6 +246,12 @@
         
         [autoPhotocell.settingSwitch addValueChangedBlockAcion:^(UISwitch *_switch) {
             
+            if (sdCardErrorCode !=0 ) {
+                
+                [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"VIDEO_SD_DESC"]];
+                _switch.on = !_switch.on;
+                return ;
+            }
             if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess ) {
                 [CommonMethod showNetDisconnectAlert];
                 _switch.on = !_switch.on;

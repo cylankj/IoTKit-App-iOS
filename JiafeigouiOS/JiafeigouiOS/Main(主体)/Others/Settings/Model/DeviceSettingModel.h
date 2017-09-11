@@ -38,6 +38,14 @@
 @property (assign, nonatomic) BOOL isMobile;
 @property (assign, nonatomic) int SIMCardType;
 
+
+/**
+ * 省电模式相关
+ */
+@property (assign,nonatomic)BOOL isPowerSavingEnable;//是否支持这个功能
+@property (assign,nonatomic)int64_t powerSavingBeginTime;//开始时间
+@property (nonatomic, assign)int64_t powerSavingEndTime;//结束时间
+
 /**
  * 开启 安全防护 时间
  */
@@ -122,10 +130,12 @@
 @property (nonatomic, assign) BOOL isShowAutoPhotoRedDot;
 // 延时摄影 小红点
 @property (nonatomic, assign) BOOL isShowDelayPhotoRedDot;
+@property (nonatomic, assign) BOOL isShowDeepSleepRedDot;
 // 微信报警 小红点
 @property (nonatomic, assign) BOOL isShowWxRedDot;
 // 其他小红点
 @property (nonatomic, assign) BOOL isShowOthersRedDot;
+
 
 #pragma mark
 #pragma mark  720p 独有属性

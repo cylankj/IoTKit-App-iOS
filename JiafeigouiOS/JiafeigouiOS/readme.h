@@ -2,7 +2,7 @@
 //  readme.h
 //  JiafeigouiOS
 //
-//  Created by 杨利 on 2017/7/17.
+//  Created by yangli on 2017/7/17.
 //  Copyright © 2017年 lirenguang. All rights reserved.
 //
 

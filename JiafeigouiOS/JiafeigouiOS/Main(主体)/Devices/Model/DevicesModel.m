@@ -25,7 +25,7 @@
     self = [super init];
     if (self)
     {
-        self.timeZoneSecond = [NSTimeZone defaultTimeZone].secondsFromGMT;
+        self.timeZoneSecond = [NSTimeZone localTimeZone].secondsFromGMT;
     }
     return self;
 }

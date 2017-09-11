@@ -137,16 +137,16 @@
             
         }else if(seg.msgId == dpMsgBase_Battery){
             
-            
-            if (model.deviceType == JFGDeviceTypeDoorBell || model.deviceType == JFGDeviceTypeCamera3G || [model.pid isEqualToString:@"17"]) {
-                id obj = [MPMessagePackReader readData:seg.value error:nil];
-                if ([obj isKindOfClass:[NSNumber class]]) {
-                    model.Battery = [obj intValue];
-                }
-            }else{
-                model.Battery = 100;
-                model.isPower = YES;
+            id obj = [MPMessagePackReader readData:seg.value error:nil];
+            if ([obj isKindOfClass:[NSNumber class]]) {
+                model.Battery = [obj intValue];
             }
+//            if (model.deviceType == JFGDeviceTypeDoorBell || model.deviceType == JFGDeviceTypeCamera3G || [model.pid isEqualToString:@"17"] ) {
+//                
+//            }else{
+//                model.Battery = 100;
+//                model.isPower = YES;
+//            }
             [self reloadData];
             
             
@@ -207,6 +207,21 @@
             }
             
             [self reloadData];
+        }else if (seg.msgId == 404){
+            
+        
+            id obj = [MPMessagePackReader readData:seg.value error:nil];
+            if ([obj isKindOfClass:[NSArray class]]) {
+                
+                NSArray *sourceArr = obj;
+                if (sourceArr.count) {
+                    model.deepSleep = [[sourceArr objectAtIndex:0] boolValue];
+                }
+                
+            }
+        
+           
+            
         }
         
     }
