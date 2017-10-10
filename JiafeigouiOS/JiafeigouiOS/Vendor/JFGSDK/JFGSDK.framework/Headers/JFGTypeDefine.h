@@ -185,6 +185,11 @@ typedef NS_ENUM(NSInteger,JFGNetType) {
      *  2G
      */
     JFGNetType2G,
+    
+    /*!
+     *  有线模式
+     */
+    JFGNetTypeWired = 10,
 };
 
 
