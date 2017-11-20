@@ -2,7 +2,7 @@
 //  JFGBoundDevicesMsg.m
 //  JiafeigouiOS
 //
-//  Created by 杨利 on 16/8/8.
+//  Created by yangli on 16/8/8.
 //  Copyright © 2016年 lirenguang. All rights reserved.
 //
 
@@ -70,8 +70,6 @@
 {
     NSMutableArray *newList = [[NSMutableArray alloc]init];
     NSArray <NSArray <AddDevConfigModel *>*>* allType = [jfgConfigManager getAddDevModel];
-    
-    
     [deviceList enumerateObjectsUsingBlock:^(JFGSDKDevice * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
        
         JiafeigouDevStatuModel *model = [[JiafeigouDevStatuModel alloc]init];
@@ -331,7 +329,7 @@
 //模型数组归档
 -(void)saveDeviceList:(NSArray *)deviceList
 {
-    if (!deviceList.count) {
+    if (deviceList == nil) {
         return;
     }
     NSMutableData *data = [[NSMutableData alloc] init];
@@ -364,7 +362,6 @@
 {
     NSArray *devModels = [self getDevicesList];
     JiafeigouDevStatuModel *resultModel = nil;
-    
     for (NSInteger i = 0; i < devModels.count; i ++)
     {
         resultModel = (JiafeigouDevStatuModel *)[devModels objectAtIndex:i];

@@ -820,7 +820,6 @@
         [segArr addObject:_seg];
     }
     
-    
     [[JFGSDKDataPoint sharedClient] robotGetDataByTimeWithPeer:self.cid msgIds:segArr success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
         
         markCollectArr = [[NSMutableArray alloc]init];
@@ -872,9 +871,13 @@
     if (self.deviceVersion == 3) {
         ///cid/[vid]/[cid]/[timestamp]_[id].jpg
         cloudFilePath = [NSString stringWithFormat:@"/cid/%@/%@/%@",[OemManager getOemVid],self.cid,_fileNam];
-        
     }
     
+    //如果是AI图片的路径
+    if ([_fileNam containsString:@"AI"]) {
+        cloudFilePath = _fileNam;
+        _fileNam = [cloudFilePath lastPathComponent];
+    }
    
     
     //set 602
@@ -908,6 +911,7 @@
                 
                 JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
                 NSString *wonderFilePath = [NSString stringWithFormat:@"/long/%@/%@/wonder/%@/%@",[OemManager getOemVid],account.account,self.cid,_fileNam];
+                
                 NSLog(@"wonderFilePath:%@",wonderFilePath);
                 [JFGSDK copyCloudFile:cloudFilePath toWonderPath:wonderFilePath requestId:1111];
                 
@@ -1173,9 +1177,12 @@
     }
 }
 
--(void)scrollViewDidScroll:(UIScrollView *)scrollView{
+-(void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
     
 }
+
+
 -(void)doubletapImage:(UIGestureRecognizer *)doubleTap{
     
     UIScrollView *scroll =(UIScrollView *)doubleTap.view.superview;

@@ -57,4 +57,8 @@
 
 @property (nonatomic,assign)int manNum;
 
+@property (nonatomic,strong)NSArray *face_idList;
+@property (nonatomic,strong)NSString *aiMsg;
+@property (nonatomic,copy)NSString *aiImageUrl;
+
 @end

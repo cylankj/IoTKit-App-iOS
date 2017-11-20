@@ -14,6 +14,10 @@
  *  是否 开启 移动侦测
  */
 @property (assign, nonatomic) BOOL isWarnEnable;
+
+//是否打开红外增强
+@property (assign,nonatomic)BOOL isOpenInfraredStrengthen;
+
 /**
  *  灵敏度
  */

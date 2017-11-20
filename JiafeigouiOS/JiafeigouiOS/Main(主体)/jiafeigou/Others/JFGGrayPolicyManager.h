@@ -2,7 +2,7 @@
 //  JFGGrayPolicyManager.h
 //  JiafeigouiOS
 //
-//  Created by 杨利 on 2017/8/14.
+//  Created by yangli on 2017/8/14.
 //  Copyright © 2017年 lirenguang. All rights reserved.
 //  灰度策略请求相关
 

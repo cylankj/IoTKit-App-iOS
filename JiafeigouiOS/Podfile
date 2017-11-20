@@ -14,6 +14,10 @@ pod 'pop'
 pod 'MJExtension'
 pod 'Aspects'
 pod 'AFNetworking', '~> 3.0'
-
+pod 'GoogleAPIClientForREST/YouTube', '~> 1.2.1'
+pod 'Google/SignIn', '~> 3.0.3'
+pod 'weibolive_ios_sdk', '~> 0.0.1'
+pod 'FBSDKCoreKit', '~> 4.25.0'
+pod 'FBSDKLoginKit', '~> 4.25.0'
 
 end

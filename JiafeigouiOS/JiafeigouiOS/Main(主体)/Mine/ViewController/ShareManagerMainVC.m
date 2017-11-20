@@ -140,6 +140,11 @@
     return 18;
 }
 
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
+}
+
 -(NSMutableArray *)dataArray
 {
     if (!_dataArray) {

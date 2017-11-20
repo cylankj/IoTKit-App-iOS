@@ -135,6 +135,9 @@ static WifiListView *wifi =nil;
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
     return 50.0;
 }
+
+
+
 -(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
     UIView * vi = [[UIView alloc]initWithFrame:CGRectMake(0, 0, Kwidth, 44)];
     vi.backgroundColor = [UIColor colorWithHexString:@"#f0f0f0"];

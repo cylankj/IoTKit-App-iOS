@@ -71,7 +71,7 @@
     [footer setTitle:[JfgLanguage getLanTextStrByKey:@"PULL_TO_LOAD"] forState:MJRefreshStateIdle];
     [footer setTitle:[JfgLanguage getLanTextStrByKey:@"LOADING"] forState:MJRefreshStateRefreshing];
     self.devicesTableView.mj_footer = footer;
-    
+    self.devicesTableView.estimatedRowHeight = 0;
     
 //    self.devicesTableView.mj_header = [MJRefreshStateHeader headerWithRefreshingBlock:^{
 //    
@@ -367,6 +367,11 @@
 -(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
 {
     return 20;
+}
+
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
 }
 
 

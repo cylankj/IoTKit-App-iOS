@@ -22,7 +22,8 @@ typedef NS_ENUM(NSInteger, DeviceNameVCType)
     DeviceNameVCTypeEmailPassword,//邮箱密码
     DeviceNameVCTypePhonePassword,//手机密码
     DeviceNameVCTypePassword, //密码
-    DeviceNameVCTypeSetHelloWorld //发送添加好友打招呼语言
+    DeviceNameVCTypeSetHelloWorld, //发送添加好友打招呼语言
+    DeviceNameVCTypeSetFaceName,//设置面孔名称
     
 };
 
@@ -32,6 +33,7 @@ typedef NS_ENUM(NSInteger, DeviceNameVCType)
  *  复用： wifi 名字
  */
 @property (copy, nonatomic) NSString *deviceName;
+@property (nonatomic,copy)NSString *person_id;
 
 @property (assign, nonatomic) DeviceNameVCType deviceNameVCType;
 @property (strong, nonatomic) JFGSDKAcount * jfgAccount;

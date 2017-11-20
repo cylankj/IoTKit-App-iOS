@@ -11,7 +11,7 @@
 #import "ExploreModel.h"
 #import "MessageVCDateModel.h"
 #import <JFGSDK/JFGSDKAcount.h>
-
+#import "MsgForAIModel.h"
 
 @implementation JfgCacheManager
 
@@ -63,6 +63,51 @@
     if (allArr) {
         for (SFCParamModel *model in allArr) {
             if ([model.cid isEqualToString:cid]) {
+                return model;
+            }
+        }
+    }
+    return nil;
+}
+
++(void)updateLiveModel:(LiveTypeModel *)model
+{
+    NSArray *allArr = [[NSArray alloc]initWithContentsOfFile:[JfgCachePathManager liveModelCachePath]];
+    NSArray *keyValues = nil;
+    if (allArr) {
+        NSMutableArray *msgModelList = [LiveTypeModel mj_objectArrayWithKeyValuesArray:allArr];
+        BOOL isExist = NO;
+        for (LiveTypeModel *_model in [msgModelList copy]) {
+            if([model.cid isEqualToString:_model.cid]){
+                if ([msgModelList containsObject:_model]) {
+                    [msgModelList removeObject:_model];
+                    [msgModelList addObject:model];
+                }
+                isExist = YES;
+                break;
+            }
+        }
+        if (!isExist) {
+            [msgModelList addObject:model];
+        }
+        keyValues = [LiveTypeModel mj_keyValuesArrayWithObjectArray:msgModelList];
+        
+    }else{
+        keyValues = [LiveTypeModel mj_keyValuesArrayWithObjectArray:@[model]];
+    }
+    
+    if (keyValues) {
+        [keyValues writeToFile:[JfgCachePathManager liveModelCachePath] atomically:YES];
+    }
+}
+
++(LiveTypeModel *)liveModelForCid:(NSString *)cid
+{
+    NSArray *allArr = [[NSArray alloc]initWithContentsOfFile:[JfgCachePathManager liveModelCachePath]];
+    if (allArr) {
+        NSArray *msgModelList = [LiveTypeModel mj_objectArrayWithKeyValuesArray:allArr];
+        for (LiveTypeModel *model in msgModelList) {
+            if([model.cid isEqualToString:cid]){
                 return model;
             }
         }
@@ -158,6 +203,103 @@
     return msgModelList;
 }
 
++(void)cacheMsgForAIDataCache:(NSDictionary *)dataDict cid:(NSString *)cid
+{
+    dispatch_global_async(^{
+        
+        if (dataDict) {
+            
+            NSMutableDictionary *keyValuesDict = [NSMutableDictionary new];
+            
+            for (NSString *key in dataDict.allKeys) {
+                
+                NSArray *arr = dataDict[key];
+                if ([arr isKindOfClass:[NSArray class]]) {
+                    
+                    NSArray *keyValues = [MessageModel mj_keyValuesArrayWithObjectArray:[arr copy]];
+                    [keyValuesDict setObject:keyValues forKey:key];
+                }
+                
+            }
+            
+            [keyValuesDict writeToFile:[JfgCachePathManager msgForAIDataPathForCid:cid] atomically:YES];
+            
+        }
+        
+    });
+}
+
++(NSDictionary *)getCacheForAIMsgWithCid:(NSString *)cid
+{
+    NSMutableDictionary *modelDict = [NSMutableDictionary new];
+    NSDictionary *keyValuesDict = [[NSDictionary alloc]initWithContentsOfFile:[JfgCachePathManager msgForAIDataPathForCid:cid]];
+    for (NSString *key in keyValuesDict) {
+        NSArray *keyValue = [keyValuesDict objectForKey:key];
+        NSArray *msgModelList = [MessageModel mj_objectArrayWithKeyValuesArray:keyValue];
+        [modelDict setObject:msgModelList forKey:key];
+    }
+    return modelDict;
+}
+
++(void)removeCacheForAIMsgWithCid:(NSString *)cid
+{
+    if (!cid) {
+        return;
+    }
+    NSString *path = [JfgCachePathManager msgForAIDataPathForCid:cid];
+    
+    NSString *familuarHeaderPath = [JfgCachePathManager msgForAIDataFamiliarHeaderForCid:cid];
+    
+    NSString *unfamiluarHeaderPath = [JfgCachePathManager msgForAIDataUnfamiliarHeaderForCid:cid];
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if ([fileManager fileExistsAtPath:path]) {
+        [fileManager removeItemAtPath:path error:nil];
+    }
+    if ([fileManager fileExistsAtPath:familuarHeaderPath]) {
+        [fileManager removeItemAtPath:familuarHeaderPath error:nil];
+    }
+    if ([fileManager fileExistsAtPath:unfamiluarHeaderPath]) {
+        [fileManager removeItemAtPath:unfamiluarHeaderPath error:nil];
+    }
+}
+
++(NSArray <MsgAIheaderModel *>*)getCacheMsgForAIIsFamiliarHeader:(BOOL)familiar cid:(NSString *)cid
+{
+    NSString *path  = nil;
+    if (familiar) {
+        path = [JfgCachePathManager msgForAIDataFamiliarHeaderForCid:cid];
+    }else{
+        path = [JfgCachePathManager msgForAIDataUnfamiliarHeaderForCid:cid];
+    }
+    NSArray *arr = [[NSArray alloc]initWithContentsOfFile:path];
+    NSArray *msgModelList = [MsgAIheaderModel mj_objectArrayWithKeyValuesArray:arr];
+    if (msgModelList == nil) {
+        msgModelList = [NSArray new];
+    }
+    return msgModelList;
+}
+
++(void)cacheMsgForAIIsFamiliarHeader:(BOOL)familiar data:(NSArray <MsgAIheaderModel *> *)dataList cid:(NSString *)cid
+{
+    dispatch_global_async(^{
+        
+        if (dataList && cid) {
+            
+            NSArray *keyValues = [MsgAIheaderModel mj_keyValuesArrayWithObjectArray:[dataList copy]];
+            NSString *path = @"";
+            if (familiar) {
+                path = [JfgCachePathManager msgForAIDataFamiliarHeaderForCid:cid];
+            }else{
+                path = [JfgCachePathManager msgForAIDataUnfamiliarHeaderForCid:cid];
+            }
+            [keyValues writeToFile:path atomically:YES];
+            
+        }
+        
+    });
+}
+
 +(void)cacheWarnPicForDelMsgList:(NSArray <MessageModel *>*)list forCid:(NSString *)cid
 {
     dispatch_global_async(^{
@@ -168,7 +310,6 @@
             NSFileManager *filemanager = [NSFileManager defaultManager];
             [filemanager removeItemAtPath:[JfgCachePathManager warnPicForDelCachePathForCid:cid]  error:nil];
         }
-        
     });
 }
 
@@ -209,7 +350,6 @@
 {
     dispatch_global_async(^{
     
-        
         if (list.count) {
              NSArray *keyValues = [ExploreModel mj_keyValuesArrayWithObjectArray:[list copy]];
              [keyValues writeToFile:[JfgCachePathManager dayJingCaiMsgCachePath] atomically:YES];
@@ -228,4 +368,39 @@
     NSArray *modelList = [ExploreModel mj_objectArrayWithKeyValuesArray:listArr];
     return modelList;
 }
+
++(YoutubeLiveStreamsModel *)youtubeModelForCid:(NSString *)cid
+{
+    NSArray *arr = [[NSArray array]initWithContentsOfFile:[JfgCachePathManager youtubeModelPath]];
+    NSArray *modelList = [YoutubeLiveStreamsModel mj_objectArrayWithKeyValuesArray:arr];
+    for (YoutubeLiveStreamsModel *model in modelList) {
+        if ([model.cid isEqualToString:cid]) {
+            return model;
+        }
+    }
+    return nil;
+}
+
++(void)updateYoutubeModel:(YoutubeLiveStreamsModel *)model
+{
+    NSArray *arr = [[NSArray array]initWithContentsOfFile:[JfgCachePathManager youtubeModelPath]];
+    NSMutableArray *modelList = [YoutubeLiveStreamsModel mj_objectArrayWithKeyValuesArray:arr];
+    for (YoutubeLiveStreamsModel *_model in [modelList copy]) {
+        if ([model.cid isEqualToString:_model.cid]) {
+            if ([modelList containsObject:_model]) {
+                [modelList removeObject:_model];
+                break;
+            }
+        }
+    }
+    if (!modelList) {
+        modelList = [NSMutableArray new];
+    }
+    [modelList addObject:model];
+    arr = [YoutubeLiveStreamsModel mj_keyValuesArrayWithObjectArray:modelList];
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        [arr writeToFile:[JfgCachePathManager youtubeModelPath] atomically:YES];
+    });
+}
+
 @end

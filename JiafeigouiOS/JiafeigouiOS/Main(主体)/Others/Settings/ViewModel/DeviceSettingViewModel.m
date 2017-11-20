@@ -13,7 +13,7 @@
 #import "JfgConstKey.h"
 #import <JFGSDK/JFGSDK.h>
 #import <JFGSDK/JFGSDKDataPoint.h>
-#import "DeviceSettingModel.h"
+
 #import "JfgTypeDefine.h"
 #import "JfgMsgDefine.h"
 #import "JfgProductJduge.h"
@@ -276,14 +276,14 @@
 {
     NSMutableArray *dogSettings = [NSMutableArray array];
     
-    NSMutableArray *section0 = [self section0Arr];
-    NSMutableArray *section1 = [self section1Arr];
-    NSMutableArray *section1_1 = [self section1_1Arr];
-    NSMutableArray *section2 = [self section2Arr];
-    NSMutableArray *sdCardSection = [self sectionSDCardArr];
-    NSMutableArray *section3 = [self section3Arr];
-    NSMutableArray *section4 = [self section4Arr];
-    NSMutableArray *clearMsgCallSetion = [self clearMsgCallSection];
+    NSMutableArray *section0 = [self section0Arr];//设备信息
+    NSMutableArray *section1 = [self section1Arr];//wifi设置
+    NSMutableArray *section1_1 = [self section1_1Arr];//省电模式相关
+    NSMutableArray *section2 = [self section2Arr];//安全防护
+    NSMutableArray *sdCardSection = [self sectionSDCardArr];//sd卡相关
+    NSMutableArray *section3 = [self section3Arr];//待机
+    NSMutableArray *section4 = [self section4Arr];//视角，指示灯
+    NSMutableArray *clearMsgCallSetion = [self clearMsgCallSection];//门铃清空消息
     
     if (section0.count > 0)
     {
@@ -400,7 +400,7 @@
 }
 
 #pragma mark section data handle
-
+//设备信息
 - (NSMutableArray *)section0Arr
 {
     NSMutableArray *section0 = [NSMutableArray arrayWithCapacity:2];
@@ -417,10 +417,13 @@
     
     return section0;
 }
+
+//wifi设置
 - (NSMutableArray *)section1Arr
 {
     NSMutableArray *section1 = [NSMutableArray arrayWithCapacity:2];
     
+    //wifi设置
     if ([self.propertyTool showRowWithPid:self.pType key:pWifiKey])
     {
         switch (self.pType)
@@ -453,6 +456,7 @@
         }
     }
     
+    //AP直连
     if ([self.propertyTool showRowWithPid:self.pType key:pApConnectting])
     {
         [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
@@ -465,6 +469,8 @@
                              nil]];
     }
     
+    
+    //软起AP
     if ([self.propertyTool showRowWithPid:self.pType key:pHotWireless])
     {
         [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
@@ -489,10 +495,29 @@
                              @1,cellshowSwitchKey, nil]];
     }
     
+    //手机热点
+    if (self.pType ==  productType_720 || self.pType == productType_720p) {
+        
+        NSString *detailText = [JfgLanguage getLanTextStrByKey:@"Tap1_Setting_Unopened"];
+        NSString *iPhoneName = [UIDevice currentDevice].name;
+        if (self.settingModel.deviceNetType == DeviceNetType_Wifi && [iPhoneName isEqualToString:self.settingModel.wifi]) {
+            detailText = iPhoneName;
+        }
+        
+        [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             @"install_icon_mobile_hotspot",cellIconImageKey,
+                             phoneHotspot, cellUniqueID,
+                             [JfgLanguage getLanTextStrByKey:@"SETTINGS_MOBILE_HOTSPOT"],cellTextKey,
+                             detailText,cellDetailTextKey,
+                             @(self.settingModel.isCellCanClick), canClickCellKey,
+                             @0,cellshowSwitchKey,nil]];
+        
+    }
+    
     return (section1.count>0)?section1:nil;
 }
 
-
+//省电模式相关
 -(NSMutableArray *)section1_1Arr
 {
     NSMutableArray *section1 = [NSMutableArray arrayWithCapacity:1];
@@ -515,6 +540,7 @@
     return section1;
 }
 
+//安全防护
 - (NSMutableArray *)section2Arr
 {
     NSMutableArray *section2 = [NSMutableArray arrayWithCapacity:2];
@@ -550,6 +576,8 @@
     return section2;
 }
 
+
+//sd卡相关
 - (NSMutableArray *)sectionSDCardArr
 {
     NSMutableArray *sectionSdCard = [NSMutableArray arrayWithCapacity:2];
@@ -571,7 +599,7 @@
     return sectionSdCard;
 }
 
-
+//待机
 - (NSMutableArray *)section3Arr
 {
     NSMutableArray *section3 = [NSMutableArray arrayWithCapacity:2];
@@ -590,6 +618,7 @@
     return section3;
 }
 
+//视角，指示灯
 - (NSMutableArray *)section4Arr
 {
     NSMutableArray *section4 = [NSMutableArray arrayWithCapacity:2];
@@ -647,6 +676,7 @@
     return section4;
 }
 
+//门铃清空消息
 - (NSMutableArray *)clearMsgCallSection
 {
     NSMutableArray *section = [NSMutableArray arrayWithCapacity:2];
@@ -1333,10 +1363,11 @@
     [self update];
 }
 
+
 - (void)openHotWired
 {
     NSString *msgTitle = nil;
-    
+
     switch (self.settingModel.deviceNetType)
     {
         case DeviceNetType_Wifi:

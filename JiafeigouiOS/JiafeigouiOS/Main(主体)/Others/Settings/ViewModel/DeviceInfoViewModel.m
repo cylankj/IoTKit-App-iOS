@@ -118,7 +118,7 @@
         
         if ([JfgProductJduge isDoubleFishEyeDevice:self.pType])
         {
-            JiafeigouDevStatuModel *devModel = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevModelWithCid:self.cid];
+            //JiafeigouDevStatuModel *devModel = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevModelWithCid:self.cid];
             
             NSNumber *battery = [[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"barrtyFor720_%@",self.cid]];
             

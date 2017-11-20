@@ -55,6 +55,10 @@
     {
         self.dataSource = self;
         self.delegate = self;
+//        打包机 升级Xcode 后在兼容， 暂时屏蔽
+//        if (@available(iOS 11.0, *)) {
+//            self.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+//        }
     }
     
     return self;
@@ -219,7 +223,10 @@
             [fileManager removeItemAtPath:filePath2 error:nil];
         }
         [JfgCacheManager removeSfcPatamModelForCid:self.cid];
-       
+        
+        //清空AI相关消息缓存
+        [JfgCacheManager removeCacheForAIMsgWithCid:self.cid];
+        
     }else{
         [[JFGBoundDevicesMsg sharedDeciceMsg] removeDelDeviceCid:self.cid];
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"NO_NETWORK_4"]];
@@ -322,6 +329,12 @@
 {
     return 20.0f;
 }
+
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
+}
+
 
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
 {

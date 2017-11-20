@@ -10,6 +10,19 @@
 
 @interface JfgCachePathManager : NSObject
 
+//AI相关消息缓存地址
++(NSString *)msgForAIDataPathForCid:(NSString *)cid;
+
+/**
+ * 熟人头像数据
+ */
++(NSString *)msgForAIDataFamiliarHeaderForCid:(NSString *)cid;
+
+/**
+ * 陌生人头像数据
+ */
++(NSString *)msgForAIDataUnfamiliarHeaderForCid:(NSString *)cid;
+
 //缓存账号信息地址
 +(NSString *)accountMsgCachePathWithAccount:(NSString *)account;
 
@@ -33,6 +46,12 @@
 
 //已读添加好友消息列表
 +(NSString *)readAddFriendReqListCachePath;
+
+//Live推流平台数据模型存储地址
++(NSString *)liveModelCachePath;
+
+//Youtube
++(NSString *)youtubeModelPath;
 
 //主目录
 +(NSString *)cylanDic;

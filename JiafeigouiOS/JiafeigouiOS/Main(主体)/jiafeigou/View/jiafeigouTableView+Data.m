@@ -416,7 +416,10 @@
                     case 5:
                         model.netType = JFGNetType5G;
                         break;
+                    case 10:
+                        model.netType = JFGNetTypeWired; // 10 是有线网络
                     default:
+                        model.netType = JFGNetTypeWifi;
                         break;
                 }
             }

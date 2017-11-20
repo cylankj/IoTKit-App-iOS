@@ -25,6 +25,8 @@
 #import "LoginRegisterViewController.h"
 #import "BaseNavgationViewController.h"
 #import "LSAlertView.h"
+#import "MsgForAIRequest.h"
+#import "OemManager.h"
 
 static NSString * const JFGLoginStatuRecodeKey = @"JFGLOGINMARKFORUSERDEFAULT";
 static NSString * const JFGLoginSessionKey = @"JFGLoginSessionKey";
@@ -32,7 +34,7 @@ static NSString * const JFGOpenLoginAccessToken = @"JFGOpenLoginAccessToken";
 static NSString * const JFGOpenAccessTokenKey = @"JFGOpenAccessTokenKey";
 static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
 
-@interface LoginManager()<JFGSDKCallbackDelegate>
+@interface LoginManager()<JFGSDKCallbackDelegate,MsgForAIRequestDelegate>
 {
     NSHashTable *_hashTable;
     NSString *currentAccount;
@@ -43,6 +45,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     NSString *thirdIcon;
     JFGSDKAcount *cacheAccount;
     BOOL isLoadingUserheadImageing;
+    MsgForAIRequest *msgAIRequest;
 }
 @end
 
@@ -63,6 +66,9 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     self = [super init];
     [JFGSDK addDelegate:self];
     _hashTable = [[NSHashTable alloc]initWithOptions:NSPointerFunctionsWeakMemory capacity:50];
+    msgAIRequest = [[MsgForAIRequest alloc]init];
+    msgAIRequest.delegate = self;
+    [msgAIRequest addJfgDelegate];
     //NSInteger loginStatu = [[[NSUserDefaults standardUserDefaults] objectForKey:JFGAccountLoginStatueSaveKey] intValue];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationDidEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationDidEnterBackground) name:UIApplicationWillTerminateNotification object:nil];
@@ -72,8 +78,6 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     }else{
         self.loginStatus = JFGSDKCurrentLoginStatusLoginOut;
     }
-    
-    
     return self;
 }
 
@@ -246,6 +250,27 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     return isSuccess;
 }
 
+-(void)getRobotHost
+{
+    [msgAIRequest reqRobotHost];
+}
+
+-(void)msgForRobotHost:(NSString *)host post:(NSString *)post
+{
+    if ([host isKindOfClass:[NSString class]]) {
+        
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:oemRobotHostKey];
+        [[NSUserDefaults standardUserDefaults] setObject:host forKey:oemRobotHostKey];
+        
+    }
+    if ([post isKindOfClass:[NSString class]]) {
+        
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:oemRobotPostKey];
+        [[NSUserDefaults standardUserDefaults] setObject:post forKey:oemRobotPostKey];
+        
+    }
+    
+}
 
 -(BOOL)isExited
 {
@@ -402,6 +427,10 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
         [self loginSuccessRespone];
         [Bugly setUserValue:currentAccount forKey:@"account"];
         [JFGSDK checkClientVersion];
+        [self getRobotHost];
+        
+//        NSString *url = [JFGSDK getCloudUrlWithFlag:0 fileName:@"/7day/0001/testmdm1@126.com/AI/290100000009/1510795060_165.jpg"];
+//        NSLog(@"%@",url);
     
     }else{
         
@@ -508,13 +537,15 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
 //        
 //    }];
     
-    LoginLoadingViewController *lo = [LoginLoadingViewController new];
-    BaseNavgationViewController * nav = [[BaseNavgationViewController alloc]initWithRootViewController:lo];
-    UIWindow *keyWindows = [UIApplication sharedApplication].keyWindow;
-    keyWindows.rootViewController = nav;
+    
     
     //__weak typeof(self) weakSelf = self;
     [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"PWD_CHANGED"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
+        
+        LoginLoadingViewController *lo = [LoginLoadingViewController new];
+        BaseNavgationViewController * nav = [[BaseNavgationViewController alloc]initWithRootViewController:lo];
+        UIWindow *keyWindows = [UIApplication sharedApplication].keyWindow;
+        keyWindows.rootViewController = nav;
         
     } OKBlock:^{
         
@@ -648,7 +679,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     }else if (inter == 4){
         return JFGSDKLoginTypeOpenLoginForFacebook;
     }
-    return JFGSDKLoginTypeOpenLoginForSinaWeibo;
+    return JFGSDKLoginTypeAccountLogin;
 }
 
 #pragma mark- 登陆代理回调

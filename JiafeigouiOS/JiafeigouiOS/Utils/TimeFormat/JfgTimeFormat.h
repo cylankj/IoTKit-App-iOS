@@ -21,9 +21,8 @@
 
 + (NSString *)transformTime:(long long)timesp withFormat:(NSString *)timeFormat;
 
-// 服务器 时间戳 转换 到 秒
-+ (NSString *)transToSecond:(double)time;
-
 + (BOOL)isToday:(double)timesp;
+
++(NSString *)transToAITime:(int)timestamp;
 
 @end

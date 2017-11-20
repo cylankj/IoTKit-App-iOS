@@ -482,6 +482,10 @@
     }
 }
 
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
+}
 
 
 #pragma mark- 索引相关

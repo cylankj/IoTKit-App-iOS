@@ -49,9 +49,9 @@
     [self initView];
     
 }
--(void)viewWillDisappear:(BOOL)animated{
+-(void)viewWillDisappear:(BOOL)animated
+{
     [super viewWillDisappear:animated];
-    
     [LSAlertView disMiss];
 }
 
@@ -228,6 +228,11 @@
         return labelSize.height + 8;
     }
     return 1.0f;
+}
+
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
 }
 
 

@@ -201,9 +201,12 @@
     return 70.f;
 }
 
--(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+{
     return 42;
 }
+
+
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
 {
     UIView * vi = [[UIView alloc]initWithFrame:CGRectMake(0, 0, Kwidth, 42)];

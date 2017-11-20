@@ -21,6 +21,7 @@
 #import "CommonMethod.h"
 #import "SetPwForOpenLoginViewController.h"
 #import "CheckingEmailViewController.h"
+#import "AIRobotRequest.h"
 
 @interface SetDeviceNameVC ()<JFGSDKCallbackDelegate,UITextFieldDelegate>
 {
@@ -146,6 +147,9 @@
         case DeviceNameVCTypeSetHelloWorld:
             titleStr = [JfgLanguage getLanTextStrByKey:@"Tap3_FriendsAdd"];
             break;
+        case DeviceNameVCTypeSetFaceName:
+            titleStr = [JfgLanguage getLanTextStrByKey:@"NAME"];
+            break;
         default:
             break;
     }
@@ -171,6 +175,8 @@
         
     }else if (self.deviceNameVCType == DeviceNameVCTypeFriendsRemarkName ||  self.deviceNameVCType == DeviceNameVCTypeSetHelloWorld){
         
+        self.deviceNameTextFiled.text = self.deviceName;
+    }else if (self.deviceNameVCType == DeviceNameVCTypeSetFaceName){
         self.deviceNameTextFiled.text = self.deviceName;
     }
 }
@@ -207,7 +213,7 @@ int maxLength = 24;
     }
     
     //好友昵称，设备昵称，自己昵称字符不能超过12个
-    if (self.deviceNameVCType == DeviceNameVCTypeNickName || self.deviceNameVCType == DeviceNameVCTypeFriendsRemarkName || self.deviceNameVCType == DeviceNameVCTypeSelf)
+    if (self.deviceNameVCType == DeviceNameVCTypeNickName || self.deviceNameVCType == DeviceNameVCTypeFriendsRemarkName || self.deviceNameVCType == DeviceNameVCTypeSelf || self.deviceNameVCType == DeviceNameVCTypeSetFaceName)
     {
         
         if ([CommonMethod lenghtForString:textField.text] > maxLength)
@@ -235,8 +241,8 @@ int maxLength = 24;
 
 -(void)textFieldValueChanged:(UITextField *)textField
 {
-    
-    if ([textField.text isEqualToString:@""])
+     NSString *name = [textField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    if ([name isEqualToString:@""])
     {
         self.rightButton.enabled = NO;
         if (self.deviceNameVCType == DeviceNameVCTypeSetHelloWorld || self.deviceNameVCType == DeviceNameVCTypeWifiPassword) {
@@ -249,7 +255,7 @@ int maxLength = 24;
     
    
     
-    if (self.deviceNameVCType == DeviceNameVCTypeNickName || self.deviceNameVCType == DeviceNameVCTypeFriendsRemarkName || self.deviceNameVCType == DeviceNameVCTypeSelf) {
+    if (self.deviceNameVCType == DeviceNameVCTypeNickName || self.deviceNameVCType == DeviceNameVCTypeFriendsRemarkName || self.deviceNameVCType == DeviceNameVCTypeSelf || self.deviceNameVCType == DeviceNameVCTypeSetFaceName) {
         
         if ([self.deviceName isEqualToString:textField.text] || [textField.text isEqualToString:@""]) {
             self.rightButton.enabled = NO;
@@ -340,7 +346,6 @@ int maxLength = 24;
         [_bgView.layer setBorderColor:[UIColor colorWithHexString:@"#e8e8e8"].CGColor];
         [_bgView.layer setBorderWidth:.5f];
         [_bgView.layer setFrame:CGRectMake(0.0f, 43.0, Kwidth, 1.0f)];
-        
     }
     return _bgView;
 }
@@ -420,7 +425,13 @@ int maxLength = 24;
                 keyString = @"";
             }
             
-            [JFGSDK wifiSetWithSSid:self.wifiName keyword:keyString cid:self.cid ipAddr:@"255.255.255.255" mac:@""];
+            if (self.pType == productType_AI_Camera || self.pType == productType_AI_Camera_outdoor) {
+                [JFGSDK wifiSetWithSSid:self.wifiName keyword:keyString cid:self.cid ipAddr:@"192.168.10.255" mac:@""];
+            }else{
+                [JFGSDK wifiSetWithSSid:self.wifiName keyword:keyString cid:self.cid ipAddr:@"255.255.255.255" mac:@""];
+            }
+            
+            //[JFGSDK wifiSetWithSSid:self.wifiName keyword:keyString cid:self.cid ipAddr:@"255.255.255.255" mac:@""];
             
             [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"DOOR_SET_WIFI_MSG"]];
             for (UIViewController * VC in self.navigationController.viewControllers) {
@@ -546,7 +557,39 @@ int maxLength = 24;
             
         }
             break;
+        case DeviceNameVCTypeSetFaceName:{
             
+            NSString *name = [self.deviceNameTextFiled.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            if (name.length>0) {
+                
+                [ProgressHUD showProgress:nil];
+                __weak typeof(self) weakSelf = self;
+                [AIRobotRequest robotRegisterFace:nil person:self.person_id cid:self.cid personName:name sucess:^(id responseObject) {
+                    
+                    if ([responseObject isKindOfClass:[NSDictionary class]]) {
+                        NSDictionary *dict = responseObject;
+                        int ret = [dict[@"ret"] intValue];
+                        if (ret == 0) {
+                         
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                         
+                            [weakSelf leftButtonAction:nil];
+                         
+                            return ;
+                        }
+                    }
+                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SUBMIT_FAIL"]];
+                    
+                } failure:^(NSError *error) {
+                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SUBMIT_FAIL"]];
+                }];
+                
+            }
+            
+        }
+            
+            break;
+        
         default:
             break;
     }

@@ -255,9 +255,13 @@
     }
     else if (msgID >= dpCameraBegin && msgID < dpAccountBegin)  // dp camera key
     {
-        return [self dpCameraKeyWithMsgID:msgID];
-    }
-    else // dp account key
+        if (msgID == 520) {//dp断节了
+            return dpMsgCameraInfraredEnhanced;//红外增强
+        }else{
+            return [self dpCameraKeyWithMsgID:msgID];
+        }
+        
+    }else // dp account key
     {
         return [self dpAccountKeyWithMsgID:msgID];
     }

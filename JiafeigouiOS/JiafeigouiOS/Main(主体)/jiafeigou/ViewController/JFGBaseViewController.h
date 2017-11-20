@@ -7,6 +7,9 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "UIColor+HexColor.h"
+#import "UIView+FLExtensionForFrame.h"
+#import "JfgLanguage.h"
 
 @interface JFGBaseViewController : UIViewController
 

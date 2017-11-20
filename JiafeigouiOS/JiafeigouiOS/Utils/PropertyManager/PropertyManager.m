@@ -50,6 +50,9 @@ NSString *const pLowBattery = @"POWER";
 NSString *const pAiRecognition = @"AI_RECOGNITION";
 NSString *const pAlarmDuration = @"INTERVAL_ALARM";
 NSString *const pRemoteWatchKey = @"REMOTE_VIEW";//是否支持省电模式
+NSString *const pInfraredEnhanced = @"INFRARED_ENHANCED_RECOGNITION";//红外增强
+
+
 
 @interface PropertyManager()
 

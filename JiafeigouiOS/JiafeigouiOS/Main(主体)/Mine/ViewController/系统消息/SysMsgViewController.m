@@ -259,7 +259,7 @@
 
 -(void)addFooter
 {
-    __weak
+    self.tableView.estimatedRowHeight = 0;
     MJRefreshAutoNormalFooter *footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
         
         if (self.dataArray.count && [LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess) {

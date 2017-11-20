@@ -339,6 +339,11 @@
     return 20.0f;
 }
 
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
+}
+
 - (nullable UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
 {
     NSDictionary *dataInfo = [[self.dataArray objectAtIndex:section] lastObject];

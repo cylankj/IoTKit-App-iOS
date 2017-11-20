@@ -12,9 +12,12 @@
 #import <JFGSDK/JFGSDKAcount.h>
 #import "BellModel.h"
 #import "SFCParamModel.h"
+#import "LiveTypeViewController.h"
+#import "YoutubeLiveStreamsModel.h"
 
 @class MessageModel;
 @class ExploreModel;
+@class MsgAIheaderModel;
 
 @interface JfgCacheManager : NSObject
 
@@ -75,6 +78,36 @@
 +(void)cacheDayJingcaiMsgList:(NSArray <ExploreModel *> *)list;
 //获取每日精彩本地缓存数据
 +(NSArray <ExploreModel *> *)getCacheForDayJingcai;
+
+#pragma mark- Live相关
+
+//获取存储的Live相关数据模型
++(LiveTypeModel *)liveModelForCid:(NSString *)cid;
+//更新或者添加Live相关数据模型
++(void)updateLiveModel:(LiveTypeModel *)model;
+
++(YoutubeLiveStreamsModel *)youtubeModelForCid:(NSString *)cid;
+
++(void)updateYoutubeModel:(YoutubeLiveStreamsModel *)model;
+
+//缓存AI相关消息
++(void)cacheMsgForAIDataCache:(NSDictionary *)dataDict cid:(NSString *)cid;
+
+//获取AI相关消息
++(NSDictionary *)getCacheForAIMsgWithCid:(NSString *)cid;
+
+/**
+ * 获取AI识别头像缓存数据
+ */
++(NSArray <MsgAIheaderModel *>*)getCacheMsgForAIIsFamiliarHeader:(BOOL)familiar cid:(NSString *)cid;
+
+/**
+ * 缓存AI识别头像缓存数据
+ */
++(void)cacheMsgForAIIsFamiliarHeader:(BOOL)familiar data:(NSArray <MsgAIheaderModel *> *)dataList cid:(NSString *)cid;
+
+//删除AI识别缓存消息（头像，报警）
++(void)removeCacheForAIMsgWithCid:(NSString *)cid;
 
 
 @end

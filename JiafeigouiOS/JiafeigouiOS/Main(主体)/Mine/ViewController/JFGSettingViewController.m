@@ -286,9 +286,19 @@
     return 20.0f;
 }
 
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
+}
+
 -(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
 {
     return 1;
+}
+
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
+{
+    return [UIView new];
 }
 
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
@@ -309,11 +319,10 @@
     }else if (dataModel.contentID == 3){
         
         __weak typeof(self) weakSelf = self;
-        [FLProressHUD showIndicatorViewFLHUDForStyleDarkWithView:self.view text:@"" position:FLProgressHUDPositionCenter];
-        
+        //[FLProressHUD showIndicatorViewFLHUDForStyleDarkWithView:self.view text:@"" position:FLProgressHUDPositionCenter];
+        [ProgressHUD showProgress:nil];
         [[SDImageCache sharedImageCache] clearDiskOnCompletion:^{
             
-            [FLProressHUD hideAllHUDForView:weakSelf.view animation:NO delay:0];
             [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips3"]];
             [weakSelf performSelector:@selector(hideProgressHUD) withObject:nil afterDelay:1];
             [weakSelf refreshData];

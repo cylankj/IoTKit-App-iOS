@@ -58,6 +58,9 @@
 
 @interface JFGSDKDeviceVersionInfo : NSObject
 
+
+@property (nonatomic,copy)NSString *cid;
+
 @property (nonatomic,assign)BOOL hasNewPkg;
 
 /**

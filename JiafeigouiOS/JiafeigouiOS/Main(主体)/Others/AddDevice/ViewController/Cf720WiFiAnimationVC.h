@@ -9,9 +9,16 @@
 #import <UIKit/UIKit.h>
 #import "JfgTypeDefine.h"
 
+typedef NS_ENUM(NSInteger,EventType) {
+    EventTypeConfigWifi,//配置wifi
+    EventTypeOpenAPModel,//开启Ap模式
+    EventTypeHotSpot,//设置热点
+};
+
 @interface Cf720WiFiAnimationVC : UIViewController
 
 @property (nonatomic, copy) NSString *cidStr;
-@property (nonatomic,assign)BOOL isAPModel;
+@property (nonatomic,assign)EventType eventType;
+
 
 @end

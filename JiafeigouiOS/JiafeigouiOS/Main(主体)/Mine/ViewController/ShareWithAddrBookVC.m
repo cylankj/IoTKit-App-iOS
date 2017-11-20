@@ -351,14 +351,6 @@
     }
 }
 
-//-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
-//{
-//    if (tableView == self.searchDisplayController.searchResultsTableView) {
-//        return 0;
-//    }else{
-//        return 25;
-//    }
-//}
 
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
     if (tableView == self.searchDisplayController.searchResultsTableView) {
@@ -756,6 +748,7 @@
         _contactTableView.showsHorizontalScrollIndicator = NO;
         [_contactTableView setTableFooterView:[UIView new]];
         _contactTableView .backgroundColor = [UIColor colorWithHexString:@"#f0f0f0"];
+        _contactTableView.sectionIndexBackgroundColor = [UIColor clearColor];
         [_contactTableView setSeparatorColor:TableSeparatorColor];
         [_contactTableView registerClass:[ContactCell class] forCellReuseIdentifier:@"cCell"];
     }

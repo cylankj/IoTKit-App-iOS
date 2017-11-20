@@ -33,6 +33,10 @@ NSString *const oemShowCopyRightKey = @"showCopyRight";
 
 NSString *const oemShowProtocolKey = @"showProtocol";
 
+NSString *const oemRobotHostKey = @"jfgOemRobotHostKey_";
+NSString *const oemRobotPostKey = @"jfgOemRobotPostKey_";
+
+
 @interface OemManager : NSObject
 
 // oem 类型

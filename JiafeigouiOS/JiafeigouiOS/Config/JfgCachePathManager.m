@@ -69,6 +69,13 @@
     return homeDic;
 }
 
++(NSString *)liveModelCachePath
+{
+    NSString *homeDic = [[self class] cylanDic];
+    homeDic = [homeDic stringByAppendingPathComponent:@"liveModelCachePath.db"];
+    return homeDic;
+}
+
 //主目录
 +(NSString *)cylanDic
 {
@@ -87,6 +94,34 @@
         [fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:nil];
     }
     return path;
+}
+
++(NSString *)youtubeModelPath
+{
+    NSString *homeDic = [[self class] cylanDic];
+    homeDic = [homeDic stringByAppendingPathComponent:@"youtubeModelCachePath.db"];
+    return homeDic;
+}
+
++(NSString *)msgForAIDataPathForCid:(NSString *)cid
+{
+    NSString *homeDic = [[self class] cylanDic];
+    homeDic = [homeDic stringByAppendingPathComponent:[NSString stringWithFormat:@"msgForAI_%@.db",cid]];
+    return homeDic;
+}
+
++(NSString *)msgForAIDataFamiliarHeaderForCid:(NSString *)cid
+{
+    NSString *homeDic = [[self class] cylanDic];
+    homeDic = [homeDic stringByAppendingPathComponent:[NSString stringWithFormat:@"msgForAIFamiliHeader_%@.db",cid]];
+    return homeDic;
+}
+
++(NSString *)msgForAIDataUnfamiliarHeaderForCid:(NSString *)cid
+{
+    NSString *homeDic = [[self class] cylanDic];
+    homeDic = [homeDic stringByAppendingPathComponent:[NSString stringWithFormat:@"msgForAIUnFamiliarHeader_%@.db",cid]];
+    return homeDic;
 }
 
 @end

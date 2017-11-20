@@ -48,6 +48,10 @@
 #import "OemManager.h"
 #import "LSAlertView.h"
 #import "MsgFor720ViewController.h"
+#import <GoogleSignIn/GIDSignIn.h>
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
+#import <FBSDKLoginKit/FBSDKLoginManager.h>
+//GGLContext
 
 #define USERGETUISDK 1   //是否使用个推sdk
 
@@ -65,6 +69,10 @@
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.backgroundColor = [UIColor whiteColor];
     
+//    if (@available(iOS 11.0, *)){
+//        [[UIScrollView appearance] setContentInsetAdjustmentBehavior:UIScrollViewContentInsetAdjustmentNever];
+//    }
+
     [self config];
     
     //开启网络监测
@@ -75,7 +83,13 @@
     
     //初始化SHARESDk
     [FLShareSDKHelper registerPlatforms];
+    [[FBSDKApplicationDelegate sharedInstance] application:application
+                             didFinishLaunchingWithOptions:launchOptions];
     
+    //如果已经对facebook进行过授权，每次进入客户端更新token
+    [FBSDKLoginManager renewSystemCredentials:^(ACAccountCredentialRenewResult result, NSError *error) {
+        
+    }];
     
     [self customizeBuglySDKConfig];
     
@@ -183,6 +197,14 @@
     //扬声器改变通知处理
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(routeChange:)  name:AVAudioSessionRouteChangeNotification object:[AVAudioSession sharedInstance]];
 
+#if DEBUG 
+    //内存泄漏监控
+    
+    //iOS自带悬浮窗调试工具   http://www.cocoachina.com/ios/20170712/19817.html
+    //id overlayClass = NSClassFromString(@"UIDebuggingInformationOverlay");
+    //[overlayClass performSelector:NSSelectorFromString(@"prepareDebuggingOverlay")];
+#endif
+    
     return YES;
 }
 
@@ -291,6 +313,31 @@
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"failed register token error :[%@]",[error description]]];
 }
 
+- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<NSString *, id> *)options
+{
+    if ([[url absoluteString] hasPrefix:@"fb"]) {
+        return  [[FBSDKApplicationDelegate sharedInstance] application:app
+                                                               openURL:url
+                                                     sourceApplication:options[UIApplicationOpenURLOptionsSourceApplicationKey]
+                                                            annotation:options[UIApplicationOpenURLOptionsAnnotationKey]
+                 ];
+    }
+
+   
+    
+    return [[GIDSignIn sharedInstance] handleURL:url
+                               sourceApplication:options[UIApplicationOpenURLOptionsSourceApplicationKey]
+                                      annotation:options[UIApplicationOpenURLOptionsAnnotationKey]];
+    
+    // Your additional URL handling (if any) goes here.
+    
+    return NO;
+}
+
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
+{
+    return [self application:application openURL:url options:@{}];
+}
 
 #pragma mark
 #pragma mark  -- 页面跳转
@@ -309,7 +356,7 @@
     //加菲狗Nav
     UINavigationController *jfgNav = [[UINavigationController alloc]initWithRootViewController:[JiafeigouRootViewController new]];
     jfgNav.navigationBar.hidden = YES;
-    jfgNav.tabBarItem = [self tabBarItemWithNomalImage:[UIImage imageNamed:@"ico_cleve-dog_normal-拷贝"] selectedImage:[UIImage imageNamed:@"ico_cleve-dog"] title:[JfgLanguage getLanTextStrByKey:@"Tap1_TitleName"]];
+    jfgNav.tabBarItem = [self tabBarItemWithNomalImage:[UIImage imageNamed:@"ico_cleve_dog_normal"] selectedImage:[UIImage imageNamed:@"ico_cleve_dog"] title:[JfgLanguage getLanTextStrByKey:@"Tap1_TitleName"]];
     
     //我的Nav
     MineRootViewController *mineVC = [MineRootViewController new];
@@ -513,6 +560,7 @@
             [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGDoorBellIsCallingKey];
             [[NSNotificationCenter defaultCenter] postNotificationName:JFGDoorBellIsCallingKey object:cid];
             //30s 后恢复为呼叫状态，防止其他页面忘记恢复
+            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(resetDoorBellCallStatues) object:nil];
             [self performSelector:@selector(resetDoorBellCallStatues) withObject:nil afterDelay:30];
             DoorVideoVC *doorVideo = [[DoorVideoVC alloc] init];
             doorVideo.pType = productType_DoorBell;
@@ -628,6 +676,8 @@
     
     [GeTuiSdk sendFeedbackMessage:90001 andTaskId:taskId andMsgId:msgId];
 }
+
+#pragma mark- google Delegate
 
 #pragma mark -Weixin
 -(void)onResp:(BaseResp *)resp

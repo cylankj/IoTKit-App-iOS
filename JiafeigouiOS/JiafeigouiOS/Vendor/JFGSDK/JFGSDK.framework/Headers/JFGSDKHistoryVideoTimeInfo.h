@@ -18,9 +18,14 @@
 @property (nonatomic,assign)int64_t beginTime;
 
 /*!
- *  持续时长
+ *  持续时长(单位：s)
  */
 @property (nonatomic,assign)int duration;
+
+/**
+ *  全景摄像头模式定义：吊顶，MODE_TOP=0 壁挂 MODE_WALL=1
+ */
+@property (nonatomic,assign)int mode;
 
 @end
 

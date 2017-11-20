@@ -674,13 +674,17 @@
  *  萝卜头透传消息
  *
  *  @param msgData 透传消息内容
+ *  @param cid   设备标示
  *  @param mid   消息号
  *  @return seq  消息标记
  
  ~English
  *  @param msgData message
  */
-+(uint64_t)sendUniversalData:(NSData *)msgData forMsgID:(int)mid;
++(uint64_t)sendUniversalData:(NSData *)msgData cid:(NSString *)cid forMsgID:(int)mid;
+
+
++(uint64_t)sendUniversalData:(NSData *)msgData forMsgID:(int)mid NS_DEPRECATED_IOS(1.0, 8.0, "Use +sendUniversalData:cid:forMsgID:") __TVOS_PROHIBITED;
 
 #pragma mark 文件上传
 /**

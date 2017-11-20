@@ -178,6 +178,12 @@
             [self updateData];
             return;
         }
+        else if (self.autoModel.sdCardError != 0)
+        {
+            [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"VIDEO_SD_DESC"]];
+            [self updateData];
+            return;
+        }
         
         [self updateMoveRecord:changedValue];
     }

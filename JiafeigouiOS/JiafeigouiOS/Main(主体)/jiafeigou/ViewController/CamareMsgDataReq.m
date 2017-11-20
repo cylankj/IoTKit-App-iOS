@@ -78,7 +78,9 @@
                     }else{
                         messageModel.manNum = 0;
                     }
-                    
+                    if (values.count>7) {
+                        messageModel.face_idList = values[7];
+                    }
                     if (seg.msgId == 512) {
                         messageModel.deviceVersion = 3;
                     }else{

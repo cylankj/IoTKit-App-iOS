@@ -234,6 +234,7 @@ typedef NS_ENUM(NSInteger, controlTag) {
     
 #pragma mark foot
     // footer refresh block
+    self.panoTableView.estimatedRowHeight = 0;
     self.panoTableView.mj_footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
         
         switch (weakSelf.pano720VM.fileExistType)
@@ -997,7 +998,8 @@ typedef NS_ENUM(NSInteger, controlTag) {
             }
         }
     }
-    self.bottomBiew.deleteButton.enabled = [self.panoTableView indexPathsForSelectedRows]>0;
+    NSArray *rows = [self.panoTableView indexPathsForSelectedRows];
+    self.bottomBiew.deleteButton.enabled = rows.count>0;
     self.allCanSelectedRows = [[self.panoTableView indexPathsForSelectedRows] count];
 }
 
@@ -1322,6 +1324,11 @@ typedef NS_ENUM(NSInteger, controlTag) {
     return 1.0f;
 }
 
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
+{
+    return [UIView new];
+}
+
 -(BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
 {
     return YES;
@@ -1391,7 +1398,8 @@ typedef NS_ENUM(NSInteger, controlTag) {
 {
     if (self.panoTableView.editing == YES)
     {
-        self.bottomBiew.deleteButton.enabled = [self.panoTableView indexPathsForSelectedRows]>0;
+        //NSArray *rows = [self.panoTableView indexPathsForSelectedRows];
+        self.bottomBiew.deleteButton.enabled = [self.panoTableView indexPathsForSelectedRows].count>0;
         
         if (self.delModel == DeleteModel_DeleteAll)
         {
@@ -1430,7 +1438,7 @@ typedef NS_ENUM(NSInteger, controlTag) {
 {
     if (self.panoTableView.editing == YES)
     {
-        self.bottomBiew.deleteButton.enabled = [self.panoTableView indexPathsForSelectedRows]>0;
+        self.bottomBiew.deleteButton.enabled = [self.panoTableView indexPathsForSelectedRows].count>0;
         
         if (self.delModel == DeleteModel_DeleteAll)
         {

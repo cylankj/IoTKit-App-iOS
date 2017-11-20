@@ -212,7 +212,12 @@
 
 -(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
 {
-    return 0.0f;
+    return 1.0f;
+}
+
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
 }
 
 
@@ -280,7 +285,13 @@
         }
             
             break;
+        case 8:{
+            AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+            addDeviceGuide.pType = productType_AI_Camera_outdoor;
+            [self.navigationController pushViewController:addDeviceGuide animated:YES];
+        }
             
+            break;
         default:
             break;
     }

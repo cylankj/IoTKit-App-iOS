@@ -186,6 +186,7 @@
                 [fileManager removeItemAtPath:filePath2 error:nil];
             }
             [JfgCacheManager removeSfcPatamModelForCid:delCid];
+            [JfgCacheManager removeCacheForAIMsgWithCid:delCid];
         }
         
         
@@ -455,6 +456,8 @@
             cell.iconImage1.image = [UIImage imageNamed:@"ico_2g"];
         }else if(dev.netType == JFGNetType3G){
             cell.iconImage1.image = [UIImage imageNamed:@"ico_3g"];
+        }else if (dev.netType == JFGNetTypeWired){
+            cell.iconImage1.image = [UIImage imageNamed:@"home_icon_wired"];
         }
 
         
@@ -621,16 +624,12 @@
                             cell.iconImage2.image = [UIImage imageNamed:@"ico_standby_status"];
                         }
                     }
-                    
-                    
                 }
-                
             }
         }
-
     }
     //[JFGSDK appendStringToLogFile:@"执行刷新cell"];
-    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cellForRow[uuid:%@ pid:%@ net:%ld]",dev.uuid,dev.pid,dev.netType]];
+    //[JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cellForRow[uuid:%@ pid:%@ net:%ld]",dev.uuid,dev.pid,dev.netType]];
     
     return cell;
 }
@@ -646,7 +645,7 @@
     
     if (dev.deviceType == JFGDeviceTypeDoorBell) {
         
-        if (dev.unReadMsgCount == 0 || dev.netType == JFGNetTypeOffline) {
+        if (dev.unReadMsgCount == 0) {
             msgString = [JfgLanguage getLanTextStrByKey:@"Tap1_NoMessages"];
             timeString = @"";
             isHiddenRedPoint = YES;
@@ -667,7 +666,7 @@
             unreadCount = (int)dev.unReadMsgCount;
         }
         
-        if (unreadCount == 0 || dev.netType == JFGNetTypeOffline) {
+        if (unreadCount == 0) {
             
             msgString = [JfgLanguage getLanTextStrByKey:@"Tap1_NoMessages"];
             timeString = @"";

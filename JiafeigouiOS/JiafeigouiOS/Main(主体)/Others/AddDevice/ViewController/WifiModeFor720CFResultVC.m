@@ -57,7 +57,7 @@
 {
     if (!_tipImageView) {
         _tipImageView = [[UIImageView alloc]initWithImage:self.isAPModeFinished?[UIImage imageNamed:@"pic_ap_finish"]:[UIImage imageNamed:@"pic_home_finish_model"]];
-        _tipImageView.top = self.view.height*0.3;
+        _tipImageView.top = self.view.height*0.27;
         _tipImageView.x = self.view.x;
     }
     return _tipImageView;

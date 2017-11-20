@@ -141,7 +141,7 @@
 
 -(void)exitAction
 {
-    if (self.navigationController.viewControllers>0) {
+    if (self.navigationController.viewControllers.count>0) {
         UIViewController *fristView = [self.navigationController.viewControllers objectAtIndex:0];
         [self.navigationController popToViewController:fristView animated:YES];
     }

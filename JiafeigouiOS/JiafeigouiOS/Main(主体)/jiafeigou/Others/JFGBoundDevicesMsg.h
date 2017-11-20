@@ -2,7 +2,7 @@
 //  JFGBoundDevicesMsg.h
 //  JiafeigouiOS
 //
-//  Created by 杨利 on 16/8/8.
+//  Created by yangli on 16/8/8.
 //  Copyright © 2016年 lirenguang. All rights reserved.
 //
 

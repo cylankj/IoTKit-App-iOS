@@ -110,6 +110,23 @@
     
 }
 
+//红外增强
+-(void)updateInfraredStrengthen:(BOOL)isOpen
+{
+    DataPointSeg * seg = [[DataPointSeg alloc]init];
+    NSError * error = nil;
+    seg.msgId = dpMsgCamera_Infraredenhanced;
+    seg.value = [MPMessagePackWriter writeObject:@(isOpen) error:&error];
+    NSArray * dps = @[seg];
+    [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dps success:^(NSMutableDictionary *dic) {
+        self.safeProtectmodel.isOpenInfraredStrengthen = isOpen;
+        [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+        [self update];
+    } failed:^(RobotDataRequestErrorType error) {
+        
+    }];
+}
+
 - (void)updateMoveDection:(BOOL)isOpen
 {
     DataPointSeg * seg = [[DataPointSeg alloc]init];
@@ -196,6 +213,7 @@
         
         self.safeProtectmodel.isWarnEnable = [[dict objectForKey:dpMsgCameraWarnEnableKey] boolValue];
         self.safeProtectmodel.sensitive = [[dict objectForKey:dpMsgCameraWarnSenKey] intValue];
+        self.safeProtectmodel.isOpenInfraredStrengthen = [[dict objectForKey:dpMsgCameraInfraredEnhanced] intValue];
         
         NSArray *soundArray = [dict objectForKey:dpMsgCameraWarnSoundKey];
         if (soundArray.count >= 2)
@@ -241,10 +259,15 @@
         
         NSArray *safePro = [self safeProctection];
         NSArray *warnSound = [self warnSoundRow];
-        
-        if (safePro.count > 0)
+        NSArray *infraredEnhanced = [self infraredEnhanced];
+        if (safePro.count)
         {
             [self.groupArray addObject:safePro];
+        }
+        
+        if (infraredEnhanced.count)
+        {
+            [self.groupArray addObject:infraredEnhanced];
         }
         
         if (warnSound.count > 0)
@@ -378,7 +401,27 @@
     
     return safes;
 }
-
+//红外增强
+- (NSMutableArray *)infraredEnhanced
+{
+    if ([PropertyManager showPropertiesRowWithPid:self.pType key:pInfraredEnhanced])
+    {
+        NSMutableArray *infraredEnhanced = [NSMutableArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
+                                                                      @"",cellIconImageKey,
+                                                                      [JfgLanguage getLanTextStrByKey:@"INFRARED_IDENTIFY_SET"],cellTextKey,
+                                                                      idCellInfraredEnhanced, cellUniqueID,
+                                                                      [JfgLanguage getLanTextStrByKey:@""],cellDetailTextKey,
+                                                                      @(self.safeProtectmodel.isOpenInfraredStrengthen),isCellSwitchOn,
+                                                                      @1,cellshowSwitchKey,
+                                                                      @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                                                                      nil], nil];
+        
+        
+        return infraredEnhanced;
+    }
+    
+    return nil;
+}
 
 #pragma mark
 #pragma mark  安全防护 缓存 存取
@@ -435,7 +478,7 @@
                                          @(dpMsgBase_SDCardInfoList),
                                          @(dpMsgCamera_WarnDuration),
                                          @(dpMsgCamera_AIRecgnition)
-                                         ]];
+                                         ,@(dpMsgCamera_Infraredenhanced)]];
         
     }
     return _dpsArray;

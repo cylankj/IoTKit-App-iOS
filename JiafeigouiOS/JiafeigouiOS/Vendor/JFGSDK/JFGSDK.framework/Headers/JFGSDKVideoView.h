@@ -67,6 +67,23 @@
 
 
 /**
+ *  获取历史视频列表V2
+ *
+ *  @param cid 设备标示
+ *  @param searchWay 查询方式
+    按分钟查询，会返回具体有录像的时间点以及持续时长
+    如果按天查询，只会返回有数据那天的时间戳（当天具体有录像的时间点，请再次使用按分钟查询）
+ *  @param timeEnd 查询数据结束时间（会跟据range参数往回查询range天）
+ *  @param range 查询范围 ，表示range天
+ *  回调 #jfgHistoryVideoList:
+ */
+-(void)getHistoryVideoListV2:(NSString *)cid
+                   searchWay:(JFGHistorySearchWayType)searchWay
+                   timeEnd:(int)timeEnd
+                 searchRange:(int)range;
+
+
+/**
  *  截图
  *
  *  @param local 本地，远程

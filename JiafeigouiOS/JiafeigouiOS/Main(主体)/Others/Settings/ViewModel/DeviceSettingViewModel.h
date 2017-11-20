@@ -10,6 +10,7 @@
 #import <UIKit/UIKit.h>
 #import "BaseViewModel.h"
 #import "JfgTypeDefine.h"
+#import "DeviceSettingModel.h"
 
 @protocol DeviceSettingVMDelegate <NSObject>
 
@@ -27,6 +28,8 @@
 @property (copy, nonatomic) NSString * alias;
 
 @property (weak,nonatomic)UIViewController *fwVC;
+
+@property (nonatomic,readonly)DeviceSettingModel *settingModel;
 
 - (NSArray *)dataArrayFromViewModelWithProductType:(productType)type Cid:(NSString *)cid;
 

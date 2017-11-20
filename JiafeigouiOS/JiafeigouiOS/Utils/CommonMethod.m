@@ -335,6 +335,16 @@ NSInteger nameSort(id mod1, id mod2,void*context)
             ap = [NSString stringWithFormat:@"RS-CAM-%@", [cid substringFromIndex:6]];
         }
             break;
+        case productType_AI_Camera:
+        {
+            ap = [NSString stringWithFormat:@"DOG-10W-%@", [cid substringFromIndex:6]];
+        }
+            break;
+        case productType_AI_Camera_outdoor:
+        {
+            ap = [NSString stringWithFormat:@"DOG-11W-%@", [cid substringFromIndex:6]];
+        }
+            break;
         default:
             break;
     }
@@ -1011,9 +1021,16 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     return NO;
 }
 
++(BOOL)isOutdoorDevForOS:(NSString *)os
+{
+    if ([os isEqualToString:@"84"]) {
+        return YES;
+    }
+    return NO;
+}
+
 +(JFGDevViewType)devBigTypeForOS:(NSString *)os
 {
-    
     PropertyManager *_propertyTool = [[PropertyManager alloc] init];
     _propertyTool.propertyFilePath = [[NSBundle mainBundle] pathForResource:@"properties" ofType:@"json"];
     NSString *str = [_propertyTool propertyWithPid:[os intValue] key:pViewShapeKey];

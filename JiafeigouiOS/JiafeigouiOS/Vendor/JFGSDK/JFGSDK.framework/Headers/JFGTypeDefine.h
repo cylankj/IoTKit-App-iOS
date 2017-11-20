@@ -119,6 +119,14 @@ typedef NS_ENUM (NSUInteger, JFGErrorType){
     JFGErrorTypeConnect,
 };
 
+
+typedef NS_ENUM (NSUInteger,JFGHistorySearchWayType){
+    
+    JFGHistorySearchWayTypeByMin,//按分钟查询
+    JFGHistorySearchWayTypeByDay,//按天查询
+    
+};
+
 //好友相关操作结果
 typedef NS_ENUM (NSUInteger,JFGFriendResultType)
 {

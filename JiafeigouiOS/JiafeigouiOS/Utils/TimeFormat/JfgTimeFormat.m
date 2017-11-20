@@ -32,6 +32,31 @@
     return currentDateStr;
 }
 
++(NSString *)transToAITime:(int)timestamp
+{
+    int currentTimestamp = [[NSDate date] timeIntervalSince1970];
+    int c = currentTimestamp - timestamp;
+    if (c<=60*60) {
+        //一小时内
+        return [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"MESSAGES_TIME_MIN"],[NSString stringWithFormat:@"%d",c/60]];
+        
+    }else if(c<=60*60*24){
+        //一天内
+        return [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"MESSAGES_TIME_HOUR"],[NSString stringWithFormat:@"%d",c/60/60]];
+        
+    }else if (c<=60*60*24*7){
+        //七天内
+        return [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"MESSAGES_TIME_DAY"],[NSString stringWithFormat:@"%d",c/60/60/24]];
+    }else{
+        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+        [dateFormatter setTimeZone:[NSTimeZone localTimeZone]];
+        [dateFormatter setDateFormat:@"yyyy/MM/dd"];
+        NSDate *oldDate = [[NSDate alloc]initWithTimeIntervalSince1970:timestamp];
+        return [dateFormatter stringFromDate:oldDate];
+    }
+    
+}
+
 //时间戳--->时间
 +(NSString *)transToHHmm:(NSString *)timsp{
     

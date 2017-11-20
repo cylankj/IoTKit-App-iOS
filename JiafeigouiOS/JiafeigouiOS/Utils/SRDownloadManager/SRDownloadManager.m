@@ -105,7 +105,10 @@
     downloadModel.state = state;
     downloadModel.progress = progress;
     downloadModel.completion = completion;
-    self.downloadModels[SRFileName(URL)] = downloadModel;
+    
+    if (SRFileName(URL) && downloadModel) {
+        self.downloadModels[SRFileName(URL)] = downloadModel;
+    }
     
     [dataTask resume];
     dispatch_async(dispatch_get_main_queue(), ^{

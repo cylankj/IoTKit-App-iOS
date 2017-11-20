@@ -44,6 +44,7 @@ NSString *const cellUniqueID = @"_celluuid";
 NSString *const deviceInfo = @"_deviceInfo";
 NSString *const wifiConfig = @"_wifiConfig";
 NSString *const hotWireless = @"_hotWireless";
+NSString *const phoneHotspot = @"_phoneHotspot";
 NSString *const mobileConfig = @"_mobileConfig";
 NSString *const apConnectting = @"_apConnectting";
 NSString *const safeProtect = @"_safeProtect";
@@ -78,5 +79,6 @@ NSString *const idCellAlramDutaion = @"_idCellAlramDutaion";
 NSString *const idCellWarnBeginTime = @"_idCellWarnBeginTime";
 NSString *const idCellWarnEndTime = @"_idCellWarnEndTime";
 NSString *const idCellRepeatTime = @"_idCellRepeatTime";
+NSString *const idCellInfraredEnhanced = @"_idCellInfraredEnhanced";
 
 #endif /* JfgTableViewCellKey_h */

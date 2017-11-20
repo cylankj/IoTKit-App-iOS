@@ -2,7 +2,7 @@
 //  JFGGrayPolicyManager.m
 //  JiafeigouiOS
 //
-//  Created by 杨利 on 2017/8/14.
+//  Created by yangli on 2017/8/14.
 //  Copyright © 2017年 lirenguang. All rights reserved.
 //
 
@@ -14,7 +14,8 @@
 #import "FTBase64.h"
 #import "PropertyManager.h"
 #import <JFGSDK/JFGSDKDataPoint.h>
-
+#import <JFGSDK/JFGSDK.h>
+#import "OemManager.h"
 #define ISOPENGRAY YES   //是否开启灰度测试
 
 NSString *const grayTokenKey = @"grayTokenKey_";
@@ -37,6 +38,12 @@ NSString *const graySupportKey = @"graySupportKey_";
         if ([responseObject isKindOfClass:[NSDictionary class]]) {
             
             NSDictionary *dict = responseObject;
+            NSError *parseError = nil;
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:dict options:NSJSONWritingPrettyPrinted error:&parseError];
+            if (!parseError) {
+                NSString *logStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                [JFGSDK appendStringToLogFile:logStr];
+            }
             int ret = [dict[@"ret"] intValue];
             if (ret == 0) {
                 NSString *token = dict[@"token"];
@@ -57,9 +64,8 @@ NSString *const graySupportKey = @"graySupportKey_";
 +(void)reqGrayPolicy
 {
     if (![[self class] isAllowableReq]) {
-        return;
+        //return;
     }
-    
     NSString *account = [LoginManager sharedManager].currentLoginedAcount;
     
     NSString *token = [[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"%@_%@",grayTokenKey,account]];
@@ -72,7 +78,7 @@ NSString *const graySupportKey = @"graySupportKey_";
     NSMutableDictionary *dict = [NSMutableDictionary new];
     [dict setObject:@"report_data" forKey:@"act"];
     [dict setObject:token forKey:@"Token"];
-    [dict setObject:@"0001" forKey:@"vid"];
+    [dict setObject:[OemManager getOemVid] forKey:@"vid"];
     [dict setObject:account forKey:@"account"];
     [dict setObject:app_build forKey:@"version"];
     [dict setObject:[[UIDevice currentDevice] systemVersion] forKey:@"sys_version"];
@@ -86,7 +92,7 @@ NSString *const graySupportKey = @"graySupportKey_";
     for (JiafeigouDevStatuModel *model in devicesList) {
         NSMutableDictionary *devDict = [NSMutableDictionary new];
         [devDict setObject:model.uuid forKey:@"cid"];
-        [devDict setObject:@"0001" forKey:@"vid"];
+        [devDict setObject:[OemManager getOemVid] forKey:@"vid"];
         [devDict setObject:[NSNumber numberWithInt:[model.pid intValue]] forKey:@"pid"];
         [devDict setObject:[NSNumber numberWithInt:1] forKey:@"region"];
         [devList addObject:devDict];
@@ -97,15 +103,19 @@ NSString *const graySupportKey = @"graySupportKey_";
         
         if ([responseObject isKindOfClass:[NSDictionary class]]) {
             NSDictionary *dict = responseObject;
+            NSError *parseError = nil;
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:dict options:NSJSONWritingPrettyPrinted error:&parseError];
+            if (!parseError) {
+                NSString *logStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                [JFGSDK appendStringToLogFile:logStr];
+            }
             int ret = [dict[@"ret"] intValue];
             if (ret == 4) {
                 //token失效
                 [self reqGrayToken];
             }else if (ret == 0){
                 
-                
                 NSString *base64String = dict[@"gray"];
-                
                 //如果数据被回滚了，gray字段会返回空字符串，这时候要关掉AI
                 if (base64String == nil || [base64String isEqualToString:@""]) {
                     if ([[self class] isSupportAIForCurrentAcount]) {
@@ -182,10 +192,8 @@ NSString *const graySupportKey = @"graySupportKey_";
             } failure:^(RobotDataRequestErrorType type) {
                 
             }];
-            
         }
     }
-   
 }
 
 +(void)afNetWorkingForGrayWithPatameters:(NSDictionary *)parameters sucess:(void (^)(id responseObject))sucess failure:(void (^)(NSError *error))failure
@@ -196,7 +204,25 @@ NSString *const graySupportKey = @"graySupportKey_";
     //申明请求的数据是json类型
     manager.requestSerializer = [AFJSONRequestSerializer serializer];
     
-    NSString *url = [NSString stringWithFormat:@"http://yf.jfgou.com:80/gray"];
+    NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
+    
+    NSString *host = [infoDictionary objectForKey:@"Jfgsdk_host"];
+    if (!host || [host isEqualToString:@""]) {
+        host = @"yun.jfgou.com";
+    }
+    
+    //如果手动修改了地址
+    NSString *jfgServer = [[NSUserDefaults standardUserDefaults] objectForKey:@"_jfg_changedDomain_"];
+    
+    if (jfgServer && [jfgServer isKindOfClass:[NSString class]] && ![jfgServer isEqualToString:@""]) {
+        NSRange range = [jfgServer rangeOfString:@":"];
+        if (range.location != NSNotFound) {
+            host = [jfgServer substringToIndex:range.location];
+        }
+    }
+    //http   80   https  8081       NSString *url = [NSString stringWithFormat:@"http://yf.jfgou.com:80/gray"];
+
+    NSString *url = [NSString stringWithFormat:@"http://%@:80/gray",host];
     [manager POST:url parameters:parameters progress:^(NSProgress * _Nonnull uploadProgress) {
         
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
@@ -205,7 +231,7 @@ NSString *const graySupportKey = @"graySupportKey_";
             sucess(responseObject);
         }
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-        NSLog(@"%@",error);
+        NSLog(@"grayerror:%@",error);
         if (failure) {
             failure(error);
         }
@@ -215,7 +241,6 @@ NSString *const graySupportKey = @"graySupportKey_";
 +(BOOL)isAllowableReq
 {
     //灰度接口目前服务端未测试，先屏蔽下面代码，禁止请求接口
-    
     if (ISOPENGRAY) {
         NSString *account = [LoginManager sharedManager].currentLoginedAcount;
         NSTimeInterval lastestTime = [[[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"%@_%@",grayReqTimeKey,account]] longLongValue];

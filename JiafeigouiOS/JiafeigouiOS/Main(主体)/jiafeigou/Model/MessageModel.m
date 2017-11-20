@@ -139,6 +139,7 @@
     return nil;
 }
 
+
 - (NSString *)rightImageUrl
 {
     if (self.imageNum>>2 & 0x1)
@@ -147,6 +148,7 @@
     }
     return nil;
 }
+
 
 - (NSString *)imageUrlWithOrder:(int)order
 {

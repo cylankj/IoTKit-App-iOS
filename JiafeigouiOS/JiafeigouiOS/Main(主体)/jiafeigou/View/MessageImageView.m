@@ -74,19 +74,23 @@
     
     MessageViewCell * cell = (MessageViewCell *)resultView;
     
-     int64_t timestamp = cell.timestamp;
+    int64_t timestamp = cell.timestamp;
+    
+    if (timestamp>10000000000) {
+        timestamp = timestamp/1000;
+    }
      NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
      
      
-     NSDate *msgDate = [NSDate dateWithTimeIntervalSince1970:timestamp/1000];
+     NSDate *msgDate = [NSDate dateWithTimeIntervalSince1970:timestamp];
      [formatter setDateFormat:@"yyyy"];
      NSInteger msgYear = [[formatter stringFromDate:msgDate] integerValue];
      NSInteger currentYear = [[formatter stringFromDate:[NSDate date]] integerValue];
      
      if (msgYear == currentYear) {
-     [formatter setDateFormat:@"MM.dd-HH:mm"];
+        [formatter setDateFormat:@"MM.dd-HH:mm"];
      }else{
-     [formatter setDateFormat:@"yyyy.MM.dd-HH:mm"];
+        [formatter setDateFormat:@"yyyy.MM.dd-HH:mm"];
      }
      
      NSString *title = [formatter stringFromDate:msgDate];

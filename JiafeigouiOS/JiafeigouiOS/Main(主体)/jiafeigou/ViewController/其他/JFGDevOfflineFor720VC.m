@@ -70,7 +70,7 @@
 {
     Cf720WiFiAnimationVC *wifiAn = [Cf720WiFiAnimationVC new];
     wifiAn.cidStr = self.cid;
-    wifiAn.isAPModel = isAPModel;
+    wifiAn.eventType = isAPModel?EventTypeOpenAPModel:EventTypeConfigWifi;
     [vc.navigationController pushViewController:wifiAn animated:YES];
 }
 

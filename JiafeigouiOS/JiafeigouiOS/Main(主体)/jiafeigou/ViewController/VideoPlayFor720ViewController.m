@@ -48,6 +48,12 @@
 #import "MsgFor720ViewController.h"
 #import "JFGDevOfflineFor720VC.h"
 #import "BaseNavgationViewController.h"
+#import "LiveTypeViewController.h"
+#import "JfgCacheManager.h"
+#import "YoutubeConfig.h"
+#import "VideoPlayFor720ViewController+Youtube.h"
+#import "WeiboLiveAPIHelper.h"
+#import "FacebookLiveAPIHelper.h"
 
 #define VIEW_REMOTERENDE_VIEW_TAG  10023
 #define SHOW_CANNOT_LOAD_IMAGE_TIP_KEY @"showCantloadImageTipKey"
@@ -60,7 +66,23 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     VideoRecordStatueLongRecording,//长视频录制
 };
 
-@interface VideoPlayFor720ViewController ()<JFGTakePhotoTouchActionDelegate,JFGSDKCallbackDelegate,AddDeviceGuideVCNextActionDelegate>
+//直播推流状态
+typedef NS_ENUM(NSInteger,LiveStreamState) {
+    LiveStreamStateNone,//啥都没干
+    LiveStreamStateCreating,//创建中
+    LiveStreamStateTestwork,//Live频道测试
+    LiveStreamStateStarting,//准备直播推流中
+    LiveStreamStatePlaying,//直播推流成功
+};
+
+//设备功能状态
+typedef NS_ENUM(NSInteger,VideoMode){
+    VideoModeCamare,//拍照模式
+    VideoModeRecord,//录像模式
+    VideoModeLive,//live模式
+};
+
+@interface VideoPlayFor720ViewController ()<JFGTakePhotoTouchActionDelegate,JFGSDKCallbackDelegate,AddDeviceGuideVCNextActionDelegate,LiveTypeViewControllerDelegate,YoutubeLiveAPIHelperDelegate>
 {
     videoPlayState playState;//视频播放状态
     VideoRecordStatue recordState;//录像状态
@@ -68,7 +90,8 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     int timeoutRequestCount;//连接超时计算
     BOOL isLowSpeed;//是否速率低于5k/s
     BOOL isWifi;//设备是否wifi在线
-    BOOL isCarameMode;//是否是拍照模式
+    VideoMode videoMode;//直播模式（录像，拍照，live）
+    LiveStreamState liveStreamState;//Live推流状态
     BOOL isShooting;//是否视频拍摄中
     BOOL isPrower;//充电中
     BOOL isShowedLANAlert;//是否显示过低电量弹窗
@@ -76,30 +99,36 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     int shortVideoTimeCount;//短视频时间记录
     NSTimer *shortVideoTimer;//短视频录制计时器
     NSTimer *fpingTimer;
-    JFGMsgForwardDataDownload *downloadManager;
-    BOOL isDevOffline;
-    BOOL isAddNotification;
-    BOOL isSetHomeMode;
-    BOOL isHaveSDCard;
-    BOOL isDidAppear;
-    BOOL isAudio;
-    BOOL isTalkBack;
-    NSString *devIpAddr;
+    BOOL isDevOffline;//设备是否离线
+    BOOL isAddNotification;//是否添加了视频相关代理通知
+    BOOL isSetHomeMode;//是否设置家居模式
+    BOOL isHaveSDCard;//是否有sd卡
+    BOOL isDidAppear;//是否在显现当前页面
+    BOOL isAudio;//是否开启声音
+    BOOL isTalkBack;//是否开启对讲
+    NSString *devIpAddr;//设备ip地址
     BOOL isShowLanAleartForPhoto;//公网拍照是否显示无法下载提示
     BOOL isUpdateing;//是否升级中
+    BOOL isLiving;//是否正在直播推流
+    
 }
-
-
 
 @property (nonatomic,strong)UIButton *settingBtn;
 @property (nonatomic, strong) UIImageView *redDotImageView;
 
 //底部一系类控件
-@property (nonatomic,strong)UIView *bottomBgView;
-@property (nonatomic,strong)UIButton *cameraModeBtn;
-@property (nonatomic,strong)UIButton *videoModeBtn;
-@property (nonatomic,strong)UIButton *albumsBtn;
-@property (nonatomic,strong)JFGTakePhotoButton *takePhotoBtn;
+@property (nonatomic,strong)UIView *bottomBgView;//底部控件背景
+@property (nonatomic,strong)UIButton *cameraModeBtn;//选择拍照模式按钮
+@property (nonatomic,strong)UIButton *videoModeBtn;//选择录像模式按钮
+@property (nonatomic,strong)UIButton *liveModeBtn;//选择直播模式按钮
+@property (nonatomic,strong)UIButton *albumsBtn;//进入相册按钮
+@property (nonatomic,strong)JFGTakePhotoButton *takePhotoBtn;//拍照或者录像按钮
+@property (nonatomic,strong)UIButton *liveControlBtn;//live结束开始按钮(不共用takePhotoBtn)
+@property (nonatomic,strong)UILabel *liveStateLabel;//live状态显示
+
+//live相关按钮
+@property (nonatomic,strong)UIButton *liveTypeBtn;
+@property (nonatomic,strong)UIButton *liveSettingBtn;
 
 //更多按钮相关
 @property (nonatomic,strong)UIButton *moreBtn;
@@ -134,7 +163,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 @property (nonatomic,strong)JFGTimepieceView *timepiceView;
 //短视频时间显示
 @property (nonatomic,strong)UILabel *shortVideoTimeLabel;
-
+//重试视图背景视图
 @property (nonatomic,strong)UIView *againBgView;
 
 @property (nonatomic,strong)JFGShortVideoRecordAnimation *recordAnimationView;
@@ -151,12 +180,27 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 @property (nonatomic,strong)UIView *warnRedPoint;
 
+@property (nonatomic,assign)NSInteger liveSeconds;
+
+@property (nonatomic,strong)WeiboLiveAPIHelper *weiboAPIHelper;
+
+@property (nonatomic,strong)FacebookLiveAPIHelper *facebookHelper;
+
 @end
 
 @implementation VideoPlayFor720ViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    videoMode = VideoModeCamare;
+    liveStreamState = LiveStreamStateNone;
+    
+    [GIDSignIn sharedInstance].clientID = ytbClientID;
+    //这个很重要，设置需要获取的API权限
+    [GIDSignIn sharedInstance].scopes = [NSArray arrayWithObjects:kGTLRAuthScopeYouTube,kGTLRAuthScopeYouTubeForceSsl,kGTLRAuthScopeYouTubeReadonly, nil];
+    [[GIDSignIn sharedInstance] signInSilently];//无界面登录
+    
     [self initData];
     [self btnDisenableStatue];//设备状态显示
     [JFGSDK addDelegate:self];
@@ -314,7 +358,8 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     
     //返回首页，移除代理相关
     if (self.navigationController.viewControllers.count<1) {
-        [JFGSDK removeDelegate:self];
+        
+        [JfgCacheManager updateLiveModel:self.liveModel];
     }
 }
 
@@ -770,7 +815,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 }
 
 
-//视频录制情况
+//视频录制，Live推流状态获取
 -(void)videoRecordstatusRequest
 {
     BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
@@ -813,28 +858,34 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     }
                     recordState = VideoRecordStatueNone;
                     weakSelf.settingBtn.enabled = YES;
+                    
                 }else if(videoType == 1){
+                    
+
                     //8s短视频
-                    if (isCarameMode) {
-                        [weakSelf videoModelAction];
-                        weakSelf.takePhotoBtn.selected = YES;
-                    }
+                    [weakSelf videoModelAction];
+                    weakSelf.takePhotoBtn.selected = YES;
+                    weakSelf.takePhotoBtn.hidden = NO;
+                    weakSelf.liveControlBtn.hidden = YES;
                     recordState = VideoRecordStatue8SRecording;
                     if (playState == videoPlayStatePlaying) {
                         [weakSelf btnStatueForShortVideoWithRemainSe:8-seconds];
                     }
                     weakSelf.settingBtn.enabled = NO;
+                    videoMode = VideoModeRecord;
+                    
                 }else if (videoType == 2){
                     //长视频
-                    if (isCarameMode) {
-                        [weakSelf videoModelAction];
-                        weakSelf.takePhotoBtn.selected = YES;
-                    }
+                    [weakSelf videoModelAction];
+                    weakSelf.takePhotoBtn.selected = YES;
+                    weakSelf.takePhotoBtn.hidden = NO;
+                    weakSelf.liveControlBtn.hidden = YES;
                     recordState = VideoRecordStatueLongRecording;
                     if (playState == videoPlayStatePlaying) {
                         [weakSelf btnStatueForLongVideoForSecounds:seconds];
                     }
                     weakSelf.settingBtn.enabled = NO;
+                    videoMode = VideoModeRecord;
                 }
                 [[NSNotificationCenter defaultCenter] postNotificationName:@"DevFor720VideoStatues" object:[NSDictionary dictionaryWithObjects:@[[NSNumber numberWithInt:videoType],weakSelf.devModel.uuid] forKeys:@[@"videoType",@"uuid"]]];
                 [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"videoRecordstatus:%@",dict]];
@@ -846,14 +897,114 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         }];
         
     }else{
-    
         [JFGSDK sendMsgForTcpWithDst:@[self.devModel.uuid] isAck:YES fileType:13 msg:[NSData data]];
-        
     }
-
+    
+    __weak typeof(self) weakSelf = self;
+    [[JFGSDKDataPoint sharedClient] robotGetSingleDataWithPeer:self.devModel.uuid msgIds:@[@517] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+        
+        for (NSArray *subArr in idDataList) {
+            for (DataPointSeg *seg in subArr) {
+                
+                [weakSelf liveStateDataDeal:seg.value];
+                
+            }
+        }
+        
+    } failure:^(RobotDataRequestErrorType type) {
+        
+    }];
+    
+    
 }
 
 
+#pragma mark- 517解析
+-(void)liveStateDataDeal:(NSData *)data
+{
+    id obj = [MPMessagePackReader readData:data error:nil];
+    if ([obj isKindOfClass:[NSArray class]]) {
+        
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"liveResult:%@",obj]];
+        /*
+         liveType int 直播类型：1 facebook; 2 youtube; 3 weibo; 4 rtmp
+         url      string rtmp推流地址。示例：rtmp://a.rtmp.youtube.com/live2
+         flag     int 状态特征值： 1 准备直播； 2 直播中； 3 直播结束；
+         secends  int 直播视频开始时间，单位秒（s）
+         error    int 错误特征值： 0 正确； 1 错误；
+         */
+        NSArray *sourArr = obj;
+        if (sourArr.count>=5) {
+            
+            //int liveType = [sourArr[0] intValue];
+            //NSString *rtmpUrl = sourArr[1];
+            int flag = [sourArr[2] intValue];
+            uint64_t secounds = [sourArr[3] longLongValue];
+            int error = [sourArr[4] intValue];
+            if (error == 0 && flag != 0) {
+                
+                
+                if (flag == 1) {
+                    
+                    isLiving = YES;
+                    videoMode = VideoModeLive;
+                    liveStreamState = LiveStreamStateCreating;
+                    [self btnStateForLiveWithState:liveStreamState secound:0];
+                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(liveCreateTimeout) object:nil];
+                    [self performSelector:@selector(liveCreateTimeout) withObject:nil afterDelay:10];
+                    
+                }else if (flag == 2){
+                    
+                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(liveCreateTimeout) object:nil];
+                    isLiving = YES;
+                    videoMode = VideoModeLive;
+                    self.liveSeconds = (int)secounds;
+                    if (self.liveModel.liveType == LivePlatformTypeYoutube) {
+                        
+                        liveStreamState = LiveStreamStateCreating;
+                        [self btnStateForLiveWithState:liveStreamState secound:[[NSDate date] timeIntervalSince1970] - secounds];
+                        [self startYoutubeLive];
+                        
+                        
+                    }else{
+                        
+                        liveStreamState = LiveStreamStatePlaying;
+                        [self btnStateForLiveWithState:liveStreamState secound:[[NSDate date] timeIntervalSince1970] - secounds];
+                        
+                    }
+                    
+                    
+                    
+                }else if (flag == 3){
+                    
+                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(liveCreateTimeout) object:nil];
+                    if (playState == videoPlayStatePlaying && isLiving) {
+                        [self btnStatueForCarame];
+                    }
+                    isLiving = NO;
+                    liveStreamState = LiveStreamStateNone;
+                    
+                }
+                
+            }else{
+                isLiving = NO;
+            }
+        }
+    }
+    
+}
+
+
+-(void)liveCreateTimeout
+{
+    liveStreamState = LiveStreamStateNone;
+    self.timepiceView.hidden = YES;
+    self.liveStateLabel.hidden = YES;
+    [self.liveStateLabel removeFromSuperview];
+    self.liveControlBtn.selected = NO;
+    isLiving = NO;
+    [self btnStatueForCarame];
+}
 
 #pragma mark- 20006
 -(void)jfgMsgRobotForwardDataV2AckForTcpWithMsgID:(NSString *)msgID
@@ -1009,6 +1160,10 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                      return;
                  }
                  self.warnRedPoint.hidden = NO;
+                 
+             }else if(seg.msgId == 517){
+                 
+                 [self liveStateDataDeal:seg.value];
              }
          }
      }
@@ -1019,6 +1174,121 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     //格式化失败
     [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"SD_ERR_3"]];
+}
+
+#pragma mark- live平台选择回调
+-(void)liveType:(LivePlatformType)platformType parameter:(NSDictionary *)parameter
+{
+    self.liveModel.liveType = platformType;
+    self.liveModel.cid = self.devModel.uuid;
+
+    if (platformType == LivePlatformTypeRTMP) {
+        
+        [self.liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_rtmp_normol"] forState:UIControlStateNormal];
+        [self.liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_rtmp_pressed"] forState:UIControlStateHighlighted];
+        
+        if ([parameter isKindOfClass:[NSDictionary class]]) {
+            
+            NSString *url = parameter[@"url"];
+            self.liveModel.liveStreamingUrl = url;
+            self.liveModel.liveType = platformType;
+            
+        }
+        
+    }else if (platformType == LivePlatformTypeWeibo){
+        
+        [self.liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_weibo_normol"] forState:UIControlStateNormal];
+        [self.liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_weibo_pressed"] forState:UIControlStateHighlighted];
+        self.liveModel.liveType = LivePlatformTypeWeibo;
+        self.liveModel.liveType = platformType;
+        self.liveModel.liveStreamingUrl = @"";
+        self.liveModel.watchUrl = @"";
+        self.liveModel.isValid = YES;
+        
+    }else if (platformType == LivePlatformTypeYoutube){
+        
+        [self.liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_youtube_normol"] forState:UIControlStateNormal];
+        [self.liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_youtube_pressed"] forState:UIControlStateHighlighted];
+        if ([parameter isKindOfClass:[NSDictionary class]]) {
+            
+            YoutubeLiveStreamsModel *model = parameter[@"model"];
+            self.liveModel.liveStreamingUrl = model.streamsUrl;
+            self.liveModel.watchUrl = model.watchUrl;
+            self.liveModel.isValid = model.isValid;
+            self.liveModel.cid = self.devModel.uuid;
+            NSMutableDictionary *dict = [NSMutableDictionary new];
+            [dict setObject:model.liveBroadcastID forKey:@"liveBroadcastID"];
+            [dict setObject:model.liveStreamsID forKey:@"liveStreamsID"];
+            self.liveModel.parameterDict = dict;
+            self.liveModel.liveType = LivePlatformTypeYoutube;
+            [JfgCacheManager updateLiveModel:self.liveModel];
+            
+        }
+        
+    }else if (platformType == LivePlatformTypeFacebook){
+        
+        [self.liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_facebook_normol"] forState:UIControlStateNormal];
+        [self.liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_facebook_pressed"] forState:UIControlStateHighlighted];
+        self.liveModel.isValid = YES;
+        
+    }
+}
+
+
+#pragma mark- youtube
+-(void)youtubeLiveStatue:(YoutubeLiveStatue)statue
+{
+    LiveStreamState stat = LiveStreamStateNone;
+    
+    if (statue == YoutubeLiveStatueUrlInvalid) {
+        
+        //地址失效，停止直播
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"LIVE_ADDRESS_EXPIRED"]];
+        DataPointSeg *seg = [DataPointSeg new];
+        seg.msgId = 516;
+        seg.value = [MPMessagePackWriter writeObject:@[self.liveModel.liveStreamingUrl?self.liveModel.liveStreamingUrl:@"",@(0)] error:nil];
+        __weak typeof(self) weakSelf = self;
+        [[JFGSDKDataPoint sharedClient] robotSetDataWithPeer:self.devModel.uuid dps:@[seg] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
+            
+            for (DataPointIDVerRetSeg *retSeg in dataList) {
+                
+                if (retSeg.ret == 0) {
+                    
+                    liveStreamState = LiveStreamStateNone;
+                    [weakSelf btnStatueForCarame];
+                    weakSelf.timepiceView.hidden = YES;
+                    weakSelf.liveStateLabel.hidden = YES;
+                    [weakSelf.liveStateLabel removeFromSuperview];
+                    weakSelf.liveControlBtn.selected = NO;
+                    
+                }
+                
+            }
+            
+        } failure:^(RobotDataRequestErrorType type) {
+            
+        }];
+        return;
+    }else if (statue == YoutubeLiveStatueInternetBad || statue == YoutubeLiveStatueTimeout){
+        
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"LIVE_FAILED"]];
+        liveStreamState = LiveStreamStateNone;
+        self.timepiceView.hidden = YES;
+        self.liveStateLabel.hidden = YES;
+        [self.liveStateLabel removeFromSuperview];
+        self.liveControlBtn.selected = NO;
+        isLiving = NO;
+        [self btnStatueForCarame];
+        return;
+        
+    }else if (statue == YoutubeLiveStatueAction){
+        stat = LiveStreamStateTestwork;
+    }else if (statue == YoutubeLiveStatueTesting){
+        stat = LiveStreamStateStarting;
+    }else{
+        stat = LiveStreamStatePlaying;
+    }
+    [self btnStateForLiveWithState:stat secound:[[NSDate date] timeIntervalSince1970] - self.liveSeconds];
 }
 
 #pragma mark- 720数据处理
@@ -1120,30 +1390,34 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
                     }
                     recordState = VideoRecordStatueNone;
                     self.settingBtn.enabled = YES;
-                    
+                   
                 }else if(videoType == 1){
                     //8s短视频，视频录制开始回调
-                    if (isCarameMode) {
-                        [self videoModelAction];
-                    }
+                    [self videoModelAction];
                     self.takePhotoBtn.selected = YES;
+                    self.takePhotoBtn.hidden = NO;
+                    self.liveControlBtn.hidden = YES;
                     recordState = VideoRecordStatue8SRecording;
                     if (playState == videoPlayStatePlaying) {
                         [self btnStatueForShortVideoWithRemainSe:8-secouds];
                     }
                     self.settingBtn.enabled = NO;
+                    videoMode = VideoModeRecord;
                     
                 }else if (videoType == 2){
                     //长视频
-                    if (isCarameMode) {
-                        [self videoModelAction];
-                    }
+                    
+                    [self videoModelAction];
                     self.takePhotoBtn.selected = YES;
+                    self.takePhotoBtn.hidden = NO;
+                    self.liveControlBtn.hidden = YES;
                     recordState = VideoRecordStatueLongRecording;
                     if (playState == videoPlayStatePlaying) {
                         [self btnStatueForLongVideoForSecounds:secouds];
                     }
                     self.settingBtn.enabled = NO;
+                    videoMode = VideoModeRecord;
+                    
                 }
                 
                 [[NSNotificationCenter defaultCenter] postNotificationName:@"DevFor720VideoStatues" object:[NSDictionary dictionaryWithObjects:@[[NSNumber numberWithInt:videoType],self.devModel.uuid] forKeys:@[@"videoType",@"uuid"]]];
@@ -1425,17 +1699,25 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [self.view addSubview:self.bottomBgView];
     [self.bottomBgView addSubview:self.cameraModeBtn];
     [self.bottomBgView addSubview:self.videoModeBtn];
+    [self.bottomBgView addSubview:self.liveModeBtn];
     [self.bottomBgView addSubview:self.albumsBtn];
     [self.bottomBgView addSubview:self.cameraRedPoint];
     if (self.devModel.unReadPhotoCount != 0) {
         self.cameraRedPoint.hidden = NO;
     }
     
+    self.liveControlBtn.hidden = YES;
+    [self.bottomBgView addSubview:self.liveControlBtn];
     [self.bottomBgView addSubview:self.takePhotoBtn];
+
     [self.bottomBgView addSubview:self.moreBtn];
     [self.bottomBgView addSubview:self.timepiceView];
     [self.bottomBgView addSubview:self.shortVideoTimeLabel];
     [self.bottomBgView addSubview:self.recordAnimationView];
+    self.liveTypeBtn.hidden = YES;
+    self.liveSettingBtn.hidden = YES;
+    [self.bottomBgView addSubview:self.liveSettingBtn];
+    [self.bottomBgView addSubview:self.liveTypeBtn];
     
     [self.view addSubview:self.videoBgImageView];
     [self.videoBgImageView addSubview:self.loadingImageView];
@@ -1461,10 +1743,11 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     isDidAppear = YES;
     timeoutRequestCount = 0;
     devIpAddr = nil;
-    isCarameMode = YES;//初始化进入，默认拍照模式
+    videoMode = VideoModeCamare;//初始化进入，默认拍照模式
     playState = videoPlayStatePause;
     recordState = VideoRecordStatueNone;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(delAllPhoto) name:JFG720DevDelAllPhotoNotificationKey object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshLiveModel:) name:LiveTypeModelRefreshNotification object:nil];
 }
 
 -(void)delAllPhoto
@@ -1472,6 +1755,16 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [self.albumsBtn setImage:[UIImage imageNamed:@"camera720_icon_album_normal"] forState:UIControlStateNormal];
     [self.albumsBtn setImage:[UIImage imageNamed:@"camera720_icon_album_disabled"] forState:UIControlStateDisabled];
     self.albumsBtn.layer.borderWidth = 0;
+}
+
+
+//更新当前直播平台信息
+-(void)refreshLiveModel:(NSNotification *)notification
+{
+    LiveTypeModel *model = notification.object;
+    if ([model isKindOfClass:[LiveTypeModel class]] && [self.liveModel.cid isEqualToString:self.devModel.uuid] && model.liveType == self.liveModel.liveType) {
+        self.liveModel = model;
+    }
 }
 
 #pragma mark- 视频播放
@@ -1599,7 +1892,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         if (recordState != VideoRecordStatueNone) {
             [self videoRecordstatusRequest];
         }
-
+        
         //开启屏幕常亮
         [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
     }
@@ -1656,8 +1949,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     }
 }
 
-
-
 -(void)onRecvDisconnectForRemote:(NSNotification *)notification
 {
     NSDictionary *dict = notification.object;
@@ -1666,8 +1957,6 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"Disconnect:%@ errorType:%@",remoteID,dict[@"error"]]];
     
     if ([remoteID isEqualToString:self.devModel.uuid] || [remoteID isEqualToString:@"server"]) {
-        
-        
         JFGErrorType errorType = (JFGErrorType)[dict[@"error"] intValue];
         if (errorType == JFGErrorTypeVideoPeerInConnect) {
             
@@ -1729,7 +2018,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     playState = videoPlayStateDisconnectCamera;
     [self stopVideoPlay];
     isDevOffline = NO;
-    [self showTipView:[JfgLanguage getLanTextStrByKey:@"Tips_Device_TimeoutRetry"]];
+    [self showTipView:[JfgLanguage getLanTextStrByKey:@"Unicam720_TIMEOUT_BANNER"]];
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(rtcpLowAction) object:nil];
     [self showAgainView];
 }
@@ -1745,6 +2034,15 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 #pragma mark- 按钮事件
 -(void)albumsAction:(UIButton *)sender
 {
+    
+//#define TestLive
+    
+#ifdef TestLive
+    
+    [self pushToLiveTypeVC];
+    
+#else
+    
     Pano720PhotoVC *panoPhotoVC = [[Pano720PhotoVC alloc] init];
     panoPhotoVC.cid = self.devModel.uuid;
     panoPhotoVC.nickName = self.devModel.alias;
@@ -1752,9 +2050,21 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     
     [self.navigationController.view.layer addAnimation:[PopAnimation moveTopAnimation] forKey:nil];
     [self.navigationController pushViewController:panoPhotoVC animated:NO];
+
+#endif
     
     self.devModel.unReadPhotoCount = 0 ;
     self.cameraRedPoint.hidden = YES;
+}
+
+-(void)pushToLiveTypeVC
+{
+    LiveTypeViewController *liveVC = [LiveTypeViewController new];
+    liveVC.platformType = self.liveModel.liveType;
+    liveVC.cid = self.devModel.uuid;
+    liveVC.delegate = self;
+    BaseNavgationViewController *nav = [[BaseNavgationViewController alloc]initWithRootViewController:liveVC];
+    [self presentViewController:nav animated:YES completion:nil];
 }
 
 -(void)netModeSwitchTap:(UITapGestureRecognizer *)tap
@@ -1781,7 +2091,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     Cf720WiFiAnimationVC *wifiAn = [Cf720WiFiAnimationVC new];
     wifiAn.cidStr = self.devModel.uuid;
-    wifiAn.isAPModel = !isSetHomeMode;
+    wifiAn.eventType = isSetHomeMode?EventTypeConfigWifi:EventTypeOpenAPModel;
     [vc.navigationController pushViewController:wifiAn animated:YES];
 }
 
@@ -1799,18 +2109,43 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 #pragma mark- 按钮状态
 
-//默认拍照状态
+//默认状态
 -(void)btnStatueForCarame
 {
-    isCarameMode = YES;
-    self.cameraModeBtn.selected = YES;
+    if (videoMode == VideoModeLive) {
+        
+        self.liveModeBtn.selected = YES;
+        self.cameraModeBtn.selected = NO;
+        self.liveSettingBtn.hidden = NO;
+        self.liveTypeBtn.hidden = NO;
+        self.liveControlBtn.hidden = NO;
+        self.takePhotoBtn.hidden = YES;
+        self.moreBtn.hidden = YES;
+        
+    }else{
+        
+        self.cameraModeBtn.selected = YES;
+        self.liveModeBtn.selected = NO;
+        self.liveSettingBtn.hidden = YES;
+        self.liveTypeBtn.hidden = YES;
+        self.liveControlBtn.hidden = YES;
+        self.takePhotoBtn.hidden = NO;
+        self.moreBtn.hidden = NO;
+        self.liveStateLabel.hidden = YES;
+    }
+    
     self.cameraModeBtn.hidden = NO;
     self.videoModeBtn.selected = NO;
     self.videoModeBtn.hidden = NO;
+    self.liveModeBtn.hidden = NO;
+    self.liveModeBtn.enabled = YES;
     self.cameraModeBtn.enabled = YES;
     self.videoModeBtn.enabled = YES;
     self.moreBtn.enabled = YES;
-    self.moreBtn.hidden = NO;
+    
+    self.liveControlBtn.enabled = YES;
+    self.liveTypeBtn.enabled = YES;
+    self.liveSettingBtn.enabled = YES;
     self.albumsBtn.enabled = YES;
     self.albumsBtn.hidden = NO;
     if (self.devModel.unReadPhotoCount !=0) {
@@ -1818,14 +2153,18 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     }
     self.takePhotoBtn.enabled = YES;
     self.takePhotoBtn.userInteractionEnabled = YES;
-    self.takePhotoBtn.hidden = NO;
     self.settingBtn.enabled = YES;
+    self.msgBtn.enabled = YES;
     [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_photograph_normal"] forState:UIControlStateNormal];
     [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_photograph_normal"] forState:UIControlStateSelected];
     self.takePhotoBtn.selected = NO;
-    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
-    if (isAP){
-        //self.moreBtn.enabled = NO;
+//    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+//    if (isAP){
+//        //self.moreBtn.enabled = NO;
+//    }
+    
+    if (liveStreamState != LiveStreamStateNone && videoMode == VideoModeLive) {
+        [self btnStateForLiveWithState:liveStreamState secound:[[NSDate date] timeIntervalSince1970] - self.liveSeconds];
     }
 }
 
@@ -1834,11 +2173,29 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     self.cameraModeBtn.enabled = NO;
     self.videoModeBtn.enabled = NO;
+    self.liveModeBtn.enabled = NO;
     self.moreBtn.enabled = NO;
+    self.liveSettingBtn.enabled = NO;
+    self.liveTypeBtn.enabled = NO;
     self.albumsBtn.enabled = YES;
     self.takePhotoBtn.enabled = NO;
+    self.liveControlBtn.enabled = NO;
     if (self.moreBtn.selected) {
         [self moreAction:self.moreBtn];
+    }
+    if (videoMode == VideoModeLive) {
+        self.liveTypeBtn.hidden = NO;
+        self.liveSettingBtn.hidden = NO;
+        self.moreBtn.hidden = YES;
+        self.liveControlBtn.hidden = NO;
+        self.takePhotoBtn.hidden = YES;
+        self.liveStateLabel.hidden = YES;
+    }else{
+        self.moreBtn.hidden = NO;
+        self.liveTypeBtn.hidden = YES;
+        self.liveSettingBtn.hidden = YES;
+        self.liveControlBtn.hidden = YES;
+        self.takePhotoBtn.hidden = NO;
     }
 }
 
@@ -1848,16 +2205,137 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     self.cameraModeBtn.hidden = YES;
     self.videoModeBtn.hidden = YES;
+    self.liveModeBtn.hidden = YES;
     self.moreBtn.hidden = YES;
+    self.liveTypeBtn.hidden = YES;
+    self.liveSettingBtn.hidden = YES;
     self.albumsBtn.hidden = YES;
     self.cameraRedPoint.hidden = YES;
     self.takePhotoBtn.enabled = NO;
-    if (self.takePhotoLoadingView.superview != self.takePhotoBtn) {
-        [self.takePhotoLoadingView removeFromSuperview];
-        [self.takePhotoBtn addSubview:self.takePhotoLoadingView];
+   
+    if (videoMode == VideoModeLive) {
+        self.takePhotoBtn.hidden = YES;
+        self.liveControlBtn.hidden = NO;
+    }else{
+        self.takePhotoBtn.hidden = NO;
+        self.liveControlBtn.hidden = YES;
+        if (self.takePhotoLoadingView.superview != self.takePhotoBtn) {
+            [self.takePhotoLoadingView removeFromSuperview];
+            [self.takePhotoBtn addSubview:self.takePhotoLoadingView];
+        }
+        [self.takePhotoLoadingView startAnimating];
+        self.takePhotoLoadingView.hidden = NO;
     }
-    [self.takePhotoLoadingView startAnimating];
-    self.takePhotoLoadingView.hidden = NO;
+}
+
+
+/*
+   live推流状态
+   @param state 推流状态
+   @param secound  如果已经正在直播（LiveStreamStatePlaying），这个参数表示直播进行的时长
+ */
+-(void)btnStateForLiveWithState:(LiveStreamState)state secound:(int)secound
+{
+    if (state == LiveStreamStatePlaying) {
+        
+        self.liveControlBtn.hidden = NO;
+        self.liveControlBtn.selected = YES;
+        self.settingBtn.enabled = NO;
+        self.msgBtn.enabled = NO;
+        [UIView animateWithDuration:0.3 animations:^{
+            self.cameraModeBtn.hidden = YES;
+            self.videoModeBtn.hidden = YES;
+            self.liveModeBtn.hidden = YES;
+            self.albumsBtn.hidden = YES;
+            self.cameraRedPoint.hidden = YES;
+            self.moreBtn.hidden = YES;
+            self.liveTypeBtn.hidden = YES;
+            self.liveSettingBtn.hidden = YES;
+        }];
+        if (self.moreBtn.selected) {
+            [self hideMoreBtn];
+            self.moreBtn.selected = NO;
+        }
+        [self.liveStateLabel removeFromSuperview];
+        self.liveStateLabel.hidden = YES;
+        self.takePhotoBtn.hidden = YES;
+        self.timepiceView.hidden = NO;
+        self.liveModeBtn.hidden = YES;
+        self.cameraModeBtn.hidden = YES;
+        self.videoModeBtn.hidden = YES;
+        self.liveTypeBtn.hidden = YES;
+        self.liveSettingBtn.hidden = YES;
+    
+        int hour = secound/3600;
+        int minute = (secound%3600)/60;
+        int second = secound%60;
+        
+        [self.timepiceView startTimerForHour:hour min:minute sec:second];
+        
+    }else if (state == LiveStreamStateNone){
+        
+        self.settingBtn.enabled = NO;
+        self.msgBtn.enabled = NO;
+        [self.liveStateLabel removeFromSuperview];
+        self.liveStateLabel.hidden = YES;
+        self.settingBtn.enabled = YES;
+        self.msgBtn.enabled = YES;
+        if (videoMode == VideoModeLive) {
+            self.timepiceView.hidden = YES;
+            [self.timepiceView stopTimer];
+        }
+        [self btnStatueForCarame];
+//        if (playState == videoPlayStatePlaying) {
+//           
+//        }
+        
+    }else{
+        
+        self.liveControlBtn.hidden = NO;
+        self.liveControlBtn.enabled = YES;
+        self.liveControlBtn.selected = YES;
+        
+        [UIView animateWithDuration:0.3 animations:^{
+            self.cameraModeBtn.hidden = YES;
+            self.videoModeBtn.hidden = YES;
+            self.liveModeBtn.hidden = YES;
+            self.albumsBtn.hidden = YES;
+            self.cameraRedPoint.hidden = YES;
+            self.moreBtn.hidden = YES;
+            self.liveTypeBtn.hidden = YES;
+            self.liveSettingBtn.hidden = YES;
+        }];
+        if (self.timepiceView) {
+            self.timepiceView.hidden = YES;
+        }
+        if (self.liveStateLabel.superview == nil) {
+            [self.bottomBgView addSubview:self.liveStateLabel];
+        }
+        self.liveStateLabel.hidden = NO;
+        
+        if (state == LiveStreamStateCreating) {
+            //创建中...
+            NSString *platform = @"";
+            if (self.liveModel.liveType == LivePlatformTypeFacebook) {
+                platform = @"Facebook";
+            }else if (self.liveModel.liveType == LivePlatformTypeYoutube){
+                platform = @"Youtube";
+            }else if (self.liveModel.liveType == LivePlatformTypeWeibo){
+                platform = @"Weibo";
+            }else if (self.liveModel.liveType == LivePlatformTypeRTMP){
+                platform = @"RTMP";
+            }
+            self.liveStateLabel.text = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"LIVE_CREATING"],platform];
+            
+        }else if(state == LiveStreamStateStarting){
+            self.liveStateLabel.text = [JfgLanguage getLanTextStrByKey:@"LIVE_OPENING"];
+        }else{
+            //测试中...
+            self.liveStateLabel.text = [JfgLanguage getLanTextStrByKey:@"LIVE_TESTING"];
+        }
+        
+        
+    }
 }
 
 //短视频录制状态
@@ -1866,9 +2344,12 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [UIView animateWithDuration:0.3 animations:^{
         self.cameraModeBtn.hidden = YES;
         self.videoModeBtn.hidden = YES;
+        self.liveModeBtn.hidden = YES;
         self.albumsBtn.hidden = YES;
         self.cameraRedPoint.hidden = YES;
         self.moreBtn.hidden = YES;
+        self.liveTypeBtn.hidden = YES;
+        self.liveSettingBtn.hidden = YES;
     }];
     if (self.moreBtn.selected) {
         [self hideMoreBtn];
@@ -1890,6 +2371,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [self.takePhotoLoadingView removeFromSuperview];
     self.takePhotoLoadingView.hidden = YES;
     self.takePhotoBtn.enabled = YES;
+    
 }
 
 
@@ -1899,9 +2381,12 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [UIView animateWithDuration:0.3 animations:^{
         self.cameraModeBtn.hidden = YES;
         self.videoModeBtn.hidden = YES;
+        self.liveModeBtn.hidden = YES;
         self.albumsBtn.hidden = YES;
         self.cameraRedPoint.hidden = YES;
         self.moreBtn.hidden = YES;
+        self.liveTypeBtn.hidden = YES;
+        self.liveSettingBtn.hidden = YES;
     }];
     if (self.moreBtn.selected) {
         [self hideMoreBtn];
@@ -1923,6 +2408,9 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     self.cameraModeBtn.enabled = YES;
     self.videoModeBtn.enabled = YES;
+    self.liveModeBtn.enabled = YES;
+    self.liveSettingBtn.enabled = YES;
+    self.liveTypeBtn.enabled = YES;
     self.moreBtn.enabled = YES;
     self.albumsBtn.enabled = YES;
     self.takePhotoBtn.enabled = YES;
@@ -1930,9 +2418,18 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     if (isAP){
         //self.moreBtn.enabled = NO;
     }
+    if (videoMode == VideoModeLive) {
+        self.moreBtn.hidden = YES;
+        self.liveTypeBtn.hidden = NO;
+        self.liveSettingBtn.hidden = NO;
+    }else{
+        self.moreBtn.hidden = NO;
+        self.liveTypeBtn.hidden = YES;
+        self.liveSettingBtn.hidden = YES;
+    }
 }
 
-
+#pragma mark- 按钮事件
 -(void)settingAction
 {
     DeviceSettingVC *deviceSetting = [DeviceSettingVC new];
@@ -1953,32 +2450,70 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 -(void)videoModelAction
 {
-    if (isCarameMode) {
+    self.takePhotoBtn.hidden = NO;
+    self.liveControlBtn.hidden = YES;
+    //if (videoMode != VideoModeRecord) {
         //选择
         self.takePhotoBtn.selected = NO;
         [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_video_normal"] forState:UIControlStateNormal];
         [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_video_recording_nomal"] forState:UIControlStateSelected];
-        isCarameMode = NO;
+        
+        videoMode = VideoModeRecord;
         self.videoModeBtn.selected = YES;
         self.cameraModeBtn.selected = NO;
+        self.liveModeBtn.selected = NO;
+        self.moreBtn.hidden = NO;
+        self.liveTypeBtn.hidden = YES;
+        self.liveSettingBtn.hidden = YES;
         
         NSString *isfrist = [[NSUserDefaults standardUserDefaults] objectForKey:FristIntoVideoPlayFor720VC];
         if (!isfrist) {
             [self showLongVideoTip];
         }
-    }
+   // }
 }
 
 
-
+-(void)liveModelAction
+{
+    self.takePhotoBtn.hidden = YES;
+    self.liveControlBtn.hidden = NO;
+    
+    if (videoMode != VideoModeLive) {
+        
+        videoMode = VideoModeLive;
+        self.videoModeBtn.selected = NO;
+        self.cameraModeBtn.selected = NO;
+        self.liveModeBtn.selected = YES;
+        self.settingBtn.enabled = YES;
+        
+        self.moreBtn.hidden = YES;
+        self.liveTypeBtn.hidden = NO;
+        self.liveSettingBtn.hidden = NO;
+        
+        [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera_icon_live_normal"] forState:UIControlStateNormal];
+        [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_video_recording_nomal"] forState:UIControlStateSelected];
+        self.takePhotoBtn.selected = NO;
+    }
+    
+    
+}
 
 -(void)cameraModeAction
 {
-    if (!isCarameMode) {
-        isCarameMode = YES;
+    self.takePhotoBtn.hidden = NO;
+    self.liveControlBtn.hidden = YES;
+    
+    if (videoMode != VideoModeCamare) {
+        videoMode = VideoModeCamare;
         self.videoModeBtn.selected = NO;
+        self.liveModeBtn.selected = NO;
         self.cameraModeBtn.selected = YES;
         self.settingBtn.enabled = YES;
+        self.moreBtn.hidden = NO;
+        self.liveTypeBtn.hidden = YES;
+        self.liveSettingBtn.hidden = YES;
+        
         [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_photograph_normal"] forState:UIControlStateNormal];
         [self.takePhotoBtn setImage:[UIImage imageNamed:@"camera720_icon_photograph_normal"] forState:UIControlStateSelected];
         self.takePhotoBtn.selected = NO;
@@ -1996,6 +2531,21 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     sender.selected = !sender.selected;
 }
 
+
+-(void)liveTypeAction
+{
+    LiveTypeViewController *liveVC = [LiveTypeViewController new];
+    liveVC.platformType = self.liveModel.liveType;
+    liveVC.cid = self.devModel.uuid;
+    liveVC.delegate = self;
+    BaseNavgationViewController *nav = [[BaseNavgationViewController alloc]initWithRootViewController:liveVC];
+    [self presentViewController:nav animated:YES completion:nil];
+}
+
+-(void)liveSettingAction
+{
+    
+}
 
 //重新加载按钮事件
 -(void)againAction
@@ -2024,7 +2574,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 {
     if (btn.selected == NO) {
         
-        if (!isCarameMode) {
+        if (videoMode == VideoModeRecord) {
             //录像模式下点击
             if (controlEvents == JFGTakePhotoTouchLongTap) {
                 NSLog(@"long tap");
@@ -2058,7 +2608,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         
     }else{
         
-        if (!isCarameMode) {
+        if (videoMode == VideoModeRecord) {
             
             if (self.shortVideoTimeLabel.hidden == NO) {
                 //停止短视频录制
@@ -2097,6 +2647,194 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     }
 }
 
+
+-(void)liveControlAction:(UIButton *)sender
+{
+    BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+    if (isAP) {
+        
+        __weak typeof(self) weakSelf = self;
+        [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"LIVE_LANMODE_POP"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+            
+        } OKBlock:^{
+           
+            DeviceSettingVC *deviceSetting = [DeviceSettingVC new];
+            deviceSetting.cid = weakSelf.devModel.uuid;
+            deviceSetting.isShare = (weakSelf.devModel.shareState == DevShareStatuOther);
+            deviceSetting.devModel = weakSelf.devModel;
+            deviceSetting.pType = (productType)[weakSelf.devModel.pid intValue];
+            if ([weakSelf.devModel.alias isEqualToString:@""]) {
+                deviceSetting.alis = weakSelf.devModel.uuid;
+            }else{
+                deviceSetting.alis = weakSelf.devModel.alias;
+            }
+            [weakSelf.navigationController pushViewController:deviceSetting animated:YES];
+            
+        }];
+        return;
+    }
+    if (sender.selected) {
+    
+        DataPointSeg *seg = [DataPointSeg new];
+        seg.msgId = 516;
+        seg.value = [MPMessagePackWriter writeObject:@[self.liveModel.liveStreamingUrl?self.liveModel.liveStreamingUrl:@"",@(0)] error:nil];
+        __weak typeof(self) weakSelf = self;
+        [[JFGSDKDataPoint sharedClient] robotSetDataWithPeer:self.devModel.uuid dps:@[seg] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
+            
+            for (DataPointIDVerRetSeg *retSeg in dataList) {
+                
+                if (retSeg.ret == 0) {
+                    
+                    if (self.liveModel.liveType == LivePlatformTypeYoutube) {
+                        [self stopYoutubeReq];
+                    }else if (self.liveModel.liveType == LivePlatformTypeFacebook){
+                        
+                        [self.facebookHelper endLiveWithHandler:^(NSError *error, id result) {
+                            
+                        }];
+                    }
+                    liveStreamState = LiveStreamStateNone;
+                    [weakSelf btnStatueForCarame];
+                    weakSelf.timepiceView.hidden = YES;
+                    weakSelf.liveStateLabel.hidden = YES;
+                    [weakSelf.liveStateLabel removeFromSuperview];
+                    sender.selected = NO;
+                    
+                }
+                
+            }
+            
+        } failure:^(RobotDataRequestErrorType type) {
+            
+            
+            
+        }];
+        
+    }else{
+        
+        if (self.liveModel.liveType == LivePlatformTypeRTMP) {
+            
+            if ([self.liveModel.liveStreamingUrl isKindOfClass:[NSString class]] && ![self.liveModel.liveStreamingUrl isEqualToString:@""]) {
+                [self reqDevStartLiveForUrl:self.liveModel.liveStreamingUrl];
+            }else{
+                [self pushToLiveTypeVC];
+            }
+            
+        }else if (self.liveModel.liveType == LivePlatformTypeYoutube){
+            
+            if (self.liveModel.isValid && [self.youtubeAPIHelper signInUser] && [self.liveModel.liveStreamingUrl isKindOfClass:[NSString class]] && ![self.liveModel.liveStreamingUrl isEqualToString:@""]) {
+               
+                [self reqDevStartLiveForUrl:self.liveModel.liveStreamingUrl];
+    
+            }else{
+                
+                [self pushToLiveTypeVC];
+                
+            }
+            
+        }else if (self.liveModel.liveType == LivePlatformTypeWeibo){
+            
+            if (![ShareSDK hasAuthorized:SSDKPlatformTypeSinaWeibo]) {
+                
+                 [self pushToLiveTypeVC];
+                
+            }else{
+                
+                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(liveCreateTimeout) object:nil];
+                [self performSelector:@selector(liveCreateTimeout) withObject:nil afterDelay:30];
+                liveStreamState = LiveStreamStateCreating;
+                [self btnStateForLiveWithState:liveStreamState secound:0];
+                __weak typeof(self) weakSelf = self;
+                [self.weiboAPIHelper createLiveWithHandler:^(NSError *error, id result) {
+                    
+                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(liveCreateTimeout) object:nil];
+                    if (!error) {
+                        
+                        if ([result isKindOfClass:[NSDictionary class]]) {
+                            NSDictionary * dataDic = result;
+                            NSString * liveid = [dataDic objectForKey:@"id"];//直播ID
+                            //NSString* room_id = [dataDic objectForKey:@"room_id"];//房间号
+                            NSString *url = [dataDic objectForKey:@"url"];
+                            weakSelf.liveModel.liveStreamingUrl = url;
+                            weakSelf.liveModel.parameterDict = [@{@"liveID":liveid} mutableCopy];
+                            [weakSelf reqDevStartLiveForUrl:weakSelf.liveModel.liveStreamingUrl];
+                        }else{
+                             [weakSelf liveCreateTimeout];
+                        }
+                        
+                        
+                    }else{
+                         [weakSelf liveCreateTimeout];
+                    }
+                    
+                }];
+            }
+            
+        }else if (self.liveModel.liveType == LivePlatformTypeFacebook){
+            
+            if ([FacebookLiveAPIHelper currentToken]) {
+                
+                __weak typeof(self) weakSelf = self;
+                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(liveCreateTimeout) object:nil];
+                [self performSelector:@selector(liveCreateTimeout) withObject:nil afterDelay:30];
+                liveStreamState = LiveStreamStateCreating;
+                [self btnStateForLiveWithState:liveStreamState secound:0];
+                //创建直播地址（注意超时）
+                [self.facebookHelper createLiveWithHandler:^(NSError *error, id result) {
+                    
+                    if (!error) {
+                        
+                        if ([result isKindOfClass:[NSDictionary class]]) {
+                            
+                            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(liveCreateTimeout) object:nil];
+                            NSDictionary *dict = result;
+                            weakSelf.liveModel.liveStreamingUrl = dict[@"stream_url"];
+                            [weakSelf reqDevStartLiveForUrl:weakSelf.liveModel.liveStreamingUrl];
+                            
+                        }
+                        
+                        
+                    }else{
+                        
+                        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(liveCreateTimeout) object:nil];
+                        [weakSelf liveCreateTimeout];
+                        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"LIVE_FAILED"]];
+                    }
+                }];
+                
+                
+            }else{
+                [self pushToLiveTypeVC];
+            }
+        }
+    }
+}
+
+-(void)reqDevStartLiveForUrl:(NSString *)liveUrl
+{
+    DataPointSeg *seg = [DataPointSeg new];
+    seg.msgId = 516;
+    seg.value = [MPMessagePackWriter writeObject:@[liveUrl,@(1)] error:nil];
+    __weak typeof(self) weakSelf = self;
+    [[JFGSDKDataPoint sharedClient] robotSetDataWithPeer:self.devModel.uuid dps:@[seg] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
+        
+        for (DataPointIDVerRetSeg *retSeg in dataList) {
+            
+            if (retSeg.ret == 0) {
+                liveStreamState = LiveStreamStateCreating;
+                [weakSelf btnStateForLiveWithState:liveStreamState secound:0];
+                weakSelf.liveControlBtn.selected = YES;
+                [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(liveCreateTimeout) object:nil];
+                [self performSelector:@selector(liveCreateTimeout) withObject:nil afterDelay:10];
+            }
+            
+        }
+        
+    } failure:^(RobotDataRequestErrorType type) {
+        
+    }];
+}
+
 -(void)videoReqOvertime
 {
     recordState = VideoRecordStatueNone;
@@ -2133,8 +2871,15 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     [UIView animateWithDuration:0.3 animations:^{
         self.cameraModeBtn.hidden = NO;
         self.videoModeBtn.hidden = NO;
+        self.liveModeBtn.hidden = NO;
         self.albumsBtn.hidden = NO;
-        self.moreBtn.hidden = NO;
+        if (videoMode == VideoModeLive) {
+            self.liveTypeBtn.hidden = NO;
+            self.liveSettingBtn.hidden = NO;
+        }else{
+            self.moreBtn.hidden = NO;
+        }
+        
         if (self.devModel.unReadPhotoCount != 0) {
             self.cameraRedPoint.hidden = NO;
         }
@@ -2160,8 +2905,14 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         [UIView animateWithDuration:0.3 animations:^{
             self.cameraModeBtn.hidden = NO;
             self.videoModeBtn.hidden = NO;
+            self.liveModeBtn.hidden = NO;
             self.albumsBtn.hidden = NO;
-            self.moreBtn.hidden = NO;
+            if (videoMode == VideoModeLive) {
+                self.liveTypeBtn.hidden = NO;
+                self.liveSettingBtn.hidden = NO;
+            }else{
+                self.moreBtn.hidden = NO;
+            }
             
         } completion:^(BOOL finished) {
             self.settingBtn.enabled = YES;
@@ -2648,7 +3399,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         UIView *tipBgView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, tipLabel.width+10, tipLabel.height+10+6)];
         tipBgView.backgroundColor = [UIColor clearColor];
         tipBgView.bottom = self.view.height - 140;
-        tipBgView.x = self.view.x+23*0.5+self.videoModeBtn.width*0.5;
+        tipBgView.x = self.view.x;
         
         [tipBaseView addTipView:tipBgView];
         
@@ -2798,6 +3549,20 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     return _albumsBtn;
 }
 
+-(UIButton *)liveControlBtn
+{
+    if (!_liveControlBtn) {
+        _liveControlBtn = [JFGTakePhotoButton buttonWithType:UIButtonTypeCustom];
+        _liveControlBtn.size = CGSizeMake(73, 73);
+        _liveControlBtn.x = self.bottomBgView.width*0.5;
+        _liveControlBtn.bottom = self.bottomBgView.height-19;
+        [_liveControlBtn setImage:[UIImage imageNamed:@"camera_icon_live_normal"] forState:UIControlStateNormal];
+        [_liveControlBtn setImage:[UIImage imageNamed:@"camera720_icon_video_recording_nomal"] forState:UIControlStateSelected];
+        [_liveControlBtn addTarget:self action:@selector(liveControlAction:) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _liveControlBtn;
+}
+
 -(UIButton *)takePhotoBtn
 {
     if (!_takePhotoBtn) {
@@ -2829,13 +3594,62 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     return _moreBtn;
 }
 
+-(UIButton *)liveTypeBtn
+{
+    if (!_liveTypeBtn) {
+        _liveTypeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _liveTypeBtn.frame = CGRectMake(0, 0, 30, 30);
+        _liveTypeBtn.y = self.takePhotoBtn.y;
+        _liveTypeBtn.left = (self.view.width - 90 - self.takePhotoBtn.right)*0.5+self.takePhotoBtn.right;
+        
+        LivePlatformType platformType = self.liveModel.liveType;
+        if (platformType == LivePlatformTypeRTMP) {
+            
+            [_liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_rtmp_normol"] forState:UIControlStateNormal];
+            [_liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_rtmp_pressed"] forState:UIControlStateHighlighted];
+            
+        }else if (platformType == LivePlatformTypeWeibo){
+            
+            [_liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_weibo_normol"] forState:UIControlStateNormal];
+            [_liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_weibo_pressed"] forState:UIControlStateHighlighted];
+            
+        }else if (platformType == LivePlatformTypeYoutube){
+            
+            [_liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_youtube_normol"] forState:UIControlStateNormal];
+            [_liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_youtube_pressed"] forState:UIControlStateHighlighted];
+            
+        }else if (platformType == LivePlatformTypeFacebook){
+            
+            [_liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_facebook_normol"] forState:UIControlStateNormal];
+            [_liveTypeBtn setImage:[UIImage imageNamed:@"live_icon_facebook_pressed"] forState:UIControlStateHighlighted];
+        }
+
+        [_liveTypeBtn addTarget:self action:@selector(liveTypeAction) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _liveTypeBtn;
+}
+
+-(UIButton *)liveSettingBtn
+{
+    if (!_liveSettingBtn) {
+        _liveSettingBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _liveSettingBtn.frame = CGRectMake(0, 0, 30, 30);
+        _liveSettingBtn.y = self.takePhotoBtn.y;
+        _liveSettingBtn.left = self.liveTypeBtn.right+30;
+        [_liveSettingBtn setImage:[UIImage imageNamed:@"camera_icon_settings_normal"] forState:UIControlStateNormal];
+        [_liveSettingBtn setImage:[UIImage imageNamed:@"camera_icon_settings_pressed"] forState:UIControlStateHighlighted];
+        [_liveSettingBtn addTarget:self action:@selector(liveSettingAction) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _liveSettingBtn;
+}
+
 -(UIButton *)cameraModeBtn
 {
     if (!_cameraModeBtn) {
         _cameraModeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
         _cameraModeBtn.size = CGSizeMake(25, 25);
         _cameraModeBtn.top = 9;
-        _cameraModeBtn.right = self.view.x - 23*0.5;
+        _cameraModeBtn.right = self.view.x - 35 - 12;
         [_cameraModeBtn setImage:[UIImage imageNamed:@"camera720_icon_camera_normal"] forState:UIControlStateNormal];
         [_cameraModeBtn setImage:[UIImage imageNamed:@"camera720_icon_camera_selected"] forState:UIControlStateSelected];
         [_cameraModeBtn setImage:[UIImage imageNamed:@"camera720_icon_camera_disabled"] forState:UIControlStateDisabled];
@@ -2853,7 +3667,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
         _videoModeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
         _videoModeBtn.size = CGSizeMake(25, 25);
         _videoModeBtn.top = 9;
-        _videoModeBtn.left = self.view.x + 23*0.5;
+        _videoModeBtn.x = self.view.x;
         [_videoModeBtn setImage:[UIImage imageNamed:@"camera720_icon_video_small_normal"] forState:UIControlStateNormal];
         [_videoModeBtn setImage:[UIImage imageNamed:@"camera720_icon_video_selected"] forState:UIControlStateSelected];
         [_videoModeBtn setImage:[UIImage imageNamed:@"camera720_icon_video_small_disabled"] forState:UIControlStateDisabled];
@@ -2862,6 +3676,23 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     }
     return _videoModeBtn;
 }
+
+-(UIButton *)liveModeBtn
+{
+    if (!_liveModeBtn) {
+        _liveModeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _liveModeBtn.size = CGSizeMake(25, 25);
+        _liveModeBtn.top = 9;
+        _liveModeBtn.left = self.view.x + 35 + 12;
+        [_liveModeBtn setImage:[UIImage imageNamed:@"camera720_icon_live_normal"] forState:UIControlStateNormal];
+        [_liveModeBtn setImage:[UIImage imageNamed:@"camera720_icon_live_selected"] forState:UIControlStateSelected];
+        [_liveModeBtn setImage:[UIImage imageNamed:@"camera720_icon_live_normal_disabled"] forState:UIControlStateDisabled];
+        [_liveModeBtn addTarget:self action:@selector(liveModelAction) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _liveModeBtn;
+}
+
+
 
 -(UIImageView *)videoBgImageView
 {
@@ -3353,6 +4184,17 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
     return _offlineLabel;
 }
 
+-(UILabel *)liveStateLabel
+{
+    if (!_liveStateLabel) {
+        _liveStateLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 18, 200, 18)];
+        _liveStateLabel.x = self.view.x;
+        _liveStateLabel.font = [UIFont systemFontOfSize:14];
+        _liveStateLabel.textColor = [UIColor colorWithHexString:@"#ffffff"];
+        _liveStateLabel.textAlignment = NSTextAlignmentCenter;
+    }
+    return _liveStateLabel;
+}
 
 -(NSString *)startRecIsLongVideo:(BOOL)isLong
 {
@@ -3451,6 +4293,45 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 
 }
 
+-(LiveTypeModel *)liveModel
+{
+    if (!_liveModel) {
+        LiveTypeModel *md = [JfgCacheManager liveModelForCid:self.devModel.uuid];
+        if(!md){
+            md =[[LiveTypeModel alloc]init];
+            md.cid = self.devModel.uuid;
+            md.liveType = LivePlatformTypeFacebook;//暂时设置默认rtmp模式
+        }
+        _liveModel = md;
+    }
+    return _liveModel;
+}
+
+-(YoutubeLiveAPIHelper *)youtubeAPIHelper
+{
+    if (!_youtubeAPIHelper) {
+        _youtubeAPIHelper = [[YoutubeLiveAPIHelper alloc]init];
+        _youtubeAPIHelper.delegate = self;
+    }
+    return _youtubeAPIHelper;
+}
+
+-(WeiboLiveAPIHelper *)weiboAPIHelper
+{
+    if (!_weiboAPIHelper) {
+        _weiboAPIHelper = [WeiboLiveAPIHelper new];
+    }
+    return _weiboAPIHelper;
+}
+
+-(FacebookLiveAPIHelper *)facebookHelper
+{
+    if (!_facebookHelper) {
+        _facebookHelper = [[FacebookLiveAPIHelper alloc]init];
+    }
+    return _facebookHelper;
+}
+
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
@@ -3459,6 +4340,7 @@ typedef NS_ENUM(NSInteger,VideoRecordStatue) {
 -(void)dealloc
 {
     [JFGSDK appendStringToLogFile:@"video720VC dealloc"];
+    [JFGSDK removeDelegate:self];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 

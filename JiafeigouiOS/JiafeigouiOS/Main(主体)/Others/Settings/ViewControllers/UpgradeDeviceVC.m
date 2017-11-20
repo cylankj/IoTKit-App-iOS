@@ -359,7 +359,7 @@ NSString *const redDot = @"_redDot";
                     [weakSelf setProgressValue:progress upgradeType:upgradeType_DownLoad];
                 });
             } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
-                
+                NSLog(@"%@",error);
             }];
         }
             break;
@@ -961,6 +961,12 @@ NSString *const redDot = @"_redDot";
 {
     return 20.0f;
 }
+
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
+}
+
 
 #pragma mark getter
 - (UITableView *)upgradeTableView

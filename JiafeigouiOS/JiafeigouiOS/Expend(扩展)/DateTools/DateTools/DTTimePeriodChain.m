@@ -142,7 +142,7 @@
     }
 }
 -(void)removeEarliestTimePeriod{
-    if (periods > 0) {
+    if (periods.count > 0) {
         //Shift time periods earlier
         [periods enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
             //Shift earlier to account for removal of first element in periods array

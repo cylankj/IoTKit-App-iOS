@@ -495,7 +495,7 @@
     
     [self videoCall];
     //[CylanJFGSDK setAudio:NO openMic:NO openSpeaker:NO]; // 对cid 存在 高耦合
-    [CylanJFGSDK setAudio:YES openMic:NO openSpeaker:NO]; // 为什么设置 两个 我也不明白
+    //[CylanJFGSDK setAudio:YES openMic:NO openSpeaker:NO]; // 为什么设置 两个 我也不明白
     [self startLodingAnimation];
     [self performSelector:@selector(playOuttime) withObject:nil afterDelay:30];
     isStartTimer = YES;
@@ -671,7 +671,7 @@
     if (self.actionType == doorActionTypeUnActive)
     {
         NSError *bellVoiceError = nil;
-        NSString *bellVoicePath = [[NSBundle mainBundle] pathForResource:@"apns" ofType:@"caf"];
+        NSString *bellVoicePath = [[NSBundle mainBundle] pathForResource:@"doobellring" ofType:@"caf"];
         
         if (bellVoicePath)
         {
@@ -1454,8 +1454,8 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 
 - (void)jfgDevVersionUpgradInfo:(JFGSDKDeviceVersionInfo *)info
 {
-    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"isHaveNewPackage [%d]", info.hasNewPkg]];
-    if (info.hasNewPkg)
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"isHaveNewPackage [%d] cid[%@] in doorVideoVC", info.hasNewPkg, info.cid]];
+    if (info.hasNewPkg && [self.cid isEqualToString:info.cid])
     {
         [self showAlterView];
     }

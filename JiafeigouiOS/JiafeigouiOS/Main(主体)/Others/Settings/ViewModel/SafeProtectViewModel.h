@@ -22,6 +22,8 @@
 - (void)requestDataWithCid:(NSString *)cid;
 // 移动侦测开关
 - (void)updateMoveDection:(BOOL)isOpen;
+//红外增强
+-(void)updateInfraredStrengthen:(BOOL)isOpen;
 // 更改 灵敏度
 - (void)updateSensitive:(NSInteger)sensitiveType;
 // 修改 报警时间 间隔

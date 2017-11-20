@@ -84,7 +84,7 @@
             }
             
             [ProgressHUD showProgress:nil];
-            [JFGSDK sendUniversalData:[MPMessagePackWriter writeObject:self._textField.text error:nil] forMsgID:1];
+            [JFGSDK sendUniversalData:[MPMessagePackWriter writeObject:self._textField.text error:nil] cid:@"" forMsgID:1];
             [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(reqTimeout) object:nil];
             [self performSelector:@selector(reqTimeout) withObject:nil afterDelay:3];
             

@@ -30,11 +30,14 @@
 #import "jfgConfigManager.h"
 #import <AudioToolbox/AudioToolbox.h>
 #import "DeepSleepVC.h"
+#import "MsgForAIRequest.h"
+#import "MsgForAIViewController.h"
 
 @interface VideoPlayViewController ()<TimeChangeMonitorDelegate,UIScrollViewDelegate,UIGestureRecognizerDelegate,JFGSDKCallbackDelegate,MessageVCDelegate>
 {
     BOOL isDoorBell;
     BOOL isHistoryJump;
+    MsgForAIRequest *aiRequest;
 }
 @property (nonatomic,strong)UIView *topBarBgView;
 @property (nonatomic,strong)UIButton *backBtn;
@@ -48,11 +51,13 @@
 @property (nonatomic,strong)HitTestScrollView *bgScrollerView;
 @property (nonatomic,strong)videoPlay1ViewController *videoPlay;
 @property (nonatomic,strong)MessageViewController * messageVC;
+@property (nonatomic,strong)MsgForAIViewController *aiMessageVC;
 @property (nonatomic,assign)BOOL isClearCount;
 @property (nonatomic,assign)BOOL isDidAppear;
 @property (nonatomic, strong) UIImageView *redDotImageView;
 @property (nonatomic,assign)BOOL preferentialShowMsg;
 @property (nonatomic,strong)UILabel *redPoint;
+@property (nonatomic,assign)BOOL isAIMessage;
 
 @end
 
@@ -74,6 +79,13 @@
     UIPanGestureRecognizer * pan = [[UIPanGestureRecognizer alloc]initWithTarget:traget action:nil];
     [self.view addGestureRecognizer:pan];
 
+    //判断是否加载AI消息视图
+    if ([self.devModel.pid isEqualToString:@"83"] || [self.devModel.pid isEqualToString:@"84"]) {
+        self.isAIMessage = YES;
+    }else{
+        self.isAIMessage = NO;
+    }
+    
     isDoorBell = [jfgConfigManager devIsDoorBellForPid:self.devModel.pid];
     [JFGSDK addDelegate:self];
     [self addNotificationDelegate];
@@ -84,7 +96,8 @@
         self.videoPlay.isShow = YES;
         [self.view addSubview:self.bgScrollerView];
         [self addChildViewController:self.videoPlay];
-        [self.bgScrollerView addSubview:self.videoPlay.view];
+        [self.bgScrollerView addSubview:self.videoPlay
+         .view];
         self.bgScrollerView.contentSize = CGSizeMake(self.view.width, self.bgScrollerView.height);
         
     }else{
@@ -93,9 +106,15 @@
         [self addChildViewController:self.videoPlay];
         [self.bgScrollerView addSubview:self.videoPlay.view];
         
-        [self addChildViewController:self.messageVC];
-        [self.bgScrollerView addSubview:self.messageVC.view];
-        self.messageVC.cid = self.cid;
+        if (self.isAIMessage) {
+            [self addChildViewController:self.aiMessageVC];
+            [self.bgScrollerView addSubview:self.aiMessageVC.view];
+            self.aiMessageVC.cid = self.cid;
+        }else{
+            [self addChildViewController:self.messageVC];
+            [self.bgScrollerView addSubview:self.messageVC.view];
+            self.messageVC.cid = self.cid;
+        }
         
         self.bgScrollerView.isIntercept = YES;
         self.bgScrollerView.interceptLimits = self.view.bounds.size.height*0.45;
@@ -112,6 +131,7 @@
         //  让此控制器成为第一响应者
         [self becomeFirstResponder];
     }
+    
 }
 
 
@@ -232,12 +252,17 @@
 #pragma mark- MessageVC delegate
 -(void)lookHistoryForTimestamp:(uint64_t)timestamp
 {
-    if (self.messageVC.editButton.selected == YES) {
-        [self.messageVC editButtonAction:self.messageVC.editButton];
+    if (!self.isAIMessage) {
+        if (self.messageVC.editButton.selected == YES) {
+            [self.messageVC editButtonAction:self.messageVC.editButton];
+        }
+        if (self.messageVC.timeSelectButton.selected == YES) {
+            [self.messageVC selectDate:self.messageVC.timeSelectButton];
+        }
+    }else{
+        [self.aiMessageVC cancelEditingState];
     }
-    if (self.messageVC.timeSelectButton.selected == YES) {
-        [self.messageVC selectDate:self.messageVC.timeSelectButton];
-    }
+    
     self.videoPlay.isShow = YES;
     self.videoTitleLabel.selected = YES;
     self.msgTitleLabel.selected = NO;
@@ -313,6 +338,9 @@
                     self.redPoint.hidden = NO;
                 }else{
                     self.redPoint.hidden = YES;
+                }
+                if (self.isAIMessage) {
+                    [self.aiMessageVC hasNewMsgNotification];
                 }
             }
         }
@@ -427,11 +455,6 @@
     }else{
         deviceSetting.alis = self.devModel.alias;
     }
-    
-//    DeepSleepVC *vc = [[DeepSleepVC alloc]init];
-//    vc.cid = self.cid;
-//    vc.hidesBottomBarWhenPushed = YES;
-    
     [self.navigationController pushViewController:deviceSetting animated:YES];
 }
 
@@ -466,12 +489,17 @@
     
     if (sender == self.videoTitleLabel) {
         
-        if (self.messageVC.editButton.selected == YES) {
-            [self.messageVC editButtonAction:self.messageVC.editButton];
+        if (!self.isAIMessage) {
+            if (self.messageVC.editButton.selected == YES) {
+                [self.messageVC editButtonAction:self.messageVC.editButton];
+            }
+            if (self.messageVC.timeSelectButton.selected == YES) {
+                [self.messageVC selectDate:self.messageVC.timeSelectButton];
+            }
+        }else{
+            [self.aiMessageVC cancelEditingState];
         }
-        if (self.messageVC.timeSelectButton.selected == YES) {
-            [self.messageVC selectDate:self.messageVC.timeSelectButton];
-        }
+        
         self.videoPlay.isShow = YES;
         
         if (self.videoTitleLabel.selected) {
@@ -647,6 +675,24 @@
     return _videoPlay;
 }
 
+-(MsgForAIViewController *)aiMessageVC
+{
+    if (!_aiMessageVC) {
+        _aiMessageVC = [MsgForAIViewController new];
+        _aiMessageVC.cid = self.cid;
+        _aiMessageVC.devModel = self.devModel;
+        _aiMessageVC.delegate = self;
+        if (self.devModel.netType == JFGNetTypeOffline) {
+            _aiMessageVC.isDeviceOffline = YES;
+        }else{
+            _aiMessageVC.isDeviceOffline = NO;
+        }
+        
+        CGRect re = _aiMessageVC.view.frame;
+        [_aiMessageVC.view setFrame:CGRectMake(re.size.width, 0, re.size.width, re.size.height-64)];
+    }
+    return _aiMessageVC;
+}
 
 -(MessageViewController *)messageVC{
     if (!_messageVC) {

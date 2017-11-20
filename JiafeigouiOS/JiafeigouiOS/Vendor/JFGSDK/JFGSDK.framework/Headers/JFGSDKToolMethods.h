@@ -20,4 +20,9 @@
 //获取当前wifi名称
 +(NSString *)currentWifiName;
 
+/**
+ *  十进制转二进制
+ */
++(NSString *)toBinarySystemWithDecimalSystem:(NSInteger)decimal;
+
 @end

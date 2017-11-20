@@ -80,12 +80,13 @@
     if (isAP) {
         
         if (!isGotoConfigWifiVC) {
-            if (self.isAPModel) {
+            if (self.eventType == EventTypeOpenAPModel) {
                 
                 WifiModeFor720CFResultVC *resultVC = [WifiModeFor720CFResultVC new];
                 resultVC.isAPModeFinished = YES;
                 [self.navigationController pushViewController:resultVC animated:YES];
-            }else{
+                
+            }else if (self.eventType == EventTypeConfigWifi){
                 
                 ConfigWiFiViewController *configWifi = [ConfigWiFiViewController new];
                 configWifi.cid = self.cidStr;
@@ -94,7 +95,17 @@
                 configWifi.isCamare = YES;
                 [self.navigationController pushViewController:configWifi animated:YES];
                 
+            }else if(self.eventType == EventTypeHotSpot){
+                
+                ConfigWiFiViewController *configWifi = [ConfigWiFiViewController new];
+                configWifi.cid = self.cidStr;
+                configWifi.pType = productType_720;
+                configWifi.configType = configWifiType_setHotspot;
+                configWifi.isCamare = NO;
+                [self.navigationController pushViewController:configWifi animated:YES];
+                
             }
+            
             isGotoConfigWifiVC = YES;
         }
         
@@ -116,8 +127,11 @@
     if (![self connectedAP]) {
         
         if (IOS_SYSTEM_VERSION_EQUAL_OR_ABOVE(10.0)) {
+            
             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"App-Prefs:root=WIFI"] options:@{} completionHandler:nil];
+            
         } else {
+            
             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"prefs:root=WIFI"]];
         }
         
@@ -179,7 +193,7 @@
              [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"doby"]]];
             
         }else{
-            if (self.isAPModel) {
+            if (self.eventType == EventTypeOpenAPModel) {
                 //460 × 700
                 [_olImageView setImage:[OLImage imageNamed:[JfgLanguage getLanPicNameWithPicName:@"zhilian"]]];
                 _olImageView.size =CGSizeMake(460*0.5*kScreen_Scale, 700*0.5*kScreen_Scale);

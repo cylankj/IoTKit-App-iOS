@@ -266,7 +266,7 @@
         cell.selectedBackgroundView = selectedBackView;
         
         
-        UILabel *lineView2 = [[UILabel alloc]initWithFrame:CGRectMake(0, 43.5, self.view.bounds.size.width, 0.5)];
+        UILabel *lineView2 = [[UILabel alloc]initWithFrame:CGRectMake(0, 43.5, self.view.bounds.size.width, 1)];
         lineView2.backgroundColor = [UIColor colorWithHexString:@"#e1e1e1"];
         lineView2.tag = 1203;
         lineView2.hidden = YES;
@@ -320,7 +320,13 @@
 #pragma mark- 退出登录按钮UI处理
     UILabel *bottomLine = (UILabel *)[cell.contentView viewWithTag:1203];
     cell.selectionStyle = UITableViewCellSelectionStyleGray;
-    bottomLine.hidden = YES;
+    NSArray *a = self.dataArray[indexPath.section];
+    if (indexPath.row == a.count-1) {
+        bottomLine.hidden = NO;
+    }else{
+        bottomLine.hidden = YES;
+    }
+    
     
 #pragma mark- 头像栏UI处理
     UIImageView *headImageView = [cell.contentView viewWithTag:1124];
@@ -369,16 +375,17 @@
 -(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
     
     UIView *headView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 20)];
+    headView.clipsToBounds = YES;
     headView.backgroundColor = [UIColor colorWithHexString:@"#f0f0f0"];
     
     if (section != 0) {
-        UILabel *lineView = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 0.5)];
-        lineView.backgroundColor = [UIColor colorWithHexString:@"#e1e1e1"];
-        [headView addSubview:lineView];
+//        UILabel *lineView = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 1)];
+//        lineView.backgroundColor = [UIColor colorWithHexString:@"#e1e1e1"];
+        //[headView addSubview:lineView];
     }
     
     
-    UILabel *lineView2 = [[UILabel alloc]initWithFrame:CGRectMake(0, 19.5, self.view.bounds.size.width, 0.5)];
+    UILabel *lineView2 = [[UILabel alloc]initWithFrame:CGRectMake(0, 19.5, self.view.bounds.size.width, 1)];
     lineView2.backgroundColor = [UIColor colorWithHexString:@"#e1e1e1"];
     
     [headView addSubview:lineView2];

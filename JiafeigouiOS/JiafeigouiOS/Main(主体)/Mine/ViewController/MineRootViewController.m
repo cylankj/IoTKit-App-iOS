@@ -67,7 +67,6 @@
     BOOL isNewFeedback;
     NSInteger headImageVersion;
     JFGSDKAcount *currentAccount;
-    
     NSInteger headGetCount;
 }
 @property(nonatomic, strong)UIImageView * topBgImageView;

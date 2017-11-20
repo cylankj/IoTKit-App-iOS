@@ -168,39 +168,54 @@ typedef NS_ENUM(NSInteger, pickerTag) {
     cell.textLabel.text = [dataDict objectForKey:cellTextKey];
     cell.settingSwitch.hidden = ![[dataDict objectForKey:cellshowSwitchKey] boolValue];
     cell.settingSwitch.on = [[dataDict objectForKey:isCellSwitchOn] boolValue];
+    cell.settingSwitch.indexPath = indexPath;
     cell.accessoryType = (UITableViewCellAccessoryType)[[dataDict objectForKey:cellAccessoryKey] intValue];
     cell.cusDetailLabel.text = (cell.settingSwitch.hidden == YES)?[dataDict objectForKey:cellDetailTextKey]:nil;
     cell.imageView.image = [UIImage imageNamed:[dataDict objectForKey:cellIconImageKey]];
     cell.redDot.hidden = ![[dataDict objectForKey:cellRedDotInRight] boolValue];
     
+    
+    __weak typeof(self) weakSelf = self;
     [cell.settingSwitch addValueChangedBlockAcion:^(UISwitch *_switch)
     {
-        if (_switch.on == NO && self.safeProtectVM.isMotionDetectAbnormal)
-        {
-            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_MotionDetection_OffTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
-                
-            } OKBlock:^{
-                [self.safeProtectVM updateMoveDection:_switch.on];
-                self.autoPhotoType = MotionDetectNever;
-                /*
-                if (_safeTableViewDelegate != nil && [_safeTableViewDelegate respondsToSelector:@selector(moveDectionChanged:repeatTime:begin:end:)])
-                {
-                    [_safeTableViewDelegate moveDectionChanged:_switch.on repeatTime:self.safeProtectVM.repeat begin:self.beginTime end:self.endTime];
-                    
-                }*/
-                
-            }];
+        NSDictionary *dataDict = [[weakSelf.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
+        
+        if ([[dataDict objectForKey:cellUniqueID] isEqualToString:idCellInfraredEnhanced]) {
+            //红外增强
+            [weakSelf.safeProtectVM updateInfraredStrengthen:_switch.on];
             
-        }
-        else
-        {
-            [self.safeProtectVM updateMoveDection:_switch.on];
-            
-            /*if (_safeTableViewDelegate != nil && [_safeTableViewDelegate respondsToSelector:@selector(moveDectionChanged:repeatTime:begin:end:)])
+        }else if ([[dataDict objectForKey:cellUniqueID] isEqualToString:idCellWarnEnable]){
+            //安全防护
+            if (_switch.on == NO && weakSelf.safeProtectVM.isMotionDetectAbnormal)
             {
-                [_safeTableViewDelegate moveDectionChanged:_switch.on repeatTime:self.safeProtectVM.repeat begin:self.beginTime end:self.endTime];
-            }*/
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_MotionDetection_OffTips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                    
+                } OKBlock:^{
+                    [weakSelf.safeProtectVM updateMoveDection:_switch.on];
+                    weakSelf.autoPhotoType = MotionDetectNever;
+                    /*
+                     if (_safeTableViewDelegate != nil && [_safeTableViewDelegate respondsToSelector:@selector(moveDectionChanged:repeatTime:begin:end:)])
+                     {
+                     [_safeTableViewDelegate moveDectionChanged:_switch.on repeatTime:self.safeProtectVM.repeat begin:self.beginTime end:self.endTime];
+                     
+                     }*/
+                    
+                }];
+                
+            }
+            else
+            {
+                [weakSelf.safeProtectVM updateMoveDection:_switch.on];
+                
+                /*if (_safeTableViewDelegate != nil && [_safeTableViewDelegate respondsToSelector:@selector(moveDectionChanged:repeatTime:begin:end:)])
+                 {
+                 [_safeTableViewDelegate moveDectionChanged:_switch.on repeatTime:self.safeProtectVM.repeat begin:self.beginTime end:self.endTime];
+                 }*/
+            }
+            
         }
+        
+        
         
         
     }];
@@ -222,6 +237,16 @@ typedef NS_ENUM(NSInteger, pickerTag) {
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
 {
     return 20.0f;
+}
+
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
+}
+
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
+{
+    return [UIView new];
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section

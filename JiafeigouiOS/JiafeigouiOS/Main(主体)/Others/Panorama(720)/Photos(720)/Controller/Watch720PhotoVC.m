@@ -125,6 +125,7 @@ extern NSInteger supportDirection;
     self.titleTimeLabel.frame = CGRectMake(x, y, width, height);
 }
 
+
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
@@ -136,6 +137,8 @@ extern NSInteger supportDirection;
 {
     [super viewWillDisappear:animated];
     
+    //如果是VR模式，要恢复成竖屏模式，防止其他页面视图按横屏绘制
+    [self forceRecoverToPortrait];
     [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationFade];
     
     [UIApplication sharedApplication].idleTimerDisabled = NO;
@@ -1032,7 +1035,7 @@ extern NSInteger supportDirection;
 
 -(void)jfgRobotSyncDataForPeer:(NSString *)peer fromDev:(BOOL)isDev msgList:(NSArray <DataPointSeg *> *)msgList
 {
-    JFG_WS(weakSelf);
+    //JFG_WS(weakSelf);
     
     if ([peer isEqualToString:self.cid])
     {
@@ -1079,6 +1082,9 @@ extern NSInteger supportDirection;
                                        isInitiative:(BOOL)initiative
                                            dpMsgArr:(NSArray *)dpMsgArr
 {
+    if (![self.cid isEqualToString:cid]) {
+        return;
+    }
     for (DataPointSeg *seg in dpMsgArr)
     {
         NSError *error = nil;
@@ -1095,7 +1101,7 @@ extern NSInteger supportDirection;
                         BOOL isExistSDCard = [[obj objectAtIndex:3] boolValue];
                         if (isExistSDCard == NO)
                         {
-                            JFG_WS(weakSelf);
+                            //JFG_WS(weakSelf);
                             // sdCard was pulled out
 //                            [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
 //                                [weakSelf.navigationController popViewControllerAnimated:YES];

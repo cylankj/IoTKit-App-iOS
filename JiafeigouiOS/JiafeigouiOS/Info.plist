@@ -172,6 +172,22 @@
 				<string>wx81d893be5216671c</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.464988505094-2qi84oogkveotl414b71fnmc56inkmqc</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb444251309281886</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>3.2.2.100</string>
@@ -182,11 +198,6 @@
 	<key>Jfgsdk_ap_prefix</key>
 	<array>
 		<string>DOG</string>
-		<string>PSD</string>
-		<string>KKS</string>
-		<string>LS</string>
-		<string>DOORBELL</string>
-		<string>RS-</string>
 		<string>BELL</string>
 	</array>
 	<key>Jfgsdk_host</key>
@@ -239,6 +250,8 @@ ee1c23ec9b28f191dc79eb6176d39152</string>
 	<string>Contacts permissions required</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Microphone permissions required</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>PhotoLibrary permissions required</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>PhotoLibrary permissions required</string>
 	<key>UIBackgroundModes</key>

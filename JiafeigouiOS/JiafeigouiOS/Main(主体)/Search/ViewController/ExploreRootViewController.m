@@ -858,6 +858,12 @@
     return 0;
 }
 
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return [UIView new];
+}
+
+
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     ExploreModel * m = [self.modelArray objectAtIndex:indexPath.row];
@@ -1089,6 +1095,7 @@
 
 -(void)addFooter
 {
+    
     __weak typeof(self) weakSelf = self;
     MJRefreshAutoNormalFooter *footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
         
@@ -1200,6 +1207,7 @@
     [footer setTitle:[JfgLanguage getLanTextStrByKey:@"PULL_TO_LOAD"] forState:MJRefreshStateIdle];
     [footer setTitle:[JfgLanguage getLanTextStrByKey:@"LOADING"] forState:MJRefreshStateRefreshing];
     self.contentTableView.mj_footer = footer;
+    self.contentTableView.estimatedRowHeight = 0;
 }
 
 //刷新事件

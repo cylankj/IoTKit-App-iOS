@@ -22,6 +22,10 @@
 
 +(UIImage *)imageForSnapshot;
 +(void)getHistoryVideoListForCid:(NSString *)cid;
++(void)getHistoryVideoListV2:(NSString *)cid
+                   searchWay:(int)searchWay
+                   timeEnd:(int)timeEnd
+                 searchRange:(int)range;
 +(void)setAudio:(BOOL)local openMic:(BOOL)openMic openSpeaker:(BOOL)openSpeaker;
 +(void)switchLiveVideo:(BOOL)isLive beigenTime:(int64_t)beigenTime;
 

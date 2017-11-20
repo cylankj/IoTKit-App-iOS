@@ -46,6 +46,8 @@
 #import "BaseNavgationViewController.h"
 #import "WebChatBindViewController.h"
 #import <pop/POP.h>
+#import "MsgForAIViewController.h"
+#import "AIRobotRequest.h"
 
 @interface JiafeigouRootViewController ()<TimeChangeMonitorDelegate,LoginManagerDelegate,JFGSDKCallbackDelegate>
 {
@@ -66,6 +68,7 @@
 
 
 @property (nonatomic,strong)jiafeigouTableView *_tableView;
+
 
 @end
 
@@ -91,7 +94,6 @@
     //获取账号信息
     [JFGSDK getAccount];
     
-    
     if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess)
     {
         [ApnsManger registerRemoteNotification:YES];
@@ -109,9 +111,7 @@
         [[NSUserDefaults standardUserDefaults] setObject:ver forKey:@"addAnimationKey"];
     }
     
-   
 }
-
 
 - (void)viewWillAppear:(BOOL)animated
 {
@@ -122,8 +122,6 @@
         [ApnsManger registerRemoteNotification:NO];
     }
 }
-
-
 
 -(void)orientationChanged:(NSNotification *)notification
 {
@@ -441,7 +439,9 @@
             [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGDoorBellIsCallingKey];
             [[NSNotificationCenter defaultCenter] postNotificationName:JFGDoorBellIsCallingKey object:call.cid];
             //30s 后恢复为呼叫状态，防止其他页面忘记恢复
-            //[self performSelector:@selector(resetDoorBellCallStatues) withObject:nil afterDelay:30];
+            
+            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(resetDoorBellCallStatues) object:nil];
+            [self performSelector:@selector(resetDoorBellCallStatues) withObject:nil afterDelay:30];
             DoorVideoVC *doorVideo = [[DoorVideoVC alloc] init];
             doorVideo.pType = productType_DoorBell;
             doorVideo.cid = call.cid;
@@ -486,10 +486,16 @@
         [self presentViewController:nav animated:YES completion:^{
             
         }];
-    }
-    else
-    {
+        
+    }else{
+        
         AddDeviceMainViewController *addDevice = [AddDeviceMainViewController new];
+//        //MsgForAIViewController
+//        JiafeigouDevStatuModel *model = [JiafeigouDevStatuModel new];
+//        model.uuid = @"290100000002";
+//        MsgForAIViewController *addDevice = [MsgForAIViewController new];
+//        addDevice.devModel = model;
+//        addDevice.cid = model.uuid;
         UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:addDevice];
         nav.navigationBarHidden = YES;
         addDevice.hidesBottomBarWhenPushed = YES;
@@ -656,6 +662,14 @@
         __tableView = [[jiafeigouTableView alloc]initWithFrame:CGRectMake(0, 0, self.view.width, self.view.height-44) style:UITableViewStylePlain];
         __tableView.tableFooterView = [UIView new];
         __tableView.showsVerticalScrollIndicator = NO;
+        
+//        打包机 升级Xcode 后在兼容， 暂时屏蔽
+//        if (@available(iOS 11.0, *)) {
+//            __tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+//        } else
+        {
+            self.automaticallyAdjustsScrollViewInsets = NO;
+        }
     }
     return __tableView;
 }

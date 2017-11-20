@@ -42,6 +42,7 @@
 {
     BOOL isLan;
     BOOL isAPModelFor720;
+    BOOL isHotport;
 }
 @property (strong, nonatomic) DeviceSettingTableView *settingTableView;
 
@@ -150,7 +151,6 @@
         if (buttonIndex == 1) {
             
             [[JFGEfamilyDataManager defaultEfamilyManager]deleteEfamilyMsgListForCid:self.cid];
-            
         }
         
     }
@@ -193,6 +193,8 @@
         _settingTableView.pType = self.pType;
         _settingTableView.isShare = self.isShare;
         _settingTableView.pid = self.devModel.pid;
+        
+        
         NSMutableArray *list = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
         JiafeigouDevStatuModel *currentModel;
         
@@ -267,13 +269,14 @@
             [weakSelf.settingTableView.deviceSettingVM deleteMsg];
         }];
     }
-    else if ([cellID isEqualToString:hotWireless])      // 开启 热点
+    else if ([cellID isEqualToString:hotWireless])      // 开启 AP
     {
         [self.settingTableView.deviceSettingVM openHotWired];
     }
     else if ([cellID isEqualToString:apConnectting])    // 直连ap
     {
         isAPModelFor720 = YES;
+        isHotport = NO;
         BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
         if (isAP) {
             WifiModeFor720CFResultVC *resultVC = [WifiModeFor720CFResultVC new];
@@ -286,13 +289,69 @@
             [self.navigationController pushViewController:deviGuide animated:YES];
         }
     }else if ([cellID isEqualToString:deepsleep]){
+        
         //省电模式
         DeepSleepVC *sleepVC = [DeepSleepVC new];
         sleepVC.cid = self.cid;
         [self.navigationController pushViewController:sleepVC animated:YES];
         
+    }else if ([cellID isEqualToString:phoneHotspot]){
+        
+        NSString *iPhoneName = [UIDevice currentDevice].name;
+        if (self.settingTableView.deviceSettingVM.settingModel.deviceNetType == DeviceNetType_Wifi && [iPhoneName isEqualToString:self.settingTableView.deviceSettingVM.settingModel.wifi]) {
+            //已开启热点
+            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_HOTSPOT_CONNECTED"]];
+            return;
+        }
+        
+        //开启热点
+        BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid];
+        
+        if (isAP) {
+            
+            //AP模式下
+            ConfigWiFiViewController *configWifi = [[ConfigWiFiViewController alloc]init];
+            configWifi.cid = self.cid;
+            configWifi.pType = self.pType;
+            configWifi.configType = configWifiType_setHotspot;
+            [self.navigationController pushViewController:configWifi animated:YES];
+            
+        }else{
+            
+            
+            if (self.settingTableView.deviceSettingVM.settingModel.deviceNetType != DeviceNetType_Offline) {
+                //在线
+                NSString *devWifiName = self.settingTableView.deviceSettingVM.settingModel.wifi;
+                NSString *iphoneWifiName = [CommonMethod currentConnecttedWifi];
+                
+                if ([devWifiName isEqualToString:iphoneWifiName]) {
+                    //局域网环境
+                    ConfigWiFiViewController *configWifi = [[ConfigWiFiViewController alloc]init];
+                    configWifi.cid = self.cid;
+                    configWifi.pType = self.pType;
+                    configWifi.configType = configWifiType_setHotspot;
+                    [self.navigationController pushViewController:configWifi animated:YES];
+                    
+                }else{
+                    //非局域网环境
+                    [LSAlertView showAlertWithTitle:nil Message:[NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"WIFI_SET_1"],devWifiName] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"WELL_OK"] OtherButtonTitle:nil CancelBlock:^{
+                        
+                    } OKBlock:^{
+                        
+                    }];
+                }
+                
+            }else{
+                //离线
+                isAPModelFor720 = YES;
+                isHotport = YES;
+                AddDeviceGuideViewController *deviGuide = [AddDeviceGuideViewController new];
+                deviGuide.pType = productType_720;
+                deviGuide.delegate = self;
+                [self.navigationController pushViewController:deviGuide animated:YES];
+            }
+        }
     }
-
 }
 
 
@@ -433,6 +492,7 @@
                 
                 //离线
                 isAPModelFor720 = NO;
+                isHotport = NO;
                 AddDeviceGuideViewController *deviGuide = [AddDeviceGuideViewController new];
                 deviGuide.pType = productType_720;
                 deviGuide.delegate = self;
@@ -520,7 +580,11 @@
 {
     Cf720WiFiAnimationVC *wifiAn = [Cf720WiFiAnimationVC new];
     wifiAn.cidStr = self.cid;
-    wifiAn.isAPModel = isAPModelFor720;
+    if (isHotport) {
+        wifiAn.eventType = EventTypeHotSpot;
+    }else{
+        wifiAn.eventType = isAPModelFor720?EventTypeOpenAPModel:EventTypeConfigWifi;
+    }
     [vc.navigationController pushViewController:wifiAn animated:YES];
 }
 

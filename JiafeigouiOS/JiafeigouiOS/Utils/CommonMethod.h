@@ -210,4 +210,7 @@
 
 +(SFCParamModel *)panoramicViewParamModelForCid:(NSString *)cid;
 
+//是否是户外设备（不支持对讲）
++(BOOL)isOutdoorDevForOS:(NSString *)os;
+
 @end

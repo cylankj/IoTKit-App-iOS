@@ -25,7 +25,10 @@
 #import "CommonMethod.h"
 #import "PilotLampStateVC.h"
 #import "LSAlertView.h"
+#import "NSTimer+FLExtension.h"
+#import <JFGSDK/JFGSDKDataPoint.h>
 #import "PropertyManager.h"
+#import "LoginManager.h"
 
 #define kScreen_Scale [UIScreen mainScreen].bounds.size.width/375.0f
 #define kTop 100*kScreen_Scale
@@ -35,6 +38,8 @@
 @interface ConfigWiFiViewController ()<UITextFieldDelegate,JFGSDKCallbackDelegate,UIAlertViewDelegate>
 {
     NSDictionary *cacheWifiListDict;
+    NSTimer *timeOutTimer;
+    int timeCount;
 }
 @property(nonatomic, strong)UILabel * titleLabel;
 @property(nonatomic, strong)UITextField * wifiNameTF;
@@ -76,7 +81,11 @@
     if (self.pType == productType_720) {
         [self.view addSubview:self.declareBtn];
     }
-    
+    if (self.configType == configWifiType_setHotspot) {
+        self.wifiNameTF.text = [UIDevice currentDevice].name;
+        self.wifiNameTF.enabled = NO;
+    }
+
     [self.view addSubview:self.wifiListButton];
     [self.view insertSubview:self.wifiListButton aboveSubview:self.wifiNameTF];
     self.wifiListButton.hidden = YES;
@@ -105,6 +114,7 @@
         self.navigationController.interactivePopGestureRecognizer.enabled = YES;
     }
     [super viewDidDisappear:animated];
+    [ProgressHUD dismiss];
 }
 
 -(void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
@@ -128,32 +138,34 @@
 -(void)devTypeWithCid:(NSString *)cid
 {
 
-    if (cid && ![cid isEqualToString:@""]) {
+    if (self.configType != configWifiType_setHotspot){
         
-        BOOL isDoor = NO;
-        PropertyManager *pm = [[PropertyManager alloc]init];
-        pm.propertyFilePath = [[NSBundle mainBundle] pathForResource:@"properties" ofType:@"json"];
-        NSArray *propertyArr = [pm propertyArr];
-        for (NSDictionary *dict in propertyArr) {
-            NSString *pr = dict[pCidPrefixKey];
-            if ([cid hasPrefix:pr]) {
-                
-                NSString *pid = dict[pOSKey];
-                //以下门铃设备不显示wifi下拉列表
-                NSArray *wifiListOS = @[@15,@17,@22,@24,@25,@26,@27,@28,@42,@44,@46,@50,@52];
-                for (NSNumber *os in wifiListOS) {
-                    if ([os integerValue] == [pid intValue]) {
-                        isDoor = YES;
-                        break;
+        if (cid && ![cid isEqualToString:@""]) {
+            
+            BOOL isDoor = NO;
+            PropertyManager *pm = [[PropertyManager alloc]init];
+            pm.propertyFilePath = [[NSBundle mainBundle] pathForResource:@"properties" ofType:@"json"];
+            NSArray *propertyArr = [pm propertyArr];
+            for (NSDictionary *dict in propertyArr) {
+                NSString *pr = dict[pCidPrefixKey];
+                if ([cid hasPrefix:pr]) {
+                    
+                    NSString *pid = dict[pOSKey];
+                    //以下门铃设备不显示wifi下拉列表
+                    NSArray *wifiListOS = @[@15,@17,@22,@24,@25,@26,@27,@28,@42,@44,@46,@50,@52];
+                    for (NSNumber *os in wifiListOS) {
+                        if ([os integerValue] == [pid intValue]) {
+                            isDoor = YES;
+                            break;
+                        }
                     }
+                    break;
                 }
-                break;
             }
+            
+            self.wifiListButton.hidden = isDoor;
         }
-        
-        self.wifiListButton.hidden = isDoor;
     }
-    
 }
 
 #pragma mark - 按钮事件
@@ -176,7 +188,13 @@
         case configWifiType_configWifi:
         {
             [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"wifiName:%@  wifiPasword:%@",self.wifiNameTF.text,self.wifiPasswordTF.text]];
-            [JFGSDK wifiSetWithSSid:self.wifiNameTF.text keyword:self.wifiPasswordTF.text cid:self.cid ipAddr:@"255.255.255.255" mac:@""];
+            //@"192.168.10.255"
+            if (self.pType == productType_AI_Camera || self.pType == productType_AI_Camera_outdoor) {
+                 [JFGSDK wifiSetWithSSid:self.wifiNameTF.text keyword:self.wifiPasswordTF.text cid:self.cid ipAddr:@"192.168.10.255" mac:@""];
+            }else{
+                 [JFGSDK wifiSetWithSSid:self.wifiNameTF.text keyword:self.wifiPasswordTF.text cid:self.cid ipAddr:@"255.255.255.255" mac:@""];
+            }
+           
             [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_SET_WIFI_MSG"]];
             [self.navigationController popToRootViewControllerAnimated:YES];
         }
@@ -213,16 +231,136 @@
             
         }
             break;
+        case configWifiType_setHotspot:{
+            
+            BOOL isConnectAp = [jfgConfigManager isAPModel];
+            if (!isConnectAp && [LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+                [ProgressHUD showText:@"OFFLINE_ERR_1"];
+                return;
+            }
+            
+            if (self.wifiPasswordTF.text.length<8) {
+                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"HOTSPOT_PASSWORD_ERROR"]];
+            }else{
+                
+                [JFGSDK wifiSetWithSSid:self.wifiNameTF.text keyword:self.wifiPasswordTF.text cid:self.cid ipAddr:self.ipAddress?self.ipAddress:@"" mac:self.macStr?self.macStr:@""];
+                [ProgressHUD showProgress:nil Interaction:NO];//应测试要求，加载时候不允许操作
+                [self startTimer];
+                
+                if (IOS_SYSTEM_VERSION_EQUAL_OR_ABOVE(10.0)) {
+                    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"App-Prefs:root=INTERNET_TETHERING"] options:@{} completionHandler:nil];
+                } else {
+                    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"prefs:root=INTERNET_TETHERING"]];
+                }
+                
+            }
+            
+        }
+            break;
             
         default:
             
             break;
     }
-    
     [self saveWifiInfoForName:self.wifiNameTF.text pw:self.wifiPasswordTF.text];
+}
+
+-(void)jfgSetWifiRespose:(JFGSDKUDPResposeSetWifi *)ask
+{
     
 }
 
+-(void)startTimer
+{
+    if (timeOutTimer && timeOutTimer.isValid) {
+        [timeOutTimer invalidate];
+    }
+    __weak typeof(self) weakSelf = self;
+    timeCount = 0;
+    timeOutTimer = [NSTimer bk_scheduledTimerWithTimeInterval:1 block:^(NSTimer *timer) {
+        
+        timeCount ++;
+        if (timeCount%2==0) {
+            [weakSelf checkDeviceNetStatue];
+        }
+        if (timeCount > 90) {
+            [timeOutTimer invalidate];
+            timeOutTimer = nil;
+            [weakSelf netConnectTimeout];
+        }
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"setwifi:%d",timeCount]];
+        
+    } repeats:YES];
+}
+
+
+-(void)checkDeviceNetStatue
+{
+    if (self.cid && ![self.cid isEqualToString:@""]) {
+        
+        __weak typeof(self) blockself = self;
+        [[JFGSDKDataPoint sharedClient] robotGetSingleDataWithPeer:self.cid msgIds:@[@(201)] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+            
+            for (NSArray *subArr in idDataList) {
+                for (DataPointSeg *seg in subArr) {
+                    id obj = [MPMessagePackReader readData:seg.value error:nil];
+                    if ([obj isKindOfClass:[NSArray class]]) {
+                        NSArray *objArr = obj;
+                        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"设置热点主动网络检测，%@",obj]];
+                        if (objArr.count>1) {
+                            
+                            int netType = [[objArr objectAtIndex:0] intValue];
+                            NSString *ssid = [objArr objectAtIndex:1];
+                            
+                            if (netType != -1 && netType != 0 && [ssid isEqualToString:[UIDevice currentDevice].name]) {
+                                //设置成功
+                                if (timeOutTimer && timeOutTimer.isValid) {
+                                    [timeOutTimer invalidate];
+                                }
+                                timeOutTimer = nil;
+                                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                                int64_t delayInSeconds = 1.0;
+                                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+                                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                                    
+                                    NSArray *vcList = self.navigationController.viewControllers;
+                                    for (UIViewController *vc in vcList) {
+                                        
+                                        if ([vc isKindOfClass:[DeviceSettingVC class]]) {
+                                            [blockself.navigationController popToViewController:vc animated:YES];
+                                            return;
+                                        }
+                                        
+                                    }
+                                    [self dismissViewControllerAnimated:YES completion:nil];
+                                    
+                                });
+                                
+                            }
+                            
+                            
+                        }
+                    }
+                    
+                }
+            }
+            
+            
+        } failure:^(RobotDataRequestErrorType type) {
+            
+        }];
+        
+    }else{
+        [JFGSDK appendStringToLogFile:@"720网络检测，cid为空"];
+        
+    }
+    
+}
+
+-(void)netConnectTimeout
+{
+    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"HOTSPOTS_CONNECT_TIMEOUT_TIPS"]];
+}
 
 -(void)saveWifiInfoForName:(NSString *)wifiName pw:(NSString *)pw
 {
@@ -332,12 +470,26 @@
                 if ([temp isKindOfClass:[DeviceSettingVC class]]  )
                 {
                     [self.navigationController popToViewController:temp animated:YES];
+                    break;
                 }
             }
         }
             break;
+        
+        case configWifiType_setHotspot:{
+            NSArray *vcList = self.navigationController.viewControllers;
+            for (UIViewController *vc in vcList) {
+                
+                if ([vc isKindOfClass:[DeviceSettingVC class]]) {
+                    [self.navigationController popToViewController:vc animated:YES];
+                    return;
+                }
+                
+            }
+        }
+            break;
         case configWifiType_default:
-        default:
+            default:
         {
             for (UIViewController *temp in self.navigationController.viewControllers)
             {
@@ -345,7 +497,7 @@
                 {
                     [self.navigationController popToViewController:temp animated:YES];
                 }
-               
+                
             }
         }
             break;
@@ -366,6 +518,9 @@
         _titleLabel.textAlignment = NSTextAlignmentCenter;
         _titleLabel.textColor = [UIColor colorWithHexString:@"#333333"];
         _titleLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_WifiConfTips"];
+        if (self.configType == configWifiType_setHotspot) {
+            _titleLabel.text = [JfgLanguage getLanTextStrByKey:@"SETTINGS_MOBILE_HOTSPOT"];
+        }
     }
     return _titleLabel;
 }
@@ -455,6 +610,9 @@
         _tipLabel.font = [UIFont systemFontOfSize:13*kScreen_Scale];
         _tipLabel.textColor = [UIColor colorWithHexString:@"#4b9fd5"];
         _tipLabel.text = [JfgLanguage getLanTextStrByKey:@"WIFI_SET_5GTIPS"];
+        if (self.configType == configWifiType_setHotspot) {
+             _tipLabel.text = [JfgLanguage getLanTextStrByKey:@"TURN_ON_HOTSPOT_GUIDE"];
+        }
     }
     return _tipLabel;
 }
@@ -559,7 +717,7 @@
 -(void)intoVC
 {
     PilotLampStateVC *lampVC = [PilotLampStateVC new];
-    [self.navigationController pushViewController:lampVC animated:YES];
+    [self presentViewController:lampVC animated:YES completion:nil];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -644,6 +802,11 @@
 //    }
     
     return YES;
+}
+
+-(void)dealloc
+{
+    [JFGSDK removeDelegate:self];
 }
 
 @end

@@ -248,6 +248,7 @@
 
 - (void)rightButtonAction:(UIButton *)sender
 {
+    
     if (![_phoneTextField.text isMobileNumber]) {
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"PHONE_NUMBER_2"]];
     }else if (_smsTextField.text.length == 0) {

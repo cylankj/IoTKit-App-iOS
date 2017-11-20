@@ -2,7 +2,7 @@
 //  JFGBigImageView.h
 //  JiafeigouiOS
 //
-//  Created by 杨利 on 16/11/13.
+//  Created by yangli on 16/11/13.
 //  Copyright © 2016年 lirenguang. All rights reserved.
 //
 

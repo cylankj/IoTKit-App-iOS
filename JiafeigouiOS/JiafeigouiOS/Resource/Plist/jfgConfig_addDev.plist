@@ -21,12 +21,14 @@
 					<integer>37</integer>
 					<integer>47</integer>
 					<integer>48</integer>
-					<integer>1071</integer>
+					<string>83</string>
+					<real>1071</real>
 					<integer>1090</integer>
 					<integer>1091</integer>
 					<integer>1092</integer>
 					<integer>1346</integer>
 					<integer>1347</integer>
+					<string>2901</string>
 				</array>
 				<key>cidPrefixList</key>
 				<array>
@@ -52,6 +54,42 @@
 				<integer>1</integer>
 				<key>中文名字</key>
 				<string>智能摄像头</string>
+				<key>oem</key>
+				<array>
+					<string>cylan</string>
+					<string>doby</string>
+				</array>
+			</dict>
+			<dict>
+				<key>cidPrefixList</key>
+				<array>
+					<string>2902</string>
+				</array>
+				<key>osList</key>
+				<array>
+					<integer>84</integer>
+					<real>1495</real>
+				</array>
+				<key>icon</key>
+				<string>add_icon_outcam</string>
+				<key>home_icon</key>
+				<string>home_icon_outcam</string>
+				<key>home_diable_icon</key>
+				<string>home_icon_outcam_disable</string>
+				<key>gif</key>
+				<string>cam_outdoor.gif</string>
+				<key>title</key>
+				<string>Camera_Outdoor</string>
+				<key>userActionTitle</key>
+				<string>Tap1_AddDevice_Outdoor_CameraTipsTitle</string>
+				<key>ledTitle</key>
+				<string>Tap1_AddDevice_CameraTips</string>
+				<key>ledState</key>
+				<string>BLINKING</string>
+				<key>typeMark</key>
+				<integer>8</integer>
+				<key>中文名字</key>
+				<string>看家王AI摄像机 ·户外版</string>
 				<key>oem</key>
 				<array>
 					<string>cylan</string>
@@ -232,6 +270,42 @@
 			<dict>
 				<key>cidPrefixList</key>
 				<array>
+					<string>6901</string>
+				</array>
+				<key>osList</key>
+				<array>
+					<integer>22</integer>
+					<integer>27</integer>
+					<integer>1160</integer>
+				</array>
+				<key>icon</key>
+				<string>add_icon_intelligent_eye</string>
+				<key>home_icon</key>
+				<string>home_icon_intelligent_eye</string>
+				<key>home_diable_icon</key>
+				<string>home_icon_intelligent_eye_disable</string>
+				<key>gif</key>
+				<string>eyes_ios.gif</string>
+				<key>title</key>
+				<string>Smart_Door_Viewer</string>
+				<key>userActionTitle</key>
+				<string>Tap1_AddDevice_DoorbellTipsTitle</string>
+				<key>ledTitle</key>
+				<string>Tap1_AddDevice_CameraTips</string>
+				<key>ledState</key>
+				<string>BLINKING</string>
+				<key>typeMark</key>
+				<integer>6</integer>
+				<key>中文名字</key>
+				<string>智能猫眼</string>
+				<key>oem</key>
+				<array>
+					<string>doby</string>
+				</array>
+			</dict>
+			<dict>
+				<key>cidPrefixList</key>
+				<array>
 					<string>5200</string>
 				</array>
 				<key>osList</key>
@@ -263,42 +337,6 @@
 				<key>oem</key>
 				<array>
 					<string>cylan</string>
-					<string>doby</string>
-				</array>
-			</dict>
-			<dict>
-				<key>cidPrefixList</key>
-				<array>
-					<string>6901</string>
-				</array>
-				<key>osList</key>
-				<array>
-					<integer>22</integer>
-					<integer>27</integer>
-					<integer>1160</integer>
-				</array>
-				<key>icon</key>
-				<string>add_icon_intelligent_eye</string>
-				<key>home_icon</key>
-				<string>home_icon_intelligent_eye</string>
-				<key>home_diable_icon</key>
-				<string>home_icon_intelligent_eye_disable</string>
-				<key>gif</key>
-				<string>eyes_ios.gif</string>
-				<key>title</key>
-				<string>Smart_Door_Viewer</string>
-				<key>userActionTitle</key>
-				<string>Tap1_AddDevice_DoorbellTipsTitle</string>
-				<key>ledTitle</key>
-				<string>Tap1_AddDevice_CameraTips</string>
-				<key>ledState</key>
-				<string>BLINKING</string>
-				<key>typeMark</key>
-				<integer>6</integer>
-				<key>中文名字</key>
-				<string>智能猫眼</string>
-				<key>oem</key>
-				<array>
 					<string>doby</string>
 				</array>
 			</dict>

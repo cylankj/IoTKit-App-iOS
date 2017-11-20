@@ -63,13 +63,13 @@
 -(void)showForAnimation
 {
     self.hidden = NO;
-    _HUDView.alpha = 0.0f;
-    _HUDView.transform = CGAffineTransformMakeScale(0.1f, 0.1f);
-    _HUDView.hidden = NO;
+    self.HUDView.alpha = 0.0f;
+    self.HUDView.transform = CGAffineTransformMakeScale(0.1f, 0.1f);
+    self.HUDView.hidden = NO;
     [UIView animateWithDuration:.5 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0.8 options:UIViewAnimationOptionCurveEaseIn animations:^{
         
-        _HUDView.alpha = 1.0f;
-        _HUDView.transform = CGAffineTransformIdentity;
+        self.HUDView.alpha = 1.0f;
+        self.HUDView.transform = CGAffineTransformIdentity;
         
     } completion:^(BOOL finished) {
         
@@ -107,8 +107,8 @@
 {
     [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^{
         
-        _HUDView.transform = CGAffineTransformMakeScale(0.1f, 0.1f);
-        _HUDView.alpha = 0.0f;
+        self.HUDView.transform = CGAffineTransformMakeScale(0.1f, 0.1f);
+        self.HUDView.alpha = 0.0f;
         
     } completion:^(BOOL finished) {
         self.hidden = YES;
@@ -246,20 +246,19 @@
 {
     if (!_HUDView) {
         
-        if ([UIVisualEffectView class]) {
-            
-            //ios8的毛玻璃效果
-            UIBlurEffectStyle effect;
-            if (self.style == FLProgressHUDStyleDark) {
-                effect = UIBlurEffectStyleDark;
-            }
-            else if(self.style == FLProgressHUDStyleLight) {
-                effect = UIBlurEffectStyleExtraLight;
-            }
-
-            _HUDView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:effect]];
-            
-        }else{
+//        if ([UIVisualEffectView class]) {
+//
+//            //ios8的毛玻璃效果
+//            UIBlurEffectStyle effect;
+//            if (self.style == FLProgressHUDStyleDark) {
+//                effect = UIBlurEffectStyleDark;
+//            }else {
+//                effect = UIBlurEffectStyleExtraLight;
+//            }
+//
+//            _HUDView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:effect]];
+//
+//        }else{
             _HUDView = [[UIView alloc] init];
             
             if (_style == FLProgressHUDStyleDark) {
@@ -269,7 +268,7 @@
                 
                 _HUDView.backgroundColor = [UIColor colorWithWhite:0.97f alpha:0.8f];
             }
-        }
+        //}
         
 
         _HUDView.layer.cornerRadius = 10.0f;

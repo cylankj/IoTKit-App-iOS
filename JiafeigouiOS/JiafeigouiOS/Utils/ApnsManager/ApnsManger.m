@@ -71,19 +71,23 @@ NSString *const cellC_companyDev = @"com.cell.push.dev";
     [[NSUserDefaults standardUserDefaults] setValue:@([[NSDate date] timeIntervalSince1970]) forKey:jfgRegisterTokenTime];
     [[NSUserDefaults standardUserDefaults] synchronize];
     
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{//获取到token了，可延迟执行
+//    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{//获取到token了，可延迟执行
 #ifdef __IPHONE_8_0
         if ([[UIApplication sharedApplication] respondsToSelector:@selector(registerUserNotificationSettings:)])
         {
             UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeBadge|UIUserNotificationTypeSound|UIUserNotificationTypeAlert categories:nil];
-            [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
-            [JFGSDK appendStringToLogFile:@"remote register iOS8.0 +"];
+
+            //dispatch_async(dispatch_get_main_queue(), ^{
+                [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
+                [JFGSDK appendStringToLogFile:@"remote register iOS8.0 +"];
+            //});
+           
             return ;
         }
 #endif
         [[UIApplication sharedApplication] registerForRemoteNotificationTypes:(UIRemoteNotificationTypeSound | UIRemoteNotificationTypeBadge | UIRemoteNotificationTypeAlert)];
         [JFGSDK appendStringToLogFile:@"remote register iOS7.0 -"];
-    });
+    //});
 }
 
 + (void)unRegisterNotification

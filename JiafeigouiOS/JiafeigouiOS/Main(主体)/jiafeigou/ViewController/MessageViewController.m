@@ -412,6 +412,7 @@
 -(void)stepRefresh
 {
     __weak typeof(self) weakSelf = self;
+    self.contentTableView.estimatedRowHeight = 0;
     self.contentTableView.mj_header = [JFGRefreshLoadingHeader headerWithRefreshingBlock:^{
     
         if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess) {
@@ -1108,8 +1109,6 @@
 
 #pragma mark - JFGSDK
 
-
-
 -(NSString *)timeSelecedBtnTitleForTimestamp:(int64_t)timestamp
 {
     int64_t currentTimestamp = [[NSDate date] timeIntervalSince1970];
@@ -1544,6 +1543,7 @@
     }
 }
 
+
 #pragma mark - 控件
 -(JFGDatePickers *)datePicker
 {
@@ -1590,6 +1590,7 @@
 
 -(UIButton *)timeSelectButton{
     if (!_timeSelectButton) {
+        
         _timeSelectButton = [UIButton buttonWithType:UIButtonTypeCustom];
         _timeSelectButton.frame = CGRectMake((Kwidth-126.0)/2.0, 0, 126, 44);
         _timeSelectButton.contentHorizontalAlignment=UIControlContentHorizontalAlignmentCenter;

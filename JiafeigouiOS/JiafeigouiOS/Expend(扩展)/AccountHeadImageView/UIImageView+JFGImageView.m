@@ -9,6 +9,7 @@
 #import "UIImageView+JFGImageView.h"
 #import "CommonMethod.h"
 #import "JfgConfig.h"
+#import "FLLog.h"
 #import "LoginManager.h"
 
 @implementation UIImageView (JFGImageView)
@@ -24,7 +25,12 @@
         }
         
         if (error) {
-            NSLog(@"error:%@ imageUrl:%@",error,imageURL);
+            //NSLog(@"error:%@ imageUrl:%@",error,imageURL);
+            NSString *hostUrl = [NSString stringWithFormat:@"%@://%@", imageURL.scheme, imageURL.host];
+            hostUrl = [NSString stringWithFormat:@"%@%@",hostUrl,[imageURL path]];
+            NSString *errorMsg = [NSString stringWithFormat:@"imageLoadingFailed:error:%@ url:%@",error.userInfo.description,hostUrl];
+            [JFGSDK appendStringToLogFile:errorMsg];
+            FLLog(@"error:%@ imageUrl:%@",error,imageURL);
         }
         
     }];
