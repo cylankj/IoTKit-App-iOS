@@ -104,6 +104,7 @@
     _isAllAngle = YES;
     originIndex = index;
     allAngleTly = tly;
+    self.cid = cid;
     self.oldImageViews = [NSMutableArray arrayWithArray:oldImageViews];
     [self addSubview:self.bgView];
     
