@@ -8,7 +8,6 @@
 
 #import "SafeProtectViewModel.h"
 #import "JfgGlobal.h"
-#import "SafeProtectModel.h"
 #import "JfgTableViewCellKey.h"
 #import "JfgUserDefaultKey.h"
 #import "JfgMsgDefine.h"
@@ -22,7 +21,7 @@
 @property (strong, nonatomic) NSMutableArray *groupArray; // 分组 数据
 @property (strong, nonatomic) NSMutableArray *dpsArray;   //请求ID 数组
 
-@property (strong, nonatomic) SafeProtectModel *safeProtectmodel;
+
 
 @end
 
@@ -88,6 +87,10 @@
 }
 
 #pragma mark 安全防护
+- (NSMutableArray *)extracted {
+    return self.dpsArray;
+}
+
 - (void)requestDataWithCid:(NSString *)cid
 {
     if ([_delegate respondsToSelector:@selector(fetchDataArray:)])
@@ -96,7 +99,7 @@
         [_delegate fetchDataArray:[self createData]];
     }
     
-    [[dataPointMsg shared] packSingleDataPointMsg:self.dpsArray withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic) {
+    [[dataPointMsg shared] packSingleDataPointMsg:[self extracted] withCid:self.cid SuccessBlock:^(NSMutableDictionary *dic) {
         if (dic != nil)
         {
             [self setJfgSafeProtectCache:dic];
@@ -109,6 +112,7 @@
     }];
     
 }
+
 
 //红外增强
 -(void)updateInfraredStrengthen:(BOOL)isOpen
@@ -214,6 +218,12 @@
         self.safeProtectmodel.isWarnEnable = [[dict objectForKey:dpMsgCameraWarnEnableKey] boolValue];
         self.safeProtectmodel.sensitive = [[dict objectForKey:dpMsgCameraWarnSenKey] intValue];
         self.safeProtectmodel.isOpenInfraredStrengthen = [[dict objectForKey:dpMsgCameraInfraredEnhanced] intValue];
+        NSArray *areaDecectionArr = [dict objectForKey:dpMsgCameraAreaDetectionKey];
+        if ([areaDecectionArr isKindOfClass:[NSArray class]] && areaDecectionArr.count>1) {
+            
+            self.safeProtectmodel.isOpenAreaDetection = [areaDecectionArr[0] boolValue];
+            
+        }
         
         NSArray *soundArray = [dict objectForKey:dpMsgCameraWarnSoundKey];
         if (soundArray.count >= 2)
@@ -404,23 +414,45 @@
 //红外增强
 - (NSMutableArray *)infraredEnhanced
 {
+    NSMutableArray *infraredEnhanced = [NSMutableArray new];
+
     if ([PropertyManager showPropertiesRowWithPid:self.pType key:pInfraredEnhanced])
     {
-        NSMutableArray *infraredEnhanced = [NSMutableArray arrayWithObjects:[NSDictionary dictionaryWithObjectsAndKeys:
-                                                                      @"",cellIconImageKey,
-                                                                      [JfgLanguage getLanTextStrByKey:@"INFRARED_IDENTIFY_SET"],cellTextKey,
-                                                                      idCellInfraredEnhanced, cellUniqueID,
-                                                                      [JfgLanguage getLanTextStrByKey:@""],cellDetailTextKey,
-                                                                      @(self.safeProtectmodel.isOpenInfraredStrengthen),isCellSwitchOn,
-                                                                      @1,cellshowSwitchKey,
-                                                                      @(UITableViewCellAccessoryNone),cellAccessoryKey,
-                                                                      nil], nil];
+        //红外增强
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:@"" forKey:cellIconImageKey];
+        [dict setObject:[JfgLanguage getLanTextStrByKey:@"INFRARED_IDENTIFY_SET"] forKey:cellTextKey];
+        [dict setObject:idCellInfraredEnhanced forKey:cellUniqueID];
+        [dict setObject:@"" forKey:cellDetailTextKey];
+        [dict setObject:@(self.safeProtectmodel.isOpenInfraredStrengthen) forKey:isCellSwitchOn];
+        [dict setObject:@1 forKey:cellshowSwitchKey];
+        [dict setObject:@(UITableViewCellAccessoryNone) forKey:cellAccessoryKey];
         
-        
-        return infraredEnhanced;
+        [infraredEnhanced addObject:dict];
     }
     
-    return nil;
+    if ([PropertyManager showPropertiesRowWithPid:self.pType key:pAreaDetection]){
+        
+        //区域侦测
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:@"" forKey:cellIconImageKey];
+        [dict setObject:[JfgLanguage getLanTextStrByKey:@"DETECTION_AREA"] forKey:cellTextKey];
+        [dict setObject:idCellAreaDetection forKey:cellUniqueID];
+        
+        if (self.safeProtectmodel.isOpenAreaDetection) {
+            [dict setObject:[JfgLanguage getLanTextStrByKey:@"DETECTION_AREA_SET"] forKey:cellDetailTextKey];
+        }else{
+            [dict setObject:[JfgLanguage getLanTextStrByKey:@"DETECTION_AREA_DEFAULT"] forKey:cellDetailTextKey];
+        }
+        [dict setObject:[JfgLanguage getLanTextStrByKey:@"DETECTION_AREA_DESCRI"] forKey:cellFootViewTextKey];
+        [dict setObject:@0 forKey:cellshowSwitchKey];
+        [dict setObject:@(UITableViewCellAccessoryDisclosureIndicator) forKey:cellAccessoryKey];
+        
+        [infraredEnhanced addObject:dict];
+        
+    }
+    
+    return infraredEnhanced;
 }
 
 #pragma mark
@@ -477,7 +509,7 @@
                                          @(dpMsgVideo_autoRecord),
                                          @(dpMsgBase_SDCardInfoList),
                                          @(dpMsgCamera_WarnDuration),
-                                         @(dpMsgCamera_AIRecgnition)
+                                         @(dpMsgCamera_AIRecgnition),@(dpMsgCamera_AreaDetection)
                                          ,@(dpMsgCamera_Infraredenhanced)]];
         
     }

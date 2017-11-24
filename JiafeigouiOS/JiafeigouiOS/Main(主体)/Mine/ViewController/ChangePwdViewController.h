@@ -8,10 +8,17 @@
 
 #import "BaseViewController.h"
 #import <JFGSDK/JFGSDKAcount.h>
+
+typedef NS_ENUM(NSInteger,ChangePwdType) {
+    
+    ChangePwdTypeForAccount,//修改账号密码
+    ChangePwdTypeForDoorlock,//修改门铃开门密码
+    
+};
+
 @interface ChangePwdViewController : BaseViewController
 
-@property (nonatomic,assign)BOOL isSettingPW;//是否是第三方登录设置密码
-@property (nonatomic,copy)NSString *smsToken;
-@property (strong, nonatomic)JFGSDKAcount * jfgAccount;
+@property (nonatomic,assign)ChangePwdType changeType;//修改密码类型
+@property (nonatomic,assign)JFGSDKAcount * jfgAccount;
 
 @end

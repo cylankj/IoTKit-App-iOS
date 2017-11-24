@@ -16,13 +16,16 @@
 #import "UISwitch+Clicked.h"
 #import "JfgTimeFormat.h"
 #import "CusPickerView.h"
+#import "DeviceInfoFootView.h"
+#import "RegionalizationViewController.h"
+#import "CommonMethod.h"
 
 typedef NS_ENUM(NSInteger, pickerTag) {
     pickerTag_beginTime = 1000, // 1000 开始
     pickerTag_endTime,
 };
 
-@interface SafeProtectTableView()<cusDatePickerDelegate, UIPickerViewDelegate, UIPickerViewDataSource, CusPickerViewDelegate>
+@interface SafeProtectTableView()<cusDatePickerDelegate, UIPickerViewDelegate, UIPickerViewDataSource, CusPickerViewDelegate,RegionalizationVCDelegate>
 /**
  *  数据
  */
@@ -226,7 +229,8 @@ typedef NS_ENUM(NSInteger, pickerTag) {
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return [[self.dataArray objectAtIndex:section] count];
+    NSArray *arr = [self.dataArray objectAtIndex:section];
+    return [arr count];
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -244,14 +248,45 @@ typedef NS_ENUM(NSInteger, pickerTag) {
     return [UIView new];
 }
 
--(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
-{
-    return [UIView new];
-}
-
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
 {
+    CGFloat stanrdSpace = 20.0f;
+    
+    NSDictionary *dataInfo = [[self.dataArray objectAtIndex:section] lastObject];
+    
+    if ([[dataInfo allKeys] containsObject:cellFootViewTextKey])
+    {
+        CGSize labelSize = CGSizeOfString([dataInfo objectForKey:cellFootViewTextKey], CGSizeMake(footLabelWidth, kheight), [UIFont systemFontOfSize:footLabelFontSize]);
+        //         + stanrdSpace
+        if (section == [self.dataArray count] - 1)
+        {
+            return labelSize.height + stanrdSpace;
+        }
+        
+        return labelSize.height>stanrdSpace?labelSize.height:stanrdSpace;
+    }
+    
+    if (section == [self.dataArray count] - 1)
+    {
+        return stanrdSpace;
+    }
+    
     return 1.0f;
+}
+
+- (nullable UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
+{
+    NSDictionary *dataInfo = [[self.dataArray objectAtIndex:section] lastObject];
+    
+    if ([[dataInfo allKeys] containsObject:cellFootViewTextKey])
+    {
+        DeviceInfoFootView *footView =[[DeviceInfoFootView alloc] init];
+        footView.footLabel.text = [dataInfo objectForKey:cellFootViewTextKey];
+        footView.footLabel.font = [UIFont systemFontOfSize:footLabelFontSize];
+        return footView;
+    }
+    
+    return nil;
 }
 
 
@@ -285,6 +320,18 @@ typedef NS_ENUM(NSInteger, pickerTag) {
     {
         [self showPickerView:dataInfo];
         return;
+    }else if ([uniuqeIDStr isEqualToString:idCellAreaDetection]){
+
+#pragma mark- 区域侦测
+        RegionalizationViewController *regVC = [RegionalizationViewController new];
+        regVC.cid = self.cid;
+        regVC.isOpenAreaDetection = self.safeProtectVM.safeProtectmodel.isOpenAreaDetection;
+        regVC.delegate = self;
+        UIViewController *VC = [CommonMethod viewControllerForView:self];
+        if (VC) {
+            [VC presentViewController:regVC animated:YES completion:nil];
+        }
+        return;
     }
     
     
@@ -292,6 +339,11 @@ typedef NS_ENUM(NSInteger, pickerTag) {
     {
         [self.safeTableViewDelegate tableViewDidSelect:indexPath withData:dataInfo];
     }
+}
+
+-(void)updateAreaDetection
+{
+    [self initData];
 }
 
 #pragma mark

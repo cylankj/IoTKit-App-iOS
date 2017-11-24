@@ -19,6 +19,11 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>CustomIOSAlertView.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>FBSDKCoreKit.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -111,112 +116,6 @@
 		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
-	<dict>
-		<key>03710E2CB9277773D2C447BAB51372B6</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>04CF549EBEEE7BC87AEAE35397184D94</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>0FBCFD31BA63C194601C25DFDC2C78C0</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>17410207E57887D2E8C9A3BD875B34F7</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>23E78E22504A2DD15B6E739C462187AE</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>28B24030ADE97E3A07654E36C3ADACF7</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>3C7B23B3FE0CE1A6131C7E09B3F47DA3</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>4BDA19F59EB11573C254D14A2A2C4D21</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>58E7450DB13C5ECCE92D3C0DF7CF0903</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>5DC7D7B380A5FEAE815A0DDD986A0174</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>9C2D3327264C1DB785EADD89D3242323</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>9DC8D9E02903E93BD0B2FEC9D846EA20</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>9E033EDB5EC0819481B0546434FA577B</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>A316B54C67E947D23CECD230FA5BFAEF</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>B932C198B2811DE34F4FE4DD2668AC2C</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>C7C5FD310966070D9553E5B95C59641B</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>D7B26F0A432C2A5E3E2EC8F91A096CA8</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>DF2D3DF4CCB9C9F900063CF3F58E2598</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>EAE45C123C22F83F258F201FDFBA835E</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>FB06743FD599C11559E52D2D552AEE80</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>FCEF3CC1D8BB72504AA76A702CEC910E</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-	</dict>
+	<dict/>
 </dict>
 </plist>

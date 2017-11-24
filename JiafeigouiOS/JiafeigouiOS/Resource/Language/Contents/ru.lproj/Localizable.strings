@@ -1,6 +1,6 @@
 /* ru.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Wed Nov 15 11:53:17 CST 2017.  
+Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Отсутствует подключение к сети";
 "REPEAT_TIME" = "%d секунды";
@@ -103,7 +103,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:17 CST 2017.
 "DOOR_MAGNET_NAME" = "iHome";
 "DOG_CAMERA_NAME" = "Камера";
 "CAMERA" = "Камера";
-"Cloud_Camera" = "Облачная камера";
+"Cloud_Camera" = "Камера (версия батареи)";
 "Consumer_Camera" = "Потребительская камера";
 "Smart_bell_Battery" = "Умный дверной звонок (версия батареи)";
 "Smart_bell_Power" = "Умный дверной звонок (версия питания)";
@@ -931,7 +931,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:17 CST 2017.
 "H5_Panoramic" = "панорамный";
 "H5_Fisheye" = "Рыбий";
 "H5_Asteroid" = "астероид";
-"H5_VR mode" = "Режим VR";
+"H5_VRmode" = "Режим VR";
 "Tap1_Shared_LandscapeTips" = "Если вы не работаете с ландшафтом, включите поворот экрана в системе";
 "Tap1_LogoSelect" = "Выбор Logo";
 "Tap3_ShareDevice_SharedUsers" = "Общие пользователи";
@@ -1092,7 +1092,6 @@ Created by cylan language tool  on Wed Nov 15 11:53:17 CST 2017.
 "RTMP_STREAM_KEY" = "Ключ потока:";
 "TURN_ON_HOTSPOT_GUIDE" = "Пожалуйста, подключитесь, затем включите систему «Настройки»> «Личный Точка»,";
 "LIVE_STOP_POP" = "После остановки, живой адрес будет недействительным, остановить ли?";
-"DEVICE_SHARE_LIMIT_TIPS" = "Достигнуто количество достигнутых лимитов";
 "LIVE_RTMP_ENTER_KEY" = "Введите ключ";
 "FAQ_SINA_WEIBO" = "Не поддерживайте живое видео в блоге Sina";
 "FAQ_SINA_WEIBO_TEXT1" = "1, чтобы убедиться, что учетная запись имеет аутентификацию подлинности в блоге Sina и не является учетной записью черного списка.";
@@ -1146,4 +1145,23 @@ Created by cylan language tool  on Wed Nov 15 11:53:17 CST 2017.
 "Camera_Outdoor" = "Камера (наружная версия)";
 "MESSAGES_FACE_VISIT_TIMES" = "Посетите %@ раз в течение 30 дней";
 "SETTINGS_FAILED" = "Настройки не удалось";
+"MESSAGES_FACE_VISIT_SUM" = "%@ человек посетили сегодня";
 "INFRARED_IDENTIFY_SET" = "ИК-распознавание";
+"DETECTION_AREA" = "зона обнаружения";
+"DETECTION_AREA_DEFAULT" = "дефолт";
+"DETECTION_AREA_SET" = "Был установлен";
+"DETECTION_AREA_DESCRI" = "Все зоны обнаруживаются по умолчанию и будут отправлять сигналы тревоги только при изменении указанной области";
+"DETECTION_AREA_ADD" = "Установить зону обнаружения";
+"DETECTION_AREA_RESTORE" = "Восстановить значения по умолчанию";
+"DETECTION_AREA_GUIDE" = "Перетащите красную рамку, чтобы установить область обнаружения";
+"DETECTION_AREA_FAILED_LOAD" = "не удалось загрузить график реального времени";
+"DOOR_PASSWORD" = "Введите пароль двери";
+"DOOR_OPENING" = "Открытие ...";
+"DOOR_OPENED" = "открытый";
+"DOOR_OPEN_FAIL" = "не открывать дверь";
+"MODIFY_DOOR_PSW" = "Изменить пароль двери";
+"OPEN_DOOR_SUCCE_MSG" = "Хорошо открыть дверь";
+"CLOSE_DOOR_SUCCE_MSG" = "Закройте дверь успешно";
+"DOOR_WRONG_PSW" = "неправильный пароль";
+"DOOR_WRONG_PSW_MSG" = "Неверный пароль двери";
+"DETECTION_AREA_FAILED_LOAD_RETRY" = "не получить изображение в реальном времени, поэтому не можете установить область, повторите попытку.";

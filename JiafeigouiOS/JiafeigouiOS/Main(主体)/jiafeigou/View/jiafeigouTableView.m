@@ -745,7 +745,7 @@
 //                DoorVideoVC *doorVideo = [[DoorVideoVC alloc] init];
 //                doorVideo.pType = productType_DoorBell;
 //                doorVideo.cid = dev.uuid;
-//                doorVideo.actionType = doorActionTypeUnActive;
+//                doorVideo.actionType = doorActionTypeActive;
 //                doorVideo.isOnline = YES;
 //                ///[cid]/[timestamp].jpg
 //                doorVideo.hidesBottomBarWhenPushed = YES;

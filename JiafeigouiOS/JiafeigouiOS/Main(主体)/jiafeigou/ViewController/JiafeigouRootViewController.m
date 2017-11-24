@@ -46,8 +46,7 @@
 #import "BaseNavgationViewController.h"
 #import "WebChatBindViewController.h"
 #import <pop/POP.h>
-#import "MsgForAIViewController.h"
-#import "AIRobotRequest.h"
+#import "RegionalizationViewController.h"
 
 @interface JiafeigouRootViewController ()<TimeChangeMonitorDelegate,LoginManagerDelegate,JFGSDKCallbackDelegate>
 {
@@ -490,16 +489,14 @@
     }else{
         
         AddDeviceMainViewController *addDevice = [AddDeviceMainViewController new];
-//        //MsgForAIViewController
-//        JiafeigouDevStatuModel *model = [JiafeigouDevStatuModel new];
-//        model.uuid = @"290100000002";
-//        MsgForAIViewController *addDevice = [MsgForAIViewController new];
-//        addDevice.devModel = model;
-//        addDevice.cid = model.uuid;
         UINavigationController *nav = [[UINavigationController alloc]initWithRootViewController:addDevice];
         nav.navigationBarHidden = YES;
         addDevice.hidesBottomBarWhenPushed = YES;
         [self.navigationController pushViewController:addDevice animated:YES];
+        
+//        RegionalizationViewController *rvc = [RegionalizationViewController new];
+//        rvc.cid = @"280500000018";
+//        [self presentViewController:rvc animated:YES completion:nil];
         
     }
     [self.addButton setImage:[UIImage imageNamed:@"btn_addto"] forState:UIControlStateNormal];

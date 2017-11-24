@@ -8,16 +8,20 @@
 
 #import "BaseViewModel.h"
 #import "tableViewDelegate.h"
+#import "SafeProtectModel.h"
 
 @interface SafeProtectViewModel : BaseViewModel
 
 @property (weak, nonatomic) id<tableViewDelegate> delegate;
 
+@property (strong, nonatomic) SafeProtectModel *safeProtectmodel;
+
 @property (nonatomic, assign, readonly) int beginTime;
 @property (nonatomic, assign, readonly) int endTime;
 @property (nonatomic, assign, readonly) int repeat;
 @property (nonatomic, assign, readonly) BOOL isWarnEnable;
-@property (nonatomic, assign, readonly) BOOL isMotionDetectAbnormal;
+@property (nonatomic, assign, readonly) BOOL isMotionDetectAbnormal;//
+
 
 - (void)requestDataWithCid:(NSString *)cid;
 // 移动侦测开关

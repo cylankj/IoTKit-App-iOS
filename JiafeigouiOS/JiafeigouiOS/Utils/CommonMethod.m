@@ -1021,14 +1021,6 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     return NO;
 }
 
-+(BOOL)isOutdoorDevForOS:(NSString *)os
-{
-    if ([os isEqualToString:@"84"]) {
-        return YES;
-    }
-    return NO;
-}
-
 +(JFGDevViewType)devBigTypeForOS:(NSString *)os
 {
     PropertyManager *_propertyTool = [[PropertyManager alloc] init];

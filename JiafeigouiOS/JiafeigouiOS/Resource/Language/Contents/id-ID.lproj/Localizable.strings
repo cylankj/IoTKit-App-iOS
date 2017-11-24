@@ -1,6 +1,6 @@
 /* id-ID.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.  
+Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Tidak terhubung ke jaringan";
 "REPEAT_TIME" = "%d detik";
@@ -103,7 +103,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "DOOR_MAGNET_NAME" = "iRumah";
 "DOG_CAMERA_NAME" = "Kamera";
 "CAMERA" = "Kamera";
-"Cloud_Camera" = "Kamera awan";
+"Cloud_Camera" = "Bel (Battery Version)";
 "Consumer_Camera" = "Kamera konsumen";
 "Smart_bell_Battery" = "Smart Doorbell (Versi Baterai)";
 "Smart_bell_Power" = "Smart Doorbell (Versi Daya)";
@@ -163,7 +163,8 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "MSG_SD_ON" = "Kartu memori telah terdeteksi . Kamera akan merekam video hanya ketika mendeteksi gerakan";
 "MSG_SD_ON_1" = "Kartu memori telah terdeteksi . Harap format kartu memori terlebih dahulu";
 "MSG_SYSTEM_UPGRADE" = "Keren abis! Upgrade sistem untuk V%@";
-"MSG_WARN_ON" = "Anda telah membuka deteksi gerakan . Perangkat akan memberitahu anda segera ketika sesuatu bergerak";
+"MSG_WARN_ON" = "Deteksi gerak telah dinyalakan, Anda akan diberi tahu saat gerakan terdeteksi.
+Anda telah membuka deteksi gerakan . Perangkat akan memberitahu anda segera ketika sesuatu bergerak";
 "MSG_WARN_OFF" = "Anda telah menutup deteksi gerakan";
 "MSG_WARNING" = "Penemuan Baru";
 "MSG_REBIND" = "Perangkat ditambahkan oleh %@ . Setiap pertanyaan , silahkan hubungi kami";
@@ -931,7 +932,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "H5_Panoramic" = "Panorama";
 "H5_Fisheye" = "Fisheye";
 "H5_Asteroid" = "Asteroid";
-"H5_VR mode" = "Mode VR";
+"H5_VRmode" = "Mode VR";
 "Tap1_Shared_LandscapeTips" = "Jika tidak bekerja dengan landscape, silahkan aktifkan Rotasi Layar di sistem";
 "Tap1_LogoSelect" = "logo pilih";
 "Tap3_ShareDevice_SharedUsers" = "Dibagikan pengguna";
@@ -1092,7 +1093,6 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "RTMP_STREAM_KEY" = "Kunci arus";
 "TURN_ON_HOTSPOT_GUIDE" = "Silahkan \"Koneksi\", lalu nyalakan sistem \"Settings\" > \"Personal Hotspot\"";
 "LIVE_STOP_POP" = "Setelah berhenti, alamat langsung tidak valid, apakah akan berhenti?";
-"DEVICE_SHARE_LIMIT_TIPS" = "Jumlah batas saham tercapai";
 "LIVE_RTMP_ENTER_KEY" = "Masukkan kunci";
 "FAQ_SINA_WEIBO" = "Jangan mendukung Sina Weibo live video";
 "FAQ_SINA_WEIBO_TEXT1" = "1, untuk memastikan bahwa akun tersebut memiliki autentikasi nama asli Sina Weibo, dan bukan akun daftar hitam.";
@@ -1146,4 +1146,23 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "Camera_Outdoor" = "Kamera (versi luar)";
 "MESSAGES_FACE_VISIT_TIMES" = "Kunjungi %@ kali dalam 30 hari";
 "SETTINGS_FAILED" = "Setelan gagal";
+"MESSAGES_FACE_VISIT_SUM" = "%@ orang berkunjung hari ini";
 "INFRARED_IDENTIFY_SET" = "Identifikasi infra merah";
+"DETECTION_AREA" = "Deteksi daerah";
+"DETECTION_AREA_DEFAULT" = "default";
+"DETECTION_AREA_SET" = "Telah di atur";
+"DETECTION_AREA_DESCRI" = "Semua zona terdeteksi secara default, dan hanya akan mengirim alarm bila area yang ditentukan berubah";
+"DETECTION_AREA_ADD" = "Tetapkan area deteksi";
+"DETECTION_AREA_RESTORE" = "Kembalikan Default";
+"DETECTION_AREA_GUIDE" = "Seret kotak merah untuk mengatur area deteksi";
+"DETECTION_AREA_FAILED_LOAD" = "Gagal memuat latar belakang real-time";
+"DOOR_PASSWORD" = "Silahkan masukkan password pintu";
+"DOOR_OPENING" = "Pembukaan…";
+"DOOR_OPENED" = "Dibuka";
+"DOOR_OPEN_FAIL" = "gagal membuka pintu";
+"MODIFY_DOOR_PSW" = "Ubah kata kunci pintu";
+"OPEN_DOOR_SUCCE_MSG" = "Buka pintunya dengan sukses";
+"CLOSE_DOOR_SUCCE_MSG" = "Tutup pintunya dengan sukses";
+"DOOR_WRONG_PSW" = "kata sandi salah";
+"DOOR_WRONG_PSW_MSG" = "Password pintu salah";
+"DETECTION_AREA_FAILED_LOAD_RETRY" = "gagal mendapatkan live image, jadi tidak bisa mengatur area, silahkan coba lagi.";

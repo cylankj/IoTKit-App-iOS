@@ -1,6 +1,6 @@
 /* zh-Hant.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.  
+Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "連接失敗，請檢查網路";
 "REPEAT_TIME" = "%d秒";
@@ -103,7 +103,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "DOOR_MAGNET_NAME" = "雲相框";
 "DOG_CAMERA_NAME" = "智能攝像機";
 "CAMERA" = "攝像機";
-"Cloud_Camera" = "云攝像機";
+"Cloud_Camera" = "智能攝像機(電池版)";
 "Consumer_Camera" = "消費類攝像機";
 "Smart_bell_Battery" = "智能門鈴(電池版)";
 "Smart_bell_Power" = "智能門鈴(無電池版)";
@@ -931,7 +931,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "H5_Panoramic" = "更多";
 "H5_Fisheye" = "全景";
 "H5_Asteroid" = "魚眼";
-"H5_VR mode" = "小行星";
+"H5_VRmode" = "小行星";
 "Tap1_Shared_LandscapeTips" = "若橫屏無效，請開啟系統屏幕旋轉功能";
 "Tap1_LogoSelect" = "Logo選擇";
 "Tap3_ShareDevice_SharedUsers" = "已分享用戶";
@@ -1092,7 +1092,6 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "RTMP_STREAM_KEY" = "密鑰:";
 "TURN_ON_HOTSPOT_GUIDE" = "請先“連接”，再開啟系統“設置” > “個人熱點”";
 "LIVE_STOP_POP" = "停止後，直播地址將失效，是否停止？";
-"DEVICE_SHARE_LIMIT_TIPS" = "分享人數已達上限";
 "LIVE_RTMP_ENTER_KEY" = "請輸入密鑰";
 "FAQ_SINA_WEIBO" = "新浪微博無法直播";
 "FAQ_SINA_WEIBO_TEXT1" = "1、確保所綁定的賬號已完成新浪微博的實名認證，並且不是黑名單賬戶。";
@@ -1146,4 +1145,23 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "Camera_Outdoor" = "智能攝像機 (戶外版)";
 "MESSAGES_FACE_VISIT_TIMES" = "最近30天來訪 %@ 次";
 "SETTINGS_FAILED" = "設置失敗";
+"MESSAGES_FACE_VISIT_SUM" = "今日來訪 %@ 人";
 "INFRARED_IDENTIFY_SET" = "紅外增強識別";
+"DETECTION_AREA" = "偵測區域";
+"DETECTION_AREA_DEFAULT" = "默認";
+"DETECTION_AREA_SET" = "已設置";
+"DETECTION_AREA_DESCRI" = "默認偵測全部區域，設置後，僅在指定區域畫面變化時報警";
+"DETECTION_AREA_ADD" = "設置偵測區域";
+"DETECTION_AREA_RESTORE" = "恢復默認";
+"DETECTION_AREA_GUIDE" = "拖拽紅色方框，設置偵測區域";
+"DETECTION_AREA_FAILED_LOAD" = "加載實時圖失敗";
+"DOOR_PASSWORD" = "請輸入開門密碼";
+"DOOR_OPENING" = "開門中…";
+"DOOR_OPENED" = "開門完成";
+"DOOR_OPEN_FAIL" = "開門失敗";
+"MODIFY_DOOR_PSW" = "修改開門密碼";
+"OPEN_DOOR_SUCCE_MSG" = "開門成功";
+"CLOSE_DOOR_SUCCE_MSG" = "關門成功";
+"DOOR_WRONG_PSW" = "密碼錯誤";
+"DOOR_WRONG_PSW_MSG" = "開門密碼輸入錯誤";
+"DETECTION_AREA_FAILED_LOAD_RETRY" = "未獲取到實時畫面，無法設置偵測區域，請重試";

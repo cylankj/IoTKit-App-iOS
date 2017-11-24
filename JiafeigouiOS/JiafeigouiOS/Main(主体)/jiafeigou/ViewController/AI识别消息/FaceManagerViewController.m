@@ -157,6 +157,7 @@
         facebook.face_id = model.face_id;
         facebook.person_id = self.msgModel.person_id;
         facebook.selectedIndexPath = indexPath;
+        facebook.vcType = FaceAddressBookVCTypeMoveTo;
         [self presentViewController:facebook animated:YES completion:nil];
         
     }else if(itemType == MenuItemTypeDel){

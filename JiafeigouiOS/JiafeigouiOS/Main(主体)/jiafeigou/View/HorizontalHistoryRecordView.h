@@ -37,7 +37,7 @@ static CGFloat markImageWidth = 3360/2;
 //滚动条指示所在历史视频
 @property (nonatomic,strong)historyVideoDurationTimeModel *currentHistoryVideoModel;
 
-@property (nonatomic,assign)id<HorizontalHistoryRecordViewDelegate>delegate;
+@property (nonatomic,weak)id<HorizontalHistoryRecordViewDelegate>delegate;
 
 @property (nonatomic,assign)CGFloat fristRowHeight;
 

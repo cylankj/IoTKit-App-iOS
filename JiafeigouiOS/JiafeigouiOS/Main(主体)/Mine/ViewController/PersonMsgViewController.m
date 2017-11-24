@@ -486,6 +486,7 @@
             
             ChangePwdViewController * changePwd = [ChangePwdViewController new];
             changePwd.jfgAccount = self.jfgAccount;
+            changePwd.changeType = ChangePwdTypeForAccount;
             [self.navigationController pushViewController:changePwd animated:YES];
             
         }

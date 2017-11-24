@@ -21,6 +21,7 @@ PODS:
   - Bolts/AppLinks (1.8.4):
     - Bolts/Tasks
   - Bolts/Tasks (1.8.4)
+  - CustomIOSAlertView (0.9.5)
   - FBSDKCoreKit (4.25.0):
     - Bolts (~> 1.7)
   - FBSDKLoginKit (4.25.0):
@@ -83,6 +84,7 @@ PODS:
 DEPENDENCIES:
   - AFNetworking (~> 3.0)
   - Aspects
+  - CustomIOSAlertView (~> 0.9.5)
   - FBSDKCoreKit (~> 4.25.0)
   - FBSDKLoginKit (~> 4.25.0)
   - Google/SignIn (~> 3.0.3)
@@ -104,6 +106,7 @@ SPEC CHECKSUMS:
   AFNetworking: 5e0e199f73d8626b11e79750991f5d173d1f8b67
   Aspects: 7595ba96a6727a58ebcbfc954497fc5d2fdde546
   Bolts: 8a7995239dbe724f9cba2248b766d48b7ebdd322
+  CustomIOSAlertView: cc4fa8e36219be3fd5ebcd40789f5b4aaae0f38e
   FBSDKCoreKit: 53e3f4bfb64e80c5f229dd30ae33ff57fbbbd2d1
   FBSDKLoginKit: f628c09684dae9c17f071cf90b014e886f5093ea
   FirebaseAnalytics: e5fe8486efc01bec33f6bf82e2fa9fce4b124052
@@ -128,6 +131,6 @@ SPEC CHECKSUMS:
   UITableView+FDTemplateLayoutCell_Bell: ee65b057dbbe937bb6764f33d4ca6910d05a0efd
   weibolive_ios_sdk: ecfbab30bca32346a04953334257a28a02152ab5
 
-PODFILE CHECKSUM: 672bd118c1af194f31512dbd7f2199b405097a03
+PODFILE CHECKSUM: 7cfe839d071b044b3d3102807be0e4ec373ff67d
 
-COCOAPODS: 1.2.1
+COCOAPODS: 1.4.0.beta.2

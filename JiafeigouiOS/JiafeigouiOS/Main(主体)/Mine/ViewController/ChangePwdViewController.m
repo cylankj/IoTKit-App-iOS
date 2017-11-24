@@ -10,6 +10,7 @@
 #import "JfgGlobal.h"
 #import "ProgressHUD.h"
 #import <JFGSDK/JFGSDK.h>
+#import <JFGSDK/JFGSDKDataPoint.h>
 #import "CommonMethod.h"
 #import "LoginManager.h"
 #import "JfgConstKey.h"
@@ -19,9 +20,12 @@
     BOOL ischangedSucces;
 }
 @property (nonatomic, strong) UIView *bgView;
-@property (nonatomic, strong) UITextField * pwdTextField;
-@property (nonatomic, strong) UITextField * confirmPwdTextField;
-@property (nonatomic, strong) UIView * line;
+@property (nonatomic, strong) UITextField *pwdTextField;
+@property (nonatomic, strong) UITextField *confirmPwdTextField;
+@property (nonatomic, strong) UIView *line;
+@property (nonatomic, strong) UIView *eyeView1;
+@property (nonatomic, strong) UIView *eyeView2;
+
 @end
 
 @implementation ChangePwdViewController
@@ -45,6 +49,7 @@
 {
     [super viewDidDisappear:animated];
     [JFGSDK removeDelegate:self];
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
 }
 
 #pragma mark view
@@ -58,6 +63,9 @@
     self.rightButton.hidden = NO;
     self.rightButton.enabled = NO;
     self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"CHANGE_PWD"];
+    if (self.changeType == ChangePwdTypeForDoorlock) {
+        self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"MODIFY_DOOR_PSW"];
+    }
 }
 - (void)initView
 {
@@ -67,6 +75,9 @@
     [self.bgView addSubview:self.pwdTextField];
     [self.bgView addSubview:self.confirmPwdTextField];
     [self.bgView addSubview:self.line];
+
+    [self.bgView addSubview:self.eyeView1];
+    [self.bgView addSubview:self.eyeView2];
 }
 
 - (void)initViewLayout
@@ -81,10 +92,18 @@
     [self.pwdTextField mas_makeConstraints:^(MASConstraintMaker *make) {
         make.top.equalTo(@0);
         make.left.equalTo(@15);
-        make.right.equalTo(@(-5));
+        make.right.equalTo(@(-40));
         make.height.equalTo(@44);
     }];
-    [_line mas_makeConstraints:^(MASConstraintMaker *make) {
+    
+    [self.eyeView1 mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.pwdTextField.mas_top).with.offset(5);
+        make.left.equalTo(self.pwdTextField.mas_right);
+        make.width.equalTo(@35);
+        make.height.equalTo(@35);
+    }];
+    
+    [self.line mas_makeConstraints:^(MASConstraintMaker *make) {
         make.top.mas_equalTo(self.pwdTextField.mas_bottom);
         make.left.equalTo(@15);
         make.right.equalTo(@(-5));
@@ -93,8 +112,15 @@
     [self.confirmPwdTextField mas_makeConstraints:^(MASConstraintMaker *make) {
         make.top.mas_equalTo(self.line.mas_bottom);
         make.left.equalTo(@15);
-        make.right.equalTo(@(-5));
+        make.right.equalTo(@(-40));
         make.height.equalTo(@44);
+    }];
+    
+    [self.eyeView2 mas_makeConstraints:^(MASConstraintMaker *make) {
+    make.top.equalTo(self.confirmPwdTextField.mas_top).with.offset(5);
+        make.left.equalTo(self.confirmPwdTextField.mas_right);
+        make.width.equalTo(@35);
+        make.height.equalTo(@35);
     }];
 }
 - (BOOL)textFieldShouldReturn:(UITextField *)textField{
@@ -133,10 +159,19 @@
         
     }
     
-    if (str.length > pwMaxLength) {
-        //[ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"PASSWORD_LESSTHAN_SIX"]];
-        return NO;
+    if (self.changeType == ChangePwdTypeForAccount) {
+        if (str.length > pwMaxLength) {
+            
+            return NO;
+        }
+    }else if (self.changeType == ChangePwdTypeForDoorlock){
+        if (str.length > 16) {
+            
+            return NO;
+        }
     }
+    
+    
     return YES;
 }
 
@@ -183,6 +218,7 @@
     
     return _pwdTextField;
 }
+
 - (UITextField *)confirmPwdTextField{
     if (_confirmPwdTextField == nil)
     {
@@ -196,6 +232,7 @@
         [_confirmPwdTextField setFont:[UIFont fontWithName:@"PingFangSC" size:16.0f]];
         _confirmPwdTextField.clearButtonMode = UITextFieldViewModeAlways;
         _confirmPwdTextField.delegate = self;
+        _confirmPwdTextField.rightViewMode =  UITextFieldViewModeWhileEditing;
     }
     return _confirmPwdTextField;
 }
@@ -206,6 +243,59 @@
     }
     return _line;
 }
+
+-(UIView *)eyeView1
+{
+    if (!_eyeView1) {
+        _eyeView1 = [self pwTextFieldRightViewWitFrame:CGRectMake(0, 0, 0, 0) tag:10000];
+    }
+    return _eyeView1;
+}
+
+-(UIView *)eyeView2
+{
+    if (!_eyeView2) {
+        _eyeView2 = [self pwTextFieldRightViewWitFrame:CGRectMake(0, 0, 0, 0) tag:10001];
+    }
+    return _eyeView2;
+}
+
+//创建密码输入框右边控件
+-(UIView *)pwTextFieldRightViewWitFrame:(CGRect)frame tag:(int)tag
+{
+    UIView *bgView = [[UIView alloc]initWithFrame:CGRectMake(frame.origin.x, frame.origin.y, 35, 35)];
+    UIButton *lockBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    lockBtn.frame = CGRectMake(0, 0, 35, 35);
+    [lockBtn setImage:[UIImage imageNamed:@"lock_btn_noshow password"] forState:UIControlStateNormal];
+    [lockBtn setImage:[UIImage imageNamed:@"lock_btn_show password"] forState:UIControlStateSelected];
+    lockBtn.adjustsImageWhenDisabled = NO;
+    lockBtn.adjustsImageWhenHighlighted = NO;
+    lockBtn.tag = tag;
+    [lockBtn addTarget:self action:@selector(lockPwAction:) forControlEvents:UIControlEventTouchUpInside];
+    [bgView addSubview:lockBtn];
+    return bgView;
+}
+
+-(void)lockPwAction:(UIButton *)sender
+{
+    sender.selected = !sender.selected;
+    if (sender.tag == 10000) {
+        //原始密码
+        if (sender.selected) {
+            self.pwdTextField.secureTextEntry = NO;
+        }else{
+            self.pwdTextField.secureTextEntry = YES;
+        }
+    }else if (sender.tag == 10001){
+        //新密码
+        if (sender.selected) {
+            self.confirmPwdTextField.secureTextEntry = NO;
+        }else{
+            self.confirmPwdTextField.secureTextEntry = YES;
+        }
+    }
+}
+
 #pragma mark action
 - (void)leftButtonAction:(UIButton *)sender
 {
@@ -214,28 +304,102 @@
 
 - (void)rightButtonAction:(UIButton *)sender
 {
+    int maxLength = pwMinLength;
+    if (self.changeType == ChangePwdTypeForDoorlock) {
+        maxLength = 16;
+    }
     if (_pwdTextField.text.length == 0) {
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"CURRENT_PWD"]];
     }  else if (_confirmPwdTextField.text.length == 0) {
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"PASSWORD_LESSTHAN_SIX"]];
-    }else if (_confirmPwdTextField.text.length>pwMaxLength || _confirmPwdTextField.text.length<pwMinLength){
+    }else if (_confirmPwdTextField.text.length>maxLength || _confirmPwdTextField.text.length<pwMinLength){
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"PASSWORD_LESSTHAN_SIX"]];
     }else{
         
-        if ([self.jfgAccount.account isKindOfClass:[NSString class]]) {
-            [JFGSDK changePasswordWithAccount:self.jfgAccount.account oldPassword:_pwdTextField.text newPassword:_confirmPwdTextField.text];
-            [ProgressHUD showProgress:nil];
-        }else{
+        if (self.changeType == ChangePwdTypeForDoorlock) {
             
-            JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
-            if (account.account) {
-                [JFGSDK changePasswordWithAccount:account.account oldPassword:_pwdTextField.text newPassword:_confirmPwdTextField.text];
+#pragma mark- 修改开门密码
+            [self changeOpenDoorPw];
+            
+            
+        }else if (self.changeType == ChangePwdTypeForAccount){
+            
+            if ([self.jfgAccount.account isKindOfClass:[NSString class]]) {
+                
+                [JFGSDK changePasswordWithAccount:self.jfgAccount.account oldPassword:_pwdTextField.text newPassword:_confirmPwdTextField.text];
                 [ProgressHUD showProgress:nil];
+                
+            }else{
+                
+                JFGSDKAcount *account = [LoginManager sharedManager].accountCache;
+                if (account.account) {
+                    [JFGSDK changePasswordWithAccount:account.account oldPassword:_pwdTextField.text newPassword:_confirmPwdTextField.text];
+                    [ProgressHUD showProgress:nil];
+                }
+                
             }
             
         }
     }
+}
+
+
+-(void)changeOpenDoorPw
+{
+    [ProgressHUD showProgress:nil];
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+    [self performSelector:@selector(openDoorTimeout) withObject:nil afterDelay:30];
     
+    DataPointSeg *seg = [[DataPointSeg alloc]init];
+    seg.msgId = 405;
+    seg.version = 0;
+    seg.value = [MPMessagePackWriter writeObject:@[self.pwdTextField.text,self.confirmPwdTextField.text] error:nil];
+    
+    __weak typeof(self) weakSelf = self;
+    [[JFGSDKDataPoint sharedClient] robotDataWithPeer:self.cid action:41 dps:@[seg] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+        
+        for (NSArray *subArr in idDataList) {
+            for (DataPointSeg *seg in subArr) {
+                
+                if (seg.msgId  == 406) {
+                    
+                    id obj = [MPMessagePackReader readData:seg.value error:nil];
+                    if ([obj isKindOfClass:[NSNumber class]]) {
+                        
+                        int ret = [obj intValue];
+                        if (ret == 0) {
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                            int64_t delayInSeconds = 1.5;
+                            dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+                            dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                                
+                                [ProgressHUD dismiss];
+                                [weakSelf.navigationController popViewControllerAnimated:YES];
+                                
+                            });
+                        }else{
+                             [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_FAILED"]];
+                        }
+                        
+                    }else{
+                         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_FAILED"]];
+                    }
+                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+                    
+                }
+                
+            }
+        }
+        
+    } failure:^(RobotDataRequestErrorType type) {
+         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_FAILED"]];
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+    }];
+}
+
+-(void)openDoorTimeout
+{
+     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_FAILED"]];
 }
 
 -(void)jfgResultIsRelatedToAccountWithType:(JFGAccountResultType)type error:(JFGErrorType)errorType

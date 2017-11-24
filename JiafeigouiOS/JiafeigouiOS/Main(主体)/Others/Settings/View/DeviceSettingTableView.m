@@ -24,6 +24,7 @@
 #import "JfgCacheManager.h"
 #import "JFGGrayPolicyManager.h"
 
+
 ////设置门磁推送开关
 //class MsgClientSetMagWarnReq:public MsgHeader{
 //    
@@ -56,9 +57,9 @@
         self.dataSource = self;
         self.delegate = self;
 //        打包机 升级Xcode 后在兼容， 暂时屏蔽
-//        if (@available(iOS 11.0, *)) {
-//            self.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
-//        }
+        if (@available(iOS 11.0, *)) {
+            self.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+        }
     }
     
     return self;

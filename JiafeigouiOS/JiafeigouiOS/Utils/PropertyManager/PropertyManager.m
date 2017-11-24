@@ -51,7 +51,8 @@ NSString *const pAiRecognition = @"AI_RECOGNITION";
 NSString *const pAlarmDuration = @"INTERVAL_ALARM";
 NSString *const pRemoteWatchKey = @"REMOTE_VIEW";//是否支持省电模式
 NSString *const pInfraredEnhanced = @"INFRARED_ENHANCED_RECOGNITION";//红外增强
-
+NSString *const pAreaDetection = @"DETECTION_ZONE";//区域侦测
+NSString *const pDoorLockKey = @"DOOR_LOCK";//门锁
 
 
 @interface PropertyManager()

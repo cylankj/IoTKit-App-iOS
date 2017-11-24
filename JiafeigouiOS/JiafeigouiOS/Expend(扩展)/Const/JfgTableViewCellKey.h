@@ -80,5 +80,9 @@ NSString *const idCellWarnBeginTime = @"_idCellWarnBeginTime";
 NSString *const idCellWarnEndTime = @"_idCellWarnEndTime";
 NSString *const idCellRepeatTime = @"_idCellRepeatTime";
 NSString *const idCellInfraredEnhanced = @"_idCellInfraredEnhanced";
+NSString *const idCellAreaDetection = @"_idCellAreaDetection";//区域侦测
+
+//门锁
+NSString *const idCellDoorlockPw = @"_idCellDoorlockPw";
 
 #endif /* JfgTableViewCellKey_h */

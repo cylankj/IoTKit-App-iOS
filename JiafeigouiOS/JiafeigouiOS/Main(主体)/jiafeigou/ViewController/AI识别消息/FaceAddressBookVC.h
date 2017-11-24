@@ -8,6 +8,14 @@
 
 #import "JFGBaseViewController.h"
 
+typedef NS_ENUM(NSInteger,FaceAddressBookVCType) {
+    
+    FaceAddressBookVCTypeRecognition,//识别
+    FaceAddressBookVCTypeMoveTo,//移动到
+    
+};
+
+
 @protocol FaceAddressBookVCDelegate <NSObject>
 
 
@@ -22,6 +30,7 @@
 @property (nonatomic,copy)NSString *person_id;//如果有，则传入
 @property (nonatomic,strong)NSIndexPath *selectedIndexPath;
 @property (nonatomic,weak)id <FaceAddressBookVCDelegate> delegate;
+@property (nonatomic,assign)FaceAddressBookVCType vcType;
 
 @end
 

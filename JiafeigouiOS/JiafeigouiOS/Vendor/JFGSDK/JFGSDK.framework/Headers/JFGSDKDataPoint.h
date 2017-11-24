@@ -220,4 +220,19 @@ typedef void (^RobotDataFailedBlock)(RobotDataRequestErrorType type);
                                 success:(RobotGetDataRspBlock)block
                                 failure:(RobotDataFailedBlock)failedBlock;
 
+
+/*
+ * 透传接口
+ * 客户端和设备端之间的实时通信的请求消息。
+   服务端处理方式：如果对端在线，服务器直接转发; 如果对端不在线，该消息将被丢弃
+   使用场景示例：获取设备电量，SD卡容量等。
+   目的端将响应的seq号与请求的seq保持相同，以保证消息的一一对应。
+ * @param action
+ */
+-(NSNumber *)robotDataWithPeer:(NSString *)peer
+                        action:(int)action
+                           dps:(NSArray <DataPointSeg *>*)dps
+                       success:(RobotGetDataRspBlock)block
+                       failure:(RobotDataFailedBlock)failedBlock;
+
 @end

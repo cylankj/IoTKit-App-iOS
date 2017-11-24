@@ -26,11 +26,14 @@
         
         if (error) {
             //NSLog(@"error:%@ imageUrl:%@",error,imageURL);
-            NSString *hostUrl = [NSString stringWithFormat:@"%@://%@", imageURL.scheme, imageURL.host];
-            hostUrl = [NSString stringWithFormat:@"%@%@",hostUrl,[imageURL path]];
-            NSString *errorMsg = [NSString stringWithFormat:@"imageLoadingFailed:error:%@ url:%@",error.userInfo.description,hostUrl];
-            [JFGSDK appendStringToLogFile:errorMsg];
-            FLLog(@"error:%@ imageUrl:%@",error,imageURL);
+            if ([imageURL isKindOfClass:[NSURL class]]) {
+                NSString *hostUrl = [NSString stringWithFormat:@"%@://%@", imageURL.scheme, imageURL.host];
+                hostUrl = [NSString stringWithFormat:@"%@%@",hostUrl,[imageURL path]];
+                NSString *errorMsg = [NSString stringWithFormat:@"imageLoadingFailed:error:%@ url:%@",error.userInfo.description,hostUrl];
+                [JFGSDK appendStringToLogFile:errorMsg];
+                FLLog(@"error:%@ imageUrl:%@",error,imageURL);
+            }
+            
         }
         
     }];

@@ -37,6 +37,8 @@
 #import "Cf720WiFiAnimationVC.h"
 #import "WifiModeFor720CFResultVC.h"
 #import "DeepSleepVC.h"
+#import "ChangePwdViewController.h"
+#import "RegionalizationViewController.h"
 
 @interface DeviceSettingVC()<autoPhotoVCDelegate,UIAlertViewDelegate,JFGSDKCallbackDelegate, setAngleDelegate, safeDelegate,AddDeviceGuideVCNextActionDelegate>
 {
@@ -351,6 +353,13 @@
                 [self.navigationController pushViewController:deviGuide animated:YES];
             }
         }
+    }else if ([cellID isEqualToString:idCellDoorlockPw]){
+        
+        //门锁
+        ChangePwdViewController *pw = [ChangePwdViewController new];
+        pw.changeType = ChangePwdTypeForDoorlock;
+        pw.cid = self.cid;
+         [self.navigationController pushViewController:pw animated:YES];
     }
 }
 

@@ -47,7 +47,9 @@ extern NSString *const pLowBattery;
 extern NSString *const pAiRecognition;      // AI 识别
 extern NSString *const pAlarmDuration;      // 报警时间  间隔
 extern NSString *const pRemoteWatchKey;     // 省电模式
-extern NSString *const pInfraredEnhanced;   //红外增强
+extern NSString *const pInfraredEnhanced;   // 红外增强
+extern NSString *const pAreaDetection;      // 区域侦测
+extern NSString *const pDoorLockKey;        // 门锁
 
 @interface PropertyManager : BaseViewModel
 

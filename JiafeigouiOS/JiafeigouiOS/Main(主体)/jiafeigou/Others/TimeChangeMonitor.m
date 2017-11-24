@@ -78,7 +78,7 @@
     NSDateComponents *dateComponent = [calendar components:unitFlags fromDate:now];
     //NSInteger hour = [dateComponent hour];
     
-    for (id<TimeChangeMonitorDelegate>delegate in _hashTable) {
+    for (id<TimeChangeMonitorDelegate>delegate in [_hashTable copy]) {
         
         if ([delegate respondsToSelector:@selector(timeChangeWithCurrentYear:month:day:hour:minute:)]) {
             

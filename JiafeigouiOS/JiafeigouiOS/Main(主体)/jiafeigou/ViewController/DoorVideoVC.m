@@ -39,8 +39,10 @@
 #import "SFCParamModel.h"
 #import "JfgCacheManager.h"
 #import "DevPropertyManager.h"
+#import "JFGDevTypeManager.h"
+#import "JFGDoorlockPwAlert.h"
 
-@interface DoorVideoVC ()<JFGSDKPlayVideoDelegate, JFGSDKCallbackDelegate>
+@interface DoorVideoVC ()<JFGSDKPlayVideoDelegate, JFGSDKCallbackDelegate,JFGDoorlockPwAlertDelegate>
 {
     CGRect doorScrollRect;// 记录 竖屏位置
     BOOL _isFullScreen;
@@ -59,6 +61,11 @@
     NSString *pid;
     
     BOOL isPlaying;
+    
+    JiafeigouDevStatuModel *devModel;
+    
+    BOOL isDoorlockDev;//是否是门锁设备
+    JFGDoorlockPwAlert *doorlockAlert;//门锁开启弹窗
 }
 
 @property (nonatomic, strong)DoorVideoSrollView *doorVideoScrollView;
@@ -136,6 +143,9 @@
  */
 @property (nonatomic, strong) UIButton *fullScreenButton;
 
+//门锁
+@property (nonatomic,strong)UIButton *doorlockBtn;
+
 #pragma mark  横屏
 /**
  *  竖屏 按钮
@@ -153,11 +163,30 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    // Do any additional setup after loading the view.
-    [self initView];
-    //[self initNavigationView];
-    [JFGSDK addDelegate:self];
-    [self playMusic];
+    
+    NSArray *devicesList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
+    for (JiafeigouDevStatuModel *model in devicesList) {
+        if ([model.uuid isEqualToString:self.cid]) {
+            pid = model.pid;
+            self.nickName = model.alias;
+            devModel = model;
+            break;
+        }
+    }
+    
+    
+    if ([devModel isKindOfClass:[JiafeigouDevStatuModel class]]) {
+        if (devModel.shareState == DevShareStatuOther) {
+            self.isShare = YES;
+        }else{
+            self.isShare = NO;
+        }
+    }
+    
+    isDoorlockDev = [JFGDevTypeManager devIsType:JFGDevFctTypeDoorLock forPid:[pid intValue]];
+    if (self.isShare) {
+        isDoorlockDev = NO;
+    }
     if ([CommonMethod isSingleFisheyeCameraForCid:self.cid]) {
         
         if (![CommonMethod panoramicViewParamModelForCid:self.cid]) {
@@ -166,21 +195,15 @@
         }
     }
     
-    NSArray *devicesList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
-    for (JiafeigouDevStatuModel *model in devicesList) {
-        if ([model.uuid isEqualToString:self.cid]) {
-            pid = model.pid;
-            break;
-        }
-    }
+    [self initView];
+    //[self initNavigationView];
+    [JFGSDK addDelegate:self];
+    [self playMusic];
     
     /**
      *  开始生成 设备旋转 通知
      */
     [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
-    
-    
-   
 }
 
 - (void)handleDeviceOrientationDidChange:(UIInterfaceOrientation)interfaceOrientation
@@ -371,13 +394,6 @@
     //[self.view addSubview:self.nickNameLabel];
     [self.view addSubview:self.flowSpeedButton];
     [self layoutVideoView];
-    NSMutableArray *list = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
-    for (JiafeigouDevStatuModel *model in list) {
-        if ([model.uuid isEqualToString:self.cid]) {
-            self.nickName = model.alias;
-            break;
-        }
-    }
     
     if (self.nickName) {
         self.titleLabel.text = self.nickName;
@@ -493,6 +509,10 @@
         [self.view addSubview:self.cameraButton];
     }
     
+    if (self.doorlockBtn.superview == nil) {
+        [self.view addSubview:self.doorlockBtn];
+    }
+    
     [self videoCall];
     //[CylanJFGSDK setAudio:NO openMic:NO openSpeaker:NO]; // 对cid 存在 高耦合
     //[CylanJFGSDK setAudio:YES openMic:NO openSpeaker:NO]; // 为什么设置 两个 我也不明白
@@ -603,22 +623,40 @@
         
         [self.voiceButton setImage:[UIImage imageNamed:@"door_talk_enable_full"] forState:UIControlStateNormal];
         [self.voiceButton setImage:[UIImage imageNamed:@"door_talk_disable_full"] forState:UIControlStateSelected];
-        
+        self.doorlockBtn.hidden = YES;
         
     }
     else
     {
         self.holdOnButton.frame = CGRectMake((Kwidth - 80.0)*0.5,(kheight - 64 - doorScrollRect.size.height)*0.5-40, 80, 80);
-        self.holdOnButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        if (isDoorlockDev) {
+            self.holdOnButton.top = self.doorlockBtn.bottom+35;
+        }else{
+            self.holdOnButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        }
+        
         [self.holdOnButton setImage:[UIImage imageNamed:@"door_holdon"] forState:UIControlStateNormal];
         self.holdOnButton.transform = CGAffineTransformIdentity;
         
-        self.cameraButton.frame = CGRectMake(45, self.holdOnButton.top + (self.holdOnButton.height - 50)*0.5, 50, 50);
+        self.cameraButton.frame = CGRectMake(45, 0, 50, 50);
+        
+        if (isDoorlockDev) {
+            self.cameraButton.y = self.doorlockBtn.y;
+        }else{
+            self.cameraButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        }
+       
         [self.cameraButton setImage:[UIImage imageNamed:@"camera_icon_takepic"] forState:UIControlStateNormal];
         [self.cameraButton setImage:[UIImage imageNamed:@"camera_icon_takepic"] forState:UIControlStateSelected];
         self.cameraButton.transform = CGAffineTransformIdentity;
         
-        self.voiceButton.frame = CGRectMake(Kwidth - 50 - 45, self.holdOnButton.top + (self.holdOnButton.height - 50)*0.5, 50, 50);
+        self.voiceButton.frame = CGRectMake(Kwidth - 50 - 45, 0, 50, 50);
+        if (isDoorlockDev) {
+            self.voiceButton.y = self.doorlockBtn.y;
+        }else{
+            self.voiceButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        }
+        
         [self.voiceButton setImage:[UIImage imageNamed:@"door_talk_enable"] forState:UIControlStateNormal];
         [self.voiceButton setImage:[UIImage imageNamed:@"door_talk_disable"] forState:UIControlStateSelected];
         self.voiceButton.transform = CGAffineTransformIdentity;
@@ -881,7 +919,7 @@
                 self.redDotBgImageView.transform = CGAffineTransformMakeScale(1.0, 1.0);
                 self.greenDotImageView.transform = CGAffineTransformMakeScale(1.0, 1.0);
                 self.doorBellImageView.frame = CGRectMake((Kwidth - 80)*0.5, doorScrollRect.size.height + kheight *0.17 , 80, 80);
-                self.doorBellImageView.y = self.holdOnButton.y;
+                self.doorBellImageView.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
                 [self startSharkAnimation];
             }
         }
@@ -1310,15 +1348,6 @@ NSString *sharkAnimationKey = @"sharkAnimation";
         return;
     }
     
-    NSArray *devicesList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
-    JiafeigouDevStatuModel *devModel = nil;
-    for (JiafeigouDevStatuModel *model in devicesList) {
-        if ([model.uuid isEqualToString:self.cid]) {
-            devModel = model;
-            break;
-        }
-    }
-    
     CGSize remoteCallViewSize = videoSize;
     
     CGFloat ratio = remoteCallViewSize.height/remoteCallViewSize.width;
@@ -1502,11 +1531,16 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     {
         _holdOnButton = [UIButton buttonWithType:UIButtonTypeCustom];
         _holdOnButton.frame = CGRectMake((Kwidth - 80.0)*0.5,(self.view.bounds.size.height-64-self.doorVideoScrollView.height), 80, 80);
-        _holdOnButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        if (isDoorlockDev) {
+            _holdOnButton.top = self.doorlockBtn.bottom+35;
+        }else{
+            _holdOnButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        }
         
         [_holdOnButton setImage:[UIImage imageNamed:@"door_holdon"] forState:UIControlStateNormal];
         [_holdOnButton setImage:[UIImage imageNamed:@"door_holdon_full"] forState:UIControlStateSelected];
         [_holdOnButton addTarget:self action:@selector(leftButtonAction:) forControlEvents:UIControlEventTouchUpInside];
+        
     }
     return _holdOnButton;
 }
@@ -1516,7 +1550,13 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_cameraButton == nil)
     {
         _cameraButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        _cameraButton.frame = CGRectMake(45, self.holdOnButton.top + (self.holdOnButton.height - 50)*0.5, 50, 50);
+        _cameraButton.frame = CGRectMake(45, 0, 50, 50);
+        
+        if (isDoorlockDev) {
+            _cameraButton.y = self.doorlockBtn.y;
+        }else{
+            _cameraButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        }
         [_cameraButton setImage:[UIImage imageNamed:@"camera_icon_takepic"] forState:UIControlStateNormal];
         [_cameraButton setImage:[UIImage imageNamed:@"camera_icon_takepic"] forState:UIControlStateSelected];
         [_cameraButton addTarget:self action:@selector(snap) forControlEvents:UIControlEventTouchUpInside];
@@ -1530,7 +1570,13 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_voiceButton == nil)
     {
         _voiceButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        _voiceButton.frame = CGRectMake(Kwidth - 50 - 45, self.holdOnButton.top + (self.holdOnButton.height - 50)*0.5, 50, 50);
+        _voiceButton.frame = CGRectMake(Kwidth - 50 - 45, 0, 50, 50);
+        
+        if (isDoorlockDev) {
+            _voiceButton.y = self.doorlockBtn.y;
+        }else{
+            _voiceButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        }
         [_voiceButton addTarget:self action:@selector(voiceAction:) forControlEvents:UIControlEventTouchUpInside];
         [_voiceButton setImage:[UIImage imageNamed:@"door_talk_enable"] forState:UIControlStateNormal];
         [_voiceButton setImage:[UIImage imageNamed:@"door_talk_disable"] forState:UIControlStateSelected];
@@ -1546,7 +1592,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_doorBellImageView == nil)
     {
         _doorBellImageView = [[UIImageView alloc] initWithFrame:CGRectMake((Kwidth - 80)*0.5, doorScrollRect.size.height + kheight *0.17 , 80, 80)];
-        _doorBellImageView.y = self.holdOnButton.y;
+        _doorBellImageView.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _doorBellImageView.image = [UIImage imageNamed:@"door_bellImage"];
         _doorBellImageView.userInteractionEnabled = YES;
         
@@ -1570,7 +1616,8 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 {
     if (_redDotBgImageView == nil)
     {
-        _redDotBgImageView = [[UIImageView alloc] initWithFrame:CGRectMake(45, self.holdOnButton.top + (self.holdOnButton.height - 22)*0.5, 22, 22)];
+        _redDotBgImageView = [[UIImageView alloc] initWithFrame:CGRectMake(45, 0, 22, 22)];
+        _redDotBgImageView.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _redDotBgImageView.image = [UIImage imageNamed:@"bell_red_dot_bg"];
     }
     return _redDotBgImageView;
@@ -1581,6 +1628,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_redDotImageView == nil)
     {
         _redDotImageView = [[UIImageView alloc] initWithFrame:self.redDotBgImageView.frame];
+        _redDotImageView.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _redDotImageView.image = [UIImage imageNamed:@"bell_red_dot"];
     }
     
@@ -1594,7 +1642,8 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 {
     if (_greenDotBgImageView == nil)
     {
-        _greenDotBgImageView = [[UIImageView alloc] initWithFrame:CGRectMake(Kwidth - 45.0 - 22, self.holdOnButton.top + (self.holdOnButton.height - 22)*0.5, 22, 22)];
+        _greenDotBgImageView = [[UIImageView alloc] initWithFrame:CGRectMake(Kwidth - 45.0 - 22, 0, 22, 22)];
+        _greenDotBgImageView.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _greenDotBgImageView.image = [UIImage imageNamed:@"bell_green_dot_bg"];
     }
     return _greenDotBgImageView;
@@ -1612,18 +1661,19 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 /**
  *  小 红/绿 点
  *
- *  @return <#return value description#>
+ *  @return
  */
 - (UIImageView *)litteGreenDot
 {
     CGFloat widgetWidth = 34.0;
     CGFloat widgetHeight = 4.0;
     CGFloat widgetX = (self.greenDotImageView.left-self.doorBellImageView.right - widgetWidth)*0.5 + self.doorBellImageView.right;
-    CGFloat widgetY = self.holdOnButton.top + (self.holdOnButton.height - widgetHeight)*0.5;
+    CGFloat widgetY = 0;
     
     if (_litteGreenDot == nil)
     {
         _litteGreenDot = [[UIImageView alloc] initWithFrame:CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight)];
+        _litteGreenDot.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _litteGreenDot.image = [UIImage imageNamed:@"bell_green_1"];
         
         _litteGreenDot.animationImages = [NSArray arrayWithObjects:
@@ -1644,11 +1694,12 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     CGFloat widgetWidth = 34.0;
     CGFloat widgetHeight = 4.0;
     CGFloat widgetX = self.redDotBgImageView.right*0.5 +(self.doorBellImageView.left - widgetWidth)*0.5;
-    CGFloat widgetY = self.holdOnButton.top + (self.holdOnButton.height - widgetHeight)*0.5;
+    CGFloat widgetY = 0;
     
     if (_litteRedDot == nil)
     {
         _litteRedDot = [[UIImageView alloc] initWithFrame:CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight)];
+        _litteRedDot.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _litteRedDot.image = [UIImage imageNamed:@"bell_red_1"];
         _litteRedDot.animationImages = [NSArray arrayWithObjects:
                                           [UIImage imageNamed:@"bell_red_1"],
@@ -1754,6 +1805,97 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 }
 
 
+-(UIButton *)doorlockBtn
+{
+    if (!_doorlockBtn) {
+        _doorlockBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _doorlockBtn.frame = CGRectMake(0, 0, 50, 50);
+        _doorlockBtn.top = self.doorVideoScrollView.bottom+kheight*0.13;
+        _doorlockBtn.x = self.view.width*0.5;
+        [_doorlockBtn setImage:[UIImage imageNamed:@"icon_lock_normal"] forState:UIControlStateNormal];
+        [_doorlockBtn setImage:[UIImage imageNamed:@"icon_lock_disabled"] forState:UIControlStateDisabled];
+        [_doorlockBtn addTarget:self action:@selector(doorLockAction) forControlEvents:UIControlEventTouchUpInside];
+        if (!isDoorlockDev) {
+            _doorlockBtn.frame = CGRectMake(0, 0, 0, 0);
+        }
+        
+        if (devModel.netType == JFGNetTypeOffline) {
+            _doorlockBtn.enabled = NO;
+            if ([CommonMethod isAPModelCurrentNetForCid:devModel.uuid pid:devModel.pid]) {
+                _doorlockBtn.enabled = YES;
+            }
+        }
+    }
+    return _doorlockBtn;
+}
+
+-(void)doorLockAction
+{
+    doorlockAlert = [[JFGDoorlockPwAlert alloc]init];
+    doorlockAlert.delegate = self;
+    [doorlockAlert showAlertWithVC:self];
+}
+
+-(void)jfgDoorlockPwAlertDone:(NSString *)pw
+{
+    NSString *password = [pw copy];
+    NSLog(@"%@",password);
+    
+    [ProgressHUD showProgress:[JfgLanguage getLanTextStrByKey:@"DOOR_OPENING"]];
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+    [self performSelector:@selector(openDoorTimeout) withObject:nil afterDelay:30];
+    DataPointSeg *seg = [[DataPointSeg alloc]init];
+    seg.msgId = 407;
+    seg.version = 0;
+    seg.value = [MPMessagePackWriter writeObject:@[password,@1] error:nil];
+    
+    [[JFGSDKDataPoint sharedClient] robotDataWithPeer:self.cid action:41 dps:@[seg] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+        
+        for (NSArray *subArr in idDataList) {
+            for (DataPointSeg *seg in subArr) {
+                
+                if (seg.msgId  == 408) {
+                    
+                    id obj = [MPMessagePackReader readData:seg.value error:nil];
+                    if ([obj isKindOfClass:[NSNumber class]]) {
+                        
+                        int ret = [obj intValue];
+                        if (ret == 0) {
+                            //成功
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"OPEN_DOOR_SUCCE_MSG"]];
+                        }else if (ret == 2){
+                            //密码错误
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_WRONG_PSW_MSG"]];
+                        }else{
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OPEN_FAIL"]];
+                        }
+                        
+                    }else{
+                        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OPEN_FAIL"]];
+                    }
+                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+                    
+                }
+                
+            }
+        }
+        
+    } failure:^(RobotDataRequestErrorType type) {
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OPEN_FAIL"]];
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+    }];
+    
+    
+    //因为没有设备调试，所以一下代码是假的
+    //懒得写了
+    
+    
+}
+
+-(void)openDoorTimeout
+{
+    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OPEN_FAIL"]];
+}
 
 #pragma mark
 #pragma mark receive push_msg

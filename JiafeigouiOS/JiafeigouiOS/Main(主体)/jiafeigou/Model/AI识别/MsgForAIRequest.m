@@ -162,20 +162,16 @@
                             
                             
                         }
-                        
                     }
-                    
                 }
-                
             }
-            
         }
 
         
         if (self.delegate && [self.delegate respondsToSelector:@selector(msgForAIFamiliarPersons:total:)]) {
             [self.delegate msgForAIFamiliarPersons:personModelList total:total];
         }
-        FLLog(@"熟悉人总数:%d %@",total,personModelList);
+        //FLLog(@"熟悉人总数:%d %@",total,personModelList);
         
     }else if (mid == 6){
         
@@ -209,7 +205,7 @@
                             model.last_time = [person[3] intValue];
                             model.faceImageUrl = [JFGSDK getCloudUrlWithFlag:model.flag fileName:model.faceImageUrl];
                             
-                            FLLog(@"陌生人face_id:%@",model.face_id);
+                            //FLLog(@"陌生人face_id:%@",model.face_id);
                             if (model.face_id && ![model.face_id isEqualToString:@""]) {
                                 [personModelList addObject:model];
                             }
@@ -226,7 +222,7 @@
         if (self.delegate && [self.delegate respondsToSelector:@selector(msgForAIStranger:total:)]) {
             [self.delegate msgForAIStranger:personModelList total:total];
         }
-        FLLog(@"陌生人总数:%d %@",total,personModelList);
+        //FLLog(@"陌生人总数:%d %@",total,personModelList);
         
     }else if (mid == 7){
         
@@ -245,10 +241,9 @@
             }
         }
         
-        
     }else if (mid == 8){
         
-        FLLog(@"%@",obj);
+        //FLLog(@"%@",obj);
         NSMutableArray *resultArr = [NSMutableArray new];
         NSString *cid = @"";
         int type = 0;
@@ -290,7 +285,7 @@
                             
                             if (values.count > 5) {
                                 messageModel.objects = [values objectAtIndex:5];
-                                NSLog(@"renxingjiance:%@",messageModel.objects);
+                                //NSLog(@"renxingjiance:%@",messageModel.objects);
                             }else{
                                 messageModel.objects = nil;
                             }

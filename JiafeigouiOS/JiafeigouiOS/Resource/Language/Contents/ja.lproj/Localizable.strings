@@ -1,6 +1,6 @@
 /* ja.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.  
+Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "接続失敗、ネットワーク環境をチェックしてください";
 "REPEAT_TIME" = "%d秒";
@@ -103,7 +103,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "DOOR_MAGNET_NAME" = "iHome";
 "DOG_CAMERA_NAME" = "カメラ";
 "CAMERA" = "カメラ";
-"Cloud_Camera" = "クラウドカメラ";
+"Cloud_Camera" = "カメラ（バッテリー版）";
 "Consumer_Camera" = "消費者のカメラ";
 "Smart_bell_Battery" = "インテリジェントドアベル（バッテリー版）";
 "Smart_bell_Power" = "（バッテリー版なし）インテリジェントドアベル";
@@ -931,7 +931,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "H5_Panoramic" = "パノラマ";
 "H5_Fisheye" = "フィッシュアイ";
 "H5_Asteroid" = "小惑星";
-"H5_VR mode" = "VRモード";
+"H5_VRmode" = "VRモード";
 "Tap1_Shared_LandscapeTips" = "風景では動作しない場合は、システムで画面の回転を有効にしてください";
 "Tap1_LogoSelect" = "Logoを選択";
 "Tap3_ShareDevice_SharedUsers" = "共有ユーザー";
@@ -1060,11 +1060,11 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "LIVE_FAILED" = "問題の解決に失敗した";
 "LIVE_ADDRESS_EXPIRED" = "ライブアドレスの有効期限が切れています";
 "LIVE_SLOW_CONNECTION" = "接続が遅い、より良いネットワーク環境でライブビデオを再生、切り替え、または再試行することはできません。";
-"LIVE_CREATING" = "％@ライブを作成...";
+"LIVE_CREATING" = "%@ライブを作成...";
 "LIVE_TESTING" = "ライブWebのテスト中...";
 "LIVE_OPENING" = "あなたの人生を開く...";
 "LIVE_SELECT_PLATFORM" = "ライブプラットフォームを選択する";
-"LIVE_ACCOUNT" = "％@アカウント";
+"LIVE_ACCOUNT" = "%@アカウント";
 "LIVE_ACCOUNT_UNBOUND" = "結合していません";
 "LIVE_ACCOUNT_BIND_TIPS" = "まずアカウントをバインドしてください";
 "LIVE_CREATE_TIPS" = "まず生放送を作成してください";
@@ -1082,7 +1082,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "LIVE_CURRENT_TEXT" = "ライブライブ";
 "LIVE_RTMP_HINT" = "rtmp://";
 "SETTINGS_MOBILE_HOTSPOT" = "モバイルホットスポット";
-"HOTSPOT_NAME" = "ホットスポット：％@";
+"HOTSPOT_NAME" = "ホットスポット：%@";
 "HOTSPOT_PASSWORD" = "ホットスポットのパスワードを入力してください";
 "HOTSPOTS_CONNECT_TIMEOUT_TIPS" = "ホットスポットに接続できません";
 "RTMP_EMPTY_TIPS" = "アドレスは空白にすることはできません";
@@ -1092,7 +1092,6 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "RTMP_STREAM_KEY" = "ストリームキー:";
 "TURN_ON_HOTSPOT_GUIDE" = "接続してから、システムの \"設定\" > \"個人用のホットスポット\"";
 "LIVE_STOP_POP" = "停止後、ライブアドレスは停止するかどうか無効ですか？";
-"DEVICE_SHARE_LIMIT_TIPS" = "株式数に達しました";
 "LIVE_RTMP_ENTER_KEY" = "キーを入力してください";
 "FAQ_SINA_WEIBO" = "シーナブログのライブビデオをサポートしていない";
 "FAQ_SINA_WEIBO_TEXT1" = "1、アカウントがシーナのブログの実名認証を持っていることを確認し、ブラックリストアカウントではありません。";
@@ -1146,4 +1145,23 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "Camera_Outdoor" = "カメラ（屋外版）";
 "MESSAGES_FACE_VISIT_TIMES" = "30日以内に%@回訪問";
 "SETTINGS_FAILED" = "設定失敗しました";
+"MESSAGES_FACE_VISIT_SUM" = "今日 %@ 人が訪れました";
 "INFRARED_IDENTIFY_SET" = "赤外線強化認識";
+"DETECTION_AREA" = "検出領域";
+"DETECTION_AREA_DEFAULT" = "デフォルト";
+"DETECTION_AREA_SET" = "設定されている";
+"DETECTION_AREA_DESCRI" = "すべてのゾーンはデフォルトで検出され、指定されたエリアが変更された場合にのみアラームが送信されます";
+"DETECTION_AREA_ADD" = "検出領域の設定";
+"DETECTION_AREA_RESTORE" = "デフォルトに戻す";
+"DETECTION_AREA_GUIDE" = "赤いボックスをドラッグして検出エリアを設定する";
+"DETECTION_AREA_FAILED_LOAD" = "リアルタイムの背景を読み込めませんでした";
+"DOOR_PASSWORD" = "ドアのパスワードを入力してください";
+"DOOR_OPENING" = "オープニング...";
+"DOOR_OPENED" = "開かれた";
+"DOOR_OPEN_FAIL" = "ドアを開けない";
+"MODIFY_DOOR_PSW" = "ドアのパスワードを変更する";
+"OPEN_DOOR_SUCCE_MSG" = "ドアを正常に開く";
+"CLOSE_DOOR_SUCCE_MSG" = "ドアを正常に閉じる";
+"DOOR_WRONG_PSW" = "間違ったパスワード";
+"DOOR_WRONG_PSW_MSG" = "間違ったドアパスワード";
+"DETECTION_AREA_FAILED_LOAD_RETRY" = "ライブ画像を取得できないため、領域を設定できません。もう一度お試しください。";

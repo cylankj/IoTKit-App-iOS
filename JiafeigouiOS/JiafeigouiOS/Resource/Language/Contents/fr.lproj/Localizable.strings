@@ -1,6 +1,6 @@
 /* fr.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.  
+Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Connexion impossible, absence réseau";
 "REPEAT_TIME" = "%d secondes";
@@ -103,7 +103,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "DOOR_MAGNET_NAME" = "iHome";
 "DOG_CAMERA_NAME" = "Caméra";
 "CAMERA" = "Caméra";
-"Cloud_Camera" = "Caméra nuage";
+"Cloud_Camera" = "Caméra (version batterie)";
 "Consumer_Camera" = "Appareil photo consommateur";
 "Smart_bell_Battery" = "Sonnette intelligente (version batterie)";
 "Smart_bell_Power" = "Sonnette intelligente (Power Version)";
@@ -931,7 +931,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "H5_Panoramic" = "panoramique";
 "H5_Fisheye" = "Fisheye";
 "H5_Asteroid" = "Astéroïde";
-"H5_VR mode" = "Mode VR";
+"H5_VRmode" = "Mode VR";
 "Tap1_Shared_LandscapeTips" = "Si ce n\'est pas le cas avec le paysage, veuillez activer la rotation de l\'écran dans le système";
 "Tap1_LogoSelect" = "Logo sélectionner";
 "Tap3_ShareDevice_SharedUsers" = "Utilisateurs partagés";
@@ -1092,7 +1092,6 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "RTMP_STREAM_KEY" = "Clé de flux:";
 "TURN_ON_HOTSPOT_GUIDE" = "Connectez, puis allumez le système \"Paramètres\" > \"Hotspot personnel\"";
 "LIVE_STOP_POP" = "Après l\'arrêt, l\'adresse en direct sera invalide, que ce soit pour arrêter?";
-"DEVICE_SHARE_LIMIT_TIPS" = "Le nombre de limites d\'actions atteint";
 "LIVE_RTMP_ENTER_KEY" = "Entrez la clé";
 "FAQ_SINA_WEIBO" = "Ne prenez pas en charge la vidéo en direct de Sina Weibo";
 "FAQ_SINA_WEIBO_TEXT1" = "1, pour s\'assurer que le compte possède l\'authentification du nom réel du nom de Sina et n\'est pas un compte de la liste noire.";
@@ -1146,4 +1145,23 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "Camera_Outdoor" = "Caméra (version extérieure)";
 "MESSAGES_FACE_VISIT_TIMES" = "Visite %@ fois dans les 30 jours";
 "SETTINGS_FAILED" = "paramètres échoué";
+"MESSAGES_FACE_VISIT_SUM" = "%@ personnes ont visité aujourd\'hui";
 "INFRARED_IDENTIFY_SET" = "Identification infrarouge";
+"DETECTION_AREA" = "Zone de détection";
+"DETECTION_AREA_DEFAULT" = "défaut";
+"DETECTION_AREA_SET" = "A été mis en";
+"DETECTION_AREA_DESCRI" = "Toutes les zones sont détectées par défaut et enverront des alarmes uniquement lorsque la zone spécifiée change";
+"DETECTION_AREA_ADD" = "Définir la zone de détection";
+"DETECTION_AREA_RESTORE" = "Réinitialiser";
+"DETECTION_AREA_GUIDE" = "Faites glisser la boîte rouge pour définir la zone de détection";
+"DETECTION_AREA_FAILED_LOAD" = "Échec de chargement graphique en temps réel";
+"DOOR_PASSWORD" = "Veuillez entrer le mot de passe de la porte";
+"DOOR_OPENING" = "Ouverture…";
+"DOOR_OPENED" = "Ouvert";
+"DOOR_OPEN_FAIL" = "ne parvient pas à ouvrir la porte";
+"MODIFY_DOOR_PSW" = "Modifier le mot de passe de porte";
+"OPEN_DOOR_SUCCE_MSG" = "Ouvrez la porte avec succès";
+"CLOSE_DOOR_SUCCE_MSG" = "Fermez la porte avec succès";
+"DOOR_WRONG_PSW" = "mauvais mot de passe";
+"DOOR_WRONG_PSW_MSG" = "Mot de passe incorrect";
+"DETECTION_AREA_FAILED_LOAD_RETRY" = "ne parvient pas à obtenir l\'image en direct, donc ne peut pas définir la zone, s\'il vous plaît essayez à nouveau.";

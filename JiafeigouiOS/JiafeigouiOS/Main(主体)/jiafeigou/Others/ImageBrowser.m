@@ -890,6 +890,8 @@
             break;
         }
     }
+    
+    
     NSDate* dat = [NSDate dateWithTimeIntervalSinceNow:0];
     NSTimeInterval a=[dat timeIntervalSince1970];
     NSString *timeString = [NSString stringWithFormat:@"%.0f", a];

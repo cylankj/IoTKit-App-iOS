@@ -56,6 +56,8 @@
 #import "PropertyManager.h"
 #import "JfgCacheManager.h"
 #import <KVOController.h>
+#import "JFGDevTypeManager.h"
+#import "JFGDoorlockPwAlert.h"
 
 #define RPBtnTagBase 10024
 #define ViewModeBtnTagBase 10124
@@ -79,7 +81,7 @@ NSString *const fristhistoryVideoKey =  @"fristhistoryVideoKey1";
 NSString *const fristIntoAngleVideoViewKey = @"fristIntoAngleVideoViewKey_";
 NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 
-@interface videoPlay1ViewController ()<NetworkMonitorDelegate,UIScrollViewDelegate,JFGSDKCallbackDelegate,HorizontalHistoryRecordViewDelegate,NewHistoryDateSelectedPickerDelegate,FullScreenHistoryDatePickerDelegate,UITextFieldDelegate,UIAlertViewDelegate, setAngleDelegate,TelephonyManagerDelegate>
+@interface videoPlay1ViewController ()<NetworkMonitorDelegate,UIScrollViewDelegate,JFGSDKCallbackDelegate,HorizontalHistoryRecordViewDelegate,NewHistoryDateSelectedPickerDelegate,FullScreenHistoryDatePickerDelegate,UITextFieldDelegate,UIAlertViewDelegate, setAngleDelegate,TelephonyManagerDelegate,JFGDoorlockPwAlertDelegate>
 {
     //视频播放状态
     videoPlayState playState;
@@ -131,6 +133,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     
     SFDisplayMode defaultDispalyMode;
     BOOL isOpenShake;//是否开启摇一摇
+    JFGDoorlockPwAlert *doorlockAlert;
 }
 
 //时间显示
@@ -239,6 +242,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 
 @property (nonatomic,strong)UIButton *viewModeSwitchBtn;
 
+@property (nonatomic,strong)UIButton *doorlockBtn;//门锁按钮
+
 @end
 
 @implementation videoPlay1ViewController
@@ -262,6 +267,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [self.view addSubview:self.snapBtn];
     [self.view addSubview:self.microphoneBtn];
     [self.view addSubview:self.voiceButton];
+    [self.view addSubview:self.doorlockBtn];
     self.historyView.hidden = YES;
     self.historyView.alpha = 0;
     self.reqHistoryBtn.hidden = YES;
@@ -696,6 +702,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             angleV = nil;
         }
         isCanShowHistoryView = NO;
+        self.doorlockBtn.enabled = NO;
         [self hiddenSmallWindowBottomBar];
         [self hideSmallWindowPlayBtn];
         [self showIdleViewForType:1];
@@ -704,6 +711,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         
         [self showDisconnectViewWithText:[JfgLanguage getLanTextStrByKey:@"OFFLINE_ERR_1"]];
         playState = videoPlayStateNotNet;
+        self.doorlockBtn.enabled = NO;
         [self hideIdleView];
         
     }else{
@@ -713,6 +721,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             
             //显示那个角度提示
             [self showAngleTip];
+            self.doorlockBtn.enabled = NO;
             
         }else{
             
@@ -724,6 +733,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             if (self.devModel.safeIdle) {
                 
                 isCanShowHistoryView = NO;
+                self.doorlockBtn.enabled = NO;
                 [self hiddenSmallWindowBottomBar];
                 [self hideSmallWindowPlayBtn];
                 [self showIdleViewForType:0];
@@ -731,6 +741,21 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             }else{
                 
                 isCanShowHistoryView = YES;
+                
+                
+                if (isShared) {
+                    self.doorlockBtn.enabled = NO;
+                    
+                }else if(self.devModel.netType == JFGNetTypeOffline){
+                    if ([CommonMethod isAPModelCurrentNetForCid:self.devModel.uuid pid:self.devModel.pid]) {
+                        self.doorlockBtn.enabled = YES;
+                    }else{
+                        self.doorlockBtn.enabled = NO;
+                    }
+                    
+                }else{
+                    self.doorlockBtn.enabled = YES;
+                }
                 if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
                     return;
                 }
@@ -750,6 +775,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     }
     [self historyViewState];
     
+    //正式代码去除这句
+    self.doorlockBtn.enabled = YES;
 }
 
 //结束视频
@@ -2710,6 +2737,86 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 }
 
 
+-(void)doorLockAction
+{
+    if (playState != videoPlayStatePlaying && playState !=videoPlayStatePlayPreparing) {
+        //如果不在直播，自动开始直播
+        [self playAction:self.playButton];
+    }else{
+        if (!isLiveVideo) {
+            //如果正在播放历史录像，自动切换直播
+            [self transionHistoryVideo:YES];
+        }
+    }
+    
+    doorlockAlert = [[JFGDoorlockPwAlert alloc]init];
+    doorlockAlert.delegate = self;
+    [doorlockAlert showAlertWithVC:self];
+    
+}
+
+
+
+-(void)jfgDoorlockPwAlertDone:(NSString *)pw
+{
+    NSString *password = [pw copy];
+    NSLog(@"%@",password);
+    [ProgressHUD showProgress:[JfgLanguage getLanTextStrByKey:@"DOOR_OPENING"]];
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+    [self performSelector:@selector(openDoorTimeout) withObject:nil afterDelay:30];
+    DataPointSeg *seg = [[DataPointSeg alloc]init];
+    seg.msgId = 407;
+    seg.version = 0;
+    seg.value = [MPMessagePackWriter writeObject:@[password,@1] error:nil];
+    
+    [[JFGSDKDataPoint sharedClient] robotDataWithPeer:self.devModel.uuid action:41 dps:@[seg] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+        
+        for (NSArray *subArr in idDataList) {
+            for (DataPointSeg *seg in subArr) {
+                
+                if (seg.msgId  == 408) {
+                    
+                    id obj = [MPMessagePackReader readData:seg.value error:nil];
+                    if ([obj isKindOfClass:[NSNumber class]]) {
+                        
+                        int ret = [obj intValue];
+                        if (ret == 0) {
+                            //成功
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"OPEN_DOOR_SUCCE_MSG"]];
+                        }else if (ret == 2){
+                            //密码错误
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_WRONG_PSW_MSG"]];
+                        }else{
+                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OPEN_FAIL"]];
+                        }
+                        
+                    }else{
+                        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OPEN_FAIL"]];
+                    }
+                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+                    
+                }
+                
+            }
+        }
+        
+    } failure:^(RobotDataRequestErrorType type) {
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OPEN_FAIL"]];
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+    }];
+    
+   
+    //因为没有设备调试，所以一下代码是假的
+    //懒得写了
+    
+    
+}
+
+-(void)openDoorTimeout
+{
+    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OPEN_FAIL"]];
+}
+
 -(void)shakeBtnAction:(UIButton *)sender
 {
     if (sender.selected) {
@@ -3403,6 +3510,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [CylanJFGSDK setAudio:NO openMic:YES openSpeaker:NO];
     }
     [self.microphoneBtn setImage:[UIImage imageNamed:@"camera_ico_ talkDisabled"] forState:UIControlStateDisabled];
+    if ([JFGDevTypeManager devIsType:JFGDevFctTypeDoorLock forPid:[self.devModel.pid intValue]]) {
+        [self.microphoneBtn setImage:[UIImage imageNamed:@"doorbell_ico_talkDisabled"] forState:UIControlStateDisabled];
+    }
     [self.snapBtn setImage:[UIImage imageNamed:@"camera_icon_takepicdisabled"] forState:UIControlStateDisabled];
     self.voiceButton.enabled = NO;
     self.microphoneBtn.enabled = NO;
@@ -3552,6 +3662,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         self.loadingImageView1.x = self.loadingBgView.x;
         self.loadingImageView1.y = self.loadingBgView.y;
         
+        
+        self.doorlockBtn.hidden = YES;
+        
     }];
     
     UIView *remoteView =[self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
@@ -3596,6 +3709,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [self.fullScreenTopControlBar removeFromSuperview];
     [self.fullScreenBottomControlBar removeFromSuperview];
     self.safeguardBtn.isFace = self.safeguardBtn_full.isFace;
+    self.doorlockBtn.hidden = NO;
     
     if (isShared == NO) {
         
@@ -4346,7 +4460,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 
 - (void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
 {
-    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cid in udp [%@]",ask.cid]];
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"cid in udp [%@ %@]",ask.cid,ask.ver]];
     if ([ask.cid isEqualToString:self.cid])
     {
         [JFGSDK appendStringToLogFile:@"this cid is in udp check ok"];
@@ -4423,10 +4537,12 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [_voiceButton setImage:[UIImage imageNamed:@"camera_ico_voicedisabled"] forState:UIControlStateDisabled];
         _voiceButton.adjustsImageWhenDisabled = YES;
         [_voiceButton addTarget:self action:@selector(voiceAction:) forControlEvents:UIControlEventTouchUpInside];
-        if ([CommonMethod isOutdoorDevForOS:self.devModel.pid]) {
-         
+        if ([JFGDevTypeManager devIsType:JFGDevFctTypeOutdoor forPid:[self.devModel.pid intValue]]) {
             _voiceButton.left = 90;
-            
+        }
+        if ([JFGDevTypeManager devIsType:JFGDevFctTypeDoorLock forPid:[self.devModel.pid intValue]]) {
+            CGFloat space = (self.view.width-200)/8.0;
+            _voiceButton.left = space;
         }
     }
     return _voiceButton;
@@ -4442,12 +4558,45 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [_microphoneBtn setImage:[UIImage imageNamed:@"camera_ico_ talk"] forState:UIControlStateNormal];
         [_microphoneBtn setImage:[UIImage imageNamed:@"camera_ico_ talkbule"] forState:UIControlStateSelected];
         [_microphoneBtn addTarget:self action:@selector(microphoneAction:) forControlEvents:UIControlEventTouchUpInside];
-        if ([CommonMethod isOutdoorDevForOS:self.devModel.pid]) {
+        if ([JFGDevTypeManager devIsType:JFGDevFctTypeOutdoor forPid:[self.devModel.pid intValue]]) {
             _microphoneBtn.hidden = YES;
             _microphoneBtn.alpha = 0;
         }
+        
+        if ([JFGDevTypeManager devIsType:JFGDevFctTypeDoorLock forPid:[self.devModel.pid intValue]]) {
+             CGFloat space = (self.view.width-200)/8.0;
+            _microphoneBtn.left = 3*space+50;
+            _microphoneBtn.width = 50;
+            _microphoneBtn.height = 50;
+            [_microphoneBtn setImage:[UIImage imageNamed:@"doorbell_ico_talk"] forState:UIControlStateNormal];
+            [_microphoneBtn setImage:[UIImage imageNamed:@"doorbell_ico_talking"] forState:UIControlStateSelected];
+            _microphoneBtn.top = self.voiceButton.top;
+        }
     }
     return _microphoneBtn;
+}
+
+-(UIButton *)doorlockBtn
+{
+    if (!_doorlockBtn) {
+        _doorlockBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _doorlockBtn.frame = CGRectMake(0, self.voiceButton.top, 50, 50);
+        CGFloat space = (self.view.width-200)/8.0;
+        _doorlockBtn.left = 5*space+2*50;
+        [_doorlockBtn setImage:[UIImage imageNamed:@"icon_lock_normal"] forState:UIControlStateNormal];
+        [_doorlockBtn setImage:[UIImage imageNamed:@"icon_lock_disabled"] forState:UIControlStateDisabled];
+        [_doorlockBtn addTarget:self action:@selector(doorLockAction) forControlEvents:UIControlEventTouchUpInside];
+        if (![JFGDevTypeManager devIsType:JFGDevFctTypeDoorLock forPid:[self.devModel.pid intValue]]) {
+            _doorlockBtn.frame = CGRectMake(0, 0, 0, 0);
+        }
+        if (isShared || self.devModel.netType == JFGNetTypeOffline) {
+            _doorlockBtn.enabled = NO;
+            if (!isShared && [CommonMethod isAPModelCurrentNetForCid:self.devModel.uuid pid:self.devModel.pid]) {
+                _doorlockBtn.enabled = YES;
+            }
+        }
+    }
+    return _doorlockBtn;
 }
 
 -(UIButton *)snapBtn
@@ -4459,8 +4608,12 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [_snapBtn setImage:[UIImage imageNamed:@"camera_icon_takepic"] forState:UIControlStateNormal];
         [_snapBtn setImage:[UIImage imageNamed:@"camera_icon_takepicdisabled"] forState:UIControlStateDisabled];
         [_snapBtn addTarget:self action:@selector(snap) forControlEvents:UIControlEventTouchUpInside];
-        if ([CommonMethod isOutdoorDevForOS:self.devModel.pid]) {
+        if ([JFGDevTypeManager devIsType:JFGDevFctTypeOutdoor forPid:[self.devModel.pid intValue]]) {
             _snapBtn.right = self.view.width - 90;
+        }
+        if ([JFGDevTypeManager devIsType:JFGDevFctTypeDoorLock forPid:[self.devModel.pid intValue]]) {
+            CGFloat space = (self.view.width-200)/8.0;
+            _snapBtn.left = 7*space+50*3;
         }
     }
     return _snapBtn;
@@ -4630,7 +4783,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         self.fullSnapBtn.right = _fullScreenTopControlBar.width-20;
         self.shakeBtn.right = self.fullVoideBtn.left - 15;
         
-        if ([CommonMethod isOutdoorDevForOS:self.devModel.pid]) {
+        if ([JFGDevTypeManager devIsType:JFGDevFctTypeOutdoor forPid:[self.devModel.pid intValue]]) {
             self.fullMicBtn.hidden = YES;
             self.fullVoideBtn.right = self.fullSnapBtn.left-15;
         }else{
@@ -4674,6 +4827,10 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     }
     return _shakeBtn;
 }
+
+
+
+
 
 -(UIButton *)fullMicBtn
 {

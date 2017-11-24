@@ -639,10 +639,8 @@
         }
     }else if (itemType == MenuItemTypeRecognition){
         
-        NSMutableAttributedString *alertMessageStr = [[NSMutableAttributedString alloc] initWithString:@"请修改输入内容"];
-        [alertMessageStr addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:18] range:NSMakeRange(0, 7)];
-        
         UIAlertView *alert = [[UIAlertView alloc]initWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"MESSAGES_IDENTIFY_POP"] delegate:self cancelButtonTitle:nil otherButtonTitles:[JfgLanguage getLanTextStrByKey:@"MESSAGES_IDENTIFY_CREATE_BTN"],[JfgLanguage getLanTextStrByKey:@"MESSAGES_IDENTIFY_ADD_BTN"],[JfgLanguage getLanTextStrByKey:@"CANCEL"], nil];
+        
         [alert showAlertViewWithClickedButtonBlock:^(NSInteger buttonIndex) {
             
             MsgAIheaderModel *model = [self.dataArray objectAtIndex:indexPath.row];
@@ -658,7 +656,6 @@
                 UIViewController *vc = [CommonMethod viewControllerForView:self];
                 if (vc) {
                     [vc presentViewController:faceCreate animated:YES completion:nil];
-                   // [vc.navigationController pushViewController:faceCreate animated:YES];
                 }
             }else if (buttonIndex == 1){
                 MsgAIheaderModel *model = [self.dataArray objectAtIndex:indexPath.row];
@@ -667,11 +664,11 @@
                 abVC.face_id = model.faceIDList[0];
                 abVC.selectedIndexPath = indexPath;
                 abVC.delegate = self;
+                abVC.vcType = FaceAddressBookVCTypeRecognition;
                 UIViewController *vc = [CommonMethod viewControllerForView:self];
                 
                 if (vc) {
                     [vc presentViewController:abVC animated:YES completion:nil];
-                    //[vc.navigationController pushViewController:abVC animated:YES];
                 }
                 
             }

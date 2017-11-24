@@ -35,7 +35,14 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"MESSAGES_FACE_MOVE"];
+    
+    if (self.vcType == FaceAddressBookVCTypeMoveTo) {
+        self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"MESSAGES_FACE_MOVE"];
+    }else if(self.vcType == FaceAddressBookVCTypeRecognition){
+        //MESSAGES_IDENTIFY_ADD_BTN
+        self.titleLabel.text = [JfgLanguage getLanTextStrByKey:@"MESSAGES_IDENTIFY_ADD_BTN"];
+    }
+    
     
     [self performSelector:@selector(loadingTimeout) withObject:nil afterDelay:10];
     [self.msgRequest reqFamiliarPersonsForCid:self.cid timestamp:0];

@@ -1,6 +1,6 @@
 /* tr.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.  
+Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Ağa bağlı değil";
 "REPEAT_TIME" = "%d saniye";
@@ -103,7 +103,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "DOOR_MAGNET_NAME" = "iEv";
 "DOG_CAMERA_NAME" = "Kamera";
 "CAMERA" = "Kamera";
-"Cloud_Camera" = "Bulut Kamerası";
+"Cloud_Camera" = "Kamera (pil sürümü)";
 "Consumer_Camera" = "Tüketici Kamerası";
 "Smart_bell_Battery" = "Akıllı kapı zili (pil sürümü)";
 "Smart_bell_Power" = "Akıllı kapı zili (Güç Sürümü)";
@@ -931,7 +931,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "H5_Panoramic" = "panoramik";
 "H5_Fisheye" = "Balık gözü";
 "H5_Asteroid" = "asteroit";
-"H5_VR mode" = "VR modu";
+"H5_VRmode" = "VR modu";
 "Tap1_Shared_LandscapeTips" = "Manzara ile çalışmak değilse, sistemde Ekran Rotasyon etkinleştirin";
 "Tap1_LogoSelect" = "Logo seç";
 "Tap3_ShareDevice_SharedUsers" = "Paylaşılan kullanıcılar";
@@ -1092,7 +1092,6 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "RTMP_STREAM_KEY" = "Akış Anahtarı:";
 "TURN_ON_HOTSPOT_GUIDE" = "Lütfen \"Bağlan\" ardından sistemi \"Ayarlar\" > \"Kişisel Erişim Noktası\"";
 "LIVE_STOP_POP" = "Durdurma işleminden sonra canlı adres geçersiz mi?";
-"DEVICE_SHARE_LIMIT_TIPS" = "Hisselerin sayısına ulaşılmıştır";
 "LIVE_RTMP_ENTER_KEY" = "Lütfen anahtarı girin";
 "FAQ_SINA_WEIBO" = "Sina Weibo canlı video desteklemez";
 "FAQ_SINA_WEIBO_TEXT1" = "1, hesap Sina gerçek adı kimlik doğrulaması Weibo ve bir kara liste hesabı değil emin olmak için.";
@@ -1146,4 +1145,23 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "Camera_Outdoor" = "Kamera (Açık Sürüm)";
 "MESSAGES_FACE_VISIT_TIMES" = "30 gün içinde %@ defa ziyaret";
 "SETTINGS_FAILED" = "Ayarlar başarısız";
+"MESSAGES_FACE_VISIT_SUM" = "%@ kişi bugün ziyaret";
 "INFRARED_IDENTIFY_SET" = "Kızılötesi kimlik";
+"DETECTION_AREA" = "Algılama alanı";
+"DETECTION_AREA_DEFAULT" = "varsayılan";
+"DETECTION_AREA_SET" = "Ayarlandı";
+"DETECTION_AREA_DESCRI" = "Tüm bölgeler varsayılan olarak algılanır ve yalnızca belirtilen alan değiştiğinde alarm gönderir";
+"DETECTION_AREA_ADD" = "Set algılama alanı";
+"DETECTION_AREA_RESTORE" = "Varsayılanları Geri Yükle";
+"DETECTION_AREA_GUIDE" = "Algılama alanını ayarlamak için kırmızı kutuyu sürükleyin";
+"DETECTION_AREA_FAILED_LOAD" = "Gerçek zamanlı arka plan yüklenemedi";
+"DOOR_PASSWORD" = "Lütfen kapı şifresini giriniz";
+"DOOR_OPENING" = "Açılış ...";
+"DOOR_OPENED" = "Açıldı";
+"DOOR_OPEN_FAIL" = "kapıyı açma başarısız";
+"MODIFY_DOOR_PSW" = "Kapı şifresini değiştir";
+"OPEN_DOOR_SUCCE_MSG" = "Kapıyı başarıyla açın";
+"CLOSE_DOOR_SUCCE_MSG" = "Kapıyı başarıyla kapat";
+"DOOR_WRONG_PSW" = "yanlış şifre";
+"DOOR_WRONG_PSW_MSG" = "Yanlış kapı şifresi";
+"DETECTION_AREA_FAILED_LOAD_RETRY" = "Canlı resim alamıyor, bu yüzden alan ayarlayamıyor, lütfen tekrar deneyin.";

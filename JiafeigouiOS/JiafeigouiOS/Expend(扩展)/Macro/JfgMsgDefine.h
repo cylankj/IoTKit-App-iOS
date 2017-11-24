@@ -150,6 +150,7 @@ NSString *const dpMsgCameraWarnMSGV3 = @"_warnMsg_v3";
 NSString *const dpMsgCameraBitRateKey = @"_bitRate";
 NSString *const dpMsgCameraWarnDurKey = @"_warnDuration";
 NSString *const dpMsgCameraAIRecgnitionKey = @"_aiRecognition";
+NSString *const dpMsgCameraAreaDetectionKey = @"_areaDetection";
 NSString *const dpMsgCameraInfraredEnhanced = @"_InfraredEnhanced";
 
 typedef NS_ENUM(NSInteger, dpMsgCamera){
@@ -169,6 +170,7 @@ typedef NS_ENUM(NSInteger, dpMsgCamera){
     dpMsgCamera_BitRate,                        //速率.分辨率
     dpMsgCamera_WarnDuration,                   // 报警 时间间隔
     dpMsgCamera_AIRecgnition,                   // AI 识别
+    dpMsgCamera_AreaDetection = 519,            //区域侦测
     dpMsgCamera_Infraredenhanced = 520,         // 红外增强
     
     

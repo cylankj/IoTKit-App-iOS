@@ -460,9 +460,7 @@
     if (!_pwTextFiled) {
         _pwTextFiled = [self factoryTextFieldWithFrame:CGRectMake(51,0, self.accountTextFiled.width-102, self.accountTextFiled.height) placeholder:[JfgLanguage getLanTextStrByKey:@"PASSWORD"]];
         _pwTextFiled.secureTextEntry = YES;
-    
         _pwTextFiled.returnKeyType = UIReturnKeyDone;
-       
         _pwTextFiled.clearButtonMode = UITextFieldViewModeWhileEditing;
     }
     return _pwTextFiled;

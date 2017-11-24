@@ -280,6 +280,7 @@
     NSMutableArray *section1 = [self section1Arr];//wifi设置
     NSMutableArray *section1_1 = [self section1_1Arr];//省电模式相关
     NSMutableArray *section2 = [self section2Arr];//安全防护
+    NSMutableArray *sectionDoorlock = [self sectionForDoorlockPw];//门锁修改密码
     NSMutableArray *sdCardSection = [self sectionSDCardArr];//sd卡相关
     NSMutableArray *section3 = [self section3Arr];//待机
     NSMutableArray *section4 = [self section4Arr];//视角，指示灯
@@ -300,6 +301,11 @@
     {
         [dogSettings addObject:section2];
     }
+    
+    if (sectionDoorlock.count) {
+        [dogSettings addObject:sectionDoorlock];
+    }
+    
     if (sdCardSection.count > 0)
     {
         [dogSettings addObject:sdCardSection];
@@ -576,6 +582,25 @@
     return section2;
 }
 
+
+//门锁相关
+-(NSMutableArray *)sectionForDoorlockPw
+{
+    NSMutableArray *sections = [NSMutableArray arrayWithCapacity:2];
+    if ([self.propertyTool showRowWithPid:self.pType key:pDoorLockKey]){
+        
+        [sections addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             @"iinstall_icon_lock",cellIconImageKey,
+                             [JfgLanguage getLanTextStrByKey:@"MODIFY_DOOR_PSW"],cellTextKey,
+                             idCellDoorlockPw, cellUniqueID,
+                             @"",cellDetailTextKey,
+                             @0,cellshowSwitchKey,
+                             @(self.settingModel.isCellCanClick), canClickCellKey,
+                             nil]];
+        
+    }
+    return sections;
+}
 
 //sd卡相关
 - (NSMutableArray *)sectionSDCardArr

@@ -9,8 +9,11 @@
 #import "JFGBaseViewController.h"
 #import <JFGSDK/JFGSDK.h>
 
+
+
 @interface PersonMsgViewController : JFGBaseViewController
 
 @property (nonatomic, strong)JFGSDKAcount * jfgAccount;
+
 
 @end

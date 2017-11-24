@@ -18,6 +18,9 @@
 //是否打开红外增强
 @property (assign,nonatomic)BOOL isOpenInfraredStrengthen;
 
+//是否已经设置区域侦测
+@property (nonatomic,assign)BOOL isOpenAreaDetection;
+
 /**
  *  灵敏度
  */

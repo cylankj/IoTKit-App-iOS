@@ -1,6 +1,6 @@
 /* vi-VN.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.  
+Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
 */
 "GLOBAL_NO_NETWORK" = "Chưa kết nối";
 "REPEAT_TIME" = "%d giây";
@@ -103,7 +103,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "DOOR_MAGNET_NAME" = "iHome";
 "DOG_CAMERA_NAME" = "Camera";
 "CAMERA" = "Camera";
-"Cloud_Camera" = "Máy ảnh Đám mây";
+"Cloud_Camera" = "Máy ảnh(Version Pin)";
 "Consumer_Camera" = "Máy ảnh người tiêu dùng";
 "Smart_bell_Battery" = "Chuông cửa thông minh (Phiên bản pin)";
 "Smart_bell_Power" = "Chuông cửa thông minh (Phiên bản nguồn)";
@@ -931,7 +931,7 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "H5_Panoramic" = "Toàn cảnh";
 "H5_Fisheye" = "Fisheye";
 "H5_Asteroid" = "Tiểu hành tinh";
-"H5_VR mode" = "Chế độ VR";
+"H5_VRmode" = "Chế độ VR";
 "Tap1_Shared_LandscapeTips" = "Nếu không làm việc với cảnh quan, xin vui lòng cho phép màn hình xoay trong hệ thống";
 "Tap1_LogoSelect" = "Logo chọn";
 "Tap3_ShareDevice_SharedUsers" = "Người dùng chia sẻ";
@@ -1092,7 +1092,6 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "RTMP_STREAM_KEY" = "Khóa luồng:";
 "TURN_ON_HOTSPOT_GUIDE" = "Vui lòng \"Kết nối\", sau đó chuyển đổi hệ thống \"Cài đặt\" > \"Điểm nóng riêng\"";
 "LIVE_STOP_POP" = "Sau khi dừng, địa chỉ sống không hợp lệ dù dừng?";
-"DEVICE_SHARE_LIMIT_TIPS" = "Số cổ phần đã đạt được";
 "LIVE_RTMP_ENTER_KEY" = "Vui lòng nhập khóa";
 "FAQ_SINA_WEIBO" = "Không hỗ trợ Sina Weibo video trực tiếp";
 "FAQ_SINA_WEIBO_TEXT1" = "1, để đảm bảo rằng tài khoản có xác thực Sina tên Weibo, và không phải là một tài khoản danh sách đen.";
@@ -1146,4 +1145,23 @@ Created by cylan language tool  on Wed Nov 15 11:53:18 CST 2017.
 "Camera_Outdoor" = "Máy ảnh (Phiên bản ngoài trời)";
 "MESSAGES_FACE_VISIT_TIMES" = "Truy cập %@ lần trong vòng 30 ngày";
 "SETTINGS_FAILED" = "Cài đặt thất bại";
+"MESSAGES_FACE_VISIT_SUM" = "%@ người ghé thăm hôm nay";
 "INFRARED_IDENTIFY_SET" = "Nhận dạng hồng ngoại";
+"DETECTION_AREA" = "Khu vực phát hiện";
+"DETECTION_AREA_DEFAULT" = "mặc định";
+"DETECTION_AREA_SET" = "Đã được chuẩn bị";
+"DETECTION_AREA_DESCRI" = "Tất cả các vùng đều được phát hiện theo mặc định và sẽ chỉ gửi báo động khi thay đổi vùng được chỉ định";
+"DETECTION_AREA_ADD" = "Đặt vùng phát hiện";
+"DETECTION_AREA_RESTORE" = "Khôi phục mặc định";
+"DETECTION_AREA_GUIDE" = "Kéo hộp màu đỏ để thiết lập khu vực phát hiện";
+"DETECTION_AREA_FAILED_LOAD" = "Không thể tải nền thời gian thực";
+"DOOR_PASSWORD" = "Vui lòng nhập mật khẩu cửa";
+"DOOR_OPENING" = "Khai mạc…";
+"DOOR_OPENED" = "Đã mở";
+"DOOR_OPEN_FAIL" = "không mở được cánh cửa";
+"MODIFY_DOOR_PSW" = "Sửa đổi mật khẩu cửa";
+"OPEN_DOOR_SUCCE_MSG" = "Mở cửa thành công";
+"CLOSE_DOOR_SUCCE_MSG" = "Đóng cửa thành công";
+"DOOR_WRONG_PSW" = "sai mật khẩu";
+"DOOR_WRONG_PSW_MSG" = "Mật khẩu cửa sai";
+"DETECTION_AREA_FAILED_LOAD_RETRY" = "không nhận được hình ảnh trực tiếp, vì vậy không thể đặt khu vực, hãy thử lại.";
