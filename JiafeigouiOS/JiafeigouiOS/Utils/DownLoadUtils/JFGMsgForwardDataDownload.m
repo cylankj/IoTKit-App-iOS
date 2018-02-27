@@ -8,13 +8,12 @@
 
 #import "JFGMsgForwardDataDownload.h"
 #import <JFGSDK/JFGSDK.h>
-#import <JFGSDK/JFGSDKSock.h>
 #import <JFGSDK/MPMessagePackReader.h>
 #import <JFGSDK/MPMessagePackWriter.h>
 #import "JfgGlobal.h"
 #import "FileManager.h"
 
-@interface JFGMsgForwardDataDownload()<JFGSDKSockCBDelegate,JFGSDKCallbackDelegate>
+@interface JFGMsgForwardDataDownload()<JFGSDKCallbackDelegate>
 {
     JFGMsgRobotForwardDataModel *currentModel2;
     BOOL isDownloading;
@@ -40,7 +39,7 @@
 -(void)addNotification
 {
     [JFGSDK addDelegate:self];
-    [[JFGSDKSock sharedClient] addDelegate:self];
+    //[[JFGSDKSock sharedClient] addDelegate:self];
 }
 
 
@@ -107,11 +106,7 @@
     }
     
     NSData *reqData = [MPMessagePackWriter writeObject:@[self.currentModel.fileName,self.currentModel.md5,@(self.currentModel.fileData.length),@(50*1024)] error:nil];
-    if ([JFGSDKSock sharedClient].isConnected) {
-        [[JFGSDKSock sharedClient] sendMsgForSockWithDst:@[self.currentModel.cid] isAck:YES fileType:1 msg:reqData];
-    }else{
-        [JFGSDK sendMsgForTcpWithDst:@[self.currentModel.cid] isAck:YES fileType:1 msg:reqData];
-    }
+//    [JFGSDK sendMsgForTcpWithDst:@[self.currentModel.cid] isAck:YES fileType:1 msg:reqData];
     isDownloading = YES;
     
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(reqOvertime) object:nil];
@@ -245,11 +240,7 @@
                         
                         if (![self.currentModel.fileName isEqualToString:@""]) {
                             NSData *reqData = [MPMessagePackWriter writeObject:@[self.currentModel.fileName,self.currentModel.md5,@(self.currentModel.fileData.length),@(50*1024)] error:nil];
-                            if ([JFGSDKSock sharedClient].isConnected) {
-                                [[JFGSDKSock sharedClient] sendMsgForSockWithDst:@[self.currentModel.cid] isAck:YES fileType:1 msg:reqData];
-                            }else{
-                                [JFGSDK sendMsgForTcpWithDst:@[self.currentModel.cid] isAck:YES fileType:1 msg:reqData];
-                            }
+                            [JFGSDK sendMsgForTcpWithDst:@[self.currentModel.cid] isAck:YES fileType:1 msg:reqData];
                            
                         }
                         

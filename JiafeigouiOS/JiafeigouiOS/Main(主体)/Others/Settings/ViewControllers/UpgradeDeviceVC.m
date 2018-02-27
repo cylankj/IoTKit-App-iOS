@@ -104,7 +104,6 @@ NSString *const redDot = @"_redDot";
 - (void)viewDidDisappear:(BOOL)animated
 {
     [super viewDidDisappear:animated];
-    
     [UIApplication sharedApplication].idleTimerDisabled = NO;
     [self finishedUpgradeTimer];
 }
@@ -125,7 +124,6 @@ NSString *const redDot = @"_redDot";
     JFG_WS(weakSelf);
     
     [self.view addSubview:self.upgradeTableView];
-    
     [self.view addSubview:self.progressBgView];
     [self.progressBgView addSubview:self.progressLabel];
     [self.progressLabel mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -220,6 +218,7 @@ NSString *const redDot = @"_redDot";
         {
             if ([self isDeviceOffLine])
             {
+                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"NOT_ONLINE"]];
                 return;
             }
             
@@ -249,15 +248,14 @@ NSString *const redDot = @"_redDot";
         {
             if ([self isDeviceOffLine])
             {
+                [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"OFFLINE_ERR_1"]];
                 return;
             }
             
             if ([self.upgradeModel.lastestVersion isEqualToString:self.upgradeModel.currentVersion])
             {
                 [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_LatestFirmwareTips"]];
-            }
-            else
-            {
+            }else{
                 // 以上判断都 阻止不了 那就下载吧
                 [self downLoadDeveiceBin];
             }
@@ -269,15 +267,8 @@ NSString *const redDot = @"_redDot";
 
 - (BOOL)isDeviceOffLine
 {
-    switch (self.pType)
-    {
-        case productType_720:
-        case productType_720p:
-            return NO;
-            break;
-            
-        default:
-            break;
+    if ([CommonMethod isDeviceBlockUpgrade:self.pType]) {
+        return NO;
     }
     
     switch (self.upgradeModel.netState)
@@ -296,73 +287,76 @@ NSString *const redDot = @"_redDot";
 
 - (void)downLoadDeveiceBin
 {
+    //self.footView.deleteButton.enabled = NO;
     self.footView.deleteButton.enabled = NO;
-    
     JFG_WS(weakSelf);
-    
-    switch (self.pType)
-    {
-        case productType_720p:
-        case productType_720:
+
+    if ([CommonMethod isDeviceBlockUpgrade:self.pType]) {
+        if (self.upgradeModel.downLoadURLArr.count > 0)
         {
-            if (self.upgradeModel.downLoadURLArr.count > 0)
+            [self download:[self.upgradeModel.downLoadURLArr firstObject]];
+        }
+        else
+        {
+            //[ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_LatestFirmwareTips"]];
+            if ([self.upgradeModel.lastestVersion isEqualToString:self.upgradeModel.currentVersion])
             {
-                [self download:[self.upgradeModel.downLoadURLArr firstObject]];
+                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_LatestFirmwareTips"]];
+                self.footView.deleteButton.enabled = YES;
             }
             else
             {
-                //[ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_LatestFirmwareTips"]];
-                if ([self.upgradeModel.lastestVersion isEqualToString:self.upgradeModel.currentVersion])
-                {
-                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_LatestFirmwareTips"]];
-                }
-                else
-                {
-                    [self show720UpgradeAlert];
-                }
+                [self show720UpgradeAlert];
             }
         }
-            break;
+        
+        
+    }else{
+        
+        if (self.upgradeModel.binUrl == nil || [self.upgradeModel.binUrl isEqualToString:@""]) {
             
-        default:
-        {
-            [self.downLoadUtils downloadWithUrl:self.upgradeModel.binUrl toDirectory:[FileManager jfgLogDirPath] state:^(SRDownloadState state) {
-                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"download upgrade file state [%ld]",(unsigned long)state]];
-                
-                switch (state)
-                {
-                    case SRDownloadStateCompleted:
-                    {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            weakSelf.downLoadProgress.progress = 0;
-                            weakSelf.progressLabel.text = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_FirmwareUpdating"],@"0%"];
-                            weakSelf.progressBgView.hidden = YES;
-                            [weakSelf.footView.deleteButton setTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Update"] forState:UIControlStateNormal];
-                            
-                            [weakSelf showUpgradeAlert];
-                            
-                        });
-                    }
-                        break;
-                    case SRDownloadStateFailed:
-                    {
-                        [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"Tap1_DownloadFirmwareFai"]];
-                        weakSelf.footView.deleteButton.enabled = YES;
-                    }
-                        break;
-                    default:
-                        break;
-                }
-            } progress:^(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    weakSelf.progressBgView.hidden = NO;
-                    [weakSelf setProgressValue:progress upgradeType:upgradeType_DownLoad];
-                });
-            } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
-                NSLog(@"%@",error);
-            }];
+            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_DownloadFirmwareFai"]];
+            self.footView.deleteButton.enabled = YES;
+            return;
         }
-            break;
+        
+        [self.downLoadUtils downloadWithUrl:self.upgradeModel.binUrl toDirectory:[FileManager jfgLogDirPath] state:^(SRDownloadState state) {
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"download upgrade file state [%ld]",(unsigned long)state]];
+            
+            switch (state)
+            {
+                case SRDownloadStateCompleted:
+                {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        weakSelf.downLoadProgress.progress = 0;
+                        weakSelf.progressLabel.text = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"Tap1_FirmwareUpdating"],@"0%"];
+                        weakSelf.progressBgView.hidden = YES;
+                        [weakSelf.footView.deleteButton setTitle:[JfgLanguage getLanTextStrByKey:@"Tap1_Update"] forState:UIControlStateNormal];
+                        
+                        [weakSelf showUpgradeAlert];
+                        
+                    });
+                }
+                    break;
+                case SRDownloadStateFailed:
+                {
+                    [ProgressHUD showWarning:[JfgLanguage getLanTextStrByKey:@"Tap1_DownloadFirmwareFai"]];
+                    weakSelf.footView.deleteButton.enabled = YES;
+                }
+                    break;
+                default:
+                    break;
+            }
+        } progress:^(NSInteger receivedSize, NSInteger expectedSize, CGFloat progress) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                weakSelf.progressBgView.hidden = NO;
+                [weakSelf setProgressValue:progress upgradeType:upgradeType_DownLoad];
+            });
+        } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
+            NSLog(@"%@",error);
+            
+        }];
+        
     }
     
     
@@ -433,20 +427,10 @@ NSString *const redDot = @"_redDot";
 
 - (int)getTimeOutDuration
 {
-    switch (self.pType)
-    {
-        case productType_720:
-        case productType_720p:
-        {
-            return 60*5;
-        }
-            break;
-        
-        default:
-        {
-            return timeoutDuration;
-        }
-            break;
+    if ([CommonMethod isDeviceBlockUpgrade:self.pType]) {
+        return 60*5;
+    }else{
+        return timeoutDuration;
     }
 }
 
@@ -484,47 +468,103 @@ NSString *const redDot = @"_redDot";
 
 - (void)show720UpgradeAlert
 {
-    JFG_WS(weakSelf);
+    //JFG_WS(weakSelf);
+    if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline) {
+        //无网络连接
+        [CommonMethod showNetDisconnectAlert];
+        self.footView.deleteButton.enabled = YES;
+        return;
+    }
     
-    NSString *currentWifi = [CommonMethod currentConnecttedWifi];
+    JiafeigouDevStatuModel *devModel = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevModelWithCid:self.cid];
     
-    if (([self.upgradeModel.deviceWifi isEqualToString:currentWifi] && currentWifi != nil && ![currentWifi isEqualToString:@""]) || [CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
-    {
-        JiafeigouDevStatuModel *devModel = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevModelWithCid:self.cid];
-        
-        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"upgrade battery %d", devModel.Battery]];
-        
-        if (devModel.Battery < 30)
-        {
+    if (devModel.netType == JFGNetTypeOffline) {
+        self.footView.deleteButton.enabled = YES;
+        //设备不在线
+        [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"NOT_ONLINE"] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
             
-            //__weak typeof(self) weakSelf = self;
-            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_Update_Electricity"] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+        } OKBlock:^{
+            
+        }];
+        
+    }else if(devModel.netType == JFGNetTypeWifi){
+        //wifi模式
+        NSString *currentWifi = [CommonMethod currentConnecttedWifi];
+        if ((currentWifi != nil && ![currentWifi isEqualToString:@""] && [self.upgradeModel.deviceWifi isEqualToString:currentWifi]) || [CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+        {
+            [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"upgrade battery %d", devModel.Battery]];
+            if (devModel.Battery < 30)
+            {
+                [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_Update_Electricity"] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+                    
+                } OKBlock:^{
+                    
+                }];
+                self.footView.deleteButton.enabled = YES;
+                
+            }else{
+                
+                [self jfgFpingRequest];
+            }
+            
+            
+        }else{
+            
+            //self.upgradeModel.deviceWifi
+            NSString *str = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"WIFI_SET_1"],self.upgradeModel.deviceWifi];
+            [LSAlertView showAlertWithTitle:nil Message:str CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
                 
             } OKBlock:^{
                 
             }];
+            self.footView.deleteButton.enabled = YES;
             
-            
-            return;
         }
         
+        
+    }else if (devModel.netType == JFGNetTypeWired){
+        //有线连接模式
         [self jfgFpingRequest];
     }
-    else
-    {
-        NSString *showedWifi = (self.upgradeModel.deviceWifi == nil || [self.upgradeModel.deviceWifi isEqualToString:@""])?[CommonMethod appendAPNameWithPid:self.pType Cid:self.cid]:self.upgradeModel.deviceWifi;
-        
-        [LSAlertView showAlertWithTitle:[NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"setwifi_check"],showedWifi] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
-            
-            dispatch_async(dispatch_get_main_queue(), ^{
-                weakSelf.footView.deleteButton.enabled = YES;
-            });
-        } OKBlock:^{
-            dispatch_async(dispatch_get_main_queue(), ^{
-                weakSelf.footView.deleteButton.enabled = YES;
-            });
-        }];
-    }
+//    NSString *currentWifi = [CommonMethod currentConnecttedWifi];
+//
+//    if (([self.upgradeModel.deviceWifi isEqualToString:currentWifi] && currentWifi != nil && ![currentWifi isEqualToString:@""]) || [CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+//    {
+//        JiafeigouDevStatuModel *devModel = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevModelWithCid:self.cid];
+//
+//        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"upgrade battery %d", devModel.Battery]];
+//
+//        if (devModel.Battery < 30)
+//        {
+//
+//            //__weak typeof(self) weakSelf = self;
+//            [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_Update_Electricity"] CancelButtonTitle:nil OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
+//
+//            } OKBlock:^{
+//
+//            }];
+//
+//
+//            return;
+//        }
+//
+//        [self jfgFpingRequest];
+//    }
+//    else
+//    {
+//        NSString *showedWifi = (self.upgradeModel.deviceWifi == nil || [self.upgradeModel.deviceWifi isEqualToString:@""])?[CommonMethod appendAPNameWithPid:self.pType Cid:self.cid]:self.upgradeModel.deviceWifi;
+//
+//        [LSAlertView showAlertWithTitle:[NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"setwifi_check"],showedWifi] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] OtherButtonTitle:nil CancelBlock:^{
+//
+//            dispatch_async(dispatch_get_main_queue(), ^{
+//                weakSelf.footView.deleteButton.enabled = YES;
+//            });
+//        } OKBlock:^{
+//            dispatch_async(dispatch_get_main_queue(), ^{
+//                weakSelf.footView.deleteButton.enabled = YES;
+//            });
+//        }];
+//    }
 }
 #pragma mark 下载
 
@@ -581,6 +621,12 @@ NSString *const redDot = @"_redDot";
     JFG_WS(weakSelf);
     
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"download upgrade url string %@",urlString]];
+    
+    if (urlString == nil || [urlString isEqualToString:@""]) {
+        
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Tap1_DownloadFirmwareFai"]];
+        return;
+    }
     
     [self.downLoadUtils downloadWithUrl:urlString toDirectory:[FileManager jfgLogDirPath] state:^(SRDownloadState state) {
         
@@ -643,7 +689,7 @@ NSString *const redDot = @"_redDot";
             
         });
     } completion:^(BOOL isSuccess, NSString *filePath, NSError *error) {
-        
+        NSLog(@"%@",error);
     }];
 }
 
@@ -666,8 +712,15 @@ NSString *const redDot = @"_redDot";
     {
         JFG_WS(weakSelf);
         dispatch_async(dispatch_get_main_queue(), ^{
-            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"UPDATE_DISCONNECT"]];
+        
+            JiafeigouDevStatuModel *devModel = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevModelWithCid:self.cid];
+            if (devModel.netType == JFGNetTypeWired){
+                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"WIRED_UPGRADE_NON_LAN"]];
+            }else{
+                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"UPDATE_DISCONNECT"]];
+            }
             weakSelf.footView.deleteButton.enabled = YES;
+            
         });
     }
 }
@@ -686,39 +739,30 @@ NSString *const redDot = @"_redDot";
         
         NSString *upgradeURL = nil;
         
-        switch (self.pType)
-        {
-            case productType_720:
-            case productType_720p:
+        if ([CommonMethod isDeviceBlockUpgrade:self.pType]) {
+            NSString *binName = nil;
+            
+            for (NSInteger i = 0; i < self.upgradeModel.binUrls.count; i ++)
             {
-                NSString *binName = nil;
-                
-                for (NSInteger i = 0; i < self.upgradeModel.binUrls.count; i ++)
+                if (binName == nil)
                 {
-                    if (binName == nil)
-                    {
-                        binName = [[NSURL URLWithString:[self.upgradeModel.binUrls objectAtIndex:i]] lastPathComponent];
-                    }
-                    else
-                    {
-                        binName = [binName stringByAppendingString:[NSString stringWithFormat:@";%@",[[NSURL URLWithString:[self.upgradeModel.binUrls objectAtIndex:i]] lastPathComponent]]];
-                    }
+                    binName = [[NSURL URLWithString:[self.upgradeModel.binUrls objectAtIndex:i]] lastPathComponent];
                 }
-                
-                if (binName != nil)
+                else
                 {
-                    upgradeURL = [NSString stringWithFormat:@"http://%@:8765/%@",[CommonMethod getIPAddress:YES], binName];
-                    self.isUpgrading = YES;
+                    binName = [binName stringByAppendingString:[NSString stringWithFormat:@";%@",[[NSURL URLWithString:[self.upgradeModel.binUrls objectAtIndex:i]] lastPathComponent]]];
                 }
-                
             }
-                break;
-                
-            default:
+            
+            if (binName != nil)
             {
-                upgradeURL = [NSString stringWithFormat:@"http://%@:8765/%@",[CommonMethod getIPAddress:YES], [[NSURL URLWithString:self.upgradeModel.binUrl] lastPathComponent]];
+                upgradeURL = [NSString stringWithFormat:@"http://%@:8765/%@",[CommonMethod getIPAddress:YES], binName];
+                self.isUpgrading = YES;
             }
-                break;
+        }else{
+            
+             upgradeURL = [NSString stringWithFormat:@"http://%@:8765/%@",[CommonMethod getIPAddress:YES], [[NSURL URLWithString:self.upgradeModel.binUrl] lastPathComponent]];
+            
         }
 
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"jfg upgrade url [%@]",upgradeURL]];
@@ -978,9 +1022,7 @@ NSString *const redDot = @"_redDot";
         _upgradeTableView.delegate = self;
         _upgradeTableView.dataSource = self;
         _upgradeTableView.tableFooterView = self.footView;
-        
     }
-    
     return _upgradeTableView;
 }
 

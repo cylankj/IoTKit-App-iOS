@@ -1,6 +1,6 @@
 /* ru.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
+Created by cylan language tool  on Mon Feb 05 17:41:29 CST 2018.  
 */
 "GLOBAL_NO_NETWORK" = "Отсутствует подключение к сети";
 "REPEAT_TIME" = "%d секунды";
@@ -165,7 +165,7 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MSG_SYSTEM_UPGRADE" = "Обновление системы до V%@";
 "MSG_WARN_ON" = "Вы активировали обнаружение движения. Устройство информирует вас сразу, как сработает датчик обнаружения движения";
 "MSG_WARN_OFF" = "Обнаружение движения отключено";
-"MSG_WARNING" = "Новые открытия";
+"MSG_WARNING" = "Новые сообщения";
 "MSG_REBIND" = "Устройство добавляется к %@ . Если у Вас возникли какие-либо вопросы,пожалуйста,свяжитесь с нами";
 "LARGER_IMAGE" = "Нажмите для просмотра увеличенного изображения";
 "DELETE_SURE" = "Уверены что хотите удалить?";
@@ -1125,8 +1125,8 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MESSAGES_TIME_HOUR" = "%@ час назад";
 "MESSAGES_TIME_DAY" = "%@ день назад";
 "MESSAGES_FACE_IDENTIFY" = "Выявить";
-"MESSAGES_IDENTIFY_POP" = "Новое лицо или добавление к существующему лицу улучшает точность распознавания лица";
-"MESSAGES_IDENTIFY_CREATE_BTN" = "Новое лицо";
+"MESSAGES_IDENTIFY_POP" = "Зарегистрируйте лицо или добавив к существующему лицу, улучшите точность распознавания лица";
+"MESSAGES_IDENTIFY_CREATE_BTN" = "Зарегистрировать лицо";
 "MESSAGES_IDENTIFY_ADD_BTN" = "Добавить к существующему лицу";
 "MESSAGES_DELETE_POP" = "Удалить лицо и все связанные с ним сообщения?";
 "MESSAGES_DELETE_FACE_BTN" = "Удалить лицо";
@@ -1165,3 +1165,40 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "DOOR_WRONG_PSW" = "неправильный пароль";
 "DOOR_WRONG_PSW_MSG" = "Неверный пароль двери";
 "DETECTION_AREA_FAILED_LOAD_RETRY" = "не получить изображение в реальном времени, поэтому не можете установить область, повторите попытку.";
+"WIRED_GUIDE" = "Используйте сетевой кабель для подключения устройства и маршрутизатора, обеспечить устройство и APP использовать ту же сеть";
+"WIRED_SELECT_DEVICE_CID" = "Выберите CID устройства";
+"WIRED_SELECT_DEVICE_CID_TIPS" = "CID устройства";
+"DEVICE_WIRED_CONNECTION" = "Проводное соединение";
+"HALF_CAMERA_ADD_TIPS" = "Длительное нажатие 3 секунды";
+"HALF_CAMERA" = "Половина сферической камеры";
+"FACE_COLLAPSE" = "коллапс";
+"WIRED_UPGRADE_NON_LAN" = "Перед настройкой подключите телефон и устройство к той же сети";
+"MESSAGES_FACE_ANALYSIS" = "Анализ пассажирского потока";
+"MESSAGES_FACE_TADAY_VISIT" = "Сегодняшний визит";
+"MESSAGES_FACE_YESTERDAY_VISIT" = "Вчерашний визит";
+"MESSAGES_FACE_NEW_VISIT" = "Новые посетители";
+"MESSAGES_FACE_PEOPLE" = "люди";
+"CLOSE_BUTTON" = "близко";
+"MESSAGES_FILTER_STRANGER" = "Посетители";
+"MESSAGES_REGISTER_FACE" = "Зарегистрировать лицо";
+"MESSAGES_GENDER_MALE" = "мужчина";
+"MESSAGES_GENDER_FEMALE" = "женский";
+"MESSAGES_AGE" = "%@ лет";
+"REGISTER_FACE_TIPS" = "Загрузите четкую фотографию лица";
+"MESSAGES_EXPLAIN" = "Пример изображения";
+"MESSAGES_POSITIVE_FACE" = "Положительное лицо";
+"MESSAGES_SIDE_FACE" = "Лицевая сторона";
+"MESSAGES_BLURRY" = "Размытые";
+"REGISTRATION_SECCESS" = "Вы успешно зарегистрировались";
+"CONTINUE_REGISTER" = "Продолжить регистрацию";
+"WRONG_FORMAT" = "Неверный формат, поддержка только .jpg/.png/.bmp";
+"FACE_NOT_RECOGNIZED" = "Лицо не распознается";
+"REGFACE_MULTIFACE" = "Слишком много лиц, непризнанных";
+"REGFACE_FACESMALL" = "Лицо слишком маленькое";
+"REGFACE_NOFACE" = "Не обнаружено лица";
+"REGISTRATION_FAILED" = "Ошибка регистрации лица";
+"FACE_RECOGNITION" = "Распознавание лица";
+"DOWNLOAD_MSG_PICTURE" = "Загрузить изображение сообщения";
+"DOWNLOAD_MSG_PICTURE_EXPLAIN" = "После закрытия сообщения о тревоге распознавания лиц не будет загружено";
+"SUCCESS_REGFACE" = "Успешно зарегистрированное лицо %@";
+"ADD_EXISTINGFACE_BEYOND10" = "Вы можете добавить только до 10 лиц";

@@ -28,12 +28,14 @@
 #import "LSAlertView.h"
 #import "JFGGrayPolicyManager.h"
 #import "PropertyManager.h"
+#import "MTA.h"
 
 @interface BindDevProgressViewController ()<JFGSDKBindDeviceDelegate,UIAlertViewDelegate,JFGSDKCallbackDelegate>
 {
     NSString *currentCid;
     BOOL isShowOuttime;
     NSTimer *timeOutTimer;
+    NSTimer *checkNetTimer;
     int timeCount;
 }
 @property (nonatomic,strong)UIButton *backBtn;
@@ -68,6 +70,8 @@ int const timeoutDuration = 90; // 90秒 超时
     [self getCacheCidList];
     if (self.pType == productType_720) {
         [self.bindingDeviceSDK bindDevFor720WithSn:@"" ssid:self.wifiName key:self.wifiPassWord];
+    }else if (self.pType == productType_wired){
+        [self.bindingDeviceSDK bindDevWithSn:self.cid devMacAddr:self.macAddr isRebind:NO];
     }else{
         [self.bindingDeviceSDK bindDevWithSn:@"" ssid:self.wifiName key:self.wifiPassWord];
     }
@@ -83,11 +87,17 @@ int const timeoutDuration = 90; // 90秒 超时
             [self netConnectTimeout];
             [timeOutTimer invalidate];
             timeOutTimer = nil;
+            
+            if (checkNetTimer && checkNetTimer.isValid) {
+                [checkNetTimer invalidate];
+                checkNetTimer = nil;
+            }
         }
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"BindDevTimeCount:%d",timeCount]];
         
     } repeats:YES];
     
+    [MTA trackCustomKeyValueEvent:@"AddDev_bindProgress" props:@{}];
     
 //    int64_t delayInSeconds = timeoutDuration;
 //    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
@@ -132,6 +142,17 @@ int const timeoutDuration = 90; // 90秒 超时
     [[NSUserDefaults standardUserDefaults] setBool:NO forKey:JFGNotShowOffnetKey];
     [JFGSDK removeDelegate:self];
     self.bindingDeviceSDK.delegate = nil;
+    
+    if (timeOutTimer && timeOutTimer.isValid) {
+        [timeOutTimer invalidate];
+        timeOutTimer = nil;
+    }
+    
+    if (checkNetTimer && checkNetTimer.isValid) {
+        [checkNetTimer invalidate];
+        checkNetTimer = nil;
+    }
+    
     //关闭屏幕常亮
     [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     // 开启
@@ -152,6 +173,13 @@ int const timeoutDuration = 90; // 90秒 超时
     [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_tips"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OK"] CancelBlock:^{
         
     } OKBlock:^{
+        
+        
+        if (timeOutTimer && [timeOutTimer isValid]) {
+            [timeOutTimer invalidate];
+            timeOutTimer = nil;
+        }
+        
         if (weakSelf.navigationController){
             for (UIViewController *temp in weakSelf.navigationController.viewControllers)
             {
@@ -196,10 +224,9 @@ int const timeoutDuration = 90; // 90秒 超时
 
 #pragma mark 
 #pragma mark  push to VC
-- (void)pushToBindErrorVC:(int)errorType
+- (void)pushToBindErrorVC:(int)errorType errorMsg:(NSString *)msg
 {
     //isShowOuttime = NO;
-    
     if (timeOutTimer && [timeOutTimer isValid]) {
         [timeOutTimer invalidate];
         timeOutTimer = nil;
@@ -208,7 +235,10 @@ int const timeoutDuration = 90; // 90秒 超时
     AddDeviceErrorVC *errorVC = [AddDeviceErrorVC new];
     errorVC.errorType = errorType;
     errorVC.pType = self.pType;
+    errorVC.errorMsg = msg;
     [self.navigationController pushViewController:errorVC animated:YES];
+    
+    [MTA trackCustomKeyValueEvent:@"AddDev_bindResult" props:@{@"result":@"failed",@"error":[NSString stringWithFormat:@"%ld",(long)errorType]}];
 }
 
 - (void)pushToBindSuccessVC:(NSString *)cid
@@ -217,7 +247,6 @@ int const timeoutDuration = 90; // 90秒 超时
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"deviceIsOnline[%d]   isReceiveRsp [%d]",self.deviceIsOnline,self.isBindSuccess]];
 
     //设置默认值方法已经转移到JFGBoundDevicesMsg.m类中的#setDefaultValue方法。（次数设置，因为cidList还没有返回，会导致设置失败，而且pType绑定的时候并不准确）
-    
     [self setSettingsRedDot:cid]; // 红点
     if (!self.isPushedToSuccess)
     {
@@ -227,6 +256,8 @@ int const timeoutDuration = 90; // 90秒 超时
                 [timeOutTimer invalidate];
                 timeOutTimer = nil;
             }
+            
+            [MTA trackCustomKeyValueEvent:@"AddDev_bindResult" props:@{@"result":@"success",@"error":@"0"}];
 
             __block BindDevProgressViewController *blockSelf = self;
             
@@ -290,7 +321,9 @@ int const timeoutDuration = 90; // 90秒 超时
                                     case DeviceNetType_4G:
                                     case DeviceNetType_5G:
                                     case DeviceNetType_Wifi:
+                                    case DeviceNetType_Wired:
                                     {
+                                        self.isBindSuccess = YES;
                                         self.deviceIsOnline = YES;
                                         [self pushToBindSuccessVC:currentCid];
                                     }
@@ -317,7 +350,7 @@ int const timeoutDuration = 90; // 90秒 超时
 -(void)netConnectTimeout
 {
     [self.animationView failedAnimation];
-    [self pushToBindErrorVC:BindResultType_Timeout];
+    [self pushToBindErrorVC:BindResultType_Timeout errorMsg:@""];
 }
 
 -(void)jfgBindDeviceProgressStatus:(JFGSDKBindindProgressStatus)status
@@ -356,13 +389,18 @@ int const timeoutDuration = 90; // 90秒 超时
         self.cid = [NSString stringWithString:peer];
     }
     currentCid = self.cid;
-    
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"bindSuccess:%@",peer?peer:nil]];
     [self pushToBindSuccessVC:peer];
-    [self checkDeviceNetStatue];
-    
     //记录新增加的设备cid，用于刷新cid列表时候，设置默认值
     [[JFGBoundDevicesMsg sharedDeciceMsg] addNewDeviceForCid:self.cid];
+    [self startCheckNetTimer];
+    
+}
+
+-(void)jfgBindDeviceFailed:(JFGSDKBindindProgressStatus)errorType errorMsg:(NSString *)errorMsg
+{
+    [self.animationView failedAnimation];
+    [self pushToBindErrorVC:errorType errorMsg:errorMsg];
     
 }
 
@@ -389,7 +427,22 @@ int const timeoutDuration = 90; // 90秒 超时
         currentCid = addCid;
     }
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"deviceListForAddCid:%@",addCid?addCid:@""]];
-    [self checkDeviceNetStatue];
+    [self startCheckNetTimer];
+}
+
+-(void)startCheckNetTimer
+{
+    if (checkNetTimer && checkNetTimer.isValid) {
+        [checkNetTimer invalidate];
+        checkNetTimer = nil;
+    }
+    
+    __weak typeof(self) weakSelf = self;
+    
+    checkNetTimer = [NSTimer bk_scheduledTimerWithTimeInterval:3 block:^(NSTimer *timer) {
+        NSLog(@"检测网络");
+        [weakSelf checkDeviceNetStatue];
+    } repeats:YES];
 }
 
 - (void)setSettingsRedDot:(NSString *)peer
@@ -401,7 +454,6 @@ int const timeoutDuration = 90; // 90秒 超时
     if ([hour intValue]>=22 || [hour intValue] <=8) {
         isOpenDeepSleep = YES;
     }
-    
     
     if ([self.propertyTool showRowWithPid:self.pType key:pRemoteWatchKey] && isOpenDeepSleep) {
         //绑定设备后，会自动设置默认22：00 -- 8：00开启省电休眠模式，如果设备支持此功能，且在这个时间段绑定设备，设置默认之后，就会进入休眠，所有设置功能不可用，小红点也不显示
@@ -420,6 +472,7 @@ int const timeoutDuration = 90; // 90秒 超时
 -(void)checkDeviceNetStatue
 {
     if (currentCid && ![currentCid isEqualToString:@""]) {
+        
         [[dataPointMsg shared] packSingleDataPointMsg:@[@(dpMsgBase_Net)] withCid:currentCid SuccessBlock:^(NSMutableDictionary *dic) {
             NSArray *wifiArray = [dic objectForKey:msgBaseNetKey];
             [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"主动检测网络:%@",[wifiArray description]]];
@@ -433,6 +486,7 @@ int const timeoutDuration = 90; // 90秒 超时
                     case DeviceNetType_4G:
                     case DeviceNetType_5G:
                     case DeviceNetType_Wifi:
+                    case DeviceNetType_Wired:
                     {
                         self.deviceIsOnline = YES;
                         [self pushToBindSuccessVC:currentCid];
@@ -453,12 +507,6 @@ int const timeoutDuration = 90; // 90秒 超时
         }];
     }
    
-}
-
--(void)jfgBindDeviceFailed:(JFGSDKBindindProgressStatus)errorType
-{
-    [self.animationView failedAnimation];
-    [self pushToBindErrorVC:errorType];//280000002709
 }
 
 #pragma mark- getter

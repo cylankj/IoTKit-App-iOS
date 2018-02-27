@@ -555,7 +555,7 @@
 
 
 /**
- *  检测版本升级,用于摄像头或windows客户端, android/ios 有其他升级方法
+ *  检测版本升级,用于摄像头或windows客户端
  *
  *  @param cid     设备标示
  *  @param pid     设备型号ID
@@ -567,24 +567,10 @@
 
 
 /**
- *  按设备区块检测设备升级状况
- *
- *  @param cid     设备标示
- *  @param pid     设备型号ID
- *  @param upgradeInfos 设备各个区块版本信息（url不用填写）
- */
-+(void)checkDevVersionWithCid:(NSString *)cid
-                          pid:(uint32_t)pid
-                 upgradeInfos:(NSArray <JFGSDKDevUpgradeInfo *>*)upgradeInfos;
-
-/**
  *  整合升级检测
  */
 +(void)checkTagDeviceVersionForCid:(NSString *)cid;
 
-
-//cylan 8小时升级检测专用
-+(void)checkClientVersion;
 
 
 /**
@@ -595,6 +581,10 @@
 +(void)deviceUpgreadeForIp:(NSString *)ip
                        url:(NSString *)url
                        cid:(NSString *)cid;
+
+
+//cylan 8小时升级检测专用
++(void)checkClientVersion;
 
 
 /**

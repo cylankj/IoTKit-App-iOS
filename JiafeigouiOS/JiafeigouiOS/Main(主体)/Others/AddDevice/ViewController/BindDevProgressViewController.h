@@ -17,4 +17,7 @@
 
 @property (nonatomic, copy) NSString *wifiPassWord;
 
+@property (nonatomic,copy)NSString *macAddr;
+
+
 @end

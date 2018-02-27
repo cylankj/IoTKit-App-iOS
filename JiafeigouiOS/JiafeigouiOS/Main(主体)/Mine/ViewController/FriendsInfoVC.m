@@ -86,7 +86,7 @@
     [self.view addSubview:self.nextButton];
     
     NSString *fileName = [NSString stringWithFormat:@"/image/%@.jpg",self.account];
-    NSString *h = [JFGSDK getCloudUrlWithFlag:1 fileName:fileName];
+    NSString *h = [JFGSDK getCloudUrlWithFlag:[JFGSDK getRegionType] fileName:fileName];
     [self.headImageView sd_setImageWithURL:[NSURL URLWithString:h] placeholderImage:[UIImage imageNamed:@"bg_head_160"]];
 
 }

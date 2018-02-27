@@ -100,19 +100,17 @@
     [JFGSDK ping:@"192.168.10.255"];
     
     BOOL isAPModel = [jfgConfigManager isAPModel];
-    
     if (isAPModel) {
-//        ConfigWiFiViewController *configWifi = [ConfigWiFiViewController new];
-//        configWifi.cid = self.cidStr;
-//        configWifi.configType = self.configType;
-//        configWifi.pType = self.pType;
-//        if (self.pType == productType_FreeCam) {
-//            configWifi.isCamare = NO;
-//        }else{
-//            configWifi.isCamare = YES;
-//        }
-//        [self.navigationController pushViewController:configWifi animated:YES];
         [JFGSDK ping:@"255.255.255.255"];
+    }else{
+        NSString *currentWifi = [CommonMethod currentConnecttedWifi];
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"currentWifi:%@",currentWifi]];
+        int64_t delayInSeconds = 2.0;
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            [self becomeActive:nil];
+        });
+        
     }
     
 }

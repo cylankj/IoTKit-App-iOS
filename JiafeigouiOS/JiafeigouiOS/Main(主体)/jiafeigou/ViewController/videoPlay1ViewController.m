@@ -58,6 +58,8 @@
 #import <KVOController.h>
 #import "JFGDevTypeManager.h"
 #import "JFGDoorlockPwAlert.h"
+#import "FLLog.h"
+#import "MTA.h"
 
 #define RPBtnTagBase 10024
 #define ViewModeBtnTagBase 10124
@@ -248,8 +250,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 
 @implementation videoPlay1ViewController
 
-- (void)viewDidLoad {
-    
+- (void)viewDidLoad
+{
     [super viewDidLoad];
     isLiveVideo = YES;
     self.view.backgroundColor = [UIColor whiteColor];
@@ -435,6 +437,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                                         self.historyView.hidden = YES;
                                         self.reqHistoryBtn.enabled = NO;
                                     }
+                                    
                                 }else{
                                     [self hideIdleView];
                                     [self historyViewState];
@@ -602,8 +605,12 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             self.reqHistoryBtn.enabled = YES;
             
             BOOL isApModel = [CommonMethod isAPModelCurrentNetForCid:self.devModel.uuid pid:self.devModel.pid];
-            if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline || self.historyView.isLoadingData || isApModel || self.devModel.netType == JFGNetTypeOffline) {
+            JiafeigouDevStatuModel *devModel = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevModelWithCid:self.cid];
+            
+            if ([JFGSDK currentNetworkStatus] == JFGNetTypeOffline || self.historyView.isLoadingData || isApModel || devModel.netType == JFGNetTypeOffline) {
                 self.reqHistoryBtn.enabled = NO;
+            }else{
+                self.reqHistoryBtn.enabled = YES;
             }
             
         }
@@ -650,6 +657,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         }
         
     } failure:^(RobotDataRequestErrorType type) {
+        
+        
         
     }];
 }
@@ -1074,6 +1083,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(doorCalling:) name:JFGDoorBellIsCallingKey object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(angleChangedWithNotification:) name:angleChangedNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(doorBellSnap:) name:@"DoorBellCallSnapImage" object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(devListRefreshNotification) name:BoundDevicesRefreshNotification object:nil];
     /**
      *  开始生成 设备旋转 通知
      */
@@ -1490,7 +1501,6 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     historyViewScrolling = YES;
 }
 
-
 //停止滚动历史视频进度条
 -(void)historyBarEndScroll
 {
@@ -1707,6 +1717,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         switchViewModeBtn.enabled = YES;
     }
     [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategorySoloAmbient error:nil];
+    [MTA trackCustomKeyValueEvent:@"Video_play" props:@{}];
 }
 
 
@@ -1783,14 +1794,17 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                                 BOOL isLive = [obj2 boolValue];
                                 if (isLive) {
                                     self.devModel.safeIdle = YES;
+                                    if (windowMode == videoPlayModeFullScreen) {
+                                        [self exitFullScreen];
+                                    }
                                     if (playState == videoPlayStatePlaying || playState == videoPlayStatePlayPreparing) {
                                         [self stopVideoPlay];
-                                        [self hiddenSmallWindowBottomBar];
-                                        [self hideSmallWindowPlayBtn];
-                                        [self showIdleViewForType:0];
-                                        if (isShared == NO) {
-                                            self.historyView.hidden = YES;
-                                        }
+                                    }
+                                    [self hiddenSmallWindowBottomBar];
+                                    [self hideSmallWindowPlayBtn];
+                                    [self showIdleViewForType:0];
+                                    if (isShared == NO) {
+                                        self.historyView.hidden = YES;
                                     }
                                 }else{
                                     self.devModel.safeIdle = NO;
@@ -1928,6 +1942,22 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     
 }
 
+
+//设备列表更新，self.devModel指针丢失了，不会实时更新数据
+-(void)devListRefreshNotification
+{
+    NSArray *devList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
+    for (JiafeigouDevStatuModel *m in devList) {
+        
+        if ([self.devModel.uuid isEqualToString:m.uuid]) {
+            
+            self.devModel = m;
+            [self historyViewState];
+            break;
+        }
+    }
+}
+
 #pragma mark- ###################################################
 #pragma mark- 视频播放相关回调代理
 //历史录像错误回调
@@ -2003,6 +2033,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         self.fullPlayBtn.selected = NO;
     }
 //    isLiveVideo = YES;    此时 是 历史录像 失败，但不能说 就是 是在直播？
+    
+    [MTA trackCustomKeyValueEvent:@"Video_historyPlayFailed" props:@{@"error":[NSString stringWithFormat:@"%lu",(unsigned long)errorInfo.code]}];
 }
 
 -(void)onNotifyResolution:(NSNotification *)notification
@@ -2238,10 +2270,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         int bitRate = [dict[@"bit"] intValue];
         //int frameRate = [dict[@"frameRate"] intValue];
         long long timesTamp = [dict[@"timestamp"] intValue];
-        NSLog(@"timestamp:%lld",timesTamp);
+        FLLog(@"timestamp:%lld",timesTamp);
         //int videorecved = [dict[@"videoRecved"] intValue];
-        historyLastestTimeStamp = timesTamp;
-        
         if (bitRate == 0) {
             
             UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
@@ -2274,6 +2304,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         NSMutableString *dat = [NSMutableString new];
         if (isLiveVideo) {
             
+            historyLastestTimeStamp = timesTamp;
             dat =  [NSMutableString stringWithString:[self.dateFormatter stringFromDate:[NSDate date]]];
             
             NSString *liveLanguage = [NSString stringWithFormat:@"%@| ",[JfgLanguage getLanTextStrByKey:@"Tap1_Camera_VideoLive"]];
@@ -2284,8 +2315,9 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         }else{
 
             if (timesTamp == 0) {
-//                dat =  [NSMutableString stringWithString:[dateFormatter stringFromDate:[NSDate date]]];
+                dat =  [NSMutableString stringWithString:[self.dateFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:historyLastestTimeStamp]]];
             }else{
+                historyLastestTimeStamp = timesTamp;
                 dat =  [NSMutableString stringWithString:[self.dateFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:timesTamp]]];
             }
             
@@ -2303,6 +2335,11 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             
         }
         
+        //时间戳为0或者正在拖动中，不修改
+        if (dat && !historyViewScrolling) {
+            self.videoPlayTipLabel.text = dat;
+        }
+        
         if (playState == videoPlayStatePlaying) {
             //保留播放控件
             if (windowMode == videoPlayModeSmallWindow) {
@@ -2313,10 +2350,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             self.rateLabel.hidden = NO;
         }
         
-        //时间戳为0或者正在拖动中，不修改
-        if (dat && !historyViewScrolling) {
-            self.videoPlayTipLabel.text = dat;
-        }
+        
         
         //CGFloat m = videoRecved/1024.0/1024.0;
         CGFloat kb = bitRate/8;
@@ -2330,7 +2364,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
             self.rateLabel.text = [NSString stringWithFormat:@"%.0fK/s",kb];
         }
         
-        NSLog(@"bit:%fkb/s",kb);
+        FLLog(@"bit:%fkb/s",kb);
     }
 }
 
@@ -2346,11 +2380,19 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     if ([remoteID isEqualToString:self.cid] || [remoteID isEqualToString:@"server"]) {
         
         JFGErrorType errorType = (JFGErrorType)[dict[@"error"] intValue];
+        
+        if (isLiveVideo) {
+            [MTA trackCustomKeyValueEvent:@"Video_playFialed" props:@{@"error":[NSString stringWithFormat:@"%lu",(unsigned long)errorType]}];
+        }else{
+            [MTA trackCustomKeyValueEvent:@"Video_historyPlayFailed" props:@{@"error":[NSString stringWithFormat:@"%lu",(unsigned long)errorType]}];
+        }
+        
         if (errorType == JFGErrorTypeVideoPeerNotExist) {
             
             BOOL isAP = [CommonMethod isConnectedAPWithPid:productType_AI_Camera Cid:self.devModel.uuid];
             BOOL isAP2 = [CommonMethod isConnectedAPWithPid:productType_AI_Camera_outdoor Cid:self.devModel.uuid];
-            if (isAP || isAP2) {
+            BOOL isAP3 = [CommonMethod isConnectedAPWithPid:productType_AI_Camera_dome Cid:self.devModel.uuid];
+            if (isAP || isAP2 || isAP3) {
                 return;
             }
             self.reqHistoryBtn.enabled = NO;
@@ -2447,6 +2489,12 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     self.videoPlayTipLabel.hidden = YES;
     [self showDisconnectViewWithText:[JfgLanguage getLanTextStrByKey:@"Tips_Device_TimeoutRetry"]];
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(rtcpLowAction) object:nil];
+    if (isLiveVideo) {
+        [MTA trackCustomKeyValueEvent:@"Video_playFialed" props:@{@"error":@"timeout"}];
+    }else{
+        [MTA trackCustomKeyValueEvent:@"Video_historyPlayFailed" props:@{@"error":@"timeout"}];
+    }
+    
 }
 
 
@@ -2764,12 +2812,17 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [ProgressHUD showProgress:[JfgLanguage getLanTextStrByKey:@"DOOR_OPENING"]];
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
     [self performSelector:@selector(openDoorTimeout) withObject:nil afterDelay:30];
+    
+    
     DataPointSeg *seg = [[DataPointSeg alloc]init];
     seg.msgId = 407;
     seg.version = 0;
     seg.value = [MPMessagePackWriter writeObject:@[password,@1] error:nil];
     
-    [[JFGSDKDataPoint sharedClient] robotDataWithPeer:self.devModel.uuid action:41 dps:@[seg] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+    __weak typeof(self) weakSelf = self;
+    [[JFGSDKDataPoint sharedClient] robotDataWithPeer:self.cid action:41 dps:@[seg] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
+        
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
         
         for (NSArray *subArr in idDataList) {
             for (DataPointSeg *seg in subArr) {
@@ -2793,7 +2846,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
                     }else{
                         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OPEN_FAIL"]];
                     }
-                    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+                    [NSObject cancelPreviousPerformRequestsWithTarget:weakSelf selector:@selector(openDoorTimeout) object:nil];
                     
                 }
                 
@@ -2801,11 +2854,12 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         }
         
     } failure:^(RobotDataRequestErrorType type) {
+       
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DOOR_OPEN_FAIL"]];
-        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(openDoorTimeout) object:nil];
+        [NSObject cancelPreviousPerformRequestsWithTarget:weakSelf selector:@selector(openDoorTimeout) object:nil];
+        
     }];
     
-   
     //因为没有设备调试，所以一下代码是假的
     //懒得写了
     
@@ -3427,6 +3481,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         }else{
             [self playHistoryVideoForZeroWithTimestamp:historyLastestTimeStamp];
         }
+        
+        [MTA trackCustomKeyValueEvent:@"Video_historyPlay" props:@{}];
     }
     
 }
@@ -3546,8 +3602,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 }
 
 
-
-#pragma mark- *********************全屏 小屏切换******************************
+#pragma mark- **************全屏 小屏切换****************
 //全屏
 -(void)fullScreen
 {
@@ -3661,8 +3716,6 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         self.loadingBgView.frame = self.videoBgView.bounds;
         self.loadingImageView1.x = self.loadingBgView.x;
         self.loadingImageView1.y = self.loadingBgView.y;
-        
-        
         self.doorlockBtn.hidden = YES;
         
     }];
@@ -3898,7 +3951,15 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     if (self.snapeImageView.superview != self.videoPlayBgScrollerView) {
         [self.videoPlayBgScrollerView addSubview:self.snapeImageView];
     }
+    
     self.snapeImageView.hidden = NO;
+    
+    if (playState == videoPlayStatePlaying) {
+        UIView *remoteView = [self.videoPlayBgScrollerView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
+        if (remoteView) {
+            [self.videoPlayBgScrollerView bringSubviewToFront:remoteView];
+        }
+    }
     
     if (self.videoPlayBgScrollerView.contentSize.width > 0) {
         self.snapeImageView.frame = CGRectMake(0, 0, self.videoPlayBgScrollerView.contentSize.width, self.videoPlayBgScrollerView.contentSize.height);
@@ -3911,6 +3972,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [self.videoBgView addSubview:self.rpBgView];
         [self.videoBgView addSubview:self.viewModeBgView];
     }
+    
     [self.videoBgView bringSubviewToFront:self.playButton];
     [self stopLoadingAnimation];
     self.playButton.y = self.videoBgView.height * 0.5;
@@ -3972,14 +4034,15 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     }
     self.rpBgView.hidden = NO;
     [UIView animateWithDuration:0.5 animations:^{
+        
         self.videoPlayTipLabel.bottom = Kwidth-self.fullScreenBottomControlBar.height-10;
         self.rpBgView.top = [UIScreen mainScreen].bounds.size.width-self.fullScreenBottomControlBar.height - 10 -22;
         self.viewModeBgView.y = self.rpBgView.y;
+        
     }];
     
     [UIView animateWithDuration:0.5 animations:^{
        
-        
         self.fullScreenTopControlBar.top = 0;
         self.fullScreenBottomControlBar.top = [UIScreen mainScreen].bounds.size.width-self.fullScreenBottomControlBar.height;
         self.rateLabel.top = 60;
@@ -4024,7 +4087,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 -(void)showIdleViewForType:(int)type
 {
     if (self.idleModeBgView.superview == nil || self.idleModeBgView.hidden == YES ) {
-        
+        self.idleModeBgView.y = self.videoBgView.height*0.5;
         [self.videoBgView addSubview:self.idleModeBgView];
         self.idleModeBgView.hidden = NO;
         self.videoBgView.backgroundColor = [UIColor colorWithHexString:@"#31506f"];
@@ -4036,6 +4099,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [self stopLoadingAnimation];
         [self.videoPlayTipLabel removeFromSuperview];
         [self historyViewState];
+        
+        
     }else{
         [self.videoBgView bringSubviewToFront:self.idleModeBgView];
     }
@@ -4950,7 +5015,6 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     return _snapSmallWidows;
 }
 
-
 -(void)showBigSnapView:(UITapGestureRecognizer *)tap
 {
     UIImageView *tapView = (UIImageView *)tap.view;
@@ -5010,6 +5074,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
     [[NSUserDefaults standardUserDefaults] setBool:YES forKey:fristhistoryVideoKey];
 }
 
+#pragma mark- 设置分辨率
 -(UIView *)rpBgView
 {
     if (!_rpBgView) {
@@ -5114,10 +5179,8 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
 {
     //防止刚点按就消失了
     if (windowMode != videoPlayModeSmallWindow) {
-        
         [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(hideFullVideoPlayBar) object:nil];
         [self performSelector:@selector(hideFullVideoPlayBar) withObject:nil afterDelay:5];
-        
     }
     
     UIButton *leftBtn = [self.rpBgView viewWithTag:RPBtnTagBase+1];
@@ -5140,8 +5203,7 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         }else{
             
             [UIView animateWithDuration:0.5 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseIn animations:^{
-                
-                
+        
                 leftBtn2.left = sender.left;
                 leftBtn.left = sender.left;
                 leftBtn.alpha = leftBtn2.alpha = 0;
@@ -5309,7 +5371,6 @@ NSString *const fristShowWANNnetKey = @"fristShowWANNnetKey_";
         [self showTipWithFrame:CGRectMake(5, 64+self.videoBgView.height-40-35+4, 95, 35) triangleLeft:15 content:[JfgLanguage getLanTextStrByKey:@"SECURE"]];
         showTip = YES;
     }
-    
 }
 
 -(void)showHistoryVideoTip

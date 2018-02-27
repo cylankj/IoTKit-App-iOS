@@ -17,6 +17,7 @@
 -(void)msgAIHeadPortraitViewDidUnkonwItemHasData:(BOOL)hasData;
 -(void)msgAIHeadPortraitViewDidSelectedCellForModel:(MsgAIheaderModel *)model;
 -(void)msgAIHeadPortraitViewDelModel:(MsgAIheaderModel *)model isReloadModel:(MsgAIheaderModel *)reloadModel;
+-(void)msgAIHeadExpand:(BOOL)isExpand;
 
 @end
 
@@ -33,6 +34,8 @@
 -(void)backFamily;
 //更新数据
 -(void)reqData;
+//刷新具体某个陌生人或者熟人访问次数
+-(void)refreshAccessCountForAccessID:(NSString *)accessID;
 //有新的推送消息产生
 -(void)hasNewMsgNotification;
 //缓存数据

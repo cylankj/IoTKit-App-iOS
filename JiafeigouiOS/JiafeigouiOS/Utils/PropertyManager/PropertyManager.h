@@ -50,6 +50,7 @@ extern NSString *const pRemoteWatchKey;     // 省电模式
 extern NSString *const pInfraredEnhanced;   // 红外增强
 extern NSString *const pAreaDetection;      // 区域侦测
 extern NSString *const pDoorLockKey;        // 门锁
+extern NSString *const pFaceRecognition;    // 人脸识别
 
 @interface PropertyManager : BaseViewModel
 

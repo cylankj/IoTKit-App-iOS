@@ -48,6 +48,11 @@
     CGFloat cropheight = 300;
     
     self.originalImage = self.image;
+    
+    if (self.originalImage == nil) {
+        self.originalImage = [UIImage imageNamed:@"bg_head_160"];
+    }
+    
     CGFloat scale = self.originalImage.size.height/self.originalImage.size.width;
     
     //设置裁剪图像框框的大小

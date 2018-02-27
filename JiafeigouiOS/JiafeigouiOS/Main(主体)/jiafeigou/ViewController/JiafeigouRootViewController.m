@@ -48,6 +48,7 @@
 #import <pop/POP.h>
 #import "RegionalizationViewController.h"
 
+
 @interface JiafeigouRootViewController ()<TimeChangeMonitorDelegate,LoginManagerDelegate,JFGSDKCallbackDelegate>
 {
     NSMutableArray *dataArray;
@@ -138,7 +139,6 @@
     [device beginGeneratingDeviceOrientationNotifications];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged:) name:UIDeviceOrientationDidChangeNotification object:device];
     
-    
     NSString *devName = [NSString stringWithUTF8String:object_getClassName(self)];
     NSLog(@"vcName:%@",devName);
     //[JFGSDK refreshDeviceList];
@@ -187,6 +187,7 @@
     if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
         self._tableView.refreshView.hidden = YES;
     }
+
 }
 
 -(BOOL)shouldAutorotate
@@ -438,9 +439,8 @@
             [[NSUserDefaults standardUserDefaults] setBool:YES forKey:JFGDoorBellIsCallingKey];
             [[NSNotificationCenter defaultCenter] postNotificationName:JFGDoorBellIsCallingKey object:call.cid];
             //30s 后恢复为呼叫状态，防止其他页面忘记恢复
-            
             [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(resetDoorBellCallStatues) object:nil];
-            [self performSelector:@selector(resetDoorBellCallStatues) withObject:nil afterDelay:30];
+            [self performSelector:@selector(resetDoorBellCallStatues) withObject:nil afterDelay:20];
             DoorVideoVC *doorVideo = [[DoorVideoVC alloc] init];
             doorVideo.pType = productType_DoorBell;
             doorVideo.cid = call.cid;
@@ -452,16 +452,24 @@
           
             [[NSNotificationCenter defaultCenter] postNotificationName:@"showDoorBellCallingVC" object:nil];
             
-            UIWindow * window = [UIApplication sharedApplication].keyWindow;
-            UITabBarController * barCon = (UITabBarController *)window.rootViewController;
-            if ([barCon isKindOfClass:[UITabBarController class]]) {
+            
+            UIViewController *vc = [self getCurrentVC];
+            if ([vc isKindOfClass:[RegionalizationViewController class]]) {
+
+                [vc presentViewController:doorVideo animated:YES completion:nil];
+
+            }else{
+            
+                UIWindow * window = [UIApplication sharedApplication].keyWindow;
+                UITabBarController * barCon = (UITabBarController *)window.rootViewController;
+                if ([barCon isKindOfClass:[UITabBarController class]]) {
+                    
+                    UINavigationController * nav = barCon.viewControllers[barCon.selectedIndex];
+                    doorVideo.hidesBottomBarWhenPushed = YES;
+                    [nav pushViewController:doorVideo animated:YES];
+                }
                 
-                UINavigationController * nav = barCon.viewControllers[barCon.selectedIndex];
-                doorVideo.hidesBottomBarWhenPushed = YES;
-                [nav pushViewController:doorVideo animated:YES];
             }
-            
-            
         }
     }
 }
@@ -494,9 +502,7 @@
         addDevice.hidesBottomBarWhenPushed = YES;
         [self.navigationController pushViewController:addDevice animated:YES];
         
-//        RegionalizationViewController *rvc = [RegionalizationViewController new];
-//        rvc.cid = @"280500000018";
-//        [self presentViewController:rvc animated:YES completion:nil];
+       
         
     }
     [self.addButton setImage:[UIImage imageNamed:@"btn_addto"] forState:UIControlStateNormal];
@@ -645,7 +651,6 @@
         }
         
     };
-    
 }
 
 -(void)stopAddBtnAnimation
@@ -661,10 +666,9 @@
         __tableView.showsVerticalScrollIndicator = NO;
         
 //        打包机 升级Xcode 后在兼容， 暂时屏蔽
-//        if (@available(iOS 11.0, *)) {
-//            __tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
-//        } else
-        {
+        if (@available(iOS 11.0, *)) {
+            __tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+        } else {
             self.automaticallyAdjustsScrollViewInsets = NO;
         }
     }
@@ -705,7 +709,43 @@
 }
 
 
+- (UIViewController *)getCurrentVC
+{
+    UIViewController *rootViewController = [UIApplication sharedApplication].keyWindow.rootViewController;
+    
+    UIViewController *currentVC = [self getCurrentVCFrom:rootViewController];
+    
+    return currentVC;
+}
 
+- (UIViewController *)getCurrentVCFrom:(UIViewController *)rootVC
+{
+    UIViewController *currentVC;
+    
+    if ([rootVC presentedViewController]) {
+        // 视图是被presented出来的
+        
+        rootVC = [rootVC presentedViewController];
+    }
+    
+    if ([rootVC isKindOfClass:[UITabBarController class]]) {
+        // 根视图为UITabBarController
+        
+        currentVC = [self getCurrentVCFrom:[(UITabBarController *)rootVC selectedViewController]];
+        
+    } else if ([rootVC isKindOfClass:[UINavigationController class]]){
+        // 根视图为UINavigationController
+        
+        currentVC = [self getCurrentVCFrom:[(UINavigationController *)rootVC visibleViewController]];
+        
+    } else {
+        // 根视图为非导航类
+        
+        currentVC = rootVC;
+    }
+    
+    return currentVC;
+}
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];

@@ -6,126 +6,9 @@
 //  Copyright © 2016年 yangli. All rights reserved.
 //
 
-/*!
- *  错误码
- */
-typedef NS_ENUM (NSUInteger, JFGErrorType){
-    // EOK 成功
-    JFGErrorTypeNone = 0,
-    
-    // P2P 错误
-    JFGErrorTypeP2PDns,
-    JFGErrorTypeP2PSocket,
-    JFGErrorTypeP2PCallerRelay,
-    JFGErrorTypeP2PCallerStun,
-    JFGErrorTypeP2PCalleeStun = 5,
-    JFGErrorTypeP2PCalleeWaitCallerCheckNetTimeOut,
-    JFGErrorTypeP2PPeerTimeOut,
-    JFGErrorTypeP2PUserCancel,
-    JFGErrorTypeP2PConnectionCheck,
-    JFGErrorTypeP2PChannel = 10,
-    JFGErrorTypeP2PDisconetByUser,
-    
-    // 直播类
-    // 对端不在线
-    JFGErrorTypeVideoPeerNotExist = 100,
-    // 对端断开
-    JFGErrorTypeVideoPeerDisconnect,
-    // 正在查看中
-    JFGErrorTypeVideoPeerInConnect,
-    // 本端未登陆
-    JFGErrorTypeVideoPeerNotLogin,
-    
-    // 未知错误
-    JFGErrorTypeUnknown = 120,
-    // 数据库错误
-    JFGErrorTypeDataBase,
-    // 会话无效
-    JFGErrorTypeInvalidSession,
-    
-    // 设备端鉴权。
-    // 厂家CID达到配额。关联消息：注册。
-    JFGErrorTypeCIDExceedQuota = 140,
-    // SN签名验证失败。关联消息：登陆。
-    JFGErrorTypeCIDSNVerifyFailed,
-    
-    // 客户端登陆类.
-    // vid, bundleID, vkey校验失败。
-    JFGErrorTypeLoginInvalidVKey = 160,
-    
-    // 帐号或密码错误。
-    JFGErrorTypeLoginInvalidPass,
-    
-    // 客户端帐号类.
-    // 短信验证码错误。
-    JFGErrorTypeSMSCodeNotMatch = 180,
-    // 短信验证码超时。
-    JFGErrorTypeSMSCodeTimeout,
-    // 帐号不存在。
-    JFGErrorTypeAccountNotExist,
-    // 帐号已存在。
-    JFGErrorTypeAccountAlreadyExist,
-    // 原始密码与新密码相同。关联消息：修改密码。
-    JFGErrorTypeSamePass,
-    // 原密码错误。关联消息：修改密码。
-    JFGErrorTypeInvalidPass = 185,
-    // 此手机号码已被绑定。关联消息：帐号、手机号、邮箱绑定。
-    JFGErrorTypePhoneExist,
-    // 此邮箱已被绑定。关联消息：帐号、手机号、邮箱绑定。
-    JFGErrorTypeEmailExist,
-    // 手机号码不合规
-    JFGErrorTypeIsNotPhone,
-    // 邮箱账号不合规
-    JFGErrorTypeIsNotEmail,
-    
-    // 客户端绑定设备类.
-    // CID不存在。关联消息：客户端绑定。
-    JFGErrorTypeCIDNotExist = 200,
-    // 绑定中，正在等待摄像头上传随机数与CID关联关系，随后推送绑定通知
-    JFGErrorTypeCIDBinding,
-    // 设备别名已存在。
-    JFGErrorTypeCIDAliasExist,
-    
-    // 客户端分享设备类.
-    // 此帐号还没有注册。
-    JFGErrorTypeShareInvalidAccount = 220,
-    // 此帐号已经分享。
-    JFGErrorTypeShareAlready,
-    // 您不能分享给自己。
-    JFGErrorTypeShareToSelf,
-    // 设备分享，被分享账号不能超过5个。
-    JFGErrorTypeShareExceedsLimit,
-    
-    // 客户端亲友关系类.
-    //添加好友失败 对方账户未注册
-    JFGErrorTypeFriendInvalidAccount = 240,
-    // 已经是好友关系
-    JFGErrorTypeFriendAlready,
-    // 不能添加自己为好友
-    JFGErrorTypeFriendToSelf,
-    // 好友请求消息过期
-    JFGErrorTypeFriendInvalidRequest,
-    
-    // APP测错误号
-    // 非法的调用，ex: 摄像头/APP 调用对方才有的功能
-    JFGErrorTypeInvalidMethod = 1000,
-    // 非法的调用参数，ex: 登陆不带用户名
-    JFGErrorTypeInvalidParameter,
-    // 非法的状态， ex: 和摄像头在连接状态再次调用连接
-    JFGErrorTypeInvalidState,
-    // 解析域名失败
-    JFGErrorTypeResolve,
-    // 连接服务器失败
-    JFGErrorTypeConnect,
-};
+#import "JFGErrorType.h"
 
 
-typedef NS_ENUM (NSUInteger,JFGHistorySearchWayType){
-    
-    JFGHistorySearchWayTypeByMin,//按分钟查询
-    JFGHistorySearchWayTypeByDay,//按天查询
-    
-};
 
 //好友相关操作结果
 typedef NS_ENUM (NSUInteger,JFGFriendResultType)
@@ -138,7 +21,7 @@ typedef NS_ENUM (NSUInteger,JFGFriendResultType)
     JFGFriendResultTypeAgreeAddFriend,
     /// 设置好友备注名
     JFGFriendResultTypeSetRemarkName,
-    //删除好友请求
+    /// 删除好友请求
     JFGFriendResultTypeDelAddFriendRequest = 19,
 };
 
@@ -279,71 +162,6 @@ typedef NS_ENUM(NSInteger,JFGDeviceType) {
 };
 
 
-/*!
- *  推送消息类别
- */
-typedef NS_ENUM(NSInteger,JFGPushNotificationType) {
-    /*!
-     *  未知
-     */
-    JFGPushNotificationTypeUnknow = 0,
-    /*!
-     *  版本升级
-     */
-    JFGPushNotificationTypeNewVersion,
-    /*!
-     *  开启警报
-     */
-    JFGPushNotificationTypeWarnOn,
-    /*!
-     *  触发报警
-     */
-    JFGPushNotificationTypeWarn,
-    /*!
-     *  关闭警报
-     */
-    JFGPushNotificationTypeWarnOff,
-    /*!
-     *  低电量
-     */
-    JFGPushNotificationTypeLowBattery,
-    /*!
-     *  sd卡弹出，卸载
-     */
-    JFGPushNotificationTypeSDCardEject,
-    /*!
-     *  SD卡接入
-     */
-    JFGPushNotificationTypeSDCardMount,
-    /*!
-     *  解除绑定
-     */
-    JFGPushNotificationTypeUnBind,
-    /*!
-     *   绑定
-     */
-    JFGPushNotificationTypeBind,
-    /*!
-     *  重复绑定
-     */
-    JFGPushNotificationTypeRebind,
-    /*!
-     *  分享
-     */
-    JFGPushNotificationTypeShare,
-    /*!
-     *  取消分享
-     */
-    JFGPushNotificationTypeCancelShare,
-    /*!
-     *  门磁打开
-     */
-    JFGPushNotificationTypeMagnetOn,
-    /*!
-     *  门磁关闭
-     */
-    JFGPushNotificationTypeMagnetOff,
-};
 
 
 /*!
@@ -377,36 +195,63 @@ typedef NS_ENUM(NSInteger,JFGBindDeviceErrorType)
     JFGBindDeviceErrorTypeNotConnectDeviceWifi,
 };
 
-
-typedef NS_ENUM(NSInteger,JFGSDKServerType)
-{
-    /*!
-     *  测试平台
-     */
-    JFGSDKServerTypeTestAddr,
+//历史录像查询方式
+typedef NS_ENUM (NSUInteger,JFGHistorySearchWayType){
     
-    /*!
-     *  云平台
-     */
-    JFGSDKServerTypeYunAddr,
+    JFGHistorySearchWayTypeByMin,//按分钟查询
+    JFGHistorySearchWayTypeByDay,//按天查询
     
-    /*!
-     *  研发平台
-     */
-    JFGSDKServerTypeYanfaAddr,
 };
 
-
-//获取url类型
-typedef NS_ENUM(NSInteger,JFGSDKGetCloudUrlType)
-{
-    JFGSDKGetCloudUrlTypeUserHead,// 头像URL
-    JFGSDKGetCloudUrlTypeWarning,// 报警图片URL
-    JFGSDKGetCloudUrlTypeFeedbackLog,//反馈日志URL
-    JFGSDKGetCloudUrlTypeTimeLapseVideo,// 延时摄影视频URL
-    JFGSDKGetCloudUrlTypeWonder,// 每日精彩URL
+/*!
+ *  \~chinese
+ *  第三方登录类型
+ *
+ *  \~english
+ *  Open login type
+ */
+typedef NS_ENUM (NSUInteger,JFGOpenLoginType){
+    
+    JFGOpenLoginTypeForQQ = 3,//QQ
+    JFGOpenLoginTypeForSinaWeibo,//新浪微博
+    JFGOpenLoginTypeForCustomLogin,//自定义登录
+    JFGOpenLoginTypeForTwitter,
+    JFGOpenLoginTypeForFacebook,
+    
 };
 
+/*!
+ *  \~chinese
+ *  短信验证码类型
+ *
+ *  \~english
+ *  SMS verification code type
+ */
+typedef NS_ENUM(NSUInteger,JFGSMSCodeType){
+    
+    JFGSMSCodeTypeRegisterOrBind,//注册或者绑定手机号
+    JFGSMSCodeTypeForgetPassword,//忘记密码
+    JFGSMSCodeTypeChangePassword,//修改密码
+    
+};
+
+/*!
+ *  \~chinese
+ *  接入APNS推送类型
+ *
+ *  \~english
+ *  Access APNS push type
+ */
+typedef NS_ENUM(NSUInteger,JFGAPNSType){
+    JFGAPNSTypeApple = 1,//苹果原生
+    JFGAPNSTypeGetui = 2,//个推
+};
+
+typedef NS_ENUM(NSUInteger,JFGBitRateType){
+    JFGBitRateTypeAuto,//自动
+    JFGBitRateTypeSD,//标清
+    JFGBitRateTypeHD,//高清
+};
 
 
 

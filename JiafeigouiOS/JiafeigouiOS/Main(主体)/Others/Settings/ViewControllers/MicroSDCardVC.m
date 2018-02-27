@@ -20,6 +20,7 @@
 #import "JfgConstKey.h"
 #import "NetworkMonitor.h"
 #import <JFGSDK/JFGSDK.h>
+#import "MTA.h"
 
 @interface MicroSDCardVC ()<JFGSDKCallbackDelegate, LoginManagerDelegate>
 
@@ -159,6 +160,8 @@
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips3"]];
         return;
     }
+    
+    [MTA trackCustomKeyValueEvent:@"DevSetting_clearSDCard" props:@{}];
     
     [LSAlertView showAlertWithTitle:[JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips"] Message:nil CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"CARRY_ON"] CancelBlock:^{
         

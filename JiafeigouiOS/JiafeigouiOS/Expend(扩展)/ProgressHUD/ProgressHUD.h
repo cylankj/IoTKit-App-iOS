@@ -39,6 +39,7 @@
 + (void)showProgress:(NSString *)status;
 + (void)showProgress:(NSString *)status lastingTime:(CGFloat)lastingTime;
 + (void)showProgress:(NSString *)status isTip:(BOOL)isTip lastingTime:(CGFloat)lastingTime;
++(void)cancelTimeout;//取消转圈动画自动超时设置
 /**
  *  弹出文字框
  *

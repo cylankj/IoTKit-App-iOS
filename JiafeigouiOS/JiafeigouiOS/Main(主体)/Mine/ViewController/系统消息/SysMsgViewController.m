@@ -164,7 +164,6 @@
                 }
             }
         
-
             dispatch_async(dispatch_get_main_queue(), ^{
                 [weakSelf.tableView reloadData];
             });
@@ -270,6 +269,7 @@
         }
     
     }];
+    
     footer.automaticallyHidden = YES;
     [footer setTitle:[JfgLanguage getLanTextStrByKey:@"RELEASE_TO_LOAD"] forState:MJRefreshStatePulling];
     [footer setTitle:[JfgLanguage getLanTextStrByKey:@"PULL_TO_LOAD"] forState:MJRefreshStateIdle];
@@ -568,6 +568,12 @@
         }else if([ps isEqualToString:@"6901"]){
             //猫眼
             cell.iconImageView.image = [UIImage imageNamed:@"me_icon_intelligent_eye"];
+        }else if([ps isEqualToString:@"2805"] || [ps isEqualToString:@"2902"]){
+            //户外
+            cell.iconImageView.image = [UIImage imageNamed:@"image_cam_outdoor-"];
+        }else if([ps isEqualToString:@"2903"]){
+            //半球机
+            cell.iconImageView.image = [UIImage imageNamed:@"image_cam_hemisphere"];
         }else{
             //摄像头
             cell.iconImageView.image = [UIImage imageNamed:@"image_jfg80_sysMsg"];

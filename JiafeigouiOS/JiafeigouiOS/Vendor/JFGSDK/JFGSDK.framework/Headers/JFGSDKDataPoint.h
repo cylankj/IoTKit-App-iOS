@@ -138,21 +138,6 @@ typedef void (^RobotDataFailedBlock)(RobotDataRequestErrorType type);
                     failure:(RobotDataFailedBlock)failedBlock;
 
 
-/**
- *  获取datapoint本地缓存数据
- *
- *  @param peer   设备标示
- *  @param idList 查询的datapoint列表
- *  @param asc    是否按照时间倒叙
- *  @param limit  每个消息id返回记录条数
- *  @param block  数据回调
- */
--(void)robotGetDataForCacheWithPeer:(NSString *)peer
-                             msgIds:(NSArray <DataPointIDVerSeg *> *)idList
-                                asc:(BOOL)asc
-                              limit:(int)limit
-                             success:(RobotGetDataRspBlock)block;
-
 
 /**
  *  删除dp消息

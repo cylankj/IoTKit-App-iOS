@@ -84,6 +84,7 @@ static NSString *assetCellID = @"asstecellid";
 
 -(void)getAssets
 {
+    __weak typeof(self) weakSelf = self;
     LGPhotoPickerDatas *datas = [LGPhotoPickerDatas defaultPicker];
     [datas getGroupPhotosWithGroup:self.assetsGroup finished:^(NSArray *assets) {
         
@@ -93,8 +94,9 @@ static NSString *assetCellID = @"asstecellid";
             lgAsset.asset = asset;
             [assetsM addObject:lgAsset];
         }];
-        self.dataArray = [[NSMutableArray alloc]initWithArray:assetsM];
-        [self.assetsCollectionView reloadData];
+        //[_dataArray reverseObjectEnumerator] allObjects
+        weakSelf.dataArray = [[NSMutableArray alloc]initWithArray:[[assetsM reverseObjectEnumerator] allObjects]];
+        [weakSelf.assetsCollectionView reloadData];
         
     }];
 }
@@ -149,7 +151,12 @@ static NSString *assetCellID = @"asstecellid";
 {
     LGPhotoAssets *lgAsset = [_dataArray objectAtIndex:indexPath.row];
     PickerEditImageViewController *clip = [PickerEditImageViewController new];
-    clip.image = lgAsset.originImage;
+    
+    UIImage *selectedImage = lgAsset.originImage;
+    if (selectedImage == nil) {
+        selectedImage = lgAsset.compressionImage?lgAsset.compressionImage:lgAsset.thumbImage;
+    }
+    clip.image = selectedImage;
     [self.navigationController pushViewController:clip animated:YES];
 }
 

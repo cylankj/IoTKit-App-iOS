@@ -14,6 +14,7 @@
 #import "EfamilyRequest.h"
 #import <JFGSDK/JFGSDK.h>
 #import "JFGBoundDevicesMsg.h"
+#import "JFGPidMap.h"
 
 @interface QRViewModel()
 
@@ -25,7 +26,7 @@
 @property (nonatomic, copy) NSString *mac;
 
 @property (nonatomic, strong) EfamilyRequest *efamRequest;
-
+@property (nonatomic,strong)JFGPidMap *pidMap;
 @end
 
 NSString *const snKey = @"_snKey"; // cid 串号
@@ -69,9 +70,6 @@ NSString *const macKey = @"_macKey";
         }
         
     }
-    
-    
-    
     //先判断sn 是否存在
     if ([self.sn isEqualToString:@""] || self.sn == nil)
     {
@@ -85,62 +83,11 @@ NSString *const macKey = @"_macKey";
         [self resultCallBack:QRReustTypeError forPid:@"0"];
         return YES;
     }
-    [self resultCallBack:QRReustTypePUshGuideCamera forPid:self.pid];
-    // 再判断 pid
-//    switch ([self.pid intValue])
-//    {
-//        case productType_3G:
-//        case productType_WIFI:
-//        case productType_WIFI_V2:
-//        case productType_FreeCam:         // 门铃硬件 的狗 乐视
-//        case productType_Camera_HS:      // 海思
-//        case productType_Camera_ZY:      // 乔安
-//        case productType_Camera_GK:
-//        case productType_ColudCamera: // 看家王 云相机
-//        case productType_Wifi8330:       // wifi版 8330主板
-//        case productType_HS_960:         // 海思 960
-//        case productType_HS_1080:
-//        case 4:
-//        case 23:
-//        case 36:
-//        case 37:
-//        case 47:
-//        case 48:
-//        case 1346:
-//        case 1347://摄像头
-//        {
-//            
-//        }
-//            break;
-//            
-//        case 21:
-//        case productType_720:            // 720 VR 全景相机
-//        {
-//            [self resultCallBack:QRReustTypePUshGuideCameraFor720];
-//        }
-//            break;
-//            
-//        case 6:
-//        case 15:
-//        case 27:
-//        case 1160:
-//        case productType_newDoorBell:      // 门铃
-//        case productType_newDoorBell_V2p:
-//        case 22://门铃
-//        case 44:
-//        case 46:
-//        case 1344:
-//        case 1345:
-//        {
-//            [self resultCallBack:QRReustTypePushGuideDoor];
-//        }
-//            break;
-//        default:
-//        {
-//            [self resultCallBack:QRReustTypeError];
-//        }
-//        break;
-//    }
+    
+    //pid 转成os
+    NSInteger os = [self.pidMap osFromPid:[self.pid intValue]];
+    [self resultCallBack:QRReustTypePUshGuideCamera forPid:[NSString stringWithFormat:@"%d",os]];
+
     return YES;
 }
 
@@ -221,5 +168,12 @@ NSString *const macKey = @"_macKey";
     return _efamRequest;
 }
 
+-(JFGPidMap *)pidMap
+{
+    if (!_pidMap) {
+        _pidMap = [[JFGPidMap alloc]init];
+    }
+    return _pidMap;
+}
 
 @end

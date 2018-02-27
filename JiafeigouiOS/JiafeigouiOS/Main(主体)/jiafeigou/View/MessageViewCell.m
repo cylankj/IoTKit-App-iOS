@@ -15,6 +15,11 @@
 #import "FLGlobal.h"
 #import "JfgLanguage.h"
 #import "UIButton+Addition.h"
+#import <CoreText/CoreText.h>
+#import <NSObject+FBKVOController.h>
+#import <KVOController/KVOController.h>
+#import "CommonMethod.h"
+
 
 @implementation MessageViewCell
 
@@ -145,6 +150,8 @@
             make.left.equalTo(@37);
             make.top.equalTo(@22);
             make.width.mas_greaterThanOrEqualTo(@36);
+            CGFloat maxWidth = self.contentView.bounds.size.width - 37;
+            make.width.mas_lessThanOrEqualTo(@(maxWidth));
             make.height.equalTo(@14);
         }];
     }
@@ -167,7 +174,7 @@
     [self.contentView addSubview:self.avBtn];
     
     [_avBtn mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.right.equalTo(@-23);
+        make.right.equalTo(@-15);
         make.top.mas_equalTo(view.mas_bottom).offset(20);
         make.width.mas_greaterThanOrEqualTo(@69);
         make.centerY.equalTo(_deleteBtn.mas_centerY);
@@ -191,15 +198,21 @@
     return _tip;
 }
 
--(UILabel *)label{
+-(UILabel *)label
+{
     if (!_label) {
         _label =[[UILabel alloc] init];
         [_label setFont:[UIFont systemFontOfSize:14]];
+        //_label.numberOfLines = 2;
+        _label.textAlignment = NSTextAlignmentLeft;
+        //_label.backgroundColor = [UIColor orangeColor];
         [_label setTextColor:[UIColor colorWithHexString:@"#666666"]];
         [_label setText:[NSString stringWithFormat:@"12:30 %@",[JfgLanguage getLanTextStrByKey:@"MSG_WARNING"]]];
+        
     }
     return _label;
 }
+
 
 -(DelButton *)deleteBtn{
     if (!_deleteBtn) {
@@ -373,6 +386,12 @@
 @end
 
 
+@interface MessageViewCell3()
+{
+    BOOL isShowMoreBtn;//是否显示更多按钮
+}
+
+@end
 @implementation MessageViewCell3
 
 -(void)setEditing:(BOOL)editing animated:(BOOL)animated{
@@ -381,12 +400,12 @@
         if (editing) {
             [_imgv1 mas_updateConstraints:^(MASConstraintMaker *make) {
                 make.left.equalTo(@7);
-                make.right.mas_equalTo(self.contentView.mas_right).offset(-155.f *designWscale);
+                //make.right.mas_equalTo(self.contentView.mas_right).offset(-155.f *designWscale);
             }];
         }else{
             [_imgv1 mas_updateConstraints:^(MASConstraintMaker *make) {
                 make.left.equalTo(@37);
-                make.right.mas_equalTo(self.contentView.mas_right).offset(-170.f *designWscale);
+                //make.right.mas_equalTo(self.contentView.mas_right).offset(-170.f *designWscale);
             }];
         }
     }];
@@ -394,8 +413,91 @@
     
 }
 
+- (instancetype)initForAIWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    
+    if (self =[super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
+        
+        isShowMoreBtn = YES;
+        
+        [self.label mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(@37);
+            make.top.equalTo(@22);
+            //make.width.mas_greaterThanOrEqualTo(@36);
+            CGFloat maxWidth = [UIScreen mainScreen].bounds.size.width - 104;
+            //make.width.mas_lessThanOrEqualTo(@(maxWidth));
+            make.width.equalTo(@(maxWidth));
+            make.height.equalTo(@14);
+        }];
+        //self.label.backgroundColor = [UIColor orangeColor];
+        self.moreBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [self.moreBtn setTitle:[JfgLanguage getLanTextStrByKey:@"MESSAGES_FILTER_ALL"] forState:UIControlStateNormal];
+        [self.moreBtn setTitleColor:[UIColor colorWithHexString:@"#4B9FD5"] forState:UIControlStateNormal];
+        self.moreBtn.titleLabel.font = [UIFont systemFontOfSize:13];
+        self.moreBtn.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+        [self.moreBtn addTarget:self action:@selector(moreAction) forControlEvents:UIControlEventTouchUpInside];
+        self.moreBtn.hidden = YES;
+        [self.contentView addSubview:self.moreBtn];
+        
+        [self.moreBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+           
+            make.top.mas_equalTo(self.label.mas_top);
+            make.left.mas_equalTo(self.label.mas_right).offset(10);
+            make.width.equalTo(@90);
+            make.height.mas_equalTo(self.label.mas_height);
+            
+        }];
+        
+        //显示的1张图片
+        self.imgv1 =[[MessageImageView alloc] init];
+        [self.imgv1 setImage:[UIImage imageNamed:@"beautyGirl"]];
+        [self.contentView addSubview:self.imgv1];
+        
+        [self.imgv1 mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.top.mas_equalTo(self.label.mas_bottom).offset(15);
+            make.left.equalTo(@37);
+            make.height.equalTo(@(125));
+            make.width.equalTo(@(125*1.78));
+            
+        }];
+        
+//        __weak typeof(self) weakSelf = self;
+//
+//        [self.KVOController observe:self.label keyPath:@"text" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionInitial block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
+//
+//            //根据文字长度决定是否显示更多按钮
+//            if (object == weakSelf.label) {
+//
+//                if ([change isKindOfClass:[NSDictionary class]]) {
+////                    NSDictionary *changeDict = change;
+////                    NSString *newValue = changeDict[@"new"];
+////
+////                    CGSize size = [newValue boundingRectWithSize:CGSizeMake(MAXFLOAT, 15) options:NSStringDrawingUsesLineFragmentOrigin|NSStringDrawingUsesFontLeading attributes:@{NSFontAttributeName:weakSelf.label.font} context:nil].size;
+////                    CGFloat maxWidth = self.contentView.bounds.size.width - 104;
+////                    if (size.width > maxWidth) {
+////                        self.moreBtn.hidden = NO;
+////                    }else{
+////                        self.moreBtn.hidden = YES;
+////                    }
+//
+//                    //NSLog(@"%@ %f %f  %d",newValue,size.width,weakSelf.label.bounds.size.width,self.moreBtn.hidden);
+//
+//                }
+//
+//            }
+//
+//
+//
+//        }];
+        
+        [self setBothUIButtonMasonry:_imgv1];
+        
+    }
+    return self;
+}
+
 
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    
     if (self =[super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
         //显示的1张图片
         _imgv1 =[[MessageImageView alloc] init];
@@ -404,11 +506,22 @@
   
         [self.contentView addSubview:_imgv1];
         
+        /*
+         make.right.mas_equalTo(self.contentView.mas_right).offset(-170.f *designWscale);
+         make.height.mas_equalTo(_imgv1.mas_width).multipliedBy(125.f /168.f);
+
+         
+         */
+        
         [_imgv1 mas_makeConstraints:^(MASConstraintMaker *make) {
-            make.top.mas_equalTo(self.label.mas_bottom).offset(15);
+        
+           make.top.mas_equalTo(self.label.mas_bottom).offset(15);
             make.left.equalTo(@37);
-            make.right.mas_equalTo(self.contentView.mas_right).offset(-170.f *designWscale);
-            make.height.mas_equalTo(_imgv1.mas_width).multipliedBy(125.f /168.f);
+           
+            //CGFloat w = (self.contentView.bounds.size.width-170.f *designWscale-37)*(125.f /168.f);
+            make.height.equalTo(@(125));
+            make.width.equalTo(@(125*1.78));
+            
         }];
         
         [self setBothUIButtonMasonry:_imgv1];
@@ -417,13 +530,30 @@
     return self;
 }
 
+
+-(void)moreAction
+{
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"" message:self.aiName preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *action1 = [UIAlertAction actionWithTitle:[JfgLanguage getLanTextStrByKey:@"OK"] style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        
+    }];
+    [alertController addAction:action1];
+    
+    UIViewController *vc = [CommonMethod viewControllerForView:self];
+    if (vc) {
+        [vc presentViewController:alertController animated:YES completion:nil];
+    }
+}
+
 @end
 
 
 @implementation MessageViewCell4
 
--(void)setEditing:(BOOL)editing animated:(BOOL)animated{
+-(void)setEditing:(BOOL)editing animated:(BOOL)animated
+{
     
+    [super setEditing:editing animated:animated];
     [UIView animateWithDuration:0.33f animations:^{
 //        if (editing) {
 //            [_contentLabel mas_updateConstraints:^(MASConstraintMaker *make) {
@@ -434,29 +564,54 @@
 //                make.left.equalTo(@37);
 //            }];
 //        }
+        
+//        [self.label mas_updateConstraints:^(MASConstraintMaker *make) {
+//            make.left.equalTo(@37);
+//        }];
+        
+        
+//        if (!editing) {
+//            [self.label mas_remakeConstraints:^(MASConstraintMaker *make) {
+//                make.left.equalTo(@37);
+//                make.top.equalTo(@22);
+//                make.width.mas_greaterThanOrEqualTo(@36);
+//                make.height.equalTo(@14);
+//            }];
+//        }
+        
         [_contentLabel mas_updateConstraints:^(MASConstraintMaker *make) {
             make.left.mas_equalTo(self.label.mas_right).offset(13);
         }];
 
     }];
-    [super setEditing:editing animated:animated];
+    
     
 }
 
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
     if (self =[super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
         self.label.text = @"12:30";
+        
+        self.label.mas_key = @"timeLabel";
+    
+        //重新修改label的布局
+//        [self.label mas_remakeConstraints:^(MASConstraintMaker *make) {
+//            make.left.equalTo(@37);
+//            make.top.equalTo(@22);
+//            make.width.mas_greaterThanOrEqualTo(@36);
+//            make.height.equalTo(@14);
+//        }];
+        
         //显示内容的label
         _contentLabel =[[UITextView alloc] init];
         [_contentLabel setText:[JfgLanguage getLanTextStrByKey:@"MSG_SD_OFF"]];
-        //[_contentLabel setFont:[UIFont fontWithName:@"PingFangSC-Medium" size:12]];
         [_contentLabel setFont:[UIFont systemFontOfSize:14]];
         [_contentLabel setTextColor:[UIColor colorWithHexString:@"#666666"]];
         _contentLabel.editable = NO;
         _contentLabel.scrollEnabled = NO;
         _contentLabel.textContainerInset = UIEdgeInsetsMake(0, 0, 0, 0);
         [self.contentView addSubview:_contentLabel];
-        
+        self.contentLabel.mas_key = @"contentView";
         CGFloat width = [UIScreen mainScreen].bounds.size.width;
         if (width == 320) {
             width = 215;
@@ -465,7 +620,6 @@
         }
         //_contentLabel.backgroundColor = [UIColor orangeColor];
         [_contentLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-            
             make.left.mas_equalTo(self.label.mas_right).offset(13);
             make.top.mas_equalTo(self.label.mas_top).offset(-2);
             make.height.equalTo(@35);

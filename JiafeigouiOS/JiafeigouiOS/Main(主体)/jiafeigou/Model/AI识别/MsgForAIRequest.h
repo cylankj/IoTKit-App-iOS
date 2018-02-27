@@ -10,6 +10,13 @@
 #import "MessageModel.h"
 #import "MsgForAIModel.h"
 
+@interface visitCountModel : NSObject
+
+@property (nonatomic,assign)int startTimestamp;//当前零点时间戳
+@property (nonatomic,assign)int visitCount;//当天来访人数
+
+@end
+
 @protocol MsgForAIRequestDelegate <NSObject>
 
 @optional
@@ -20,6 +27,7 @@
 -(void)msgForAIStranger:(NSArray <StrangerModel *> *)models total:(int)total;
 //获取某个人访问次数回调
 -(void)msgForAIAccessCount:(int)count face_id:(NSString *)face_id cid:(NSString *)cid;
+-(void)msgForAIVisitCountForCid:(NSString *)cid startTime:(int)startTimestamp endTime:(int)endTimestamp visitModel:(NSArray <visitCountModel *>*)visits;
 //获取某人访问详细信息回调
 -(void)msgForAIAllMsg:(NSArray <MessageModel *> *)msgList cid:(NSString *)cid access_id:(NSString *)access_id type:(int)type;
 //删除
@@ -45,6 +53,8 @@
 -(void)reqStrangerListForCid:(NSString *)cid timestamp:(int)timestamp;
 //请求访问次数(type 检索条件：1-陌生人 2-已注册人物 3-一周时间 4-一个月时间)
 -(void)reqAccessCountForType:(int)type accessID:(NSString *)accessID cid:(NSString *)cid;
+//获取某时间段访问数
+-(void)reqVisitCountForCid:(NSString *)cid begintime:(int)beginTime endTime:(int)endTime;
 //请求详细访问信息
 -(void)reqMsgForType:(int)type accessID:(NSString *)accessID cid:(NSString *)cid timestamp:(int64_t)timestamp;
 //删除face对应的消息或者面孔（delAll  yes:则删除消息与头像，NO:仅删除头像）

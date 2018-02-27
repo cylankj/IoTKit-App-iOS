@@ -21,5 +21,6 @@
 @property (nonatomic,strong)UIButton *backBtn;
 
 -(void)backAction;
+-(void)showBackBtn;
 
 @end

@@ -106,10 +106,12 @@
 {
     [self updateData:fetchArray];
 }
+
 - (void)updatedDataArray:(NSArray *)updatedArray
 {
     [self updateData:updatedArray];
 }
+
 #pragma mark getter
 - (UITableView *)deviceInfoTableView
 {

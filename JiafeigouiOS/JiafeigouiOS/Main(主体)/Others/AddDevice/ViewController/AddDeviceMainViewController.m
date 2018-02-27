@@ -18,6 +18,7 @@
 #import "CommentFrameButton.h"
 #import "UIView+FLExtensionForFrame.h"
 #import "SnScanViewController.h"
+#import "MTA.h"
 
 @interface AddDeviceMainViewController()
 
@@ -79,8 +80,23 @@
 -(NSArray *)dataArray
 {
     if (!_dataArray) {
-        NSArray *configData = [jfgConfigManager getAddDevModel];
-        _dataArray = [[NSArray alloc]initWithArray:configData];
+        
+        NSMutableArray *configData = [[NSMutableArray alloc]initWithArray:[jfgConfigManager getAddDevModel]];
+        NSMutableArray *arr = [NSMutableArray new];
+        for (NSArray *sbuArr in configData) {
+            NSMutableArray *subArr = [NSMutableArray new];
+            
+            //去除半球机的添加方式，因为现实在头部视图上
+            for (AddDevConfigModel *model in sbuArr) {
+                if ([model.typeMark integerValue] != 9) {
+                    [subArr addObject:model];
+                }
+            }
+
+            [arr addObject:subArr];
+        }
+        
+        _dataArray = [[NSArray alloc]initWithArray:arr];
     }
     return _dataArray;
 }
@@ -97,34 +113,52 @@
         
         UIButton *sBtn = [UIButton buttonWithType:UIButtonTypeCustom];
         sBtn.frame = CGRectMake(0, 20+15, 50, 50);
-        sBtn.x = self.view.width*0.25;
+        sBtn.x = self.view.width/6;
         [sBtn setImage:[UIImage imageNamed:@"icon_scan"] forState:UIControlStateNormal];
         sBtn.tag = 1002;
         [sBtn addTarget:self action:@selector(headerBtnAction:) forControlEvents:UIControlEventTouchUpInside];
         
-        UILabel *sLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, sBtn.bottom+8, self.view.width*0.5, 19)];
+        UILabel *sLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, sBtn.bottom+8, self.view.width/3, 19)];
         sLabel.textAlignment = NSTextAlignmentCenter;
         sLabel.textColor = [UIColor colorWithHexString:@"#333333"];
-        sLabel.font = [UIFont systemFontOfSize:17];
+        sLabel.font = [UIFont systemFontOfSize:15];
         sLabel.text = [JfgLanguage getLanTextStrByKey:@"Add_Device_Scan_QR"];
         
+        
+        //有线模式
+        UIButton *yxBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        yxBtn.frame = CGRectMake(0, 20+15, 50, 50);
+        yxBtn.x = self.view.width/2;
+        [yxBtn setImage:[UIImage imageNamed:@"icon_wired"] forState:UIControlStateNormal];
+        yxBtn.tag = 1004;
+        [yxBtn addTarget:self action:@selector(headerBtnAction:) forControlEvents:UIControlEventTouchUpInside];
+        
+        UILabel *yxLabel = [[UILabel alloc]initWithFrame:CGRectMake(self.view.width/3, sBtn.bottom+8, self.view.width/3, 19)];
+        yxLabel.textAlignment = NSTextAlignmentCenter;
+        yxLabel.textColor = [UIColor colorWithHexString:@"#333333"];
+        yxLabel.font = [UIFont systemFontOfSize:15];
+        yxLabel.text = [JfgLanguage getLanTextStrByKey:@"Cable_Mode"];
+        
+        //cid添加
         UIButton *nBtn = [UIButton buttonWithType:UIButtonTypeCustom];
         nBtn.frame = CGRectMake(0, 20+15, 50, 50);
-        nBtn.x = self.view.width*0.75;
+        nBtn.x = self.view.width/6*5;
         [nBtn setImage:[UIImage imageNamed:@"icon_sn"] forState:UIControlStateNormal];
         nBtn.tag = 1003;
         [nBtn addTarget:self action:@selector(headerBtnAction:) forControlEvents:UIControlEventTouchUpInside];
         
-        UILabel *nLabel = [[UILabel alloc]initWithFrame:CGRectMake(self.view.width*0.5, sBtn.bottom+8, self.view.width*0.5, 19)];
+        UILabel *nLabel = [[UILabel alloc]initWithFrame:CGRectMake(self.view.width/3*2, sBtn.bottom+8, self.view.width/3, 19)];
         nLabel.textAlignment = NSTextAlignmentCenter;
         nLabel.textColor = [UIColor colorWithHexString:@"#333333"];
-        nLabel.font = [UIFont systemFontOfSize:17];
+        nLabel.font = [UIFont systemFontOfSize:15];
         nLabel.text = [JfgLanguage getLanTextStrByKey:@"Add_Device_S/N"];
         
         [_tableHeaderView addSubview:sBtn];
         [_tableHeaderView addSubview:sLabel];
         [_tableHeaderView addSubview:nBtn];
         [_tableHeaderView addSubview:nLabel];
+        [_tableHeaderView addSubview:yxBtn];
+        [_tableHeaderView addSubview:yxLabel];
         
     }
     return _tableHeaderView;
@@ -143,12 +177,22 @@
         QRViewController *qr = [QRViewController new];
         qr.hidesBottomBarWhenPushed = YES;
         [self.navigationController pushViewController:qr animated:YES];
+        [MTA trackCustomKeyValueEvent:@"AddDev_inletType" props:@{@"type":@"扫一扫"}];
         
     }else if (sender.tag == 1003){
+        
         //cid添加
         SnScanViewController *sn = [SnScanViewController new];
         sn.hidesBottomBarWhenPushed = YES;
         [self.navigationController pushViewController:sn animated:YES];
+        [MTA trackCustomKeyValueEvent:@"AddDev_inletType" props:@{@"type":@"cid添加"}];
+        
+    }else if (sender.tag == 1004){
+        //有线模式添加
+        AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+        addDeviceGuide.pType = productType_wired;
+        [self.navigationController pushViewController:addDeviceGuide animated:YES];
+        [MTA trackCustomKeyValueEvent:@"AddDev_inletType" props:@{@"type":@"有线模式添加"}];
     }
 }
 
@@ -225,36 +269,36 @@
 {
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
     AddDevConfigModel *model = [[self.dataArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
-    
+    [MTA trackCustomKeyValueEvent:@"AddDev_inletType" props:@{@"type":@"特定设备入口"}];
     switch ([model.typeMark intValue]) {
         case 0:{
             QRViewController *qr = [QRViewController new];
             qr.hidesBottomBarWhenPushed = YES;
             [self.navigationController pushViewController:qr animated:YES];
         }
-            
             break;
+            
         case 1:{
             AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
             addDeviceGuide.pType = productType_WIFI;
             [self.navigationController pushViewController:addDeviceGuide animated:YES];
         }
-            
             break;
+            
         case 2:{
             AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
             addDeviceGuide.pType = productType_720;
             [self.navigationController pushViewController:addDeviceGuide animated:YES];
         }
-            
             break;
+            
         case 3:{
             AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
             addDeviceGuide.pType = productType_DoorBell;
             [self.navigationController pushViewController:addDeviceGuide animated:YES];
         }
-            
             break;
+            
         case 4:{
             AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
             addDeviceGuide.pType = productType_IPCam;
@@ -262,8 +306,8 @@
         }
             
             break;
-        case 5:{
             
+        case 5:{
             AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
             addDeviceGuide.pType = productType_ColudCameraOs;
             [self.navigationController pushViewController:addDeviceGuide animated:YES];
@@ -290,8 +334,14 @@
             addDeviceGuide.pType = productType_AI_Camera_outdoor;
             [self.navigationController pushViewController:addDeviceGuide animated:YES];
         }
-            
             break;
+        case 10:{
+            //productType_AI_Camera_dome
+            AddDeviceGuideViewController *addDeviceGuide = [[AddDeviceGuideViewController alloc] init];
+            addDeviceGuide.pType = productType_AI_Camera_dome;
+            [self.navigationController pushViewController:addDeviceGuide animated:YES];
+        }
+            
         default:
             break;
     }

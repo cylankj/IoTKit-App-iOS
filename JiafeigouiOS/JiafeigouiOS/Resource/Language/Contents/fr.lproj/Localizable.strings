@@ -1,6 +1,6 @@
 /* fr.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
+Created by cylan language tool  on Mon Feb 05 17:41:29 CST 2018.  
 */
 "GLOBAL_NO_NETWORK" = "Connexion impossible, absence réseau";
 "REPEAT_TIME" = "%d secondes";
@@ -165,7 +165,7 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MSG_SYSTEM_UPGRADE" = "Félicitations! Mise à jour vers la version (v%@)";
 "MSG_WARN_ON" = "La détection de mouvement a été activée. En cas de mouvement l\'appareil vous en informera.";
 "MSG_WARN_OFF" = "La détection de mouvement a été désactivée";
-"MSG_WARNING" = "Nouvelle découverte";
+"MSG_WARNING" = "Nouveaux messages";
 "MSG_REBIND" = "L\'appareil a été ajouté par %@ . Si vous avez des questions, contacter le service client";
 "LARGER_IMAGE" = "Cliquer pour voir l\'image en grand";
 "DELETE_SURE" = "Vous êtes sûr de vouloir supprimer ?";
@@ -1125,8 +1125,8 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MESSAGES_TIME_HOUR" = "il y a %@ h";
 "MESSAGES_TIME_DAY" = "il y a  %@ jour";
 "MESSAGES_FACE_IDENTIFY" = "Identifier";
-"MESSAGES_IDENTIFY_POP" = "Nouveau visage, ou en ajoutant à un visage existant, améliorer la précision de la reconnaissance faciale";
-"MESSAGES_IDENTIFY_CREATE_BTN" = "Nouveau visage";
+"MESSAGES_IDENTIFY_POP" = "Enregistrer le visage, ou en ajoutant à un visage existant, améliorer la précision de la reconnaissance faciale";
+"MESSAGES_IDENTIFY_CREATE_BTN" = "Enregistrer le visage";
 "MESSAGES_IDENTIFY_ADD_BTN" = "Ajouter au visage existant";
 "MESSAGES_DELETE_POP" = "Supprimez le visage et tous les messages connexes?";
 "MESSAGES_DELETE_FACE_BTN" = "Retirez le visage";
@@ -1165,3 +1165,40 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "DOOR_WRONG_PSW" = "mauvais mot de passe";
 "DOOR_WRONG_PSW_MSG" = "Mot de passe incorrect";
 "DETECTION_AREA_FAILED_LOAD_RETRY" = "ne parvient pas à obtenir l\'image en direct, donc ne peut pas définir la zone, s\'il vous plaît essayez à nouveau.";
+"WIRED_GUIDE" = "Utilisez un câble réseau pour connecter un appareil et un routeur, vérifier que le dispositif et APP utiliser le même réseau";
+"WIRED_SELECT_DEVICE_CID" = "Sélectionnez l\'appareil CID";
+"WIRED_SELECT_DEVICE_CID_TIPS" = "Device CID";
+"DEVICE_WIRED_CONNECTION" = "Connexion filaire";
+"HALF_CAMERA_ADD_TIPS" = "Appuyez longuement 3 secondes";
+"HALF_CAMERA" = "Caméra demi-sphérique";
+"FACE_COLLAPSE" = "Effondrer";
+"WIRED_UPGRADE_NON_LAN" = "Veuillez connecter le téléphone et l\'appareil au même réseau avant la configuration";
+"MESSAGES_FACE_ANALYSIS" = "Analyse du flux de passagers";
+"MESSAGES_FACE_TADAY_VISIT" = "La visite d\'aujourd\'hui";
+"MESSAGES_FACE_YESTERDAY_VISIT" = "La visite d\'hier";
+"MESSAGES_FACE_NEW_VISIT" = "Nouveaux visiteurs";
+"MESSAGES_FACE_PEOPLE" = "gens";
+"CLOSE_BUTTON" = "Fermer";
+"MESSAGES_FILTER_STRANGER" = "Visiteurs";
+"MESSAGES_REGISTER_FACE" = "Enregistrer le visage";
+"MESSAGES_GENDER_MALE" = "Mâle";
+"MESSAGES_GENDER_FEMALE" = "Femelle";
+"MESSAGES_AGE" = "%@ années";
+"REGISTER_FACE_TIPS" = "S\'il vous plaît télécharger une photo de visage claire";
+"MESSAGES_EXPLAIN" = "Exemple d\'image";
+"MESSAGES_POSITIVE_FACE" = "Visage positif";
+"MESSAGES_SIDE_FACE" = "De profil";
+"MESSAGES_BLURRY" = "Flou";
+"REGISTRATION_SECCESS" = "Succès d\'inscription";
+"CONTINUE_REGISTER" = "Continuez à vous inscrire";
+"WRONG_FORMAT" = "Mauvais format, support seulement .jpg/.png/.bmp";
+"FACE_NOT_RECOGNIZED" = "Visage non reconnu";
+"REGFACE_MULTIFACE" = "Trop de visages, non reconnus";
+"REGFACE_FACESMALL" = "Le visage est trop petit";
+"REGFACE_NOFACE" = "Aucun visage détecté";
+"REGISTRATION_FAILED" = "Enregistrer le visage a échoué";
+"FACE_RECOGNITION" = "Reconnaissance de visage";
+"DOWNLOAD_MSG_PICTURE" = "Télécharger la photo du message";
+"DOWNLOAD_MSG_PICTURE_EXPLAIN" = "Après la fermeture, le message d\'alarme de reconnaissance de visage ne sera pas téléchargé";
+"SUCCESS_REGFACE" = "Face enregistrée avec succès %@";
+"ADD_EXISTINGFACE_BEYOND10" = "Vous ne pouvez ajouter que 10 visages";

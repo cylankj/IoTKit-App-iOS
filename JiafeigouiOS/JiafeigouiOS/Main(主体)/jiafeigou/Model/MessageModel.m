@@ -80,6 +80,11 @@
                 return [JfgLanguage getLanTextStrByKey:@"DOOR_UNCALL"];
             }
         }
+            break;
+        case 527:{
+            return [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"SUCCESS_REGFACE"],self.otherMsg];
+        }
+            break;
         default:{
             return [JfgLanguage getLanTextStrByKey:@"MSG_WARNING"];
         }
@@ -91,6 +96,11 @@
 {
     NSMutableString *text = [[NSMutableString alloc]initWithString:[JfgLanguage getLanTextStrByKey:@"DETECTED_AI"]];
     for (NSNumber *num in objects) {
+        
+        if (![num isKindOfClass:[NSNumber class]]) {
+            break; 
+        }
+        
         if (![text isEqualToString:[JfgLanguage getLanTextStrByKey:@"DETECTED_AI"]]) {
             [text appendString:@","];
         }
@@ -198,5 +208,9 @@
         [_msgImages addObject:obj];
     }
 }
+
+@end
+
+@implementation faceProperty
 
 @end

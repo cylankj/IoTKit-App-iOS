@@ -32,6 +32,8 @@
 #import "DeepSleepVC.h"
 #import "MsgForAIRequest.h"
 #import "MsgForAIViewController.h"
+#import "JFGDevTypeManager.h"
+#import "MTA.h"
 
 @interface VideoPlayViewController ()<TimeChangeMonitorDelegate,UIScrollViewDelegate,UIGestureRecognizerDelegate,JFGSDKCallbackDelegate,MessageVCDelegate>
 {
@@ -80,7 +82,7 @@
     [self.view addGestureRecognizer:pan];
 
     //判断是否加载AI消息视图
-    if ([self.devModel.pid isEqualToString:@"83"] || [self.devModel.pid isEqualToString:@"84"]) {
+    if ([JFGDevTypeManager devIsType:JFGDevFctTypeAIRecognition forPid:[self.devModel.pid intValue]]) {
         self.isAIMessage = YES;
     }else{
         self.isAIMessage = NO;
@@ -131,7 +133,7 @@
         //  让此控制器成为第一响应者
         [self becomeFirstResponder];
     }
-    
+    [MTA trackCustomKeyValueEvent:@"Video_into" props:@{}];
 }
 
 
@@ -326,7 +328,7 @@
         
         for (DataPointSeg *seg in msgList) {
             
-            if (seg.msgId == 505 || seg.msgId == 222){
+            if (seg.msgId == 505 || seg.msgId == 222 || seg.msgId == 526){
                 
                 //被分享设备不处理报警消息
                 JiafeigouDevStatuModel *mode = self.devModel;

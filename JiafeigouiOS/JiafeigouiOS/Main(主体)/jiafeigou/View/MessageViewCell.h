@@ -66,8 +66,15 @@
 
 @interface MessageViewCell3 : MessageViewCell // 一张图片 类型Cell
 
+//AI报警视图，显示更多按钮
+- (instancetype)initForAIWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier;
+
 //图片1
 @property (strong,nonatomic) MessageImageView *imgv1;
+//更多按钮
+@property (strong,nonatomic)UIButton *moreBtn;
+//AI图片中所有名字
+@property (copy,nonatomic)NSString *aiName;
 
 
 @end

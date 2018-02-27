@@ -13,6 +13,11 @@
 @interface JFGSDKHistoryVideoInfo : NSObject
 
 /*!
+ *  设备标示
+ */
+@property (nonatomic,copy)NSString *cid;
+
+/*!
  *  开始时间
  */
 @property (nonatomic,assign)int64_t beginTime;

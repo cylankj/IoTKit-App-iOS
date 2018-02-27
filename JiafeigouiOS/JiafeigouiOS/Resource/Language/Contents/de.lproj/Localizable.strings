@@ -1,6 +1,6 @@
 /* de.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
+Created by cylan language tool  on Mon Feb 05 17:41:29 CST 2018.  
 */
 "GLOBAL_NO_NETWORK" = "Verbindung fehlgeschlagen, bitte Internet überprüfen";
 "REPEAT_TIME" = "%d Sekunde";
@@ -165,7 +165,7 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MSG_SYSTEM_UPGRADE" = "System wieder aktualisiert (V%@)";
 "MSG_WARN_ON" = "Sicherheitsschutz eingeschaltet,erkennt Ungewöhnliches, werden Sie sofort informiert";
 "MSG_WARN_OFF" = "Sicherheitsschutz ausgeschaltet, kann wieder angemacht werden";
-"MSG_WARNING" = "Neue Entdeckungen";
+"MSG_WARNING" = "Neue Nachrichten";
 "MSG_REBIND" = "Gerät vom Benutzer %@ verbunden, bei Fragen wenden Sie sich bitte an Kundenservice";
 "LARGER_IMAGE" = "Klicken zum Großbild";
 "DELETE_SURE" = "Möchten Sie es löschen?";
@@ -1125,8 +1125,8 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MESSAGES_TIME_HOUR" = "vor %@ Std";
 "MESSAGES_TIME_DAY" = "Vor %@ Tag";
 "MESSAGES_FACE_IDENTIFY" = "Identifizieren";
-"MESSAGES_IDENTIFY_POP" = "Neues Gesicht oder durch zu einem bestehenden Gesicht Zugabe, verbessert die Genauigkeit der Gesichtserkennung";
-"MESSAGES_IDENTIFY_CREATE_BTN" = "Neues Gesicht";
+"MESSAGES_IDENTIFY_POP" = "Gesicht registrieren oder durch Hinzufügen zu einem vorhandenen Gesicht die Genauigkeit der Gesichtserkennung verbessern";
+"MESSAGES_IDENTIFY_CREATE_BTN" = "Gesicht registrieren";
 "MESSAGES_IDENTIFY_ADD_BTN" = "In dem bestehenden Gesicht";
 "MESSAGES_DELETE_POP" = "Löschen Sie das Gesicht und alle zugehörigen Nachrichten?";
 "MESSAGES_DELETE_FACE_BTN" = "Gesicht entfernen";
@@ -1165,3 +1165,40 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "DOOR_WRONG_PSW" = "falsches Passwort";
 "DOOR_WRONG_PSW_MSG" = "Falsche Tür Passwort";
 "DETECTION_AREA_FAILED_LOAD_RETRY" = "Live-Bild kann nicht angezeigt werden, daher kann kein Bereich festgelegt werden. Bitte versuchen Sie es erneut.";
+"WIRED_GUIDE" = "Verwenden Sie Netzwerkkabel anschließen Gerät und Router, sicherzustellen, Gerät und APP verwendet gleiches Netzwerk";
+"WIRED_SELECT_DEVICE_CID" = "Gerät auswählen CID";
+"WIRED_SELECT_DEVICE_CID_TIPS" = "Geräte-ID";
+"DEVICE_WIRED_CONNECTION" = "Kabelverbindung";
+"HALF_CAMERA_ADD_TIPS" = "Lange 3 Sekunden drücken";
+"HALF_CAMERA" = "Halb sphärische Kamera";
+"FACE_COLLAPSE" = "Kollaps";
+"WIRED_UPGRADE_NON_LAN" = "Bitte schließen Sie das Telefon und Gerät mit demselben Netzwerk vor der Konfiguration";
+"MESSAGES_FACE_ANALYSIS" = "Passagierflussanalyse";
+"MESSAGES_FACE_TADAY_VISIT" = "Der heutige Besuch";
+"MESSAGES_FACE_YESTERDAY_VISIT" = "Der gestrige Besuch";
+"MESSAGES_FACE_NEW_VISIT" = "Neue Besucher";
+"MESSAGES_FACE_PEOPLE" = "Menschen";
+"CLOSE_BUTTON" = "Schließen";
+"MESSAGES_FILTER_STRANGER" = "Besucher";
+"MESSAGES_REGISTER_FACE" = "Gesicht registrieren";
+"MESSAGES_GENDER_MALE" = "Männlich";
+"MESSAGES_GENDER_FEMALE" = "Weiblich";
+"MESSAGES_AGE" = "%@ Jahre";
+"REGISTER_FACE_TIPS" = "Bitte lade ein klares Gesichtsfoto hoch";
+"MESSAGES_EXPLAIN" = "Bild Beispiel";
+"MESSAGES_POSITIVE_FACE" = "Positives Gesicht";
+"MESSAGES_SIDE_FACE" = "Seitenfläche";
+"MESSAGES_BLURRY" = "Verschwommen";
+"REGISTRATION_SECCESS" = "Registrierung erfolgreich";
+"CONTINUE_REGISTER" = "Weiter zur Registrierung";
+"WRONG_FORMAT" = "Falsches Format, nur Unterstützung .jpg/.png/.bmp";
+"FACE_NOT_RECOGNIZED" = "Gesicht nicht erkannt";
+"REGFACE_MULTIFACE" = "Zu viele Gesichter, unerkannt";
+"REGFACE_FACESMALL" = "Das Gesicht ist zu klein";
+"REGFACE_NOFACE" = "Kein Gesicht erkannt";
+"REGISTRATION_FAILED" = "Registerfläche fehlgeschlagen";
+"FACE_RECOGNITION" = "Gesichtserkennung";
+"DOWNLOAD_MSG_PICTURE" = "Nachrichtenbild herunterladen";
+"DOWNLOAD_MSG_PICTURE_EXPLAIN" = "Nach dem Schließen wird die Gesichtserkennungs-Alarmmeldung nicht heruntergeladen";
+"SUCCESS_REGFACE" = "Erfolgreich registriertes Gesicht %@";
+"ADD_EXISTINGFACE_BEYOND10" = "Fügen Sie nur 10 Gesichter hinzu";

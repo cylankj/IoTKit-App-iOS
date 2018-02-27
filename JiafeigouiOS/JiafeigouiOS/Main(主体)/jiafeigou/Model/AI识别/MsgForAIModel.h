@@ -10,13 +10,14 @@
 
 typedef NS_ENUM(NSInteger,AIModelType) {
     
-    AIModelTypeAll,//全部
-    AIModelTypeUnknow,//陌生人
-    AIModelTypePerson,//人
-    AIModelTypeCat,//猫
-    AIModelTypeDog,//狗
-    AIModelTypeCar,//车
-    AIModelTypeSimulate,//模拟类型，占位用
+    AIModelTypeAll,//全部按钮
+    AIModelTypeUnknow,//陌生人按钮
+    AIModelTypeAddFace,//增加人脸按钮
+    AIModelTypeUnRegister,//未注册人脸
+    AIModelTypeRegister,//已注册人脸
+    //AIModelTypeCat,//猫
+    //AIModelTypeDog,//狗
+    //AIModelTypeCar,//车
     
 };
 
@@ -26,6 +27,7 @@ typedef NS_ENUM(NSInteger,AIModelType) {
 @property (nonatomic,copy)NSString *faceImageUrl;
 @property (nonatomic,assign)int last_time;
 @property (nonatomic,assign)int flag;
+@property (nonatomic,copy)NSString *originImageUrl;
 
 @end
 
@@ -51,6 +53,8 @@ typedef NS_ENUM(NSInteger,AIModelType) {
 @property (nonatomic,assign)int64_t last_time;// 最后访问时间，单位：秒
 @property (nonatomic,assign)int object_type;// 检测到的物体类型
 @property (nonatomic,assign)int visitCount;//-1表示未赋值，大于等于0，表示已经赋值
+@property (nonatomic,copy)NSString *originImageUrl;
+@property (nonatomic,assign)int flag;
 
 @end
 

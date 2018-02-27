@@ -9,52 +9,6 @@
 #import <Foundation/Foundation.h>
 #import "JFGTypeDefine.h"
 
-/*!
- *  JFG设备消息
- */
-@interface JFGSDKMessageDevice : NSObject
-
-/*!
- 根据type不同，有不同的消息类型
- */
-@property (nonatomic,assign)JFGPushNotificationType type;
-
-/*!
- *  此消息的发生时间
- */
-@property (nonatomic,assign)int64_t time;
-
-/*!
- *  消息所属设备
- */
-@property (nonatomic,copy)NSString *cid;
-
-/*!
- *  该消息是否为服务器消息
- */
-@property (nonatomic,assign)BOOL fromServer;
-
-/*!
- *  设备（消息)类型
- */
-@property (nonatomic,assign)JFGDeviceType os;
-
-/*!
- *  未读消息
- */
-@property (nonatomic,assign)int unReadCount;
-
-/*!
- *  公共的保留字段，可以用做其他赋值
- */
-@property (nonatomic,copy)NSString *msg;
-
-@end
-
-
-
-
-
 
 /*!
  *  门铃呼叫消息

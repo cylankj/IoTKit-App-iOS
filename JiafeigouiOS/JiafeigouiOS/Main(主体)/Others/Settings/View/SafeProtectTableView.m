@@ -19,6 +19,8 @@
 #import "DeviceInfoFootView.h"
 #import "RegionalizationViewController.h"
 #import "CommonMethod.h"
+#import "LoginManager.h"
+#import "MTA.h"
 
 typedef NS_ENUM(NSInteger, pickerTag) {
     pickerTag_beginTime = 1000, // 1000 开始
@@ -110,7 +112,6 @@ typedef NS_ENUM(NSInteger, pickerTag) {
 #pragma mark  tableView delegate
 - (void)datePickerDidChanged:(UIDatePicker *)datePicker
 {
-    
     NSDate *selectTime = [datePicker date];
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setDateFormat:@"HH:mm"]; //@"yyyy-MM-dd HH:mm:ss zzz"    zzz表示时区信息=
@@ -301,6 +302,9 @@ typedef NS_ENUM(NSInteger, pickerTag) {
         [DJActionSheet showDJActionSheetWithTitle:[JfgLanguage getLanTextStrByKey:@"SECURE_SENSITIVITY"] buttonTitleArray:@[[JfgLanguage getLanTextStrByKey:@"SENSITIVI_LOW"], [JfgLanguage getLanTextStrByKey:@"SENSITIVI_STANDARD"], [JfgLanguage getLanTextStrByKey:@"SENSITIVI_HIGHT"]] actionType:actionTypeSelect defaultIndex:[[dataInfo objectForKey:cellHiddenText] intValue] didSelectedBlock:^(NSInteger index) {
             
             [self.safeProtectVM updateSensitive:index];
+            [MTA trackCustomKeyValueEvent:@"DevSetting_sensitivity" props:@{}];
+            
+            
         } didDismissBlock:^{
             
         }];
@@ -323,6 +327,12 @@ typedef NS_ENUM(NSInteger, pickerTag) {
     }else if ([uniuqeIDStr isEqualToString:idCellAreaDetection]){
 
 #pragma mark- 区域侦测
+        
+        if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+            [CommonMethod showNetDisconnectAlert];
+            return;
+        }
+        
         RegionalizationViewController *regVC = [RegionalizationViewController new];
         regVC.cid = self.cid;
         regVC.isOpenAreaDetection = self.safeProtectVM.safeProtectmodel.isOpenAreaDetection;

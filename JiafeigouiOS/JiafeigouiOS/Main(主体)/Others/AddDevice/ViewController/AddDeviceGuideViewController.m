@@ -20,6 +20,8 @@
 #import "OLImage.h"
 #import "PilotLampStateVC.h"
 #import "jfgConfigManager.h"
+#import "ConfigWiredViewController.h"
+#import "MTA.h"
 
 @interface AddDeviceGuideViewController()<JFGSDKCallbackDelegate>
 
@@ -47,23 +49,45 @@
     [self getAddModel];//如果获取失败，默认使用wifi绑定界面
     [self initView];
     [self initNavigation];
+    [MTA trackCustomKeyValueEvent:@"AddDev_guideSetWifi" props:@{}];
 }
 
 -(void)getAddModel
 {
     NSArray *dataArr = [jfgConfigManager getAllDevModel];
-    for (NSArray *subArr in dataArr) {
-        for (AddDevConfigModel *model in subArr) {
-            
-            for (NSNumber *os in model.osList) {
+    
+    //有线添加模式界面数据
+    //因为支持有线添加的设备可能不只有92 这个设备，所以单独提出来
+    if (self.pType == productType_wired) {
+        
+        for (NSArray *subArr in dataArr) {
+            for (AddDevConfigModel *model in subArr) {
                 
-                if ([os integerValue] == self.pType) {
-                    self.addModel = model;
-                    return;
+                for (NSNumber *os in model.osList) {
+                    if ([os integerValue] == 92 && [model.typeMark intValue] == 9) {
+                        self.addModel = model;
+                        return;
+                    }
+                }
+            }
+        }
+        
+    }else{
+        for (NSArray *subArr in dataArr) {
+            for (AddDevConfigModel *model in subArr) {
+                
+                for (NSNumber *os in model.osList) {
+                    
+                    if ([os integerValue] == self.pType && [model.typeMark intValue] != 9) {
+                        self.addModel = model;
+                        return;
+                    }
                 }
             }
         }
     }
+    
+
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -123,15 +147,6 @@
     {
         _topTipsLabel = [[UILabel alloc] initWithFrame:CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight)];
         _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:self.addModel.userActionTitle];
-//        if (self.pType == productType_720) {
-//            _topTipsLabel.text =
-//        }else if ([CommonMethod isCameraWithType:self.pType]){
-//            _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTipsTitle"];
-//        }else if (self.pType == productType_IPCam){
-//            _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"RuiShi_Guide"];
-//        }else{
-//            _topTipsLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_DoorbellTipsTitle"];
-//        }
         _topTipsLabel.textAlignment = NSTextAlignmentCenter;
         _topTipsLabel.font = [UIFont systemFontOfSize:27.0f];
         _topTipsLabel.adjustsFontSizeToFitWidth = YES;
@@ -143,23 +158,17 @@
 
 - (UILabel *)bottomTipLabel
 {
-    CGFloat widgetX = 15;
+    CGFloat widgetX = 18;
     CGFloat widgetY = self.topTipsLabel.bottom + 10 * designHscale;
     CGFloat widgetWidth = (Kwidth - widgetX*2);
-    CGFloat widgetHeight = 30;
+    CGFloat widgetHeight = 45;
     
     if (_bottomTipLabel == nil)
     {
         _bottomTipLabel = [[UILabel alloc] initWithFrame:CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight)];
+        _bottomTipLabel.numberOfLines = 2;
         _bottomTipLabel.textAlignment = NSTextAlignmentCenter;
        _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:self.addModel.ledTitle];
-//        if ([CommonMethod isCameraWithType:self.pType] || self.pType == productType_720) {
-//            _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTips"];
-//        }else if (self.pType == productType_IPCam){
-//            _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_CameraTips"];
-//        }else{
-//            _bottomTipLabel.text = [JfgLanguage getLanTextStrByKey:@"Tap1_AddDevice_DoorbellTips"];
-//        }
         _bottomTipLabel.font = [UIFont systemFontOfSize:17.0f];
         _bottomTipLabel.textColor = [UIColor colorWithHexString:@"#333333"];
     }
@@ -180,16 +189,6 @@
         _nextButton.frame = CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight);
         _nextButton.titleLabel.font = [UIFont systemFontOfSize:17.0f];
         [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:self.addModel.ledState] forState:UIControlStateNormal];
-//        if ([CommonMethod isCameraWithType:self.pType] || self.pType == productType_720) {
-//            [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"BLINKING"] forState:UIControlStateNormal];
-//        }else if(self.pType == productType_IPCam){
-//            
-//            [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"BLINKING"] forState:UIControlStateNormal];
-//            
-//        }else{
-//            [_nextButton setTitle:[JfgLanguage getLanTextStrByKey:@"DOOR_BLINKING"] forState:UIControlStateNormal];
-//        }
-
         [_nextButton setTitleColor:[UIColor colorWithHexString:@"#4b9fd5"] forState:UIControlStateNormal];
         [_nextButton setBackgroundImage:[UIImage imageNamed:@"add_btn_pressed"] forState:UIControlStateNormal];
         [_nextButton setBackgroundImage:[UIImage imageNamed:@"add_btn"] forState:UIControlStateHighlighted];
@@ -250,7 +249,6 @@
     CGFloat widgetX = self.view.center.x;
     CGFloat widgetY = self.bottomTipLabel.bottom + 50 * designHscale;
     
-    
     if (_carame720AddView == nil)
     {
         _carame720AddView = [[CarameFor720AddAnimationView alloc] initWithFrame:CGRectMake(widgetX, widgetY, 0, 0)];
@@ -269,10 +267,13 @@
         CGFloat widgetX = self.view.center.x;
         CGFloat widgetY = self.bottomTipLabel.bottom + 50 * designHscale;
         _olImageView = [[OLImageView alloc]initWithFrame:CGRectMake(widgetX, widgetY, self.view.width, self.view.width)];
-        _olImageView.backgroundColor = [UIColor orangeColor];
+        _olImageView.backgroundColor = [UIColor clearColor];
         UIImage *image = nil;
         if (self.addModel && self.addModel.gifName && self.addModel.gifName.length>3) {
             image = [OLImage imageNamed:self.addModel.gifName];
+            if (!image) {
+                image =[UIImage imageNamed:self.addModel.gifName];
+            }
         }else{
             image = [OLImage imageNamed:@"ruishiyindao.gif"];
         }
@@ -335,21 +336,27 @@
 
 - (void)nextButtonAction:(UIButton *)sender
 {
-//    if ([CommonMethod isConnecttedDeviceWifiWithPid:self.pType]) {    //if has connected ap
-//        
-//        [JFGSDK ping:@"255.255.255.255"];          //need get dog's net type.
-//    } else {
-//       
-//    }
-    if (self && self.delegate && [self.delegate respondsToSelector:@selector(addDeviceGuideVCNectActionForVC:)]) {
-        [self.delegate addDeviceGuideVCNectActionForVC:self];
-        return;
+    if (self.pType == productType_wired) {
+        
+        ConfigWiredViewController *config = [ConfigWiredViewController new];
+         [self.navigationController pushViewController:config animated:YES];
+        
+    }else{
+        
+        if (self && self.delegate && [self.delegate respondsToSelector:@selector(addDeviceGuideVCNectActionForVC:)]) {
+            [self.delegate addDeviceGuideVCNectActionForVC:self];
+            return;
+        }
+        ConnDeviceViewController *conn = [[ConnDeviceViewController alloc] init];
+        conn.pType = self.pType;
+        conn.cidStr =self.cid;
+        conn.configType = self.configType;
+        [self.navigationController pushViewController:conn animated:YES];
+        
     }
-    ConnDeviceViewController *conn = [[ConnDeviceViewController alloc] init];
-    conn.pType = self.pType;
-    conn.cidStr =self.cid;
-    conn.configType = self.configType;
-    [self.navigationController pushViewController:conn animated:YES];
+    
+    
+    
 }
 
 #pragma mark - JFGSDKCallBack

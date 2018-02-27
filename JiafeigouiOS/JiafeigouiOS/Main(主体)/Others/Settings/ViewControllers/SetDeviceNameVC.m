@@ -22,6 +22,9 @@
 #import "SetPwForOpenLoginViewController.h"
 #import "CheckingEmailViewController.h"
 #import "AIRobotRequest.h"
+#import <JFGSDK/MPMessagePackReader.h>
+#import <JFGSDK/MPMessagePackWriter.h>
+
 
 @interface SetDeviceNameVC ()<JFGSDKCallbackDelegate,UITextFieldDelegate>
 {
@@ -563,26 +566,10 @@ int maxLength = 24;
             if (name.length>0) {
                 
                 [ProgressHUD showProgress:nil];
-                __weak typeof(self) weakSelf = self;
-                [AIRobotRequest robotRegisterFace:nil person:self.person_id cid:self.cid personName:name sucess:^(id responseObject) {
-                    
-                    if ([responseObject isKindOfClass:[NSDictionary class]]) {
-                        NSDictionary *dict = responseObject;
-                        int ret = [dict[@"ret"] intValue];
-                        if (ret == 0) {
-                         
-                            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
-                         
-                            [weakSelf leftButtonAction:nil];
-                         
-                            return ;
-                        }
-                    }
-                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SUBMIT_FAIL"]];
-                    
-                } failure:^(NSError *error) {
-                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SUBMIT_FAIL"]];
-                }];
+                
+                [JFGSDK sendUniversalData:[MPMessagePackWriter writeObject:@[self.cid,self.person_id,name] error:nil] cid:self.cid forMsgID:20];
+                
+                
                 
             }
             
@@ -733,4 +720,34 @@ int maxLength = 24;
         
     });
 }
+
+-(void)jfgOnUniversalData:(NSData *)msgData msgID:(int)mid seq:(long)seq
+{
+    if (![msgData isKindOfClass:[NSData class]]) {
+        return;
+    }
+    id obj = [MPMessagePackReader readData:msgData error:nil];
+    
+    if (mid == 20) {
+        
+        NSArray *sourceOjb = obj;
+        if ([sourceOjb isKindOfClass:[NSArray class]] && sourceOjb.count>3) {
+            
+            NSString *cid = sourceOjb[0];
+            if ([cid isEqualToString:self.cid]) {
+                
+                int ret = [sourceOjb[3] intValue];
+                if (ret == 0) {
+                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                    [self leftButtonAction:nil];
+                }else{
+                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SUBMIT_FAIL"]];
+                }
+            }
+            
+        }
+        
+    }
+}
+
 @end

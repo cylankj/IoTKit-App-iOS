@@ -32,6 +32,7 @@
 #import "UIButton+Addition.h"
 #import "FLShareSDKHelper.h"
 #import "OemManager.h"
+#import "MTA.h"
 
 @interface LoginRegisterViewController ()<UITextFieldDelegate,LoginManagerDelegate, JFGSDKCallbackDelegate>
 {
@@ -178,7 +179,6 @@
             if (![_registerTextFiled.text isEqualToString:@""] && ![_codeTextFiled.text isEqualToString:@""] ) {
                 
                 _registerYDBtn.enabled = YES;
-                
             }else{
                 
                 _registerYDBtn.enabled = NO;
@@ -1091,6 +1091,7 @@
                 if (self.codeTextFiled.text.length == 6) {
                     [JFGSDK verifySMSWithAccount:self.registerTextFiled.text code:self.codeTextFiled.text token:self.token];
                     [ProgressHUD showProgress:nil];
+                    
                 }else{
                     [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"RET_ESMS_CODE_FALSE"]];
                 }
@@ -1346,6 +1347,7 @@
 {
     [ProgressHUD showProgress:nil];
     [JFGSDK sendSMSWithPhoneNumber:phone type:smsCodeTypeRegister];
+    [MTA trackCustomKeyValueEvent:@"Register_getCode" props:@{}];
 }
 
 - (void)reSendSMS

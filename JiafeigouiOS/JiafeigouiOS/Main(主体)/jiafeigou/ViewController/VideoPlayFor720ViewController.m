@@ -28,7 +28,6 @@
 #import "UIAlertView+FLExtension.h"
 #import "JFGShortVideoRecordAnimation.h"
 #import "Pano720PhotoVC.h"
-#import <JFGSDK/JFGSDKSock.h>
 #import <JFGSDK/JFGSDK.h>
 #import "ProgressHUD.h"
 #import "PopAnimation.h"

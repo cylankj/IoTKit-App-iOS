@@ -15,6 +15,7 @@
 #import "ProgressHUD.h"
 #import "PropertyManager.h"
 #import <JFGSDK/JFGSDK.h>
+#import "MTA.h"
 
 @interface SafeProtectViewModel()
 
@@ -126,6 +127,9 @@
         self.safeProtectmodel.isOpenInfraredStrengthen = isOpen;
         [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
         [self update];
+        
+        [MTA trackCustomKeyValueEvent:@"DevSetting_infraredenhanced" props:@{@"statue":isOpen?@"开":@"关"}];
+        
     } failed:^(RobotDataRequestErrorType error) {
         
     }];
@@ -139,11 +143,14 @@
     seg.value = [MPMessagePackWriter writeObject:@(isOpen) error:&error];
     NSArray * dps = @[seg];
     
+    
     [[dataPointMsg shared] setdpDataWithCid:self.cid dps:dps success:^(NSMutableDictionary *dic) {
         self.safeProtectmodel.isWarnEnable = isOpen;
         [ProgressHUD showSuccess:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
         [self update];
         [JFGSDK refreshDeviceList];
+        [MTA trackCustomKeyValueEvent:@"DevSetting_Safety" props:@{@"statue":isOpen?@"开":@"关"}];
+        
     } failed:^(RobotDataRequestErrorType error) {
         
     }];
@@ -270,21 +277,25 @@
         NSArray *safePro = [self safeProctection];
         NSArray *warnSound = [self warnSoundRow];
         NSArray *infraredEnhanced = [self infraredEnhanced];
+        
         if (safePro.count)
         {
             [self.groupArray addObject:safePro];
         }
         
+        //红外侦测与区域侦测
         if (infraredEnhanced.count)
         {
             [self.groupArray addObject:infraredEnhanced];
         }
         
+        //设备提示音
         if (warnSound.count > 0)
         {
             [self.groupArray addObject:warnSound];
         }
         
+        //开始时间，结束时间，重复
         [self.groupArray addObject:[NSArray arrayWithObjects:
                                     [NSDictionary dictionaryWithObjectsAndKeys:
                                      @"",cellIconImageKey,
@@ -368,11 +379,12 @@
                      @(UITableViewCellAccessoryNone),cellAccessoryKey,
                       nil]];
     
-    if ([PropertyManager showSharePropertiesRowWithPid:self.pType key:pAiRecognition])
+    if ([PropertyManager showPropertiesRowWithPid:self.pType key:pAiRecognition])
     {
+        //AI识别（行人，车，狗，猫）
         [safes addObject:[NSDictionary dictionaryWithObjectsAndKeys:
                           @"",cellIconImageKey,
-                          [JfgLanguage getLanTextStrByKey:@"AI识别"],cellTextKey,
+                          [JfgLanguage getLanTextStrByKey:@"SETTING_SECURE_AI"],cellTextKey,
                           idCellAIRecognition, cellUniqueID,
                           self.safeProtectmodel.aiRecognitionStr,cellDetailTextKey,
                           self.safeProtectmodel.aiRecognitions, cellHiddenText,
@@ -382,11 +394,25 @@
                           nil]];
     }
     
-    if ([PropertyManager showSharePropertiesRowWithPid:self.pType key:pAlarmDuration])
+    if ([PropertyManager showPropertiesRowWithPid:self.pType key:pFaceRecognition]) {
+        //人脸识别
+        [safes addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                          @"",cellIconImageKey,
+                          [JfgLanguage getLanTextStrByKey:@"FACE_RECOGNITION"],cellTextKey,
+                          idCellFaceRecognition, cellUniqueID,
+                          @"",cellDetailTextKey,
+                          @"", cellHiddenText,
+                          @0, cellRedDotInRight,
+                          @0,cellshowSwitchKey,
+                          @(UITableViewCellAccessoryDisclosureIndicator),cellAccessoryKey,
+                          nil]];
+    }
+    
+    if ([PropertyManager showPropertiesRowWithPid:self.pType key:pAlarmDuration])
     {
         [safes addObject:[NSDictionary dictionaryWithObjectsAndKeys:
                           @"",cellIconImageKey,
-                          [JfgLanguage getLanTextStrByKey:@"报警间隔"],cellTextKey,
+                          [JfgLanguage getLanTextStrByKey:@"SECURE_Interval_Alarm"],cellTextKey,
                           idCellAlramDutaion, cellUniqueID,
                           self.safeProtectmodel.alramDurStr, cellDetailTextKey,
                           @(self.safeProtectmodel.alramDuration), cellHiddenText,

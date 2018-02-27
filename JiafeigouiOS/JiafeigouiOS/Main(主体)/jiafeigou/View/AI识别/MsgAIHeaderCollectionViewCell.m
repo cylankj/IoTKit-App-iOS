@@ -11,6 +11,7 @@
 #import "UIColor+HexColor.h"
 #import "LoginManager.h"
 #import "ProgressHUD.h"
+#import "UIView+FLExtensionForFrame.h"
 
 @implementation MsgAIHeaderCollectionViewCell
 
@@ -21,7 +22,7 @@
     self.headImageView.layer.borderColor = [UIColor colorWithHexString:@"#36bdff"].CGColor;
     self.headImageView.layer.borderWidth = 0;
     self.backgroundColor = [UIColor whiteColor];
-    
+    [self.contentView bringSubviewToFront:self.strangerIcon];
     __weak typeof(self) weakSelf = self;
     self.headImageView.menuActionBlock = ^(MenuItemType type) {
       
@@ -39,8 +40,20 @@
     }
     _isSelected = isSelected;
     if (_isSelected) {
-        self.headImageView.layer.borderWidth = 2;
+        
+        //增加4个像素的边框
+        self.headerImageWidth.constant = 62+8;
+        self.headerImageHeight.constant = 62+8;
+        self.headerImageTop.constant = 1;
+        self.headImageView.layer.cornerRadius = 70*0.5;
+        self.headImageView.layer.borderWidth = 4;
+        
     }else{
+        
+        self.headerImageWidth.constant = 62;
+        self.headerImageHeight.constant = 62;
+        self.headerImageTop.constant = 5;
+        self.headImageView.layer.cornerRadius = 62*0.5;
         self.headImageView.layer.borderWidth = 0;
     }
 }
@@ -75,61 +88,70 @@
     UIMenuController * menu = [UIMenuController sharedMenuController];
     
     //当长按label的时候，这个方法会不断调用，menu就会出现一闪一闪不断显示，需要在此处进行判断
-    if (menu.isMenuVisible)return;
-    //自定义 UIMenuController
-    UIMenuItem * item1 = [[UIMenuItem alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"DELETE"] action:@selector(mydel:)];
-    NSString *item2Title = @"";
-    if (self.menuItem2Type == MenuItemTypeLook) {
-        //查看
-        item2Title = [JfgLanguage getLanTextStrByKey:@"DOOR_BELL_LOOK"];
-    }else if(self.menuItem2Type == MenuItemTypeMoveTo){
-        //移动到
-        item2Title = [JfgLanguage getLanTextStrByKey:@"MESSAGES_FACE_MOVE_BTN"];
-    }else{
-        //识别
-        item2Title = [JfgLanguage getLanTextStrByKey:@"MESSAGES_FACE_IDENTIFY"];
-    }
-    UIMenuItem * item2 = [[UIMenuItem alloc]initWithTitle:item2Title action:@selector(myrecognize:)];
+    if (menu.isMenuVisible || !self.menuItems)return;
     
-    if (self.menuItem2Type == MenuItemTypeNone) {
-        //只显示删除
-        menu.menuItems = @[item1];
-    }else{
-        menu.menuItems = @[item1,item2];
-    }
+    /*
+     MenuItemTypeDel = 0,//删除
+     MenuItemTypeLook = 1,//查看
+     MenuItemTypeRecognition = 2,//识别
+     MenuItemTypeMoveTo = 3,//移动到
+     */
     
+    NSMutableArray *menuItemObjS = [NSMutableArray new];
+    for (NSNumber *type in self.menuItems) {
+        
+        if ([type intValue] == 0) {
+            UIMenuItem * item = [[UIMenuItem alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"DELETE"] action:@selector(mydel:)];
+            [menuItemObjS addObject:item];
+        }else if([type intValue] == 1){
+            UIMenuItem * item = [[UIMenuItem alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"DOOR_BELL_LOOK"] action:@selector(myLook)];
+            [menuItemObjS addObject:item];
+        }else if([type intValue] == 2){
+            UIMenuItem * item = [[UIMenuItem alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"MESSAGES_FACE_IDENTIFY"] action:@selector(myRecognize:)];
+            [menuItemObjS addObject:item];
+        }else if([type intValue] == 3){
+            UIMenuItem * item = [[UIMenuItem alloc]initWithTitle:[JfgLanguage getLanTextStrByKey:@"MESSAGES_FACE_MOVE_BTN"] action:@selector(myMoveTo)];
+            [menuItemObjS addObject:item];
+        }
+        
+    }
+    menu.menuItems = menuItemObjS;
     [menu setTargetRect:self.superview.bounds inView:self.superview];
-    //  [menu setTargetRect:self.frame inView:self.superview];
     [menu setMenuVisible:YES animated:YES];
     
 }
 
-- (void)myrecognize:(UIMenuController *)menu
+-(void)myMoveTo
+{
+     [self meunItemActionForItemType:MenuItemTypeMoveTo];
+}
+
+-(void)myLook
+{
+    [self meunItemActionForItemType:MenuItemTypeLook];
+}
+
+- (void)myRecognize:(UIMenuController *)menu
 {
     NSLog(@"识别");
-    //复制文字到剪切板
-    //清空文字
-    
-    if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
-        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"GLOBAL_NO_NETWORK"]];
-        return;
-    }
-    
-    if (self.menuActionBlock) {
-        self.menuActionBlock(self.menuItem2Type);
-    }
+    [self meunItemActionForItemType:MenuItemTypeRecognition];
 }
 
 -(void)mydel:(UIMenuController *)menu
 {
     NSLog(@"删除");
+    [self meunItemActionForItemType:MenuItemTypeDel];
+}
+
+-(void)meunItemActionForItemType:(MenuItemType)type
+{
     if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
         [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"GLOBAL_NO_NETWORK"]];
         return;
     }
     //复制文字到剪切板
     if (self.menuActionBlock) {
-        self.menuActionBlock(MenuItemTypeDel);
+        self.menuActionBlock(type);
     }
 }
 

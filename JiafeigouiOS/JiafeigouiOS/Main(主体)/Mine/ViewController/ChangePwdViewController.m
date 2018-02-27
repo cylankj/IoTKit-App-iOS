@@ -304,7 +304,7 @@
 
 - (void)rightButtonAction:(UIButton *)sender
 {
-    int maxLength = pwMinLength;
+    int maxLength = pwMaxLength;
     if (self.changeType == ChangePwdTypeForDoorlock) {
         maxLength = 16;
     }

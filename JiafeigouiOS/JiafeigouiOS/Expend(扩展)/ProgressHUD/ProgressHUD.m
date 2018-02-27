@@ -191,6 +191,16 @@
     [image.layer pop_addAnimation:baseAnimation forKey:@"rotation"];
 }
 
+-(void)cancelTimeout
+{
+     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(progressOuttime) object:nil];
+}
+
++(void)cancelTimeout
+{
+    [[self shared] cancelTimeout];
+}
+
 -(void)progressOuttime
 {
     [self hudDestroy];
@@ -383,7 +393,8 @@
 			{
 				if ([[possibleKeyboard description] hasPrefix:@"<UIPeripheralHostView"])
 				{
-					return possibleKeyboard.bounds.size.height;
+					//return possibleKeyboard.bounds.size.height;
+                    return [UIScreen mainScreen].bounds.size.height - possibleKeyboard.frame.origin.y;
 				}
 				else if ([[possibleKeyboard description] hasPrefix:@"<UIInputSetContainerView"])
 				{
@@ -391,7 +402,13 @@
 					{
 						if ([[hostKeyboard description] hasPrefix:@"<UIInputSetHost"])
 						{
-							return hostKeyboard.frame.size.height;
+//                            if (hostKeyboard.frame.origin.y == [UIScreen mainScreen].bounds.size.height) {
+//                                return 0;
+//                            }else{
+//
+//                            }
+                            return [UIScreen mainScreen].bounds.size.height - hostKeyboard.frame.origin.y;
+							//return hostKeyboard.frame.size.height;
 						}
 					}
 				}

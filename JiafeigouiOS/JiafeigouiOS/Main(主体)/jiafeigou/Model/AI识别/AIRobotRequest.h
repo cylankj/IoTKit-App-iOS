@@ -49,4 +49,7 @@
          service_key_secret:(NSString *)secret
                   timestamp:(int)timestamp;
 
+//AI服务url
++(NSString *)aiServiceReqUrl;
+
 @end

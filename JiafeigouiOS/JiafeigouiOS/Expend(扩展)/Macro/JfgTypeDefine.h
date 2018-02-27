@@ -16,6 +16,7 @@
 typedef NS_ENUM(NSInteger, productType) {
     
 #pragma mark os
+    productType_wired = 0,      //这个代表支持有线连接的设备（是一个类别）
     productType_3G_2X = 4,      // 2.0 版本 3G狗 type
     productType_WIFI = 5,
     productType_DoorBell = 6,   // 6
@@ -55,6 +56,7 @@ typedef NS_ENUM(NSInteger, productType) {
     productType_RS_360_pano = 81,   // 全景？然而 又不是
     productType_AI_Camera = 83,
     productType_AI_Camera_outdoor = 84,  //AI智能户外摄像头
+    productType_AI_Camera_dome = 92, //AI半球机
     
 #pragma mark pid
     productType_3G = 1071,

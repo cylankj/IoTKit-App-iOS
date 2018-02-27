@@ -29,6 +29,7 @@
 #import <JFGSDK/JFGSDKDataPoint.h>
 #import "PropertyManager.h"
 #import "LoginManager.h"
+#import "MTA.h"
 
 #define kScreen_Scale [UIScreen mainScreen].bounds.size.width/375.0f
 #define kTop 100*kScreen_Scale
@@ -40,6 +41,7 @@
     NSDictionary *cacheWifiListDict;
     NSTimer *timeOutTimer;
     int timeCount;
+    BOOL isAwaysFping;
 }
 @property(nonatomic, strong)UILabel * titleLabel;
 @property(nonatomic, strong)UITextField * wifiNameTF;
@@ -51,8 +53,8 @@
 @property(nonatomic, strong)UIButton *wifiListButton;
 @property(nonatomic, strong)DelButton *exitBtn;
 @property(nonatomic, strong)UIButton *declareBtn;
-@property (nonatomic, copy) NSString *ipAddress;
-@property (nonatomic, copy) NSString *macStr;
+@property(nonatomic, copy) NSString *ipAddress;
+@property(nonatomic, copy) NSString *macStr;
 
 @end
 
@@ -94,6 +96,7 @@
     //fping获取设备信息
     [JFGSDK fping:@"255.255.255.255"];
     [JFGSDK fping:@"192.168.10.255"];
+    [MTA trackCustomKeyValueEvent:@"AddDev_configWifi" props:@{}];
 }
 
 - (void)viewDidAppear:(BOOL)animated
@@ -119,14 +122,19 @@
 
 -(void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
 {
+    if (isAwaysFping) {
+        return;
+    }
     //AP直连
     if ([[CommonMethod currentConnecttedWifi] hasPrefix:@"DOG"] || [[CommonMethod currentConnecttedWifi] hasPrefix:@"BELL"]) {
+        
         self.cid = ask.cid;
         self.macStr = ask.mac;
         self.ipAddress = ask.address;
         [self devTypeWithCid:self.cid];
         
     }else{
+        
         if ([self.cid isKindOfClass:[NSString class]] && [self.cid isEqualToString:ask.cid]) {
             self.macStr = ask.mac;
             self.ipAddress = ask.address;
@@ -137,7 +145,7 @@
 
 -(void)devTypeWithCid:(NSString *)cid
 {
-
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"bindDevFpingAction:%@",cid]];
     if (self.configType != configWifiType_setHotspot){
         
         if (cid && ![cid isEqualToString:@""]) {
@@ -152,7 +160,7 @@
                     
                     NSString *pid = dict[pOSKey];
                     //以下门铃设备不显示wifi下拉列表
-                    NSArray *wifiListOS = @[@15,@17,@22,@24,@25,@26,@27,@28,@42,@44,@46,@50,@52];
+                    NSArray *wifiListOS = @[@6,@15,@17,@22,@24,@26,@27,@28,@42,@44,@46,@50];
                     for (NSNumber *os in wifiListOS) {
                         if ([os integerValue] == [pid intValue]) {
                             isDoor = YES;
@@ -162,7 +170,7 @@
                     break;
                 }
             }
-            
+            isAwaysFping = YES;
             self.wifiListButton.hidden = isDoor;
         }
     }
@@ -424,19 +432,28 @@
 -(void)getWiFiListAciton:(UIButton *)button
 {
     [self.view endEditing:YES];
-    [WifiListView createWifiListView:^(NSString *wifiNameString) {
-        self.wifiNameTF.text = wifiNameString;
-        self.wifiPasswordTF.text = @"";
-        NSDictionary *dic = [self getWifiInfo];
-        if (dic) {
-            for (NSString *key in dic) {
-                if ([key isEqualToString:wifiNameString]) {
-                    self.wifiPasswordTF.text = [dic objectForKey:key];
-                    break;
+    
+    [WifiListView createWifiListViewForType:WifiListTypeWifiName commplete:^(id obj) {
+        
+        if ([obj isKindOfClass:[JFGSDKUDPResposeScanWifi class]]) {
+            JFGSDKUDPResposeScanWifi *wifi = obj;
+            NSString *wifiNameString = wifi.ssid;
+            self.wifiNameTF.text = wifiNameString;
+            self.wifiPasswordTF.text = @"";
+            NSDictionary *dic = [self getWifiInfo];
+            if (dic) {
+                for (NSString *key in dic) {
+                    if ([key isEqualToString:wifiNameString]) {
+                        self.wifiPasswordTF.text = [dic objectForKey:key];
+                        break;
+                    }
                 }
             }
         }
+        
+        
     }];
+    
 }
 
 -(void)exitAction
@@ -506,9 +523,11 @@
 }
 
 #pragma  mark - UITouch
--(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event{
+-(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
+{
     [self.view endEditing:YES];
 }
+
 #pragma mark - 控件
 -(UILabel *)titleLabel{
     if (!_tipLabel) {
@@ -652,12 +671,13 @@
     }
     return _exitBtn;
 }
--(UILabel *)creatLineLabel{
+
+-(UILabel *)creatLineLabel
+{
     UILabel * lineLabel = [[UILabel alloc]init];
     lineLabel.backgroundColor = [UIColor colorWithHexString:@"#cecece"];
     return lineLabel;
 }
-
 
 -(UITextField *)creatTextField
 {

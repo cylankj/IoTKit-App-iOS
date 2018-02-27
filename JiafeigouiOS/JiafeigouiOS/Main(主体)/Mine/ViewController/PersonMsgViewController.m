@@ -130,9 +130,10 @@
 -(void)jfgHttpResposeRet:(int)ret requestID:(int)requestID result:(NSString *)result
 {
     if (requestID == uploadMark) {
+        
         [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(uploadImageTimeout) object:nil];
         
-        NSString *aleartStr ;
+        NSString *aleartStr;
         if (ret == 200) {
             
             if (headImage) {
@@ -146,6 +147,7 @@
             aleartStr = [JfgLanguage getLanTextStrByKey:@"Tap3_UploadingComplete"];
             
         }else{
+            
             aleartStr = [JfgLanguage getLanTextStrByKey:@"Tap3_UploadingFailed"];
         }
         

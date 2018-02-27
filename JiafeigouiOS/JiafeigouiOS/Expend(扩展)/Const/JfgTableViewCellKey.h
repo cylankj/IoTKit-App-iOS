@@ -56,6 +56,7 @@ NSString *const indirector = @"_indirector";
 NSString *const hangup = @"_hangup";
 NSString *const ntsc = @"_ntsc";
 NSString *const deepsleep = @"_deepsleep";
+NSString *const wiredModel = @"_wiredModel";//有线模式
 
 // 设备信息 cell 唯一id
 NSString *const deviceName = @"_deviceName";
@@ -81,8 +82,9 @@ NSString *const idCellWarnEndTime = @"_idCellWarnEndTime";
 NSString *const idCellRepeatTime = @"_idCellRepeatTime";
 NSString *const idCellInfraredEnhanced = @"_idCellInfraredEnhanced";
 NSString *const idCellAreaDetection = @"_idCellAreaDetection";//区域侦测
+NSString *const idCellFaceRecognition = @"_idCellFaceRecognition";
+//人脸识别
 
-//门锁
-NSString *const idCellDoorlockPw = @"_idCellDoorlockPw";
+NSString *const idCellDoorlockPw = @"_idCellDoorlockPw";//门锁
 
 #endif /* JfgTableViewCellKey_h */

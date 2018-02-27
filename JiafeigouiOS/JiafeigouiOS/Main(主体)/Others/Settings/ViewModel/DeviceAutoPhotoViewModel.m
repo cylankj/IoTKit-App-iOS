@@ -93,7 +93,6 @@
 {
     NSMutableArray *autoPhotoArray = [NSMutableArray arrayWithCapacity:5];
     
-    
     switch (self.pType)
     {
         case productType_CatEye:

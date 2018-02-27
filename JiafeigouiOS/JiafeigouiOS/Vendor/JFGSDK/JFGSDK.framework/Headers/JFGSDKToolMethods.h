@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 
 @interface JFGSDKToolMethods : NSObject
 /*!
@@ -24,5 +25,8 @@
  *  十进制转二进制
  */
 +(NSString *)toBinarySystemWithDecimalSystem:(NSInteger)decimal;
+//  二进制转十进制
++(NSString *)toDecimalSystemWithBinarySystem:(NSString *)binary;
 
++(UIImage *)createImageFromData:(void *)data width:(float)width height:(float)height;
 @end

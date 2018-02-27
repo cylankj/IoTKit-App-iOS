@@ -8,6 +8,7 @@
 
 #import "settingFootView.h"
 #import "JfgGlobal.h"
+#import "UIColor+FLExtension.h"
 
 @implementation settingFootView
 
@@ -25,6 +26,8 @@
         _deleteButton.titleLabel.font = [UIFont systemFontOfSize:17.0f];
         [_deleteButton setTitle:[JfgLanguage getLanTextStrByKey:@"DELETE_CID"] forState:UIControlStateNormal];
         [_deleteButton setTitleColor:[UIColor colorWithHexString:@"#ff3d32"] forState:UIControlStateNormal];
+        
+        [_deleteButton setTitleColor:[UIColor colorWithHex:0x9a9a9a alpha:0.5] forState:UIControlStateDisabled];
         [_deleteButton setBackgroundColor:[UIColor whiteColor]];
         // 射🐔 描边癖
         _deleteButton.layer.borderWidth = 0.5f;

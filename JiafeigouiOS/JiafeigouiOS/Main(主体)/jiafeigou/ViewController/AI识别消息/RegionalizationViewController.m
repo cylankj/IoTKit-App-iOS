@@ -21,6 +21,7 @@
 #import "JfgCachePathManager.h"
 #import "LoginManager.h"
 #import "CommonMethod.h"
+#import "MTA.h"
 
 #define AreaDetectionTipMask @"AreaDetectionTipMask_"
 #define AreaDetectionSnapSaveKey @"AreaDetectionSnapSaveKey_"
@@ -35,9 +36,12 @@ struct CLRect {
 @interface RegionalizationViewController ()
 {
     struct CLRect areaDetectionRect;//区域侦测范围
-    CGSize snapSize;
+    struct CLRect areaDetectionRectForRemote;
+    CGSize snapSize;//原始底图尺寸
     UIImage *realTimeSnapImg;
     BOOL isAppear;
+    BOOL snapSuccess;
+    BOOL isOpenRegionalizationForRemote;
 }
 @property (nonatomic,strong)UIButton *backBtn;//返回
 @property (nonatomic,strong)UIButton *doneBtn;//完成按钮
@@ -58,17 +62,18 @@ struct CLRect {
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor blackColor];
     
+    //初始化坐标
+    snapSize = CGSizeMake(MAX(self.view.height, self.view.width), MIN(self.view.height, self.view.width));
+    [self initializeSnapSize];
+    
+    areaDetectionRectForRemote.ltx = areaDetectionRect.ltx;
+    areaDetectionRectForRemote.lty = areaDetectionRect.lty;
+    areaDetectionRectForRemote.rbx = areaDetectionRect.rbx;
+    areaDetectionRectForRemote.rby = areaDetectionRect.rby;
+    
     //获取实时截图
     [self reqSnampImage];
     [self reqOriginRect];
-    
-    //初始化坐标
-    snapSize = CGSizeMake(self.view.height, self.view.width);
-    CGRect tempRect = CGRectMake(0, 0, 209, 139);
-    tempRect.origin.x = self.view.center.x - tempRect.size.width*0.5;
-    tempRect.origin.y = self.view.center.y - tempRect.size.height * 0.5;
-    [self transitionAreaProportionWithSnapSize:snapSize detectionRect:tempRect];
-    
     
     [self.view addSubview:self.backgroundImageView];
     [self.view addSubview:self.maskView];
@@ -92,20 +97,33 @@ struct CLRect {
     
     //加载截图超时处理
     [self performSelector:@selector(snapLoadFailed) withObject:nil afterDelay:30];
+    
+    [MTA trackCustomKeyValueEvent:@"DevSetting_regionAlarm" props:@{}];
 
+}
+
+//初始化截图框坐标
+-(void)initializeSnapSize
+{
+    CGRect tempRect = CGRectMake(0, 0, 209, 139);
+    CGFloat centerX = MAX(self.view.width, self.view.height)*0.5;
+    CGFloat centerY = MIN(self.view.width, self.view.height)*0.5;
+    tempRect.origin.x = centerX-209*0.5;
+    tempRect.origin.y = centerY-139*0.5;
+    [self transitionAreaProportionWithSnapSize:snapSize detectionRect:tempRect];
 }
 
 //坐标转化成比例
 -(void)transitionAreaProportionWithSnapSize:(CGSize)size detectionRect:(CGRect)detectionRect
 {
     CGRect tempRect = detectionRect;
-    areaDetectionRect.ltx = tempRect.origin.x / size.width;
-    areaDetectionRect.lty = tempRect.origin.y / size.height;
-    areaDetectionRect.rbx = (tempRect.origin.x+tempRect.size.width) / size.width;
-    areaDetectionRect.rby = (tempRect.origin.y+tempRect.size.height) / size.height;
+    areaDetectionRect.ltx = MIN(tempRect.origin.x / size.width,1);
+    areaDetectionRect.lty = MIN(tempRect.origin.y / size.height,1);
+    areaDetectionRect.rbx = MIN((tempRect.origin.x+tempRect.size.width) / size.width, 1) ;
+    areaDetectionRect.rby =MIN((tempRect.origin.y+tempRect.size.height) / size.height, 1) ;
 }
 
-//获取实时截图
+#pragma mark- 获取实时截图
 -(void)reqSnampImage
 {
     DataPointSeg *seg = [[DataPointSeg alloc]init];
@@ -160,27 +178,32 @@ struct CLRect {
 //获取实时截图失败
 -(void)snapLoadFailed
 {
-    if (realTimeSnapImg == nil) {
-
-        [self stopLoadingAnimation];
-        __weak typeof(self) weakSelf = self;
-        UIAlertController *alertCtrol = [UIAlertController alertControllerWithTitle:[JfgLanguage getLanTextStrByKey:@"DETECTION_AREA_FAILED_LOAD_RETRY"] message:nil preferredStyle:UIAlertControllerStyleAlert];
-        UIAlertAction *action = [UIAlertAction actionWithTitle:[JfgLanguage getLanTextStrByKey:@"OK"] style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
-
-            [weakSelf backAction];
-
-        }];
-
-        [alertCtrol addAction:action];
-        [self presentViewController:alertCtrol animated:YES completion:nil];
-
-    }else{
-    
-        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DETECTION_AREA_FAILED_LOAD"]];
-        if (self.isOpenAreaDetection) {
-            [self setState];
+    if (isAppear) {
+        
+        if (realTimeSnapImg == nil) {
+            
+            [self stopLoadingAnimation];
+            __weak typeof(self) weakSelf = self;
+            UIAlertController *alertCtrol = [UIAlertController alertControllerWithTitle:nil message:[JfgLanguage getLanTextStrByKey:@"DETECTION_AREA_FAILED_LOAD_RETRY"] preferredStyle:UIAlertControllerStyleAlert];
+            UIAlertAction *action = [UIAlertAction actionWithTitle:[JfgLanguage getLanTextStrByKey:@"OK"] style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+                
+                [weakSelf backAction];
+                
+            }];
+            
+            [alertCtrol addAction:action];
+            [self presentViewController:alertCtrol animated:YES completion:nil];
+            
         }else{
-            [self defaultState];
+            
+            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"DETECTION_AREA_FAILED_LOAD"]];
+            if (self.isOpenAreaDetection) {
+                [self layouForSnapImage:self.backgroundImageView.image];
+                [self setState];
+            }else{
+                [self defaultState];
+            }
+            
         }
         
     }
@@ -189,14 +212,9 @@ struct CLRect {
 //根据实时图调整控件尺寸
 -(void)layouForSnapImage:(UIImage *)image
 {
-    CGFloat width = self.view.width;
-    CGFloat height = self.view.height;
-    if (width<height) {
-        width = self.view.height;
-        height = self.view.width;
-    }
+    CGFloat width = MAX(self.view.width, self.view.height);
+    CGFloat height = MIN(self.view.height, self.view.width);
     self.backgroundImageView.image = image;
-    
     CGFloat scale = image.size.height/image.size.width;
     snapSize.height = height;
     snapSize.width = height/scale;
@@ -208,9 +226,7 @@ struct CLRect {
     self.backgroundImageView.width = snapSize.width;
     self.backgroundImageView.height = snapSize.height;
     self.backgroundImageView.center = CGPointMake(width*0.5, height*0.5);
-    
     self.maskView.frame = self.backgroundImageView.frame;
-    
     CGFloat x = areaDetectionRect.ltx * snapSize.width;
     CGFloat y = areaDetectionRect.lty * snapSize.height;
     CGFloat width1 = areaDetectionRect.rbx * snapSize.width - x;
@@ -223,8 +239,12 @@ struct CLRect {
 {
     __weak typeof(self) weakSelf = self;
     NSString *imageUrl = [JFGSDK getCloudUrlWithFlag:ossType fileName:fileName];
+    UIImage *placeholderImage = realTimeSnapImg;
+    if (placeholderImage == nil) {
+        placeholderImage = self.backgroundImageView.image;
+    }
     
-    [self.backgroundImageView sd_setImageWithURL:[NSURL URLWithString:imageUrl] placeholderImage:realTimeSnapImg completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+    [self.backgroundImageView sd_setImageWithURL:[NSURL URLWithString:imageUrl] placeholderImage:placeholderImage completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
         
         if (!error) {
             
@@ -247,7 +267,7 @@ struct CLRect {
 //获取设置状态
 -(void)reqOriginRect
 {
-    //__weak typeof(self) weakSelf = self;
+    __weak typeof(self) weakSelf = self;
     [[JFGSDKDataPoint sharedClient] robotGetSingleDataWithPeer:self.cid msgIds:@[@519] success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
         
         for (NSArray *subArr in idDataList) {
@@ -260,27 +280,33 @@ struct CLRect {
                         
                         NSArray *sourceArr = obj;
                         if (sourceArr.count>1) {
-                            self.isOpenAreaDetection = [sourceArr[0] boolValue];
-                            NSArray *rects = sourceArr[1];
-                            if ([rects isKindOfClass:[NSArray class]] && rects.count>0) {
+                            weakSelf.isOpenAreaDetection = [sourceArr[0] boolValue];
+                            isOpenRegionalizationForRemote = [sourceArr[0] boolValue];
+                            if (weakSelf.isOpenAreaDetection) {
                                 
-                                NSArray *rect = rects[0];
-                                if ([rect isKindOfClass:[NSArray class]] && rect.count>3) {
-                                    areaDetectionRect.ltx = [rect[0] floatValue];
-                                    areaDetectionRect.lty = [rect[1] floatValue];
-                                    areaDetectionRect.rbx = [rect[2] floatValue];
-                                    areaDetectionRect.rby = [rect[3] floatValue];
+                                NSArray *rects = sourceArr[1];
+                                if ([rects isKindOfClass:[NSArray class]] && rects.count>0) {
+                                    
+                                    NSArray *rect = rects[0];
+                                    if ([rect isKindOfClass:[NSArray class]] && rect.count>3) {
+                                        areaDetectionRect.ltx = [rect[0] floatValue];
+                                        areaDetectionRect.lty = [rect[1] floatValue];
+                                        areaDetectionRect.rbx = [rect[2] floatValue];
+                                        areaDetectionRect.rby = [rect[3] floatValue];
+                                        areaDetectionRectForRemote.ltx = areaDetectionRect.ltx;
+                                        areaDetectionRectForRemote.lty = areaDetectionRect.lty;
+                                        areaDetectionRectForRemote.rbx = areaDetectionRect.rbx;
+                                        areaDetectionRectForRemote.rby = areaDetectionRect.rby;
+                                    }
+                                    
                                 }
                                 
-                                
-                                
+                            }else{
+                                [weakSelf initializeSnapSize];
                             }
                         }
-                        
                     }
-                    
                 }
-                
             }
         }
         
@@ -291,15 +317,12 @@ struct CLRect {
     }];
 }
 
--(void)setRectToServer
-{
-    
-}
-
 //默认状态,未打开区域侦测状态
 -(void)defaultState
 {
     self.draggableView.hidden = YES;
+    //设置编辑框恢复默认
+    //[self initializeSnapSize];
     self.detectDefaultBtn.hidden = YES;
     self.tipView.hidden = YES;
     self.openDetectView.hidden = NO;
@@ -333,6 +356,7 @@ struct CLRect {
 
 -(void)backAction
 {
+    [self stopLoadingAnimation];
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
@@ -367,22 +391,35 @@ struct CLRect {
     DataPointSeg *seg = [DataPointSeg new];
     seg.msgId = 519;
     
+    self.doneBtn.enabled = NO;
+    self.detectDefaultBtn.enabled = NO;
     
-    //最高保留三位小数
-    seg.value = [MPMessagePackWriter writeObject:@[@(self.isOpenAreaDetection),
-        @[@[
-              @(floorf(areaDetectionRect.ltx*1000) / 1000),@(floorf(areaDetectionRect.lty*1000) / 1000),@(floorf(areaDetectionRect.rbx*1000) / 1000),@(floorf(areaDetectionRect.rby*1000) / 1000)]]] error:nil];
+    [self performSelector:@selector(setTimeout) withObject:nil afterDelay:30];
+    
+    //最高保留三位小数。防止大于1
+    CGFloat ltx = MIN(floorf(areaDetectionRect.ltx*1000) / 1000, 1);
+    CGFloat lty = MIN(floorf(areaDetectionRect.lty*1000) / 1000, 1);
+    CGFloat rbx = MIN(floorf(areaDetectionRect.rbx*1000) / 1000, 1);
+    CGFloat rby = MIN(floorf(areaDetectionRect.rby*1000) / 1000, 1);
+    NSArray *arr = @[@(self.isOpenAreaDetection),
+                     @[@[  @(ltx),
+                           @(lty),
+                           @(rbx),
+                           @(rby)]]];
+    
+    seg.value = [MPMessagePackWriter writeObject:arr error:nil];
     
     __weak typeof(self) weakSelf = self;
     [[JFGSDKDataPoint sharedClient] robotSetDataWithPeer:self.cid dps:@[seg] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
         
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(setTimeout) object:nil];
         for (DataPointIDVerRetSeg *seg in dataList) {
             
             if (seg.ret == 0) {
                 [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"PWD_OK_2"]];
                 
-                if (self.delegate && [self.delegate respondsToSelector:@selector(updateAreaDetection)]) {
-                    [self.delegate updateAreaDetection];
+                if (weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(updateAreaDetection)]) {
+                    [weakSelf.delegate updateAreaDetection];
                 }
                 
                 int64_t delayInSeconds = 1.5;
@@ -393,6 +430,8 @@ struct CLRect {
                     
                 });
                 
+                [MTA trackCustomKeyValueEvent:@"DevSetting_regionAlarmSuccess" props:@{}];
+                
             }else{
                 [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_FAILED"]];
             }
@@ -401,14 +440,41 @@ struct CLRect {
         
     } failure:^(RobotDataRequestErrorType type) {
         
-        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_FAILED"]];
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(setTimeout) object:nil];
+        [weakSelf setTimeout];
         
     }];
+}
+
+-(void)setTimeout
+{
+    self.doneBtn.enabled = YES;
+    self.detectDefaultBtn.enabled = YES;
+    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_FAILED"]];
 }
 
 -(void)addDragAction
 {
     self.isOpenAreaDetection = YES;
+    
+    if (isOpenRegionalizationForRemote) {
+        
+        CGFloat x = areaDetectionRectForRemote.ltx * snapSize.width;
+        CGFloat y = areaDetectionRectForRemote.lty * snapSize.height;
+        CGFloat width1 = areaDetectionRectForRemote.rbx * snapSize.width - x;
+        CGFloat height1 = areaDetectionRectForRemote.rby * snapSize.height - y;
+        self.draggableView.frame = CGRectMake(x, y, width1, height1);
+        
+    }else{
+        
+        [self initializeSnapSize];
+        self.draggableView.frame = CGRectMake(0, 0, 209, 139);
+        self.draggableView.x = MAX(self.view.width, self.view.height)*0.5;
+        self.draggableView.y = MIN(self.view.width, self.view.height)*0.5;
+    }
+    
+    
+    
     [self setState];
 }
 
@@ -504,9 +570,9 @@ struct CLRect {
 {
     if (!_draggableView) {
         _draggableView = [[JFGDraggableView alloc]initWithFrame:CGRectMake(0, 0, 418*0.5, 278*0.5)];
-        _draggableView.x = self.view.height*0.5;
-        _draggableView.y = self.view.width*0.5;
-        _draggableView.minDragViewSize = CGSizeMake(80, 80);
+        _draggableView.x = MAX(self.view.width, self.view.height)*0.5;
+        _draggableView.y = MIN(self.view.width, self.view.height)*0.5;
+        _draggableView.minDragViewSize = CGSizeMake(100, 100);
         _draggableView.hint = [JfgLanguage getLanTextStrByKey:@"DETECTION_AREA_GUIDE"];
         _draggableView.backgroundColor = [[UIColor colorWithHexString:@"#fa0a0a"] colorWithAlphaComponent:0.3];
     }
@@ -603,16 +669,31 @@ struct CLRect {
 - (void)viewWillAppear:(BOOL)animated
 {
     [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationSlide];
-    //self.navigationController.navigationBarHidden = YES;
     isAppear = YES;
     [super viewWillAppear:animated];
 }
 
+-(void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [UIApplication sharedApplication].idleTimerDisabled = YES;
+    int64_t delayInSeconds = 1.0;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+        
+        if (isAppear) {
+            [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationSlide];
+        }
+    
+        
+    });
+   
+    isAppear = YES;
+}
+
 - (void)viewWillDisappear:(BOOL)animated
 {
-    //self.navigationController.navigationBarHidden = NO;
-     [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationSlide];
-    [self stopLoadingAnimation];
+    [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationSlide];
     isAppear = NO;
     [super viewWillDisappear:animated];
 }
@@ -621,6 +702,8 @@ struct CLRect {
 {
     [super viewDidDisappear:animated];
     [ProgressHUD dismiss];
+    isAppear = NO;
+    [UIApplication sharedApplication].idleTimerDisabled = NO;
 }
 
 -(void)loadDiskImage
@@ -633,8 +716,6 @@ struct CLRect {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self layouForSnapImage:image];
             });
-        }else{
-            realTimeSnapImg = self.backgroundImageView.image;
         }
         
     });
@@ -675,12 +756,12 @@ struct CLRect {
 //
 //支持的方向
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
-    return UIInterfaceOrientationMaskLandscapeLeft;
+    return UIInterfaceOrientationMaskLandscapeRight;
 }
 
 //一开始的方向  很重要
 -(UIInterfaceOrientation)preferredInterfaceOrientationForPresentation{
-    return UIInterfaceOrientationLandscapeLeft;
+    return UIInterfaceOrientationLandscapeRight;
 }
 
 /*

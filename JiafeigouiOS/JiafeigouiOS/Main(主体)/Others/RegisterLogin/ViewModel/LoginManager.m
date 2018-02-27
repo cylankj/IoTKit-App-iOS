@@ -27,6 +27,8 @@
 #import "LSAlertView.h"
 #import "MsgForAIRequest.h"
 #import "OemManager.h"
+#import "MTA.h"
+#import <JFGSDK/MPMessagePackReader.h>
 
 static NSString * const JFGLoginStatuRecodeKey = @"JFGLOGINMARKFORUSERDEFAULT";
 static NSString * const JFGLoginSessionKey = @"JFGLoginSessionKey";
@@ -46,7 +48,13 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     JFGSDKAcount *cacheAccount;
     BOOL isLoadingUserheadImageing;
     MsgForAIRequest *msgAIRequest;
+    
+    
+    int aiAuthTokenTime;
 }
+
+@property (nonatomic,copy)NSString *aiReqAuthToken;
+
 @end
 
 @implementation LoginManager
@@ -69,6 +77,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     msgAIRequest = [[MsgForAIRequest alloc]init];
     msgAIRequest.delegate = self;
     [msgAIRequest addJfgDelegate];
+    aiAuthTokenTime = 0;
     //NSInteger loginStatu = [[[NSUserDefaults standardUserDefaults] objectForKey:JFGAccountLoginStatueSaveKey] intValue];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationDidEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationDidEnterBackground) name:UIApplicationWillTerminateNotification object:nil];
@@ -90,6 +99,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     self.loginType = JFGSDKLoginTypeAccountLogin;
     isAutoLogin = NO;
     JFGErrorType error = [JFGSDK userLogin:account keyword:password cerType:[ApnsManger certType]];
+    [MTA trackCustomKeyValueEvent:@"Login_start" props:@{@"signType":@"account"}];
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"userLoginForSelf:%@",account]];
     NSLog(@"LoginReqResult:%lu",(unsigned long)error);
     [UserAccountMsg saveAccount:account withPw:password];
@@ -192,23 +202,35 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
         
         int tp = 0;
        
+        NSString *logtype = @"";
         switch (loginType) {
-            case 1://qq
+            case 1:{//qq
                 tp = 3;
+                logtype = @"QQ";
+            }
                 break;
-            case 2://sinaweibo
+            case 2:{//sinaweibo
                 tp = 4;
+                logtype = @"SinaWeibo";
+            }
                 break;
-            case 3:
-                tp=6;//
+            case 3:{
+                tp=6;//Twitter
+                logtype = @"Twitter";
+            }
                 break;
-            case 4:
+            case 4:{
                 tp=7;//facebook
+                logtype = @"Facebook";
+            }
                 break;
             default:
                 break;
         }
         [JFGSDK openLoginWithOpenId:user.linkId accessToken:accessToken cerType:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"certType"] loginType:tp];
+        
+        [MTA trackCustomKeyValueEvent:@"Login_start" props:@{@"signType":logtype}];
+        
         [Bugly setUserValue:user.linkId forKey:@"account"];
         self.loginStatus = JFGSDKCurrentLoginStatusSuccess;
         
@@ -246,6 +268,9 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
         [[NSUserDefaults standardUserDefaults] removeObjectForKey:JFGOpenLoginAccessToken];
     }
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"AppLoginOut:%@",currentAccount]];
+    
+    //AI请求token置空
+    aiAuthTokenTime = 0;
     
     return isSuccess;
 }
@@ -312,6 +337,8 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
                 currentAccount = lastAccount;
                 isAutoLogin = YES;
                 [JFGSDK userLogin:lastAccount keyword:key cerType:[ApnsManger certType]];
+                [MTA trackCustomKeyValueEvent:@"Login_start" props:@{@"signType":@"account"}];
+                
                 [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"userLoginForAuto:%@",lastAccount]];
             }
             
@@ -330,6 +357,7 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
                 isAutoLogin = YES;
                 
                 [JFGSDK userLogin:account keywordForMD5:pw cerType:[ApnsManger certType]];
+                [MTA trackCustomKeyValueEvent:@"Login_start" props:@{@"signType":@"account"}];
                 [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"use2.0LoginForAccount:%@",account]];
                 
             }
@@ -371,15 +399,19 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
                     if (self.loginType == JFGSDKLoginTypeOpenLoginForQQ) {
                         
                     [JFGSDK openLoginWithOpenId:linkID accessToken:accessToken cerType:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"certType"] loginType:3];
+                    [MTA trackCustomKeyValueEvent:@"Login_start" props:@{@"signType":@"QQ"}];
                         
                     }else if(self.loginType == JFGSDKLoginTypeOpenLoginForSinaWeibo){
                         
                          [JFGSDK openLoginWithOpenId:linkID accessToken:accessToken cerType:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"certType"] loginType:4];
+                        [MTA trackCustomKeyValueEvent:@"Login_start" props:@{@"signType":@"SinaWeibo"}];
                         
                     }else if (self.loginType == JFGSDKLoginTypeOpenLoginForTwitter){
                         [JFGSDK openLoginWithOpenId:linkID accessToken:accessToken cerType:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"certType"] loginType:6];
+                        [MTA trackCustomKeyValueEvent:@"Login_start" props:@{@"signType":@"Twitter"}];
                     }else if (self.loginType == JFGSDKLoginTypeOpenLoginForFacebook){
                         [JFGSDK openLoginWithOpenId:linkID accessToken:accessToken cerType:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"certType"] loginType:7];
+                        [MTA trackCustomKeyValueEvent:@"Login_start" props:@{@"signType":@"Facebook"}];
                     }
                     
                 }else{
@@ -429,11 +461,15 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
         [JFGSDK checkClientVersion];
         [self getRobotHost];
         
-//        NSString *url = [JFGSDK getCloudUrlWithFlag:0 fileName:@"/7day/0001/testmdm1@126.com/AI/290100000009/1510795060_165.jpg"];
-//        NSLog(@"%@",url);
+        if (aiAuthTokenTime<[[NSDate date] timeIntervalSince1970]) {
+            [JFGSDK sendUniversalData:[NSData data] cid:@"" forMsgID:14];
+        }
+        
+        [MTA trackCustomKeyValueEvent:@"Login_result" props:@{@"result":@"success"}];
     
     }else{
         
+        [MTA trackCustomKeyValueEvent:@"Login_result" props:@{@"result":@"failed"}];
         [UserAccountMsg deleteWithAccount:currentAccount];
         [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"AppLoginOut:%@",currentAccount]];
         currentLoginStatu = NO;
@@ -551,6 +587,27 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
         
     }];
    
+}
+
+-(void)jfgOnUniversalData:(NSData *)msgData msgID:(int)mid seq:(long)seq
+{
+    if (![msgData isKindOfClass:[NSData class]]) {
+        return;
+    }
+    if (mid == 14) {
+        
+        NSArray *objArr = [MPMessagePackReader readData:msgData error:nil];
+        if ([objArr isKindOfClass:[NSArray class]] && objArr.count>1) {
+            
+            NSString *token = objArr[0];
+            int time = [objArr[1] intValue];
+            if ([token isKindOfClass:[NSString class]] && ![token isEqualToString:@""]) {
+                self.aiReqAuthToken = token;
+            }
+            aiAuthTokenTime = time;
+            
+        }
+    }
 }
 
 -(JFGSDKAcount *)accountCache
@@ -719,6 +776,15 @@ static NSString * const JFGOpenexpiredDateKey = @"JFGOpenexpiredDateKey";
     }
     
 }
+
+-(NSString *)aiReqAuthToken
+{
+    if (!_aiReqAuthToken) {
+        _aiReqAuthToken = @"JFG_SERVER_PASS_TOKEN_x20180124x";
+    }
+    return _aiReqAuthToken;
+}
+
 #pragma mark- 授权登录失败提示
 -(void)authorizationfailedAlert
 {

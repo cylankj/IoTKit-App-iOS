@@ -22,7 +22,6 @@
 /*!
  *  登录结果
  *
- *  @param ssession  用户登录session,只在登录成功时有效
  *  @param errorType  可能的值为 JFGErrorTypeNone(登录成功), JFGErrorTypeLoginInvalidPass, JFGErrorTypeLoginInvalidSession
  */
 -(void)jfgLoginResult:(JFGErrorType)errorType;
@@ -294,8 +293,8 @@
 /**
  *  好友请求相关回调
  *
- *  @param type      返回类型
- *  @param errorType 结果
+ *  @param type       返回类型
+ *  @param errorType  结果
  */
 -(void)jfgResultIsRelatedToFriendWithType:(JFGFriendResultType)type error:(JFGErrorType)errorType;
 

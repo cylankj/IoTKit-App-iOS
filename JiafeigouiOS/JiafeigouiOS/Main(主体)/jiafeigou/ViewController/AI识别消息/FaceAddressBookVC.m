@@ -63,13 +63,22 @@
 -(void)msgForAIFamiliarPersons:(NSArray<FamiliarPersonsModel *> *)models total:(int)total
 {
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(loadingTimeout) object:nil];
-    if (models.count) {
+    NSMutableArray *newModels = [NSMutableArray new];
+    for (FamiliarPersonsModel *md in models) {
+        
+        if (md.strangerArr.count) {
+            [newModels addObject:md];
+        }
+        
+    }
+    
+    if (newModels.count) {
         [ProgressHUD dismiss];
         self.contactTableView.hidden = NO;
         self.noDataView.hidden = YES;
         
-        self.indexArray = [BMChineseSort IndexWithArray:models Key:@"person_name"];
-        self.dataArray = [BMChineseSort sortObjectArray:models Key:@"person_name"];
+        self.indexArray = [BMChineseSort IndexWithArray:newModels Key:@"person_name"];
+        self.dataArray = [BMChineseSort sortObjectArray:newModels Key:@"person_name"];
         
         if ([self.person_id isKindOfClass:[NSString class]]) {
             
@@ -120,11 +129,26 @@
         __weak typeof(self) weakSelf = self;
         NSArray *sectionArr = self.dataArray[_indexPath.section];
         FamiliarPersonsModel *model = sectionArr[_indexPath.row];
-        [AIRobotRequest robotAddFace:self.face_id toPerson:model.person_id cid:self.cid sucess:^(id responseObject) {
+        
+        LoginManager *loginManag = [LoginManager sharedManager];
+        NSMutableDictionary *patameters = [NSMutableDictionary new];
+        [patameters setObject:@"RegisterByFaceID" forKey:@"action"];
+        [patameters setObject:loginManag.aiReqAuthToken forKey:@"auth_token"];
+        int64_t time = [[NSDate date] timeIntervalSince1970];
+        [patameters setObject:@(time) forKey:@"time"];
+        [patameters setObject:model.person_name forKey:@"person_name"];
+        JFGSDKAcount *acc =[loginManag accountCache];
+        NSString *account = acc.account;
+        [patameters setObject:account forKey:@"account"];
+        [patameters setObject:self.cid forKey:@"cid"];
+        [patameters setObject:self.face_id forKey:@"face_id"];
+        [patameters setObject:model.person_id forKey:@"person_id"];
+        
+        [AIRobotRequest afNetWorkingForAIRobotWithUrl:[AIRobotRequest aiServiceReqUrl] patameters:patameters sucess:^(id responseObject) {
             if ([responseObject isKindOfClass:[NSDictionary class]]) {
                 NSDictionary *dict = responseObject;
-                int ret = [dict[@"ret"] intValue];
-                if (ret == 0) {
+                int ret = [dict[@"code"] intValue];
+                if (ret == 200) {
                     
                     if (weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(faceAddressSelectedPersonForIndex:)]) {
                         [weakSelf.delegate faceAddressSelectedPersonForIndex:weakSelf.selectedIndexPath];
@@ -150,10 +174,16 @@
             }
             //
             [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_FAILED"]];
-            
         } failure:^(NSError *error) {
             [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_FAILED"]];
         }];
+        
+//        [AIRobotRequest robotAddFace:self.face_id toPerson:model.person_id cid:self.cid sucess:^(id responseObject) {
+//
+//
+//        } failure:^(NSError *error) {
+//
+//        }];
     }
 }
 

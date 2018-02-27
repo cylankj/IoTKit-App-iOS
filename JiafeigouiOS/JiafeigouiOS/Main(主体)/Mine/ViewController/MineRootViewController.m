@@ -50,6 +50,7 @@
 #import "UITabBar+badge.h"
 #import "JFGSettingViewController.h"
 #import "OemManager.h"
+#import "MTA.h"
 
 #define HeadImageHeight 75
 #define HeadAndName 103
@@ -604,6 +605,7 @@
             FriendsMainVC *friends = [FriendsMainVC new];
             friends.hidesBottomBarWhenPushed = YES;
             [self.navigationController pushViewController:friends animated:YES];
+            [MTA trackCustomKeyValueEvent:@"Me_friend" props:@{}];
         }
             break;
         case 1:
@@ -611,6 +613,8 @@
             ShareManagerMainVC *share = [ShareManagerMainVC new];
             share.hidesBottomBarWhenPushed = YES;
             [self.navigationController pushViewController:share animated:YES];
+            [MTA trackCustomKeyValueEvent:@"Me_shareManager" props:@{}];
+            
         }
             break;
         case 2:{

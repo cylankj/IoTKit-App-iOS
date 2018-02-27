@@ -24,6 +24,8 @@
 @property (nonatomic, copy) NSString *timeString; 
 @property (nonatomic, copy) NSString *textString;
 
+@property (nonatomic, copy)NSString *otherMsg;
+
 /**
  *  三张 图片
  */
@@ -60,5 +62,14 @@
 @property (nonatomic,strong)NSArray *face_idList;
 @property (nonatomic,strong)NSString *aiMsg;
 @property (nonatomic,copy)NSString *aiImageUrl;
+@property (nonatomic,copy)NSString *person_name;
+
+@end
+
+@interface faceProperty:NSObject
+
+@property (nonatomic,copy)NSString *name;
+@property (nonatomic,copy)NSString *sex;
+@property (nonatomic,copy)NSString *age;
 
 @end

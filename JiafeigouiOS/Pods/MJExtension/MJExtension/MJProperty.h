@@ -18,7 +18,7 @@
 /** 成员属性 */
 @property (nonatomic, assign) objc_property_t property;
 /** 成员属性的名字 */
-@property (nonatomic, readonly, copy) NSString *name;
+@property (nonatomic, readonly) NSString *name;
 
 /** 成员属性的类型 */
 @property (nonatomic, readonly) MJPropertyType *type;

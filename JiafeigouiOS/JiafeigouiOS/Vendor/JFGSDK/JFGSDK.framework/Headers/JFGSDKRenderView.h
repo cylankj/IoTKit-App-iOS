@@ -51,13 +51,13 @@ typedef NS_ENUM(NSInteger,PanoramaCameraParam){
 };
 
 
-#pragma mark- 普通渲染视图
+#pragma mark- 普通渲染视图 -
 @interface VideoRenderIosView : UIView
 
 @end
 
 
-#pragma mark- 单鱼眼渲染视图
+#pragma mark- 单鱼眼渲染视图 -
 @interface PanoramicIosView : GLKView
 
 // 初始化全景view
@@ -87,7 +87,7 @@ typedef NS_ENUM(NSInteger,PanoramaCameraParam){
 @end
 
 
-#pragma mark- RS单鱼眼渲染视图（支持多种视图模式）
+#pragma mark- RS单鱼眼渲染视图（支持多种视图模式） -
 @interface PanoramicIosViewRS : GLKView
 
 // 初始化全景view
@@ -123,7 +123,7 @@ typedef NS_ENUM(NSInteger,PanoramaCameraParam){
 @end
 
 
-#pragma mark- 双鱼眼视图渲染
+#pragma mark- 双鱼眼视图渲染 -
 @interface Panoramic720IosView : GLKView
 
 // 初始化全景view
@@ -160,6 +160,3 @@ typedef NS_ENUM(NSInteger,PanoramaCameraParam){
 
 @end
 
-@interface JFGSDKRenderView : NSObject
-
-@end

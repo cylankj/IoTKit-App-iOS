@@ -28,7 +28,6 @@
 					<integer>1092</integer>
 					<integer>1346</integer>
 					<integer>1347</integer>
-					<string>2901</string>
 				</array>
 				<key>cidPrefixList</key>
 				<array>
@@ -67,6 +66,7 @@
 				</array>
 				<key>osList</key>
 				<array>
+					<string>82</string>
 					<integer>84</integer>
 					<real>1495</real>
 				</array>
@@ -83,9 +83,9 @@
 				<key>userActionTitle</key>
 				<string>Tap1_AddDevice_Outdoor_CameraTipsTitle</string>
 				<key>ledTitle</key>
-				<string>Tap1_AddDevice_CameraTips</string>
+				<string></string>
 				<key>ledState</key>
-				<string>BLINKING</string>
+				<string>HALF_CAMERA_ADD_TIPS</string>
 				<key>typeMark</key>
 				<integer>8</integer>
 				<key>中文名字</key>
@@ -162,6 +162,42 @@
 				<integer>2</integer>
 				<key>中文名字</key>
 				<string>720全景摄像机</string>
+				<key>oem</key>
+				<array>
+					<string>cylan</string>
+					<string>doby</string>
+				</array>
+			</dict>
+			<dict>
+				<key>osList</key>
+				<array>
+					<integer>92</integer>
+					<integer>1564</integer>
+				</array>
+				<key>cidPrefixList</key>
+				<array>
+					<string>2903</string>
+				</array>
+				<key>icon</key>
+				<string>add_icon_hemisphere</string>
+				<key>home_icon</key>
+				<string>home_icon_hemisphere</string>
+				<key>home_diable_icon</key>
+				<string>home_icon_hemisphere_disabled</string>
+				<key>gif</key>
+				<string>add_image_hemisphere</string>
+				<key>title</key>
+				<string>HALF_CAMERA</string>
+				<key>userActionTitle</key>
+				<string>Tap1_AddDevice_Outdoor_CameraTipsTitle</string>
+				<key>ledTitle</key>
+				<string></string>
+				<key>ledState</key>
+				<string>HALF_CAMERA_ADD_TIPS</string>
+				<key>typeMark</key>
+				<integer>10</integer>
+				<key>中文名字</key>
+				<string>半球设备(wifi模块)</string>
 				<key>oem</key>
 				<array>
 					<string>cylan</string>
@@ -334,6 +370,42 @@
 				<integer>7</integer>
 				<key>中文名字</key>
 				<string>智能门铃（无电池版）</string>
+				<key>oem</key>
+				<array>
+					<string>cylan</string>
+					<string>doby</string>
+				</array>
+			</dict>
+			<dict>
+				<key>osList</key>
+				<array>
+					<integer>92</integer>
+					<integer>1564</integer>
+				</array>
+				<key>cidPrefixList</key>
+				<array>
+					<string>2903</string>
+				</array>
+				<key>icon</key>
+				<string>add_icon_hemisphere</string>
+				<key>home_icon</key>
+				<string>home_icon_hemisphere</string>
+				<key>home_diable_icon</key>
+				<string>home_icon_hemisphere_disabled</string>
+				<key>gif</key>
+				<string>add_image_wired</string>
+				<key>title</key>
+				<string>DOG_CAMERA_NAME</string>
+				<key>userActionTitle</key>
+				<string>DEVICE_WIRED_CONNECTION</string>
+				<key>ledTitle</key>
+				<string>WIRED_GUIDE</string>
+				<key>ledState</key>
+				<string>WIRED_MODE_CONNECTED</string>
+				<key>typeMark</key>
+				<integer>9</integer>
+				<key>中文名字</key>
+				<string>有线连接</string>
 				<key>oem</key>
 				<array>
 					<string>cylan</string>

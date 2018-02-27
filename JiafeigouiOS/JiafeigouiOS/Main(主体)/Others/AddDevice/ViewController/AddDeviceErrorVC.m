@@ -61,8 +61,6 @@
         }else{
             [self dismissViewControllerAnimated:YES completion:nil];
         }
-        
-        
     }else{
         
         BOOL isAlwaysJumped = NO;
@@ -121,6 +119,19 @@
             resultStr = [JfgLanguage getLanTextStrByKey:@"Clear_Sdcard_tips5"];
         }
             break;
+        case BindResultType_AlwaysBinded:{
+            
+            NSString *str = [JfgLanguage getLanTextStrByKey:@"OTHER_TIME"];
+            if ([self.errorMsg isKindOfClass:[NSString class]]) {
+                str = self.errorMsg;
+            }
+            
+            str = [NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"MSG_REBIND"],str];
+            resultStr = str;
+            
+            //MSG_REBIND
+        }
+            break;
         default:
         {
             resultStr = [JfgLanguage getLanTextStrByKey:@"NO_NETWORK_2"];
@@ -135,16 +146,17 @@
 {
     if (_errorLabel == nil)
     {
-        CGFloat widgetX = 0;
-        CGFloat widgetY = 215.0f;
-        CGFloat widgetWidth = Kwidth;
-        CGFloat widgetHeight = 22.f;
+        CGFloat widgetX = 10;
+        CGFloat widgetY = 190.0f;
+        CGFloat widgetWidth = Kwidth-20;
+        CGFloat widgetHeight = 50.f;
         
         _errorLabel = [[UILabel alloc] initWithFrame:CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight)];
+        _errorLabel.numberOfLines = 0;
         _errorLabel.textAlignment = NSTextAlignmentCenter;
         _errorLabel.text = [JfgLanguage getLanTextStrByKey:@"NO_NETWORK_2"];
         _errorLabel.textColor = [UIColor colorWithHexString:@"#333333"];
-        _errorLabel.font = [UIFont systemFontOfSize:widgetHeight];
+        _errorLabel.font = [UIFont systemFontOfSize:20];
     }
     return _errorLabel;
 }
@@ -167,6 +179,9 @@
         _reTryButton.layer.borderWidth = 1;
         [_reTryButton setTitleColor:[UIColor colorWithHexString:@"#4b9fd5"] forState:UIControlStateNormal];
         [_reTryButton setTitle:[JfgLanguage getLanTextStrByKey:@"TRY_AGAIN"] forState:UIControlStateNormal];
+        if (self.errorType == BindResultType_AlwaysBinded) {
+            [_reTryButton setTitle:[JfgLanguage getLanTextStrByKey:@"WELL_OK"] forState:UIControlStateNormal];
+        }
         _reTryButton.titleLabel.font = [UIFont systemFontOfSize:18];
         _reTryButton.isRelatingNetwork = NO;
         [_reTryButton addTarget:self action:@selector(reTryButtonAction) forControlEvents:UIControlEventTouchUpInside];

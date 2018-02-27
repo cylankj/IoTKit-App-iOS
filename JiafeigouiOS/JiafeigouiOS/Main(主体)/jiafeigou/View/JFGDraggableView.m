@@ -9,7 +9,7 @@
 #import "JFGDraggableView.h"
 #import "UIView+HFFoundation.h"
 
-static const CGFloat kHandleWH = 30;
+static const CGFloat kHandleWH = 48;
 
 @interface JFGDraggableView()<UIGestureRecognizerDelegate>
 {
@@ -185,10 +185,10 @@ static const CGFloat kHandleWH = 30;
 
 - (void)refreshHandles
 {
-    self.tlDragImageView.frame = CGRectMake(0, 0, 30, 30);
-    self.trDragImageView.frame = CGRectMake(self.bounds.size.width-30, 0, 30, 30);
-    self.blDragImageView.frame = CGRectMake(0, self.bounds.size.height-30, 30, 30);
-    self.brDragImageView.frame = CGRectMake(self.bounds.size.width-30, self.bounds.size.height-30, 30, 30);
+    self.tlDragImageView.frame = CGRectMake(0, 0, kHandleWH, kHandleWH);
+    self.trDragImageView.frame = CGRectMake(self.bounds.size.width-kHandleWH, 0, kHandleWH, kHandleWH);
+    self.blDragImageView.frame = CGRectMake(0, self.bounds.size.height-kHandleWH, kHandleWH, kHandleWH);
+    self.brDragImageView.frame = CGRectMake(self.bounds.size.width-kHandleWH, self.bounds.size.height-kHandleWH, kHandleWH, kHandleWH);
     self.panGRBgView.frame = CGRectMake(0, 0, self.bounds.size.width-kHandleWH*2, self.bounds.size.height-kHandleWH*2);
     self.panGRBgView.center = CGPointMake(self.bounds.size.width*0.5, self.bounds.size.height*0.5);
 }
@@ -253,6 +253,7 @@ static const CGFloat kHandleWH = 30;
     if (!_titleLabel) {
         _titleLabel = [[UILabel alloc]initWithFrame:CGRectMake(10, 10, self.bounds.size.width-20, 40)];
         _titleLabel.textColor = [UIColor whiteColor];
+        _titleLabel.textAlignment = NSTextAlignmentCenter;
         _titleLabel.font = [UIFont systemFontOfSize:16];
         _titleLabel.numberOfLines = 0;
         //_titleLabel.text = @"拖拽红色方框，设置侦测区域，哈哈哈";

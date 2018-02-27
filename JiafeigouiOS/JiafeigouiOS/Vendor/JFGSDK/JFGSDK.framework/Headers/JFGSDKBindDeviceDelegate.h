@@ -24,6 +24,8 @@ typedef NS_ENUM (NSInteger,JFGSDKBindindProgressStatus){
     
     JFGSDKBindindProgressStatusCIDNotExist = 200,//CID不存在。关联消息：客户端绑定
     JFGSDKBindindProgressStatusCIDBinding,// 绑定中，正在等待摄像头上传随机数与CID关联关系，随后推送绑定通知
+    JFGSDKBindindProgressStatusCIDBinded = 204,//设备已经被其他账号绑定
+    
     
 };
 
@@ -50,7 +52,7 @@ typedef NS_ENUM (NSInteger,JFGSDKBindindProgressStatus){
  *
  *  @param errorCode 错误码
  */
--(void)jfgBindDeviceFailed:(JFGSDKBindindProgressStatus)errorType;
+-(void)jfgBindDeviceFailed:(JFGSDKBindindProgressStatus)errorType errorMsg:(NSString *)errorMsg;
 
 /**
  *  绑定成功

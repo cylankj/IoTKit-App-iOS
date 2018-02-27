@@ -18,7 +18,7 @@ static float sixMinuteWidth = 7;
 {
     NSDateComponents *dataComponent = [self dateComponentsFromTimestamp:self.startTimestamp];
     float offset_y = dataComponent.hour*oneHourWidth+(dataComponent.minute/6.0)*sixMinuteWidth;
-    return offset_y;
+    return floor(offset_y*100) / 100;
 }
 
 -(float)endPosition

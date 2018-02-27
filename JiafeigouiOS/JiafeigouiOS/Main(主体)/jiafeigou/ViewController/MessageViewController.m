@@ -504,9 +504,11 @@
         isEditing = YES;
         [self hideRefreshController];
         [self.view addSubview:self.bottomSelectView];
+        self.contentTableView.editing = YES;
+        
         [UIView animateWithDuration:0.33f animations:^{
             [self.bottomSelectView setFrame:CGRectMake(0, self.view.frame.size.height-50, Kwidth, 50)];
-            self.contentTableView.editing = YES;
+            
             [self.contentTableView setFrame:CGRectMake(0, self.topLineLabel.bottom, Kwidth, kheight-64-44-0.5-50)];
         } completion:^(BOOL finished) {
             [self.contentTableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
@@ -516,13 +518,13 @@
         }
 
     }else{
-        [self.contentTableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
         isEditing = NO;
-        [self showRefreshController];
         self.selectAllButton.selected = NO;
+        self.contentTableView.editing = NO;
+        [self.contentTableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
+        [self showRefreshController];
         [UIView animateWithDuration:0.33f animations:^{
             [self.bottomSelectView setFrame:CGRectMake(0, self.view.frame.size.height, Kwidth, 50)];
-            self.contentTableView.editing = NO;
             [self.contentTableView setFrame:CGRectMake(0, self.topLineLabel.bottom, Kwidth, kheight-64-44-0.5)];
         } completion:^(BOOL finished) {
             [self.bottomSelectView removeFromSuperview];
@@ -1472,7 +1474,7 @@
     }else{
         cell.deleteBtn.alpha = 1;
     }
-    //cell.contentLabel.text = @"测试文字测试文字测试文字测试文字测试文字测试文字测试文字测试文字测试文字测试文字";
+   
 
     __weak typeof(self) weakSelf = self;
     [UIButton button:cell.deleteBtn touchUpInSideHander:^(UIButton *button) {
@@ -1483,6 +1485,13 @@
     cell.avBtn.tag = indexPath.row+223;
     [cell.avBtn removeTarget:self action:@selector(lookHistoryVideo:) forControlEvents:UIControlEventTouchUpInside];
     [cell.avBtn addTarget:self action:@selector(lookHistoryVideo:) forControlEvents:UIControlEventTouchUpInside];
+    
+    [cell.label mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(@37);
+        make.top.equalTo(@22);
+        make.width.mas_greaterThanOrEqualTo(@36);
+        make.height.equalTo(@14);
+    }];
     
     return cell;
 }
@@ -1504,7 +1513,7 @@
     {
         case 1: //一张
         {
-            height = 234*designWscale;
+            height = 218;
         }
             break;
         case 2: //二张

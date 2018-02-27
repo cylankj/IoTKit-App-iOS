@@ -147,6 +147,20 @@
     }];
     [self.topBarBgView layoutIfNeeded];
     [self setColorAccordingToCalendar];
+    
+}
+
+-(void)showBackBtn
+{
+    if (self.backBtn.superview == nil) {
+        [self.topBarBgView addSubview:self.backBtn];
+    }
+    [self.backBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(@2);
+        make.centerY.mas_equalTo(self.topBarBgView.mas_bottom).offset(-22);
+        make.height.greaterThanOrEqualTo(@50);
+        make.width.greaterThanOrEqualTo(@50);
+    }];
 }
 
 -(UIView *)topBarBgView

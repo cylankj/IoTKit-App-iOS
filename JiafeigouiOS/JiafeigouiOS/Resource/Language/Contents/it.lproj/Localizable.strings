@@ -1,6 +1,6 @@
 /* it.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
+Created by cylan language tool  on Mon Feb 05 17:41:29 CST 2018.  
 */
 "GLOBAL_NO_NETWORK" = "Nessuna Connessione";
 "REPEAT_TIME" = "%d Secondi";
@@ -165,7 +165,7 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MSG_SYSTEM_UPGRADE" = "Grande! Il Sistema è stato aggiornato a V%@";
 "MSG_WARN_ON" = "Rilevatore di movimento attivato. L\'apparecchio ti informerà appena qualcosa si muove";
 "MSG_WARN_OFF" = "Rilevatore di movimento disattivato";
-"MSG_WARNING" = "Ricerca in corso…";
+"MSG_WARNING" = "Nuovi messaggi";
 "MSG_REBIND" = "Dispositivo aggiunto da %@ . Per aiuto contatta il servizio clienti";
 "LARGER_IMAGE" = "Clicca sull\'immagine per ingrandire";
 "DELETE_SURE" = "Sei sicuro di voler cancellara?";
@@ -1125,8 +1125,8 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MESSAGES_TIME_HOUR" = "%@ h fa";
 "MESSAGES_TIME_DAY" = "%@ gior fa";
 "MESSAGES_FACE_IDENTIFY" = "Identificare";
-"MESSAGES_IDENTIFY_POP" = "Nuova faccia, o aggiungendo a un volto esistente, migliora l\'esattezza del riconoscimento facciale";
-"MESSAGES_IDENTIFY_CREATE_BTN" = "Nuova faccia";
+"MESSAGES_IDENTIFY_POP" = "Registrati faccia, o aggiungendo a un volto esistente, migliora l\'esattezza del riconoscimento facciale";
+"MESSAGES_IDENTIFY_CREATE_BTN" = "Registrati faccia";
 "MESSAGES_IDENTIFY_ADD_BTN" = "Aggiungi al volto esistente";
 "MESSAGES_DELETE_POP" = "Eliminare il volto e tutti i messaggi correlati?";
 "MESSAGES_DELETE_FACE_BTN" = "Togliere la faccia";
@@ -1165,3 +1165,40 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "DOOR_WRONG_PSW" = "password errata";
 "DOOR_WRONG_PSW_MSG" = "Password porta errata";
 "DETECTION_AREA_FAILED_LOAD_RETRY" = "non riescono a ottenere l\'immagine dal vivo, quindi non può impostare l\'area, per favore riprova.";
+"WIRED_GUIDE" = "Usare un cavo di rete per collegare il dispositivo e router, assicurarsi dispositivo e APP utilizzare stessa rete";
+"WIRED_SELECT_DEVICE_CID" = "Selezionare CID dispositivo";
+"WIRED_SELECT_DEVICE_CID_TIPS" = "CID dispositivo";
+"DEVICE_WIRED_CONNECTION" = "Connessione via cavo";
+"HALF_CAMERA_ADD_TIPS" = "Premere a lungo 3 secondi";
+"HALF_CAMERA" = "camera semisferica";
+"FACE_COLLAPSE" = "Crollo";
+"WIRED_UPGRADE_NON_LAN" = "Si prega di collegare il telefono e il dispositivo alla stessa rete prima della configurazione";
+"MESSAGES_FACE_ANALYSIS" = "Analisi del flusso passeggeri";
+"MESSAGES_FACE_TADAY_VISIT" = "Visita di oggi";
+"MESSAGES_FACE_YESTERDAY_VISIT" = "La visita di ieri";
+"MESSAGES_FACE_NEW_VISIT" = "Nuovi visitatori";
+"MESSAGES_FACE_PEOPLE" = "persone";
+"CLOSE_BUTTON" = "Vicino";
+"MESSAGES_FILTER_STRANGER" = "I visitatori";
+"MESSAGES_REGISTER_FACE" = "Registrati faccia";
+"MESSAGES_GENDER_MALE" = "Maschio";
+"MESSAGES_GENDER_FEMALE" = "Femmina";
+"MESSAGES_AGE" = "%@ anni";
+"REGISTER_FACE_TIPS" = "Si prega di caricare una foto chiara del viso";
+"MESSAGES_EXPLAIN" = "Esempio di immagine";
+"MESSAGES_POSITIVE_FACE" = "Faccia positiva";
+"MESSAGES_SIDE_FACE" = "Faccia laterale";
+"MESSAGES_BLURRY" = "Sfocato";
+"REGISTRATION_SECCESS" = "Registrazione avvenuta";
+"CONTINUE_REGISTER" = "Continua a registrarti";
+"WRONG_FORMAT" = "Formato sbagliato, solo supporto .jpg/.png/.bmp";
+"FACE_NOT_RECOGNIZED" = "Volto non riconosciuto";
+"REGFACE_MULTIFACE" = "Troppi volti, non riconosciuti";
+"REGFACE_FACESMALL" = "La faccia è troppo piccola";
+"REGFACE_NOFACE" = "Nessun volto rilevato";
+"REGISTRATION_FAILED" = "Registrati faccia fallita";
+"FACE_RECOGNITION" = "Riconoscimento facciale";
+"DOWNLOAD_MSG_PICTURE" = "Scarica l\'immagine del messaggio";
+"DOWNLOAD_MSG_PICTURE_EXPLAIN" = "Dopo la chiusura, il messaggio di allarme riconoscimento facciale non verrà scaricato";
+"SUCCESS_REGFACE" = "Faccia registrata con successo %@";
+"ADD_EXISTINGFACE_BEYOND10" = "aggiungi solo fino a 10 volti";

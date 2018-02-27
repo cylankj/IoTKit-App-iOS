@@ -68,7 +68,7 @@
                     
                     if (values.count > 5) {
                         messageModel.objects = [values objectAtIndex:5];
-                        NSLog(@"renxingjiance:%@",messageModel.objects);
+                        //NSLog(@"renxingjiance:%@",messageModel.objects);
                     }else{
                         messageModel.objects = nil;
                     }

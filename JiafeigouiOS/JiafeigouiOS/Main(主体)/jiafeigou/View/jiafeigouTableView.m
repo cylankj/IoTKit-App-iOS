@@ -723,12 +723,6 @@
     if (viewControler)
     {
         JiafeigouDevStatuModel *dev = [self.dataArray objectAtIndex:indexPath.row];
-//        BOOL isFromOthers = (dev.shareState == DevShareStatuOther);
-//        
-//        if (dev.unReadMsgCount !=0 ) {
-//            //dev.unReadMsgCount = 0;
-//            //[tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
-//        }
         
         switch (dev.deviceType)
         {
@@ -1081,7 +1075,7 @@
         }else{
             
             //NSMutableArray *unReadMsgIDArr = [NSMutableArray new];
-            for (int i =  1001; i<=1005; i++) {
+            for (int i =  1001; i<=1006; i++) {
                 DataPointIDVerSeg *seg = [DataPointIDVerSeg new];
                 seg.msgId = i;
                 seg.version = 0;
@@ -1272,7 +1266,7 @@
             }
             
             int count = 0;
-            for (int i = 1001; i<=1005; i++){
+            for (int i = 1001; i<=1006; i++){
                 
                 NSArray *segArr_msgID = dic[[NSString stringWithFormat:@"%d",i]];
                 if (segArr_msgID.count) {

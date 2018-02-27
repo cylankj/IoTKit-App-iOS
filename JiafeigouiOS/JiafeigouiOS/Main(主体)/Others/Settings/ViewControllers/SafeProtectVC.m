@@ -15,6 +15,7 @@
 #import "SafeProtectModel.h"
 #import "AIRecognitionVC.h"
 #import "subSafeProtectVC.h"
+#import "FaceRecognitionSettingVC.h"
 
 @interface SafeProtectVC ()<subSafeProtectDelegate, AIRecognitionDelegate>
 
@@ -139,6 +140,10 @@
     else if ([cellID isEqualToString:idCellAIRecognition])
     {
         [self pushSubSafeAIRecogVC:dataInfo];
+    }else if ([cellID isEqualToString:idCellFaceRecognition]){
+        
+        [self pushSubSafeFaceRecogVC:dataInfo];
+        
     }
 }
 
@@ -178,6 +183,14 @@
     ai.cid = self.cid;
     ai.pType = self.pType;
     [self.navigationController pushViewController:ai animated:YES];
+}
+
+-(void)pushSubSafeFaceRecogVC:(NSDictionary *)dataInfo
+{
+    FaceRecognitionSettingVC *fac = [FaceRecognitionSettingVC new];
+    fac.cid = self.cid;
+    fac.pType = self.pType;
+    [self.navigationController pushViewController:fac animated:YES];
 }
 
 @end

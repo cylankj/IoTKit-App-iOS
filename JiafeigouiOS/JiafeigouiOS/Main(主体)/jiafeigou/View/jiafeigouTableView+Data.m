@@ -78,7 +78,7 @@
         
         if (seg.msgId == 201) {
             [self deviceNetworkState:seg devModel:[self.dataDict objectForKey:peer]];
-        }else if (seg.msgId == 505 || seg.msgId == 512 || seg.msgId == 222){
+        }else if (seg.msgId == 505 || seg.msgId == 512 || seg.msgId == 222 || seg.msgId == 526){
             
             //被分享设备不处理报警消息
             JiafeigouDevStatuModel *mode = [self.dataDict objectForKey:peer];
@@ -118,7 +118,7 @@
                 
             }
             
-            [[JFGSDKDataPoint sharedClient] robotCountDataWithPeer:peer dpIDs:@[@222,@505,@512] success:^(NSString *identity, NSArray<DataPointCountSeg *> *dataList) {
+            [[JFGSDKDataPoint sharedClient] robotCountDataWithPeer:peer dpIDs:@[@222,@505,@512,@526] success:^(NSString *identity, NSArray<DataPointCountSeg *> *dataList) {
                 
                 NSInteger allCount = 0;
                 for (DataPointCountSeg *seg in dataList) {
@@ -418,6 +418,7 @@
                         break;
                     case 10:
                         model.netType = JFGNetTypeWired; // 10 是有线网络
+                        break;
                     default:
                         model.netType = JFGNetTypeWifi;
                         break;
@@ -435,87 +436,6 @@
     
 }
 
-//-(void)jfgMessageList:(NSArray<JFGSDKMessageDevice *> *)list
-//{
-//    for (JiafeigouDevStatuModel *model in self.dataArray) {
-//
-//        for (JFGSDKMessageDevice *msg in list) {
-//
-//            if ([msg.cid isEqualToString:model.cid]) {
-//                NSString *lastMsg;
-//                switch (msg.type) {
-//                    case 0:
-//                        lastMsg = @"未知消息";
-//                        break;
-//                    case 1:
-//                        lastMsg = @"版本更新";
-//                        break;
-//                    case 2:
-//                        lastMsg = @"开启警报";
-//                        break;
-//                    case 3:
-//                        lastMsg = @"触发警报";
-//                        break;
-//                    case 4:
-//                        lastMsg = @"关闭警报";
-//                        break;
-//                    case 5:
-//                        lastMsg = @"低电量";
-//                        model.lowBattery = YES;
-//                        break;
-//                    case 6:
-//                        lastMsg = @"SD卡弹出";
-//                        break;
-//                        
-//                    case 7:
-//                        lastMsg = @"SD卡接入";
-//                        break;
-//                    case 8:
-//                        lastMsg = @"移除绑定";
-//                        break;
-//                        
-//                    case 9:
-//                        lastMsg = @"绑定成功";
-//                        break;
-//                        
-//                    case 10:
-//                        lastMsg = @"重复绑定";
-//                        break;
-//                        
-//                    case 11:
-//                        lastMsg = @"分享成功";
-//                        break;
-//                        
-//                    case 12:
-//                        lastMsg = @"取消分享";
-//                        break;
-//                        
-//                    case 13:
-//                        lastMsg = @"门磁打开";
-//                        model.doorcOpen = YES;
-//                        break;
-//                        
-//                    case 14:
-//                        lastMsg = @"门磁关闭";
-//                        model.doorcOpen = NO;
-//                        break;
-//                        
-//                    default:
-//                        break;
-//                }
-//                model.lastMsg = lastMsg;
-//                model.lastMsgTime = [self lastTimeFromTimestamp:(long)msg.time];
-//                model.unReadMsgCount = msg.unReadCount;
-//                
-//                break;
-//            }
-//            
-//        }
-//        
-//    }
-//    [self reloadData];
-//}
-
 
 -(void)clearUnreadCount:(NSNotification *)notification
 {
@@ -524,7 +444,7 @@
         NSString *cid = notification.object;
         if (cid) {
             JiafeigouDevStatuModel *model = [self.dataDict objectForKey:cid];
-            [[JFGSDKDataPoint sharedClient] robotCountDataClear:cid dpIDs:@[@401,@222,@403,@505,@512] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
+            [[JFGSDKDataPoint sharedClient] robotCountDataClear:cid dpIDs:@[@401,@222,@403,@505,@512,@526] success:^(NSArray<DataPointIDVerRetSeg *> *dataList) {
                 
             } failure:^(RobotDataRequestErrorType type) {
                 

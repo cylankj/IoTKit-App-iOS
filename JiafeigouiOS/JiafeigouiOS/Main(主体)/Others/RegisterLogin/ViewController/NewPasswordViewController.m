@@ -24,6 +24,7 @@
 #import "ForgetEmailPasswordViewController.h"
 #import "JfgTypeDefine.h"
 #import "LSAlertView.h"
+#import "MTA.h"
 
 @interface NewPasswordViewController ()<UITextFieldDelegate, JFGSDKCallbackDelegate,UIAlertViewDelegate,LoginManagerDelegate>
 {
@@ -147,6 +148,13 @@
             
             [JFGSDK userRegister:self.accountStr keyword:self.pwTextFiled.text registerType:self.registerType token:self.registerToken];
             [JFGSDK appendStringToLogFile:@"userRegisterAction"];
+            if (self.registerType == 0) {
+                [MTA trackCustomKeyValueEvent:@"Register_type" props:@{@"type":@"phone"}];
+            }else{
+                [MTA trackCustomKeyValueEvent:@"Register_type" props:@{@"type":@"email"}];
+            }
+            
+            
         }
             break;
         case SetPasswordTypeResetPassword:
@@ -167,6 +175,8 @@
     {
         
         if (errorType == JFGErrorTypeNone && !isPushed) {
+            
+            [MTA trackCustomKeyValueEvent:@"Register_result" props:@{@"result":@"success"}];
             
             if (self.registerType == registerTypeEmail) {
                 
@@ -191,6 +201,8 @@
             JFGLog(@"注册 成功");
             
         }else{
+            
+            [MTA trackCustomKeyValueEvent:@"Register_result" props:@{@"result":@"failed"}];
             
             if (errorType == JFGErrorTypeSMSCodeTimeout) {
                 

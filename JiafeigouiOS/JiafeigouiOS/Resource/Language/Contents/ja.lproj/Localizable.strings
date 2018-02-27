@@ -1,6 +1,6 @@
 /* ja.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
+Created by cylan language tool  on Mon Feb 05 17:41:29 CST 2018.  
 */
 "GLOBAL_NO_NETWORK" = "接続失敗、ネットワーク環境をチェックしてください";
 "REPEAT_TIME" = "%d秒";
@@ -165,7 +165,7 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MSG_SYSTEM_UPGRADE" = "システムがアップデートされました（V%@）";
 "MSG_WARN_ON" = "防犯システムを開始しました、不審者が現れたらすぐにお知らせします";
 "MSG_WARN_OFF" = "防犯システムを解除しました、再度起動することが可能です~";
-"MSG_WARNING" = "新しい発現がある";
+"MSG_WARNING" = "新しいメッセージ";
 "MSG_REBIND" = "デバイスが %@ のユーザーよりバインディングされました。ご質問があれば、カスタマーサービスに連絡してください。";
 "LARGER_IMAGE" = "クリックして拡大図を見る";
 "DELETE_SURE" = "本当に削除しますか?";
@@ -1125,8 +1125,8 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MESSAGES_TIME_HOUR" = "%@時間前";
 "MESSAGES_TIME_DAY" = "%@日前";
 "MESSAGES_FACE_IDENTIFY" = "識別する";
-"MESSAGES_IDENTIFY_POP" = "新しい顔、または既存の顔に追加することで、顔認識の精度を向上させる";
-"MESSAGES_IDENTIFY_CREATE_BTN" = "新顔";
+"MESSAGES_IDENTIFY_POP" = "登録顔、または既存の顔に追加することで、顔認識の精度を向上させる";
+"MESSAGES_IDENTIFY_CREATE_BTN" = "登録顔";
 "MESSAGES_IDENTIFY_ADD_BTN" = "既存の顔に追加する";
 "MESSAGES_DELETE_POP" = "顔と関連するすべてのメッセージを削除しますか？";
 "MESSAGES_DELETE_FACE_BTN" = "顔を削除";
@@ -1165,3 +1165,40 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "DOOR_WRONG_PSW" = "間違ったパスワード";
 "DOOR_WRONG_PSW_MSG" = "間違ったドアパスワード";
 "DETECTION_AREA_FAILED_LOAD_RETRY" = "ライブ画像を取得できないため、領域を設定できません。もう一度お試しください。";
+"WIRED_GUIDE" = "デバイスとルータを接続するネットワークケーブルを使用して、デバイスを確保し、APPは、同じネットワークを使用";
+"WIRED_SELECT_DEVICE_CID" = "デバイスCIDを選択";
+"WIRED_SELECT_DEVICE_CID_TIPS" = "デバイスCID";
+"DEVICE_WIRED_CONNECTION" = "有線接続";
+"HALF_CAMERA_ADD_TIPS" = "已長按3秒";
+"HALF_CAMERA" = "ドームカメラ";
+"FACE_COLLAPSE" = "折りたたむ";
+"WIRED_UPGRADE_NON_LAN" = "設定前に電話機とデバイスを同じネットワークに接続してください";
+"MESSAGES_FACE_ANALYSIS" = "旅客流量分析";
+"MESSAGES_FACE_TADAY_VISIT" = "今日の訪問";
+"MESSAGES_FACE_YESTERDAY_VISIT" = "昨日の訪問";
+"MESSAGES_FACE_NEW_VISIT" = "新しい訪問者";
+"MESSAGES_FACE_PEOPLE" = "人";
+"CLOSE_BUTTON" = "閉じる";
+"MESSAGES_FILTER_STRANGER" = "訪問者";
+"MESSAGES_REGISTER_FACE" = "登録顔";
+"MESSAGES_GENDER_MALE" = "男性";
+"MESSAGES_GENDER_FEMALE" = "女性";
+"MESSAGES_AGE" = "％@年";
+"REGISTER_FACE_TIPS" = "クリアな顔の写真をアップロードしてください";
+"MESSAGES_EXPLAIN" = "画像例";
+"MESSAGES_POSITIVE_FACE" = "ポジティブ";
+"MESSAGES_SIDE_FACE" = "横顔";
+"MESSAGES_BLURRY" = "ぼやけた";
+"REGISTRATION_SECCESS" = "登録完了";
+"CONTINUE_REGISTER" = "登録を続ける";
+"WRONG_FORMAT" = "形式が正しくない.jpg /.png /.bmpのみサポート";
+"FACE_NOT_RECOGNIZED" = "顔が認識されない";
+"REGFACE_MULTIFACE" = "顔が多すぎる、認識されていない";
+"REGFACE_FACESMALL" = "特定するには小さすぎる顔";
+"REGFACE_NOFACE" = "顔が検出されていません";
+"REGISTRATION_FAILED" = "顔の登録に失敗しました";
+"FACE_RECOGNITION" = "顔認識";
+"DOWNLOAD_MSG_PICTURE" = "ダウンロードメッセージ画像";
+"DOWNLOAD_MSG_PICTURE_EXPLAIN" = "閉じた後、顔認識アラームメッセージはダウンロードされません";
+"SUCCESS_REGFACE" = "顔%@を登録しました";
+"ADD_EXISTINGFACE_BEYOND10" = "10人の顔しか追加できません";

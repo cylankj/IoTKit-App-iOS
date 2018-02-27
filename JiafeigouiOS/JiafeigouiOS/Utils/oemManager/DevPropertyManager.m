@@ -14,7 +14,7 @@
 +(BOOL)isSupportRPSwitchForPid:(NSString *)pid
 {
     BOOL isSupport = NO;
-    NSArray *supportPids = @[@"18",@"36",@"37",@"47",@"48"];
+    NSArray *supportPids = @[@"18",@"36",@"37",@"47",@"48",@"83",@"84",@"92"];
     for (NSString *_pid in supportPids) {
         if ([_pid isEqualToString:pid]) {
             isSupport = YES;

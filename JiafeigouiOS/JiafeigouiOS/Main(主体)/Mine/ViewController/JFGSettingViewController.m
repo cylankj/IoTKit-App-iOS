@@ -259,15 +259,14 @@
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
         cell.accessoryType = UITableViewCellAccessoryNone;
         if (!lb) {
-            UILabel *titleLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
-            titleLabel.backgroundColor = [UIColor clearColor];
-            titleLabel.textAlignment = NSTextAlignmentCenter;
-            titleLabel.text = [JfgLanguage getLanTextStrByKey:@"LOGOUT"];
-            titleLabel.font = [UIFont systemFontOfSize:16];
-            titleLabel.textColor = [UIColor colorWithHexString:@"#ff3b30"];
-            titleLabel.tag = 12053;
-            [cell.contentView addSubview:titleLabel];
-            lb = titleLabel;
+            lb = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
+            lb.backgroundColor = [UIColor clearColor];
+            lb.textAlignment = NSTextAlignmentCenter;
+            lb.text = [JfgLanguage getLanTextStrByKey:@"LOGOUT"];
+            lb.font = [UIFont systemFontOfSize:16];
+            lb.textColor = [UIColor colorWithHexString:@"#ff3b30"];
+            lb.tag = 12053;
+            [cell.contentView addSubview:lb];
         }
     }else{
         if (lb) {

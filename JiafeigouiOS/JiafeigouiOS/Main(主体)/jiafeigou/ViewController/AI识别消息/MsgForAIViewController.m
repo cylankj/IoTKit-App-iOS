@@ -36,10 +36,11 @@
 #import "JfgCacheManager.h"
 #import "JFGRefreshLoadingHeader.h"
 
+
 #define DateCellMsgID 12234
 
 //是否陌生人不显示大图
-#define CLOSEBIGPIC 1
+//#define CLOSEBIGPIC 0
 
 @interface MsgForAIViewController ()<UITableViewDelegate,UITableViewDataSource,MsgAIHeadPortraitViewDelegate,JFGSDKCallbackDelegate,CamareMsgDataReqDelegate,MsgForAIRequestDelegate,LoginManagerDelegate>
 {
@@ -52,6 +53,7 @@
     BOOL isEnableFooterRefresh;
     BOOL isShared;
     BOOL hasNewMsg;
+    BOOL isShowScrollerTopBtn;
     MessageVCDateModel *currentDatePickerModel;
     NSString *currentPerson;//当前显示数据
     NSString *currentPersonName;
@@ -70,6 +72,8 @@
 @property (nonatomic,strong)DelButton *editButton;
 //箭头按钮
 @property (nonatomic,strong)UIButton *arrowButton;
+
+@property (nonatomic,strong)UIButton *scrollerTopBtn;
 
 @property (nonatomic,strong)UIButton *backForHeader;
 
@@ -109,17 +113,27 @@
     [self initModel];
     [self stepRefresh];
     [self.view addSubview:self.contentTableView];
+    [self.view addSubview:self.scrollerTopBtn];
     self.contentTableView.tableHeaderView = self.contentHeaderView;
+    
     // Do any additional setup after loading the view.
 }
+
+
 
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
     [self getSDCard];
     if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess) {
+        
+        if (self.contentArray.count == 0) {
+            self.contentTableView.mj_footer.hidden = YES;
+        }else{
+            self.contentTableView.mj_footer.hidden = NO;
+        }
         self.contentTableView.mj_header.hidden = NO;
-        self.contentTableView.mj_footer.hidden = NO;
+        
     }else{
         self.contentTableView.mj_header.hidden = YES;
         self.contentTableView.mj_footer.hidden = YES;
@@ -135,7 +149,6 @@
         [self.contentHeaderView cacheHeaderData];
         [[LoginManager sharedManager] removeDelegate:self];
     }
-
 }
 
 -(void)loginSuccess
@@ -156,8 +169,9 @@
     self.contentArray = [NSMutableArray arrayWithCapacity:0];
     
     [JFGSDK addDelegate:self];
-    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(registerFaceSuccess) name:@"AIFaceRegisterSuccess" object:nil];
     if ([LoginManager sharedManager].loginStatus == JFGSDKCurrentLoginStatusSuccess) {
+        
         [self reqAllDataWithTimestamp:0];
        
     }else{
@@ -186,7 +200,13 @@
         NSString * time = [self timeSelecedBtnTitleForTimestamp:messageModel.timestamp];
         self.headerLabelForTime.text = time;
     }
-    
+}
+
+-(void)registerFaceSuccess
+{
+    isRefresh = YES;
+    [self reqAllDataWithTimestamp:0];
+    [self.contentHeaderView reqData];//刷新头部
 }
 
 #pragma mark- 头部cell回调
@@ -195,9 +215,9 @@
 {
     UIView *headerView = self.contentTableView.tableHeaderView;
     headerView.height = height;
-    [self.contentTableView beginUpdates];
+    //[self.contentTableView beginUpdates];
     [self.contentTableView setTableHeaderView:headerView];// 关键是这句话
-    [self.contentTableView endUpdates];
+    //[self.contentTableView endUpdates];
     if (self.contentHeaderView.isFamilyshow) {
         self.noDataView.top = (self.view.height-self.contentHeaderView.height-64)*0.14+height;
     }else{
@@ -330,6 +350,17 @@
     [self.allContentCache removeObjectForKey:access_id];
 }
 
+
+-(void)msgAIHeadExpand:(BOOL)isExpand
+{
+    if (isExpand) {
+        [self.contentTableView setContentOffset:CGPointMake(0, 0)];
+        self.contentTableView.scrollEnabled = NO;
+    }else{
+        self.contentTableView.scrollEnabled = YES;
+    }
+}
+
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     if (self.contentArray.count==0)
@@ -351,11 +382,12 @@
         self.noDataView.hidden = NO;
         self.editButton.hidden = YES;
         self.headerLabelForTime.hidden = YES;
-        
+
     }else{
         self.noDataView.hidden = YES;
         self.editButton.hidden = NO;
         self.headerLabelForTime.hidden = NO;
+        
     }
     return self.contentArray.count;
 }
@@ -372,7 +404,7 @@
 {
     if ( !self.contentArray.count  && self.contentHeaderView.isFamilyshow) {
         [self.editButton removeFromSuperview];
-        [self.arrowButton removeFromSuperview];
+        //[self.arrowButton removeFromSuperview];
         [self.backForHeader removeFromSuperview];
         [self.headerLabelForTime removeFromSuperview];
         UIView *headView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, self.view.width, 1)];
@@ -394,14 +426,14 @@
     
     [headView addSubview:self.editButton];
     [headView addSubview:self.backForHeader];
-    [headView addSubview:self.arrowButton];
+    //[headView addSubview:self.arrowButton];
     return headView;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     MessageModel *messageModel = [self.contentArray objectAtIndex:indexPath.row];
-    if (messageModel.msgID == dpMsgBase_SDStatus) {
+    if (messageModel.msgID == dpMsgBase_SDStatus || messageModel.msgID == 527) {
         return [self sdCardTableView:tableView cellForRowAtIndexPath:indexPath];
     }else if(messageModel.msgID == dpMsgCamera_WarnMsg || messageModel.msgID == dpMsgCamera_WarnMsgV3 || messageModel.msgID == 401 || messageModel.msgID == 403){
         return [self warnPicTableView:tableView cellForRowAtIndexPath:indexPath];
@@ -611,7 +643,9 @@
         
         MessageViewCell3 *cell =[tableView dequeueReusableCellWithIdentifier:cell3ID];
         if (!cell) {
-            cell = [[MessageViewCell3 alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cell3ID];
+            cell = [[MessageViewCell3 alloc]initForAIWithStyle:UITableViewCellStyleDefault reuseIdentifier:cell3ID];
+            cell.moreBtn.hidden = YES;
+            //NSLog(@"创建新的Cell");
         }
         
         if (messageModel.aiImageUrl == nil) {
@@ -627,7 +661,7 @@
         if (acm) {
             account = acm.account;
         }
-        NSString *fileName = [NSString stringWithFormat:@"/long/%@/AI/%@/%d.jpg",account,self.devModel.uuid,(int)messageModel.timestamp];
+        NSString *fileName = [NSString stringWithFormat:@"/7day/%@/AI/%@/%d.jpg",account,self.devModel.uuid,(int)messageModel.timestamp];
         cell.imgv1.fileName = fileName;
         cell.imgv1.regionType = messageModel.flag;
         if ([messageModel.tly isKindOfClass:[NSString class]]) {
@@ -642,12 +676,10 @@
         cell.imgv1.pid = self.devModel.pid;
         cell.imgv1.selectedIndexPath = indexPath;
         cell.imgv1.deviceVersion = messageModel.deviceVersion;
-        cell.label.text = [self cellTextWithModel:messageModel];
         cell.deleteBtn.hidden = messageModel.isShowVideoBtn;
         cell.hiddenSubviews =tableView.isEditing;
         cell.timestamp = messageModel.timestamp;
         [UIButton button:cell.deleteBtn touchUpInSideHander:^(UIButton *button) {
-            
             [weakSelf deleteSingleCell:@[indexPath]];
         }];
         cell.avBtn.tag = indexPath.row+223;
@@ -665,10 +697,27 @@
         }
         cell.hiddenAvBtn = cell.avBtn.hidden;
         cell.deleteBtn.alpha = 0;
+        
+        NSString *aiMsg = [self cellTextWithModel:messageModel];
+        aiMsg = [aiMsg stringByReplacingOccurrencesOfString:messageModel.timeString withString:@""];
+        cell.aiName = aiMsg;
+        cell.label.text = [self cellTextWithModel:messageModel];
+        //文字超过这个范围，显示全部按钮
+        CGFloat maxWidth = [UIScreen mainScreen].bounds.size.width - 104;
+        CGSize size = [cell.label.text sizeWithFont:cell.label.font];
+        if (size.width>maxWidth) {
+            cell.moreBtn.hidden = NO;
+        }else{
+            cell.moreBtn.hidden = YES;
+        }
+        //NSLog(@"index:%ld strWidth:%f labelWidth:%f",(long)indexPath.row,size.width,maxWidth);
         return cell;
+        
     }else{
+        
         MessageViewCell3 *cell =[tableView dequeueReusableCellWithIdentifier:cell3ID];
         return cell;
+        
     }
     
 }
@@ -681,7 +730,7 @@
     if (acm) {
         account = acm.account;
     }
-    NSString *fileName = [NSString stringWithFormat:@"/long/%@/AI/%@/%d.jpg",account,self.devModel.uuid,timestamp];
+    NSString *fileName = [NSString stringWithFormat:@"/7day/%@/AI/%@/%d.jpg",account,self.devModel.uuid,timestamp];
     return [JFGSDK getCloudUrlWithFlag:flag fileName:fileName];
 }
 
@@ -690,31 +739,11 @@
     if (model.aiMsg && ![model.aiMsg isEqualToString:@""]) {
         return model.aiMsg;
     }
-    NSMutableString *str = [NSMutableString new];
-    if (model.face_idList.count) {
-        
-        for (NSString *face_id in model.face_idList) {
-            
-            for (MsgAIheaderModel *aiModel in self.contentHeaderView.familyArray) {
-                for (StrangerModel *strmodel in aiModel.faceMsgList) {
-                    
-                    if ([strmodel isKindOfClass:[StrangerModel class]]) {
-                        if ([strmodel.face_id isEqualToString:face_id]) {
-                            if ([str isEqualToString:@""]) {
-                                [str appendString:aiModel.name];
-                            }else{
-                                [str appendFormat:@",%@",aiModel.name];
-                            }
-                            break;
-                        }
-                    }
-                    
-                }
-            }
-            
-        }
-        
+    NSString *str = @"";
+    if ([model.person_name isKindOfClass:[NSString class]] && ![model.person_name isEqualToString:@""]) {
+        str = model.person_name;
     }
+    
     if ([str isEqualToString:@""]) {
         if (currentPersonName) {
             str = [NSMutableString stringWithFormat:@"%@%@",[JfgLanguage getLanTextStrByKey:@"DETECTED_AI"],currentPersonName];
@@ -745,44 +774,58 @@
     cell.label.text = messageModel.timeString;
     cell.timestamp = messageModel.timestamp;
     
-    if (messageModel.isSDCardOn) {
-        if (messageModel.sdcardErrorCode != 0) {
-            cell.contentLabel.text = [JfgLanguage getLanTextStrByKey:@"VIDEO_SD_DESC"];
-            cell.hiddenAvBtn = NO;
-            cell.avBtn.hidden = NO;
-            //NSLog(@"cellShow");
+    if (messageModel.msgID == 527) {
+        
+        cell.contentLabel.text = messageModel.textString;
+        cell.hiddenAvBtn = YES;
+        cell.avBtn.hidden = YES;
+        cell.deleteBtn.alpha = 0;
+        __weak typeof(self) weakSelf = self;
+        [UIButton button:cell.deleteBtn touchUpInSideHander:^(UIButton *button) {
+            
+            [weakSelf deleteSingleCell:@[indexPath]];
+        }];
+        
+    }else{
+        
+        if (messageModel.isSDCardOn) {
+            if (messageModel.sdcardErrorCode != 0) {
+                cell.contentLabel.text = [JfgLanguage getLanTextStrByKey:@"VIDEO_SD_DESC"];
+                cell.hiddenAvBtn = NO;
+                cell.avBtn.hidden = NO;
+                //NSLog(@"cellShow");
+            }else{
+                cell.contentLabel.text = messageModel.textString;
+                cell.hiddenAvBtn = YES;
+                cell.avBtn.hidden = YES;
+                // NSLog(@"cellShow");
+            }
+            
         }else{
             cell.contentLabel.text = messageModel.textString;
             cell.hiddenAvBtn = YES;
             cell.avBtn.hidden = YES;
-            // NSLog(@"cellShow");
+            //NSLog(@"cellShow");
         }
         
-    }else{
-        cell.contentLabel.text = messageModel.textString;
-        cell.hiddenAvBtn = YES;
-        cell.avBtn.hidden = YES;
-        //NSLog(@"cellShow");
-    }
-    
-    if (isShared) {
-        cell.avBtn.hidden = YES;
-        cell.deleteBtn.alpha = 0;
-    }else{
-        cell.deleteBtn.alpha = 1;
-    }
-    //cell.contentLabel.text = @"测试文字测试文字测试文字测试文字测试文字测试文字测试文字测试文字测试文字测试文字";
-    
-    __weak typeof(self) weakSelf = self;
-    [UIButton button:cell.deleteBtn touchUpInSideHander:^(UIButton *button) {
+        if (isShared) {
+            cell.avBtn.hidden = YES;
+            cell.deleteBtn.alpha = 0;
+        }else{
+            cell.deleteBtn.alpha = 1;
+        }
         
-        [weakSelf deleteSingleCell:@[indexPath]];
-    }];
-    
-    cell.avBtn.tag = indexPath.row+223;
-    [cell.avBtn removeTarget:self action:@selector(lookHistoryVideo:) forControlEvents:UIControlEventTouchUpInside];
-    [cell.avBtn addTarget:self action:@selector(lookHistoryVideo:) forControlEvents:UIControlEventTouchUpInside];
-    
+        __weak typeof(self) weakSelf = self;
+        [UIButton button:cell.deleteBtn touchUpInSideHander:^(UIButton *button) {
+            
+            [weakSelf deleteSingleCell:@[indexPath]];
+        }];
+        
+        cell.avBtn.tag = indexPath.row+223;
+        [cell.avBtn removeTarget:self action:@selector(lookHistoryVideo:) forControlEvents:UIControlEventTouchUpInside];
+        [cell.avBtn addTarget:self action:@selector(lookHistoryVideo:) forControlEvents:UIControlEventTouchUpInside];
+        
+    }
     return cell;
 }
 
@@ -795,13 +838,15 @@
         return height;
     }else if(messageModel.msgID == DateCellMsgID){
         return 44;
+    }else if (messageModel.msgID == 527){
+        return 70;
     }
     
     switch (messageModel.msgImages.count)
     {
         case 1: //一张
         {
-            height = 234*designWscale;
+            height = 218;
         }
             break;
         case 2: //二张
@@ -824,6 +869,10 @@
 
 -(BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    MessageModel *messageModel = [self.contentArray objectAtIndex:indexPath.row];
+    if (messageModel.msgID == DateCellMsgID){
+        return NO;
+    }
     return YES;
 }
 
@@ -839,7 +888,6 @@
         self.selectAllButton.selected = NO;
     }
 }
-
 
 //根据滚动位置设置时间
 -(void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
@@ -858,10 +906,46 @@
         }
     }
     
-    if (scrollView.contentOffset.y >= self.contentHeaderView.height) {
-        self.arrowButton.selected = YES;
+    if (scrollView.contentOffset.y >= self.contentHeaderView.height && self.contentArray.count) {
+        
+        if (self.scrollerTopBtn.alpha == 0) {
+            self.scrollerTopBtn.alpha = 1;
+            isShowScrollerTopBtn = YES;
+            [UIView animateWithDuration:0.3 animations:^{
+                if (isEditing) {
+                    self.scrollerTopBtn.bottom = self.bottomSelectView.top-20;
+                }else{
+                    self.scrollerTopBtn.bottom = self.view.height-20;
+                }
+                
+            }];
+        }
     }else{
-        self.arrowButton.selected = NO;
+        
+        if (self.scrollerTopBtn.alpha == 1) {
+            
+            isShowScrollerTopBtn = NO;
+            [UIView animateWithDuration:0.3 animations:^{
+                self.scrollerTopBtn.top = self.view.height;
+            } completion:^(BOOL finished) {
+                self.scrollerTopBtn.alpha = 0;
+            }];
+        }
+    }
+}
+
+-(void)scrollerToTop
+{
+    [self.contentTableView setContentOffset:CGPointMake(0, 0) animated:YES];
+    if (self.scrollerTopBtn.alpha == 1) {
+        
+        isShowScrollerTopBtn = NO;
+        [UIView animateWithDuration:0.3 animations:^{
+            
+            self.scrollerTopBtn.top = self.view.height;
+        } completion:^(BOOL finished) {
+            self.scrollerTopBtn.alpha = 0;
+        }];
     }
 }
 
@@ -877,7 +961,15 @@
         NSString *time = [self timeSelecedBtnTitleForTimestamp:messageModel._version];
         self.headerLabelForTime.text = time;
     }
-    self.arrowButton.selected = NO;
+    if (self.scrollerTopBtn.alpha == 1) {
+        
+        isShowScrollerTopBtn = NO;
+        [UIView animateWithDuration:0.3 animations:^{
+            self.scrollerTopBtn.top = self.view.height;
+        } completion:^(BOOL finished) {
+            self.scrollerTopBtn.alpha = 0;
+        }];
+    }
 }
 
 -(void)enableBottomDelButton
@@ -899,7 +991,10 @@
         [UIView animateWithDuration:0.33f animations:^{
             [self.bottomSelectView setFrame:CGRectMake(0, self.view.frame.size.height-50, Kwidth, 50)];
             self.contentTableView.editing = YES;
-            [self.contentTableView setFrame:CGRectMake(0, 0, Kwidth, kheight-50)];
+            [self.contentTableView setFrame:CGRectMake(0, 0, Kwidth, kheight-50-64)];
+            if (isShowScrollerTopBtn) {
+                self.scrollerTopBtn.bottom = self.bottomSelectView.top - 20;
+            }
         } completion:^(BOOL finished) {
             [self.contentTableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
         }];
@@ -913,8 +1008,12 @@
             [self.bottomSelectView setFrame:CGRectMake(0, self.view.frame.size.height, Kwidth, 50)];
             self.contentTableView.editing = NO;
             [self.contentTableView setFrame:CGRectMake(0, 0, Kwidth, kheight-64)];
+            if (isShowScrollerTopBtn) {
+                self.scrollerTopBtn.bottom = self.view.height-20;
+            }
         } completion:^(BOOL finished) {
             [self.bottomSelectView removeFromSuperview];
+            
         }];
     }
 }
@@ -966,15 +1065,6 @@
 
 -(void)deleteServerData:(NSArray *)delList
 {
-    for (MessageModel *model in delList) {
-        if (currentDatePickerModel) {
-            for (MessageModel *_model in [currentDatePickerModel.messageDataArr copy]) {
-                if (_model.timestamp == model.timestamp) {
-                    [currentDatePickerModel.messageDataArr removeObject:_model];
-                }
-            }
-        }
-    }
     
     NSMutableArray *segList = [NSMutableArray new];
     
@@ -994,10 +1084,11 @@
             [segList addObject:seg];
         }
         
-        
+        __weak typeof(self) weakSelf= self;
         [[JFGSDKDataPoint sharedClient] robotDelDataWithPeer:self.devModel.uuid queryDps:segList success:^(NSString *identity, int ret) {
             
             NSLog(@"identity:%@  ret:%d",identity,ret);
+             [weakSelf.contentHeaderView refreshAccessCountForAccessID:currentPerson];
             
         } failure:^(RobotDataRequestErrorType type) {
             
@@ -1075,15 +1166,6 @@
 #pragma mark- 删除选中cell
 -(void)deleteSelectedCells
 {
-    for (MessageModel *model in self.contentArray) {
-        if (currentDatePickerModel) {
-            for (MessageModel *_model in [currentDatePickerModel.messageDataArr copy]) {
-                if (_model.timestamp == model.timestamp) {
-                    [currentDatePickerModel.messageDataArr removeObject:_model];
-                }
-            }
-        }
-    }
     if (deleteAll) {
         
         [self showRefreshController];
@@ -1105,10 +1187,11 @@
                 [segList addObject:seg];
             }
             
-            
+            __weak typeof(self) weakSelf = self;
             [[JFGSDKDataPoint sharedClient] robotDelDataWithPeer:self.devModel.uuid queryDps:segList success:^(NSString *identity, int ret) {
                 
                 NSLog(@"identity:%@  ret:%d",identity,ret);
+                [weakSelf.contentHeaderView refreshAccessCountForAccessID:currentPerson];
                 
             } failure:^(RobotDataRequestErrorType type) {
                 
@@ -1154,10 +1237,10 @@
 
 #pragma mark- 请求数据
 //请求全部数据
--(void)reqAllDataWithTimestamp:(int)timestamp
+-(void)reqAllDataWithTimestamp:(uint64_t)timestamp
 {
     hasNewMsg = NO;
-    [self.camereMsgReq getDataForCid:self.devModel.uuid timestamp:timestamp isRefresh:timestamp==0];
+    [self.msgAIReq reqMsgForType:3 accessID:@"all" cid:self.devModel.uuid timestamp:timestamp];
 }
 
 //根据face_id或者person_id获取数据
@@ -1185,9 +1268,17 @@
                 [self.contentTableView.mj_header endRefreshing];
             }else{
                 [self.contentTableView.mj_footer endRefreshing];
-                if (dataList.count == 0) {
-                    [self.contentTableView.mj_footer endRefreshingWithNoMoreData];
+                
+                if (self.contentArray.count == 0) {
+                    self.contentTableView.mj_footer.hidden = YES;
+                }else{
+                    if (dataList.count == 0) {
+                        [self.contentTableView.mj_footer endRefreshingWithNoMoreData];
+                    }else{
+                        self.contentTableView.mj_footer.hidden = NO;
+                    }
                 }
+                
             }
         }
     }
@@ -1254,6 +1345,7 @@ NSComparator cmptrForTimestamp = ^(NSString *obj1, NSString *obj2){
     
     NSMutableArray *dataarr = [NSMutableArray new];
     for (NSString *key in groupDict.allKeys) {
+        
         NSMutableArray *groupArr = [groupDict objectForKey:key];
         
         if (groupArr.count) {
@@ -1268,6 +1360,21 @@ NSComparator cmptrForTimestamp = ^(NSString *obj1, NSString *obj2){
         [dataarr addObjectsFromArray:groupArr];
     }
     
+    //去重
+    NSMutableDictionary *dict = [NSMutableDictionary new];
+    [dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+    for (MessageModel *msgModel in dataarr) {
+        NSDate *dateForModel = [NSDate dateWithTimeIntervalSince1970:msgModel.timestamp];
+        NSString *dateString = [dateFormatter stringFromDate:dateForModel];
+        [dict setObject:msgModel forKey:dateString];
+    }
+    [dataarr removeAllObjects];
+    
+    for (NSString *key in dict.allKeys) {
+        MessageModel *msgModel = dict[key];
+        [dataarr addObject:msgModel];
+    }
+
     NSArray *sorArray = [dataarr sortedArrayUsingComparator:cmptr];
     dataarr = [[NSMutableArray alloc]initWithArray:sorArray];
     
@@ -1295,34 +1402,98 @@ NSComparator cmptrForTimestamp = ^(NSString *obj1, NSString *obj2){
 -(void)msgForAIAllMsg:(NSArray<MessageModel *> *)msgList cid:(NSString *)cid access_id:(NSString *)access_id type:(int)type
 {
     if ([cid isEqualToString:self.devModel.uuid]) {
-        
-        NSMutableArray *memoryCache = [self.allContentCache objectForKey:access_id];
-        if (memoryCache == nil) {
-            memoryCache = [NSMutableArray new];
-        }
-        if (isRefresh) {
-            [memoryCache removeAllObjects];
-        }
-        [memoryCache addObjectsFromArray:msgList];
-        
-        memoryCache = [[NSMutableArray alloc]initWithArray:[self msgDataAddDateModelWithDataList:memoryCache]];
-        [self.allContentCache removeObjectForKey:access_id];
-        [self.allContentCache setObject:memoryCache forKey:access_id];
-        
-        if ([currentPerson isEqualToString:access_id]) {
+    
+        if ([access_id isEqualToString:@"all"]) {
             
-            self.contentArray = memoryCache;
-            [self refreshTimeForTop];
-            [self.contentTableView reloadData];
             if (isRefresh) {
-                [self.contentTableView.mj_header endRefreshing];
-            }else{
-                [self.contentTableView.mj_footer endRefreshing];
-                if (msgList.count == 0) {
-                    [self.contentTableView.mj_footer endRefreshingWithNoMoreData];
-                }
+                [self.allMsgArray removeAllObjects];
             }
+            [self.allMsgArray addObjectsFromArray:msgList];
+            
+            if ([currentPerson isEqualToString:@"all"]) {
+                
+                NSLog(@"数据开始处理:%@",[NSDate date]);
+                dispatch_async(dispatch_get_global_queue(0, 0), ^{
+                    
+                    self.allMsgArray = [[NSMutableArray alloc]initWithArray:[self msgDataAddDateModelWithDataList:self.allMsgArray]];
+                    //NSLog(@"数据处理2:%@",[NSDate date]);
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        
+                        self.contentArray = self.allMsgArray;
+                        [self refreshTimeForTop];
+                        [self.contentTableView reloadData];
+                        
+                        if (isRefresh) {
+                            [self.contentTableView.mj_header endRefreshing];
+                        }else{
+                            [self.contentTableView.mj_footer endRefreshing];
+                            if (self.contentArray.count == 0) {
+                            
+                               self.contentTableView.mj_footer.hidden = YES;
+                            }else{
+                                if (msgList.count == 0) {
+                                    [self.contentTableView.mj_footer endRefreshingWithNoMoreData];
+                                }else{
+                                
+                                    self.contentTableView.mj_footer.hidden = NO;
+                                }
+                            }
+                            
+                        }
+                        //NSLog(@"数据处理结束:%@",[NSDate date]);
+                    });
+                });
+                
+            }
+            
+        }else{
+            
+            
+            dispatch_async(dispatch_get_global_queue(0, 0), ^{
+                
+                NSMutableArray *memoryCache = [self.allContentCache objectForKey:access_id];
+                if (memoryCache == nil) {
+                    memoryCache = [NSMutableArray new];
+                }
+                if (isRefresh) {
+                    [memoryCache removeAllObjects];
+                }
+                [memoryCache addObjectsFromArray:msgList];
+                memoryCache = [[NSMutableArray alloc]initWithArray:[self msgDataAddDateModelWithDataList:memoryCache]];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    
+                    [self.allContentCache removeObjectForKey:access_id];
+                    [self.allContentCache setObject:memoryCache forKey:access_id];
+                    
+                    if ([currentPerson isEqualToString:access_id]) {
+                        
+                        self.contentArray = memoryCache;
+                        [self refreshTimeForTop];
+                        [self.contentTableView reloadData];
+                        if (isRefresh) {
+                            [self.contentTableView.mj_header endRefreshing];
+                        }else{
+                            [self.contentTableView.mj_footer endRefreshing];
+                            if (self.contentArray.count == 0) {
+                                self.contentTableView.mj_footer.hidden = YES;
+                            }else{
+                                if (msgList.count == 0) {
+                                    [self.contentTableView.mj_footer endRefreshingWithNoMoreData];
+                                }else{
+                                    self.contentTableView.mj_footer.hidden = NO;
+                                }
+                            }
+                        }
+                    }
+                    
+                });
+            });
+            
+            
+            
         }
+        
+        
     }
 }
 
@@ -1406,7 +1577,7 @@ NSComparator cmptrForTimestamp = ^(NSString *obj1, NSString *obj2){
 {
     self.contentTableView.estimatedRowHeight = 0;
     self.contentTableView.mj_footer = [MJRefreshAutoNormalFooter footerWithRefreshingTarget:self refreshingAction:@selector(footerRefreshAction)];
-    
+    //self.contentTableView.mj_footer.automaticallyHidden = YES;
     JFGRefreshLoadingHeader *header = [JFGRefreshLoadingHeader headerWithRefreshingTarget:self refreshingAction:@selector(headerRefreshAcion)];
     self.contentTableView.mj_header = header;
     
@@ -1435,7 +1606,8 @@ NSComparator cmptrForTimestamp = ^(NSString *obj1, NSString *obj2){
     isRefresh = NO;
     MessageModel *messageModel = [self.contentArray lastObject];
     if ([currentPerson isEqualToString:@"all"]) {
-        [self.camereMsgReq getDataForCid:self.devModel.uuid timestamp:messageModel._version isRefresh:NO];
+        [self reqAllDataWithTimestamp:messageModel._version];
+//        [self.camereMsgReq getDataForCid:self.devModel.uuid timestamp:messageModel._version isRefresh:NO];
     }else{
         int type = 1;
         if (self.contentHeaderView.isFamilyshow) {
@@ -1456,7 +1628,8 @@ NSComparator cmptrForTimestamp = ^(NSString *obj1, NSString *obj2){
         [[NSNotificationCenter defaultCenter] postNotificationName:@"JFGClearUnReadCount" object:self.devModel.uuid];
         isRefresh = YES;
         if ([currentPerson isEqualToString:@"all"]) {
-            [self.camereMsgReq getDataForCid:self.devModel.uuid timestamp:0 isRefresh:YES];
+            //[self.camereMsgReq getDataForCid:self.devModel.uuid timestamp:0 isRefresh:YES];
+            [self reqAllDataWithTimestamp:0];
             [self.contentHeaderView reqData];//刷新头部
         }else{
             int type = 1;
@@ -1465,7 +1638,14 @@ NSComparator cmptrForTimestamp = ^(NSString *obj1, NSString *obj2){
             }else{
                 type = 1;
             }
-            [self reqPersonDataWithType:type accessID:currentPerson timestamp:0];
+            if (![currentPerson isEqualToString:@""]) {
+                [self reqPersonDataWithType:type accessID:currentPerson timestamp:0];
+                [self.contentHeaderView refreshAccessCountForAccessID:currentPerson];
+            }else{
+                [self.contentTableView.mj_header endRefreshing];
+            }
+            
+            
         }
     }else{
         [CommonMethod showNetDisconnectAlert];
@@ -1561,11 +1741,10 @@ NSComparator cmptrForTimestamp = ^(NSString *obj1, NSString *obj2){
     if (!_editButton) {
         _editButton = [DelButton buttonWithType:UIButtonTypeCustom];
         [_editButton setFrame:CGRectMake(Kwidth-7-44, 0, 44, 44)];
-        _editButton.right = self.view.width-50; _editButton.contentHorizontalAlignment=UIControlContentHorizontalAlignmentRight;
+        _editButton.right = self.view.width-15; _editButton.contentHorizontalAlignment=UIControlContentHorizontalAlignmentRight;
         _editButton.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
         _editButton.backgroundColor = [UIColor clearColor];
-        _editButton.titleLabel.font = [UIFont fontWithName:@"PingFang SC" size:15];
-        _editButton.titleLabel.font = [UIFont systemFontOfSize:15];
+        _editButton.titleLabel.font = [UIFont systemFontOfSize:14];
         _editButton.adjustsImageWhenHighlighted =NO;
         [_editButton setTitleColor:RGBACOLOR(75, 159, 213, 1) forState:UIControlStateNormal];
         [_editButton setTitleColor:[UIColor colorWithHexString:@"#aaaaaa"] forState:UIControlStateDisabled];
@@ -1734,6 +1913,19 @@ NSComparator cmptrForTimestamp = ^(NSString *obj1, NSString *obj2){
     return _allMsgKeyArray;
 }
 
+-(UIButton *)scrollerTopBtn
+{
+    if (!_scrollerTopBtn) {
+        _scrollerTopBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _scrollerTopBtn.frame = CGRectMake(0, 0, 45, 45);
+        _scrollerTopBtn.top = self.view.height;
+        _scrollerTopBtn.right = self.view.width-12;
+        [_scrollerTopBtn setImage:[UIImage imageNamed:@"icon_stick_to_the_top"] forState:UIControlStateNormal];
+        [_scrollerTopBtn addTarget:self action:@selector(scrollerToTop) forControlEvents:UIControlEventTouchUpInside];
+        _scrollerTopBtn.alpha = 0;
+    }
+    return _scrollerTopBtn;
+}
 
 #pragma mark- Cache
 -(void)cacheDataToDisk
@@ -1775,6 +1967,8 @@ NSComparator cmptrForTimestamp = ^(NSString *obj1, NSString *obj2){
         [self.contentTableView reloadData];
     }
 }
+
+
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];

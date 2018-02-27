@@ -68,7 +68,11 @@ NSString *const eTagKey = @"Etag";
     
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"download Url [%@]",urlString]];
     
-    [self.downLoadManager downloadFile:[NSURL URLWithString:urlString] state:^(SRDownloadState state) {
+    urlString = [urlString stringByReplacingOccurrencesOfString:@" " withString:@""];
+    
+    NSURL *url = [NSURL URLWithString:urlString];
+    
+    [self.downLoadManager downloadFile:url state:^(SRDownloadState state) {
         aState(state);
         if (state == SRDownloadStateCompleted)
         {

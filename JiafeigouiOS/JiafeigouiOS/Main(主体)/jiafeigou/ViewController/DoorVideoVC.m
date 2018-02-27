@@ -66,6 +66,8 @@
     
     BOOL isDoorlockDev;//是否是门锁设备
     JFGDoorlockPwAlert *doorlockAlert;//门锁开启弹窗
+    
+    CGSize screenSize;
 }
 
 @property (nonatomic, strong)DoorVideoSrollView *doorVideoScrollView;
@@ -174,6 +176,7 @@
         }
     }
     
+    screenSize = CGSizeMake(MIN(self.view.width, self.view.height), MAX(self.view.width, self.view.height));
     
     if ([devModel isKindOfClass:[JiafeigouDevStatuModel class]]) {
         if (devModel.shareState == DevShareStatuOther) {
@@ -299,6 +302,21 @@
     [self stopMusic];
     [[NSUserDefaults standardUserDefaults] setObject:self.cid forKey:JFGDoorBellIsPlayingCid];
 }
+
+- (BOOL)shouldAutorotate{
+    return YES;
+}
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations{
+    return UIInterfaceOrientationMaskPortrait;
+}
+
+//- (BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation {
+//    return (toInterfaceOrientation == UIInterfaceOrientationPortrait);
+//}
+//
+//- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+//    return UIInterfaceOrientationPortrait;
+//}
 
 -(void)getResolving
 {
@@ -610,15 +628,15 @@
 {
     if (isFullScreen)
     {
-        self.holdOnButton.frame = CGRectMake((Kwidth - 66.0)*0.5, kheight - 66 - 20, 66, 66);
+        self.holdOnButton.frame = CGRectMake((screenSize.width - 66.0)*0.5, screenSize.height - 66 - 20, 66, 66);
         [self.holdOnButton setImage:[UIImage imageNamed:@"door_holdon_full"] forState:UIControlStateNormal];//door_talkdisable_full
         self.holdOnButton.transform = CGAffineTransformMakeRotation(M_PI_2);
         
-        self.cameraButton.frame = CGRectMake(self.holdOnButton.right + 28, kheight - 66 - 20, 66, 66);
+        self.cameraButton.frame = CGRectMake(self.holdOnButton.right + 28, screenSize.height - 66 - 20, 66, 66);
         [self.cameraButton setImage:[UIImage imageNamed:@"door_camera_full"] forState:UIControlStateNormal];
         self.cameraButton.transform = CGAffineTransformMakeRotation(M_PI_2);
         
-        self.voiceButton.frame = CGRectMake(self.holdOnButton.left - 28 - 66, kheight - 66 - 20, 66, 66);
+        self.voiceButton.frame = CGRectMake(self.holdOnButton.left - 28 - 66, screenSize.height - 66 - 20, 66, 66);
         self.voiceButton.transform = CGAffineTransformMakeRotation(M_PI_2);
         
         [self.voiceButton setImage:[UIImage imageNamed:@"door_talk_enable_full"] forState:UIControlStateNormal];
@@ -628,11 +646,11 @@
     }
     else
     {
-        self.holdOnButton.frame = CGRectMake((Kwidth - 80.0)*0.5,(kheight - 64 - doorScrollRect.size.height)*0.5-40, 80, 80);
+        self.holdOnButton.frame = CGRectMake((screenSize.width - 80.0)*0.5,(screenSize.height - 64 - doorScrollRect.size.height)*0.5-40, 80, 80);
         if (isDoorlockDev) {
             self.holdOnButton.top = self.doorlockBtn.bottom+35;
         }else{
-            self.holdOnButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+            self.holdOnButton.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         }
         
         [self.holdOnButton setImage:[UIImage imageNamed:@"door_holdon"] forState:UIControlStateNormal];
@@ -643,18 +661,18 @@
         if (isDoorlockDev) {
             self.cameraButton.y = self.doorlockBtn.y;
         }else{
-            self.cameraButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+            self.cameraButton.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         }
        
         [self.cameraButton setImage:[UIImage imageNamed:@"camera_icon_takepic"] forState:UIControlStateNormal];
         [self.cameraButton setImage:[UIImage imageNamed:@"camera_icon_takepic"] forState:UIControlStateSelected];
         self.cameraButton.transform = CGAffineTransformIdentity;
         
-        self.voiceButton.frame = CGRectMake(Kwidth - 50 - 45, 0, 50, 50);
+        self.voiceButton.frame = CGRectMake(screenSize.width - 50 - 45, 0, 50, 50);
         if (isDoorlockDev) {
             self.voiceButton.y = self.doorlockBtn.y;
         }else{
-            self.voiceButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+            self.voiceButton.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         }
         
         [self.voiceButton setImage:[UIImage imageNamed:@"door_talk_enable"] forState:UIControlStateNormal];
@@ -762,13 +780,13 @@
         [self.view bringSubviewToFront:self.halfScreenButton];
         [self.view bringSubviewToFront:self.nickNameLabel];
         
-        self.halfScreenButton.frame = CGRectMake(self.view.width-10-self.halfScreenButton.width, 10, self.halfScreenButton.width, self.halfScreenButton.height);
-        self.nickNameLabel.frame = CGRectMake(self.view.width-10-self.halfScreenButton.width, 10+self.halfScreenButton.height, 30, 300);
+        self.halfScreenButton.frame = CGRectMake(screenSize.width-10-self.halfScreenButton.width, 10, self.halfScreenButton.width, self.halfScreenButton.height);
+        self.nickNameLabel.frame = CGRectMake(screenSize.width-10-self.halfScreenButton.width, 10+self.halfScreenButton.height, 30, 300);
         
-        self.flowSpeedButton.frame = CGRectMake(self.view.width - 15 - self.flowSpeedButton.width, self.view.height-15-self.flowSpeedButton.height, self.flowSpeedButton.width, self.flowSpeedButton.height);
+        self.flowSpeedButton.frame = CGRectMake(screenSize.width - 15 - self.flowSpeedButton.width, screenSize.height-15-self.flowSpeedButton.height, self.flowSpeedButton.width, self.flowSpeedButton.height);
         
         self.shadeImageView.frame = CGRectMake(0, 0, self.doorVideoScrollView.height, 60);
-        self.loadingImageView.center = CGPointMake(self.view.bounds.size.width*0.5, self.view.bounds.size.height*0.5);
+        self.loadingImageView.center = CGPointMake(screenSize.width*0.5, screenSize.height*0.5);
         //scroller滚动，改变坐标使其相对静止
 //        self.nickNameLabel.top = contentOffset.y+10;
 //        self.halfScreenButton.top = contentOffset.y+10;
@@ -814,7 +832,7 @@
         self.halfScreenButton.transform = CGAffineTransformMakeRotation(90 * (M_PI / 180.0f));
         self.nickNameLabel.transform = CGAffineTransformMakeRotation(90 * (M_PI / 180.0f));
         self.flowSpeedButton.transform = CGAffineTransformMakeRotation(90 * (M_PI / 180.0f));
-        self.doorVideoScrollView.frame = CGRectMake(0, 0, Kwidth, kheight);
+        self.doorVideoScrollView.frame = CGRectMake(0, 0, screenSize.width, screenSize.height);
         self.doorVideoScrollView.isFullScreen = YES;
         self.halfScreenButton.hidden = NO;
         
@@ -878,7 +896,7 @@
         case UIGestureRecognizerStateChanged:
         {
             CGPoint location = [paramSender locationInView:paramSender.view.superview];
-            CGRect insideRect = CGRectMake(0, doorScrollRect.size.height + self.doorBellImageView.height*0.5, Kwidth, kheight - doorScrollRect.size.height); // 显示 门铃那张图片的 移动范围
+            CGRect insideRect = CGRectMake(0, doorScrollRect.size.height + self.doorBellImageView.height*0.5, screenSize.width, screenSize.height - doorScrollRect.size.height); // 显示 门铃那张图片的 移动范围
             
             if (CGRectContainsPoint(insideRect, location))
             {
@@ -918,8 +936,8 @@
                 
                 self.redDotBgImageView.transform = CGAffineTransformMakeScale(1.0, 1.0);
                 self.greenDotImageView.transform = CGAffineTransformMakeScale(1.0, 1.0);
-                self.doorBellImageView.frame = CGRectMake((Kwidth - 80)*0.5, doorScrollRect.size.height + kheight *0.17 , 80, 80);
-                self.doorBellImageView.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+                self.doorBellImageView.frame = CGRectMake((screenSize.width - 80)*0.5, doorScrollRect.size.height + screenSize.height *0.17 , 80, 80);
+                self.doorBellImageView.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
                 [self startSharkAnimation];
             }
         }
@@ -1092,7 +1110,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
                 
             if ([CommonMethod devBigTypeForOS:pid] == JFGDevBigType360 || ([CommonMethod devBigTypeForOS:pid] == JFGDevBigTypeSinglefisheyeCamera && isRS)){
                 
-                width = self.view.width;
+                width = screenSize.width;
                 height= width;
                 size = CGSizeMake(width, width);
                 PanoramicIosViewRS * __remoteView = [[PanoramicIosViewRS alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, size.width, size.height)];
@@ -1122,7 +1140,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
                 
             }else if ([CommonMethod devBigTypeForOS:pid] == JFGDevBigTypeSinglefisheyeCamera){
                 
-                width = self.view.width;
+                width = screenSize.width;
                 height= width;
                 size = CGSizeMake(width, width);
                 PanoramicIosView * __remoteView = [[PanoramicIosView alloc]initPanoramicViewWithFrame:CGRectMake(0, 0, size.width, size.height)];
@@ -1357,25 +1375,25 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (isRS || [CommonMethod devBigTypeForOS:pid] == JFGDevBigType360) {
         
         if (_isFullScreen) {
-            height = self.view.bounds.size.width;
+            height = screenSize.width;
             width = height/ratio;
         }else{
-            width = self.view.bounds.size.width;
+            width = screenSize.width;
             height = width * ratio;
         }
         
     }else{
         
         if (_isFullScreen) {
-            width = self.view.bounds.size.height;
+            width = screenSize.height;
         }else{
-            width = self.view.bounds.size.width;
+            width = screenSize.width;
         }
         height = width * ratio;
         if (_isFullScreen) {
-            if (height < self.view.bounds.size.width) {
+            if (height < screenSize.width) {
                 
-                height = self.view.bounds.size.width;
+                height = screenSize.width;
                 width = height/ratio;
                 
             }
@@ -1384,8 +1402,8 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     
     UIView *remoteView =[self.doorVideoScrollView viewWithTag:VIEW_REMOTERENDE_VIEW_TAG];
     if (_isFullScreen && ![remoteView isKindOfClass:[VideoRenderIosView class]]) {
-        width = self.view.bounds.size.height;
-        height = self.view.bounds.size.width;
+        width = screenSize.height;
+        height = screenSize.width;
     }
     
     [self.doorVideoScrollView setContentSize:CGSizeMake(width, height)];
@@ -1412,9 +1430,9 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     self.snapImageView.hidden = YES;
     [self.doorVideoScrollView setContentOffset:CGPointMake(0, 0)];
     if (_isFullScreen) {
-        if (width>self.view.height) {
+        if (width>screenSize.height) {
             
-            [self.doorVideoScrollView setContentOffset:CGPointMake((width-self.view.height*0.5), 0)];
+            [self.doorVideoScrollView setContentOffset:CGPointMake((width-screenSize.height*0.5), 0)];
         }
     }
     [self layoutVideoView];
@@ -1428,15 +1446,15 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     {
         //720   576
         CGFloat rota = 576.0/720.0;
-        CGFloat height =rota*Kwidth;
-        _doorVideoScrollView = [[DoorVideoSrollView alloc] initWithFrame:CGRectMake(0, 64, Kwidth, height)];
+        CGFloat height =rota*screenSize.width;
+        _doorVideoScrollView = [[DoorVideoSrollView alloc] initWithFrame:CGRectMake(0, 64, screenSize.width, height)];
         _doorVideoScrollView.backgroundColor = [UIColor lightGrayColor];
         _doorVideoScrollView.scrollEnabled = YES;
         _doorVideoScrollView.bounces = NO;
         _doorVideoScrollView.bouncesZoom = NO;
         [self.fullScreenButton addTarget:self action:@selector(rotateScreen) forControlEvents:UIControlEventTouchUpInside];
         [self.halfScreenButton addTarget:self action:@selector(recoverScreen) forControlEvents:UIControlEventTouchUpInside];
-        doorScrollRect = CGRectMake(0, 64, Kwidth, height);
+        doorScrollRect = CGRectMake(0, 64, screenSize.width, height);
         
     }
     return _doorVideoScrollView;
@@ -1530,11 +1548,11 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_holdOnButton == nil)
     {
         _holdOnButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        _holdOnButton.frame = CGRectMake((Kwidth - 80.0)*0.5,(self.view.bounds.size.height-64-self.doorVideoScrollView.height), 80, 80);
+        _holdOnButton.frame = CGRectMake((screenSize.width - 80.0)*0.5,(screenSize.height-64-self.doorVideoScrollView.height), 80, 80);
         if (isDoorlockDev) {
             _holdOnButton.top = self.doorlockBtn.bottom+35;
         }else{
-            _holdOnButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+            _holdOnButton.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         }
         
         [_holdOnButton setImage:[UIImage imageNamed:@"door_holdon"] forState:UIControlStateNormal];
@@ -1555,7 +1573,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
         if (isDoorlockDev) {
             _cameraButton.y = self.doorlockBtn.y;
         }else{
-            _cameraButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+            _cameraButton.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         }
         [_cameraButton setImage:[UIImage imageNamed:@"camera_icon_takepic"] forState:UIControlStateNormal];
         [_cameraButton setImage:[UIImage imageNamed:@"camera_icon_takepic"] forState:UIControlStateSelected];
@@ -1570,12 +1588,12 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_voiceButton == nil)
     {
         _voiceButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        _voiceButton.frame = CGRectMake(Kwidth - 50 - 45, 0, 50, 50);
+        _voiceButton.frame = CGRectMake(screenSize.width - 50 - 45, 0, 50, 50);
         
         if (isDoorlockDev) {
             _voiceButton.y = self.doorlockBtn.y;
         }else{
-            _voiceButton.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+            _voiceButton.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         }
         [_voiceButton addTarget:self action:@selector(voiceAction:) forControlEvents:UIControlEventTouchUpInside];
         [_voiceButton setImage:[UIImage imageNamed:@"door_talk_enable"] forState:UIControlStateNormal];
@@ -1591,8 +1609,8 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 {
     if (_doorBellImageView == nil)
     {
-        _doorBellImageView = [[UIImageView alloc] initWithFrame:CGRectMake((Kwidth - 80)*0.5, doorScrollRect.size.height + kheight *0.17 , 80, 80)];
-        _doorBellImageView.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        _doorBellImageView = [[UIImageView alloc] initWithFrame:CGRectMake((screenSize.width - 80)*0.5, doorScrollRect.size.height + screenSize.height *0.17 , 80, 80)];
+        _doorBellImageView.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _doorBellImageView.image = [UIImage imageNamed:@"door_bellImage"];
         _doorBellImageView.userInteractionEnabled = YES;
         
@@ -1617,7 +1635,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_redDotBgImageView == nil)
     {
         _redDotBgImageView = [[UIImageView alloc] initWithFrame:CGRectMake(45, 0, 22, 22)];
-        _redDotBgImageView.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        _redDotBgImageView.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _redDotBgImageView.image = [UIImage imageNamed:@"bell_red_dot_bg"];
     }
     return _redDotBgImageView;
@@ -1628,7 +1646,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_redDotImageView == nil)
     {
         _redDotImageView = [[UIImageView alloc] initWithFrame:self.redDotBgImageView.frame];
-        _redDotImageView.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        _redDotImageView.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _redDotImageView.image = [UIImage imageNamed:@"bell_red_dot"];
     }
     
@@ -1642,8 +1660,8 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 {
     if (_greenDotBgImageView == nil)
     {
-        _greenDotBgImageView = [[UIImageView alloc] initWithFrame:CGRectMake(Kwidth - 45.0 - 22, 0, 22, 22)];
-        _greenDotBgImageView.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        _greenDotBgImageView = [[UIImageView alloc] initWithFrame:CGRectMake(screenSize.width - 45.0 - 22, 0, 22, 22)];
+        _greenDotBgImageView.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _greenDotBgImageView.image = [UIImage imageNamed:@"bell_green_dot_bg"];
     }
     return _greenDotBgImageView;
@@ -1673,7 +1691,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_litteGreenDot == nil)
     {
         _litteGreenDot = [[UIImageView alloc] initWithFrame:CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight)];
-        _litteGreenDot.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        _litteGreenDot.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _litteGreenDot.image = [UIImage imageNamed:@"bell_green_1"];
         
         _litteGreenDot.animationImages = [NSArray arrayWithObjects:
@@ -1699,7 +1717,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (_litteRedDot == nil)
     {
         _litteRedDot = [[UIImageView alloc] initWithFrame:CGRectMake(widgetX, widgetY, widgetWidth, widgetHeight)];
-        _litteRedDot.y = (kheight - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
+        _litteRedDot.y = (screenSize.height - self.doorVideoScrollView.bottom)*0.5+self.doorVideoScrollView.bottom;
         _litteRedDot.image = [UIImage imageNamed:@"bell_red_1"];
         _litteRedDot.animationImages = [NSArray arrayWithObjects:
                                           [UIImage imageNamed:@"bell_red_1"],
@@ -1752,7 +1770,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 {
     if (_shadeImageView == nil)
     {
-        _shadeImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 64, self.view.width, 60)];
+        _shadeImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 64, screenSize.width, 60)];
         _shadeImageView.image = [UIImage imageNamed:@"camera_sahdow"];
     }
     return _shadeImageView;
@@ -1762,7 +1780,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
 {
     if (_bottomShadeImageView == nil)
     {
-        _bottomShadeImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 40)];
+        _bottomShadeImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, screenSize.width, 40)];
         _bottomShadeImageView.image = [UIImage imageNamed:@"camera_sahdow2"];
     }
     return _bottomShadeImageView;
@@ -1810,8 +1828,8 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     if (!_doorlockBtn) {
         _doorlockBtn = [UIButton buttonWithType:UIButtonTypeCustom];
         _doorlockBtn.frame = CGRectMake(0, 0, 50, 50);
-        _doorlockBtn.top = self.doorVideoScrollView.bottom+kheight*0.13;
-        _doorlockBtn.x = self.view.width*0.5;
+        _doorlockBtn.top = self.doorVideoScrollView.bottom+screenSize.height*0.13;
+        _doorlockBtn.x = screenSize.width*0.5;
         [_doorlockBtn setImage:[UIImage imageNamed:@"icon_lock_normal"] forState:UIControlStateNormal];
         [_doorlockBtn setImage:[UIImage imageNamed:@"icon_lock_disabled"] forState:UIControlStateDisabled];
         [_doorlockBtn addTarget:self action:@selector(doorLockAction) forControlEvents:UIControlEventTouchUpInside];
@@ -2071,7 +2089,7 @@ NSString *sharkAnimationKey = @"sharkAnimation";
     }
     
     if (_isFullScreen) {
-        self.loadingImageView.center = CGPointMake(self.view.bounds.size.width*0.5, self.view.bounds.size.height*0.5);
+        self.loadingImageView.center = CGPointMake(screenSize.width*0.5, screenSize.height*0.5);
     }else{
         self.loadingImageView.center = CGPointMake(self.doorVideoScrollView.bounds.size.width*0.5, self.doorVideoScrollView.bounds.size.height*0.5+self.doorVideoScrollView.origin.y);
     }

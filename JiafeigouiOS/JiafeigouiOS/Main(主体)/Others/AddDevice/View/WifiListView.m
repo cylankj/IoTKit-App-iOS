@@ -10,33 +10,35 @@
 #import "FLGlobal.h"
 #import "UIColor+HexColor.h"
 #import "UIView+FLExtensionForFrame.h"
-#import <JFGSDK/JFGSDKBindingDevice.h>
+#import "JFGDevTypeManager.h"
 #import <JFGSDK/JFGSDK.h>
 #import "JfgLanguage.h"
 #import "CommonMethod.h"
 #import "jfgConfigManager.h"
+#import "JFGBoundDevicesMsg.h"
 
-void (^aSelectedBlock) (NSString *wifiNameString) =nil;
+void (^aSelectedBlock) (id obj) =nil;
 
 static WifiListView *wifi =nil;
 
 
 #define GrayViewTag 888
 #define WifiListTag 999
-@interface WifiListView()<UITableViewDelegate,UITableViewDataSource,JFGSDKBindDeviceDelegate>
+@interface WifiListView()<UITableViewDelegate,UITableViewDataSource,JFGSDKBindDeviceDelegate,JFGSDKCallbackDelegate>
 {
     UITableView * _wifiTableView;
 }
 
 @property (nonatomic, strong) JFGSDKBindingDevice *bindDeviceSDK;
 @property (nonatomic, strong) NSMutableArray * wifiArray;
+@property (nonatomic, strong) NSMutableArray <NSString *>*bindedDevList;
 
 @end
 
 
 @implementation WifiListView
 
--(instancetype)initWithFrame:(CGRect)frame
+-(instancetype)initWithFrame:(CGRect)frame withType:(WifiListType)type
 {
     if (self = [super initWithFrame:frame])
     {
@@ -48,22 +50,29 @@ static WifiListView *wifi =nil;
         //_wifiTableView.showsVerticalScrollIndicator = NO;
         _wifiTableView.showsHorizontalScrollIndicator = NO;
         [self addSubview:_wifiTableView];
+        self.listType = type;
         
-        [self.bindDeviceSDK scanWifi]; //扫描 wifi
-
+        if (type == WifiListTypeWifiName) {
+            [self.bindDeviceSDK scanWifi]; //扫描 wifi
+        }else{
+            [JFGSDK addDelegate:self];
+            //fping获取设备信息
+            [JFGSDK fping:@"255.255.255.255"];
+            [JFGSDK fping:@"192.168.10.255"];
+        }
         [JFGSDK appendStringToLogFile:@"startScanWifi"];
     }
     return self;
 }
 
-+(void)createWifiListView:(void (^)(NSString *))selectedBlock{
++(void)createWifiListViewForType:(WifiListType)type commplete:(void (^) (id obj))selectedBlock{
     UIWindow * window = [UIApplication sharedApplication].keyWindow;
     WifiCoverView * grayView = [[WifiCoverView alloc]initWithFrame:CGRectMake(0, 0, Kwidth, kheight)];
     grayView.backgroundColor = [UIColor colorWithHexString:@"#000000"];
     grayView.alpha = 0;
     grayView.tag = GrayViewTag;
     [window addSubview:grayView];
-    WifiListView * list = [[WifiListView alloc]initWithFrame:CGRectMake(0, kheight, Kwidth, 244)];
+    WifiListView * list = [[WifiListView alloc]initWithFrame:CGRectMake(0, kheight, Kwidth, 244) withType:type];
     list.tag = WifiListTag;
     [window addSubview:list];
     
@@ -94,12 +103,80 @@ static WifiListView *wifi =nil;
     aSelectedBlock = nil;
 }
 
-- (void)updateWifiTableView:(NSString *)wifiName
+#pragma mark JFG SDK Delegate
+-(void)jfgScanWifiRespose:(JFGSDKUDPResposeScanWifi *)ask
 {
-    if (wifiName && ![self.wifiArray containsObject:wifiName])
+    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"scanWifiRsp:%@",ask.ssid]];
+    NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
+    NSArray *aps = [infoDictionary objectForKey:@"Jfgsdk_ap_prefix"];
+    if ([aps isKindOfClass:[NSArray class]]) {
+        for (NSString *ap in aps) {
+            if ([ap isKindOfClass:[NSString class]]) {
+                if ([[ask.ssid lowercaseString] hasPrefix:[ap lowercaseString]]) {
+                    return;
+                }
+            }
+        }
+    }
+    [self updateWifiTableView:ask];
+}
+
+-(void)jfgFpingRespose:(JFGSDKUDPResposeFping *)ask
+{
+    [self updateWifiTableView:ask];
+}
+
+- (void)updateWifiTableView:(id)obj
+{
+    if (obj)
     {
-        [self.wifiArray addObject:wifiName];
-        [_wifiTableView insertRowsAtIndexPaths:[NSArray arrayWithObject:[NSIndexPath indexPathForRow:self.wifiArray.count-1 inSection:0]] withRowAnimation:UITableViewRowAnimationFade];
+        if ([obj isKindOfClass:[JFGSDKUDPResposeFping class]]) {
+            
+            BOOL isExist = NO;
+            JFGSDKUDPResposeFping *fp = obj;
+            NSLog(@"fping:cid:%@ os:%d",fp.cid,fp.os);
+            for (JFGSDKUDPResposeFping *_fp in self.wifiArray) {
+                
+                if ([_fp.cid isEqualToString:fp.cid]) {
+                    isExist = YES;
+                    break;
+                }
+            }
+            
+            //屏蔽已绑定设备
+            for (NSString *bindedCid in self.bindedDevList) {
+                
+                if ([bindedCid isEqualToString:fp.cid]) {
+                    isExist = YES;
+                    break;
+                }
+                
+            }
+
+            //只支持有线绑定设备
+            if (!isExist && [JFGDevTypeManager devIsType:JFGDevFctTypeWired forPid:fp.os]) {
+                 [self.wifiArray addObject:fp];
+            }
+            
+            
+        }else if ([obj isKindOfClass:[JFGSDKUDPResposeScanWifi class]]){
+            
+            BOOL isExist = NO;
+            JFGSDKUDPResposeScanWifi *wifi = obj;
+            for (JFGSDKUDPResposeScanWifi *_wifi in self.wifiArray) {
+                
+                if ([_wifi.ssid isEqualToString:wifi.ssid]) {
+                    isExist = YES;
+                    break;
+                }
+            }
+            if (!isExist) {
+                [self.wifiArray addObject:wifi];
+            }
+            
+        }
+       
+        [_wifiTableView reloadData];
     }
     
 }
@@ -124,7 +201,17 @@ static WifiListView *wifi =nil;
     cell.textLabel.textAlignment = NSTextAlignmentCenter;
     cell.textLabel.textColor = [UIColor colorWithHexString:@"#666666"];
     cell.textLabel.font = [UIFont systemFontOfSize:16];
-    cell.textLabel.text = [_wifiArray objectAtIndex:indexPath.row];
+    
+    id obj = [_wifiArray objectAtIndex:indexPath.row];
+    NSString *wifiName = @"";
+    if ([obj isKindOfClass:[JFGSDKUDPResposeScanWifi class]]) {
+        JFGSDKUDPResposeScanWifi *wifi = obj;
+        wifiName = wifi.ssid;
+    }else if ([obj isKindOfClass:[JFGSDKUDPResposeFping class]]){
+        JFGSDKUDPResposeFping *fp = obj;
+        wifiName = fp.cid;
+    }
+    cell.textLabel.text = wifiName;
 
     return cell;
 }
@@ -146,6 +233,11 @@ static WifiListView *wifi =nil;
     header.textAlignment = NSTextAlignmentCenter;
     header.textColor = [UIColor colorWithHexString:@"#888888"];
     header.text = [JfgLanguage getLanTextStrByKey:@"CHOOSE_WIFI"];
+    
+    if (self.listType == WifiListTypeCid) {
+        header.text = [JfgLanguage getLanTextStrByKey:@"WIRED_SELECT_DEVICE_CID"];
+    }
+    
     [vi addSubview:header];
     UIButton * closeBtn = [[UIButton alloc]initWithFrame:CGRectMake(vi.right-6-30, 7, 30, 30)];
     [closeBtn setImage:[UIImage imageNamed:@"add_btn_wifiList_close"] forState:UIControlStateNormal];
@@ -156,6 +248,8 @@ static WifiListView *wifi =nil;
     [vi addSubview:line];
     return vi;
 }
+
+
 -(void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath{
     
     if ([tableView respondsToSelector:@selector(setSeparatorInset:)]) {
@@ -171,7 +265,7 @@ static WifiListView *wifi =nil;
     }
 }
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
-    NSString *wifiNameString =[_wifiArray objectAtIndex:indexPath.row];
+    JFGSDKUDPResposeScanWifi *wifiNameString =[_wifiArray objectAtIndex:indexPath.row];
     if (aSelectedBlock !=nil) {
         aSelectedBlock(wifiNameString);
         [self closeWifiListAction];
@@ -179,26 +273,6 @@ static WifiListView *wifi =nil;
 
 }
 
-#pragma mark JFG SDK Delegate
--(void)jfgScanWifiRespose:(JFGSDKUDPResposeScanWifi *)ask
-{
-    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"scanWifiRsp:%@",ask.ssid]];
-    NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
-    NSArray *aps = [infoDictionary objectForKey:@"Jfgsdk_ap_prefix"];
-    if ([aps isKindOfClass:[NSArray class]]) {
-        for (NSString *ap in aps) {
-            if ([ap isKindOfClass:[NSString class]]) {
-                if ([[ask.ssid lowercaseString] hasPrefix:[ap lowercaseString]]) {
-                    return;
-                }
-            }
-        }
-    }
-//    if ([ask.ssid containsString:@"DOG"] ||[ask.ssid containsString:@"Dog"]) {
-//        return;
-//    }
-    [self updateWifiTableView:ask.ssid];
-}
 
 #pragma mark property
 
@@ -221,7 +295,20 @@ static WifiListView *wifi =nil;
     return _wifiArray;
 }
 
+-(NSMutableArray *)bindedDevList
+{
+    if (!_bindedDevList) {
+        _bindedDevList = [NSMutableArray new];
+        NSMutableArray *devModels = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
+        for (JiafeigouDevStatuModel *model in devModels) {
+            [_bindedDevList addObject:model.uuid];
+        }
+    }
+    return _bindedDevList;
+}
+
 @end
+
 @implementation WifiCoverView
 
 #pragma mark -touchesMethod

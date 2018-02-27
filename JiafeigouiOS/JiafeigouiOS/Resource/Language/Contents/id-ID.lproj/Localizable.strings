@@ -1,6 +1,6 @@
 /* id-ID.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
+Created by cylan language tool  on Mon Feb 05 17:41:29 CST 2018.  
 */
 "GLOBAL_NO_NETWORK" = "Tidak terhubung ke jaringan";
 "REPEAT_TIME" = "%d detik";
@@ -166,7 +166,7 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MSG_WARN_ON" = "Deteksi gerak telah dinyalakan, Anda akan diberi tahu saat gerakan terdeteksi.
 Anda telah membuka deteksi gerakan . Perangkat akan memberitahu anda segera ketika sesuatu bergerak";
 "MSG_WARN_OFF" = "Anda telah menutup deteksi gerakan";
-"MSG_WARNING" = "Penemuan Baru";
+"MSG_WARNING" = "Pesan baru";
 "MSG_REBIND" = "Perangkat ditambahkan oleh %@ . Setiap pertanyaan , silahkan hubungi kami";
 "LARGER_IMAGE" = "Lihat gambar besar";
 "DELETE_SURE" = "Apakah anda yakin akan menghapus ?";
@@ -1126,8 +1126,8 @@ Anda telah membuka deteksi gerakan . Perangkat akan memberitahu anda segera keti
 "MESSAGES_TIME_HOUR" = "%@ j yang lalu";
 "MESSAGES_TIME_DAY" = "%@ hari yang lalu";
 "MESSAGES_FACE_IDENTIFY" = "Mengenali";
-"MESSAGES_IDENTIFY_POP" = "Wajah baru, atau dengan menambah wajah yang ada, meningkatkan akurasi pengenalan wajah";
-"MESSAGES_IDENTIFY_CREATE_BTN" = "Wajah baru";
+"MESSAGES_IDENTIFY_POP" = "Daftar wajah, atau dengan menambah wajah yang ada, meningkatkan akurasi pengenalan wajah";
+"MESSAGES_IDENTIFY_CREATE_BTN" = "Daftar wajah";
 "MESSAGES_IDENTIFY_ADD_BTN" = "Tambahkan ke wajah yang ada";
 "MESSAGES_DELETE_POP" = "Hapus wajah dan semua pesan terkait?";
 "MESSAGES_DELETE_FACE_BTN" = "Hapus wajah";
@@ -1166,3 +1166,40 @@ Anda telah membuka deteksi gerakan . Perangkat akan memberitahu anda segera keti
 "DOOR_WRONG_PSW" = "kata sandi salah";
 "DOOR_WRONG_PSW_MSG" = "Password pintu salah";
 "DETECTION_AREA_FAILED_LOAD_RETRY" = "gagal mendapatkan live image, jadi tidak bisa mengatur area, silahkan coba lagi.";
+"WIRED_GUIDE" = "Gunakan kabel jaringan untuk menghubungkan perangkat dan router, pastikan perangkat dan APP menggunakan jaringan yang sama";
+"WIRED_SELECT_DEVICE_CID" = "Pilih perangkat CID";
+"WIRED_SELECT_DEVICE_CID_TIPS" = "Perangkat CID";
+"DEVICE_WIRED_CONNECTION" = "Koneksi kabel";
+"HALF_CAMERA_ADD_TIPS" = "Tekan lama 3 detik";
+"HALF_CAMERA" = "Setengah kamera sferis";
+"FACE_COLLAPSE" = "Jatuh";
+"WIRED_UPGRADE_NON_LAN" = "Sambungkan telepon dan perangkat ke jaringan yang sama sebelum konfigurasi";
+"MESSAGES_FACE_ANALYSIS" = "Analisis arus penumpang";
+"MESSAGES_FACE_TADAY_VISIT" = "Kunjungan hari ini";
+"MESSAGES_FACE_YESTERDAY_VISIT" = "Kunjungan kemarin";
+"MESSAGES_FACE_NEW_VISIT" = "Pengunjung baru";
+"MESSAGES_FACE_PEOPLE" = "orang-orang";
+"CLOSE_BUTTON" = "Dekat";
+"MESSAGES_FILTER_STRANGER" = "Pengunjung";
+"MESSAGES_REGISTER_FACE" = "Daftar wajah";
+"MESSAGES_GENDER_MALE" = "Pria";
+"MESSAGES_GENDER_FEMALE" = "Wanita";
+"MESSAGES_AGE" = "%@ tahun";
+"REGISTER_FACE_TIPS" = "Silahkan upload foto wajah yang jernih";
+"MESSAGES_EXPLAIN" = "Contoh Gambar";
+"MESSAGES_POSITIVE_FACE" = "Wajah positif";
+"MESSAGES_SIDE_FACE" = "Sisi wajah";
+"MESSAGES_BLURRY" = "Buram";
+"REGISTRATION_SECCESS" = "Registrasi berhasil";
+"CONTINUE_REGISTER" = "Lanjutkan untuk mendaftar";
+"WRONG_FORMAT" = "Format salah, hanya support .jpg/.png/.bmp";
+"FACE_NOT_RECOGNIZED" = "Wajah tidak dikenali";
+"REGFACE_MULTIFACE" = "Terlalu banyak wajah, tidak dikenali";
+"REGFACE_FACESMALL" = "Wajah terlalu kecil, tidak dikenali";
+"REGFACE_NOFACE" = "Tidak ada wajah yang terdeteksi";
+"REGISTRATION_FAILED" = "Daftar wajah gagal";
+"FACE_RECOGNITION" = "Pengenalan wajah";
+"DOWNLOAD_MSG_PICTURE" = "Download gambar pesan";
+"DOWNLOAD_MSG_PICTURE_EXPLAIN" = "Setelah ditutup, pesan alarm pengenalan wajah tidak akan didownload";
+"SUCCESS_REGFACE" = "Berhasil mendaftarkan diri %@";
+"ADD_EXISTINGFACE_BEYOND10" = "hanya menambahkan hingga 10 wajah";

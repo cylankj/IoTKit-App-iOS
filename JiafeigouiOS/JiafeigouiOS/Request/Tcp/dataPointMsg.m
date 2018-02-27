@@ -184,23 +184,7 @@
     if (cid == nil) {
         return;
     }
-    [[JFGSDKDataPoint sharedClient]robotGetDataForCacheWithPeer:cid msgIds:msgIdArr asc:asc limit:limit success:^(NSString *identity, NSArray<NSArray<DataPointSeg *> *> *idDataList) {
-        NSMutableDictionary *dataDict = [NSMutableDictionary dictionary];
-        
-        for (NSArray * subArr in idDataList)
-        {
-            for (DataPointSeg *seg in subArr)
-            {
-                NSError *error = nil;
-                id obj = [MPMessagePackReader readData:seg.value error:&error];
-                if (!error)
-                {
-                    [dataDict setValue:obj forKey:[self dpKeyWithMsgID:(NSInteger)seg.msgId]];
-                }
-            }
-        }
-        sBlock(dataDict);
-    }];
+    
 }
 // 设置dp 数据
 - (void)setdpDataWithCid:(NSString *)cid dps:(NSArray <DataPointSeg *>*)dps success:(aSuccessBlock)success failed:(aFailBlock)failed

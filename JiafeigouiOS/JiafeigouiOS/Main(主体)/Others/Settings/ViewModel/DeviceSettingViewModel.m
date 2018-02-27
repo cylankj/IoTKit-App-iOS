@@ -149,12 +149,9 @@
                 self.settingModel.isPowerSavingEnable = [[deepSleepArr objectAtIndex:0] boolValue];
                 self.settingModel.powerSavingBeginTime = [[deepSleepArr objectAtIndex:1] longLongValue];
                 self.settingModel.powerSavingEndTime = [[deepSleepArr objectAtIndex:2] longLongValue];
-                
             }
-            
         }
-        
-        
+    
         self.settingModel.isMobile = [[dict objectForKey:msgBaseMobileKey] boolValue];
         self.settingModel.isWarnEnable = [[dict objectForKey:dpMsgCameraWarnEnableKey] boolValue];
         
@@ -190,13 +187,10 @@
         }
         
         self.settingModel.isOpenIndicator = [[dict objectForKey:msgBaseLEDKey] boolValue];
-        
         self.settingModel.isRotate = [[dict objectForKey:dpMsgVideoDiretionKey] boolValue];
         self.settingModel.isNTSC = [[dict objectForKey:msgBaseNTSCKey] boolValue];
         self.settingModel.SIMCardType = [[dict objectForKey:msgBaseSIMInfoKey] intValue];
         self.settingModel.angleType = [[dict objectForKey:dpMsgCameraAngleKey] intValue];
-        
-        
         
         id obj = [dict objectForKey:dpMsgCameraisLiveKey];
         if ([obj isKindOfClass:[NSArray class]]) {
@@ -449,13 +443,22 @@
             
             default:
             {
+
+                BOOL wifiCelliScanCell = self.settingModel.isCellCanClick;
+                if ([self.propertyTool showRowWithPid:self.pType key:pWiredModel] && self.settingModel.isWiredNetAvailalbe) {
+                   
+                    //支持有线模式，并且有线已连接
+                    wifiCelliScanCell = NO;
+                }
+                
+                
                 [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
                                      @"set_con_wifi",cellIconImageKey,
                                      [JfgLanguage getLanTextStrByKey:@"WIFI"],cellTextKey,
                                      wifiConfig, cellUniqueID,
                                      self.settingModel.wifi,cellDetailTextKey,
                                      @0,cellshowSwitchKey,
-                                     @(self.settingModel.isCellCanClick), canClickCellKey,
+                                     @(wifiCelliScanCell), canClickCellKey,
                                      nil]];
             }
                 break;
@@ -473,6 +476,28 @@
                              @0,cellshowSwitchKey,
                              @1, canClickCellKey,
                              nil]];
+    }
+    
+    //有线连接
+    if ([self.propertyTool showRowWithPid:self.pType key:pWiredModel]) {
+        
+        NSString *cellDetailText = @"";
+        if (self.settingModel.isWiredNetAvailalbe) {
+            cellDetailText = [JfgLanguage getLanTextStrByKey:@"WIRED_MODE_CONNECTED"];
+        }else{
+            cellDetailText = [JfgLanguage getLanTextStrByKey:@"DOOR_NOT_CONNECT"];
+        }
+        
+        [section1 addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                             @"set_wired",cellIconImageKey,
+                             [JfgLanguage getLanTextStrByKey:@"Cable_Mode"],cellTextKey,
+                             wiredModel, cellUniqueID,
+                             cellDetailText,cellDetailTextKey,
+                             @0,cellshowSwitchKey,
+                             @1, canClickCellKey,
+                         @(UITableViewCellAccessoryNone),cellAccessoryKey,
+                             nil]];
+        
     }
     
     

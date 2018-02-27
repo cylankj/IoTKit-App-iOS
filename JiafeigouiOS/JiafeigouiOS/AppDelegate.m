@@ -51,6 +51,7 @@
 #import <GoogleSignIn/GIDSignIn.h>
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginManager.h>
+#import "MTA.h"
 //GGLContext
 
 #define USERGETUISDK 1   //是否使用个推sdk
@@ -65,7 +66,8 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
-
+    [MTA startWithAppkey:@"IW5918ZRBQLI"];
+    
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.backgroundColor = [UIColor whiteColor];
     
@@ -74,23 +76,23 @@
 //    }
 
     [self config];
-    
+
     //开启网络监测
     [[NetworkMonitor sharedManager] starMonitor];
     
     //JFGSDK初始化
     [self jfgSDKInitialize];
-    
+
     //初始化SHARESDk
     [FLShareSDKHelper registerPlatforms];
-    [[FBSDKApplicationDelegate sharedInstance] application:application
-                             didFinishLaunchingWithOptions:launchOptions];
+    //[[FBSDKApplicationDelegate sharedInstance] application:application
+                             //didFinishLaunchingWithOptions:launchOptions];
     
     //如果已经对facebook进行过授权，每次进入客户端更新token
-    [FBSDKLoginManager renewSystemCredentials:^(ACAccountCredentialRenewResult result, NSError *error) {
+//    //[FBSDKLoginManager renewSystemCredentials:^(ACAccountCredentialRenewResult result, NSError *error) {
         
-    }];
-    
+   // }];
+
     [self customizeBuglySDKConfig];
     
     /**
@@ -114,8 +116,7 @@
         }
     }
     int currentVerNumber = [verPrefix intValue];
-    
-    
+
     NSUserDefaults * userDefault = [NSUserDefaults standardUserDefaults];
     
     //测试升级引导页显示情况代码
@@ -181,7 +182,6 @@
     [self.window makeKeyAndVisible];
     //检查AppStore版本
 //    [self checkAppStoreVersion];
-    
     NSDictionary* pushInfo = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (pushInfo)
     {
@@ -196,14 +196,6 @@
     
     //扬声器改变通知处理
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(routeChange:)  name:AVAudioSessionRouteChangeNotification object:[AVAudioSession sharedInstance]];
-
-#if DEBUG 
-    //内存泄漏监控
-    
-    //iOS自带悬浮窗调试工具   http://www.cocoachina.com/ios/20170712/19817.html
-    //id overlayClass = NSClassFromString(@"UIDebuggingInformationOverlay");
-    //[overlayClass performSelector:NSSelectorFromString(@"prepareDebuggingOverlay")];
-#endif
     
     return YES;
 }
@@ -390,110 +382,113 @@
 // 接收apns消息 处理
 - (void)apnsMsgHandle:(NSDictionary *)pushDict isFromFinishLauch:(BOOL)isFromFinishLauch
 {
-    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@" receive apns msg pushDict %@  appState[%ld]", pushDict, (long)[UIApplication sharedApplication].applicationState]];
-    
-    if ([UIApplication sharedApplication].applicationState != UIApplicationStateActive)
-    {
-        NSString *customStr = nil;
+    dispatch_async(dispatch_get_main_queue(), ^{
         
-        if (isFromFinishLauch)
-        {
-            customStr = [pushDict objectForKey:@"custom"];
-        }else{
-            customStr = [pushDict valueForKeyPath:@"aps.custom"];
-        }
+        [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@" receive apns msg pushDict %@  appState[%ld]", pushDict, (long)[UIApplication sharedApplication].applicationState]];
         
-        if (![customStr isEqualToString:@""] && customStr != nil)
+        if ([UIApplication sharedApplication].applicationState != UIApplicationStateActive)
         {
-            [GeTuiSdk handleRemoteNotification:pushDict];
+            NSString *customStr = nil;
             
-            NSCharacterSet *set = [NSCharacterSet characterSetWithCharactersInString:@"['] "];
-            customStr = [[customStr componentsSeparatedByCharactersInSet:set] componentsJoinedByString:@""];
-            NSArray *apsArray = [customStr componentsSeparatedByString:@","];
-            
-            @try {
-                if (apsArray.count > 2)
-                {
-                    switch ([[apsArray objectAtIndex:0] intValue])
-                    {
-                        case JfgMsgType_BellActiveCall:
-                        {
-                            
-                            /**
-                             
-                             custom = "[2516,'500000000250','',1489385652,'http://oss-cn-hangzhou.aliyuncs.com/jiafeigou-yf/500000000250/1489385652.jpg?OSSAccessKeyId=xjBdwD1du8lf2wMI&Expires=1489990454&Signature=CPDiDx3uNWGvFttaTavVciR2fkw%3D']";
-                             
-                             */
-                            NSString *cid = apsArray[1];
-                            NSString *timestamp = @"0";
-                            if (apsArray.count>3) {
-                                timestamp = apsArray[3];
-                            }
-                            NSString *imageUrl = @"";
-                            if (apsArray.count>4) {
-                                imageUrl = apsArray[4];
-                            }
-                            [self gotoDoorCallVC:cid imageUrl:imageUrl timestamp:[timestamp longLongValue]];
-                        }
-                            break;
-                        default:
-                        {
-                            JiafeigouDevStatuModel *devModel = nil;
-                            NSMutableArray * deviList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
-                            for (JiafeigouDevStatuModel *model in deviList) {
-                                if ([model.uuid isEqualToString:[apsArray objectAtIndex:2]]) {
-                                    if (model.unReadMsgCount == 0) {
-                                        model.unReadMsgCount = 1;
-                                    }
-                                    devModel = model;
-                                    break;
-                                }
-                            }
-                            
-                            if (devModel) {
-                                
-                                if ([CommonMethod devBigTypeForOS:devModel.pid] == JFGDevBigTypeEyeCamera) {
-                                    
-                                    MsgFor720ViewController *msg = [MsgFor720ViewController new];
-                                    msg.cid = devModel.uuid;
-                                    msg.devModel = devModel;
-                                    UIWindow * window = [UIApplication sharedApplication].keyWindow;
-                                    UITabBarController * barCon = (UITabBarController *)window.rootViewController;
-                                    barCon.selectedIndex = 0;
-                                    UINavigationController * nav = barCon.viewControllers[0];
-                                    msg.hidesBottomBarWhenPushed = YES;
-                                    [nav pushViewController:msg animated:YES];
-                                    
-                                }else{
-                                    
-                                    VideoPlayViewController *videoPlayVC = [[VideoPlayViewController alloc] initWithMessage];
-                                    videoPlayVC.cid = [apsArray objectAtIndex:2];
-                                    videoPlayVC.devModel = devModel;
-                                    UIWindow * window = [UIApplication sharedApplication].keyWindow;
-                                    UITabBarController * barCon = (UITabBarController *)window.rootViewController;
-                                    barCon.selectedIndex = 0;
-                                    UINavigationController * nav = barCon.viewControllers[0];
-                                    videoPlayVC.hidesBottomBarWhenPushed = YES;
-                                    [nav pushViewController:videoPlayVC animated:YES];
-                                }
-                            }                
-                        }
-                            break;
-                    }
-                }
-            } @catch (NSException *exception) {
-                [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"appDelegate exception: %@", [exception description]]];
-            } @finally {
-                
+            if (isFromFinishLauch)
+            {
+                customStr = [pushDict objectForKey:@"custom"];
+            }else{
+                customStr = [pushDict valueForKeyPath:@"aps.custom"];
             }
             
+            if (![customStr isEqualToString:@""] && customStr != nil)
+            {
+                [GeTuiSdk handleRemoteNotification:pushDict];
+                
+                NSCharacterSet *set = [NSCharacterSet characterSetWithCharactersInString:@"['] "];
+                customStr = [[customStr componentsSeparatedByCharactersInSet:set] componentsJoinedByString:@""];
+                NSArray *apsArray = [customStr componentsSeparatedByString:@","];
+                
+                @try {
+                    if (apsArray.count > 2)
+                    {
+                        switch ([[apsArray objectAtIndex:0] intValue])
+                        {
+                            case JfgMsgType_BellActiveCall:
+                            {
+                                
+                                /**
+                                 
+                                 custom = "[2516,'500000000250','',1489385652,'http://oss-cn-hangzhou.aliyuncs.com/jiafeigou-yf/500000000250/1489385652.jpg?OSSAccessKeyId=xjBdwD1du8lf2wMI&Expires=1489990454&Signature=CPDiDx3uNWGvFttaTavVciR2fkw%3D']";
+                                 
+                                 */
+                                NSString *cid = apsArray[1];
+                                NSString *timestamp = @"0";
+                                if (apsArray.count>3) {
+                                    timestamp = apsArray[3];
+                                }
+                                NSString *imageUrl = @"";
+                                if (apsArray.count>4) {
+                                    imageUrl = apsArray[4];
+                                }
+                                [self gotoDoorCallVC:cid imageUrl:imageUrl timestamp:[timestamp longLongValue]];
+                            }
+                                break;
+                            default:
+                            {
+                                JiafeigouDevStatuModel *devModel = nil;
+                                NSMutableArray * deviList = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
+                                for (JiafeigouDevStatuModel *model in deviList) {
+                                    if ([model.uuid isEqualToString:[apsArray objectAtIndex:2]]) {
+                                        if (model.unReadMsgCount == 0) {
+                                            model.unReadMsgCount = 1;
+                                        }
+                                        devModel = model;
+                                        break;
+                                    }
+                                }
+                                
+                                if (devModel) {
+                                    
+                                    if ([CommonMethod devBigTypeForOS:devModel.pid] == JFGDevBigTypeEyeCamera) {
+                                        
+                                        MsgFor720ViewController *msg = [MsgFor720ViewController new];
+                                        msg.cid = devModel.uuid;
+                                        msg.devModel = devModel;
+                                        UIWindow * window = [UIApplication sharedApplication].keyWindow;
+                                        UITabBarController * barCon = (UITabBarController *)window.rootViewController;
+                                        barCon.selectedIndex = 0;
+                                        UINavigationController * nav = barCon.viewControllers[0];
+                                        msg.hidesBottomBarWhenPushed = YES;
+                                        [nav pushViewController:msg animated:YES];
+                                        
+                                    }else{
+                                        
+                                        VideoPlayViewController *videoPlayVC = [[VideoPlayViewController alloc] initWithMessage];
+                                        videoPlayVC.cid = [apsArray objectAtIndex:2];
+                                        videoPlayVC.devModel = devModel;
+                                        UIWindow * window = [UIApplication sharedApplication].keyWindow;
+                                        UITabBarController * barCon = (UITabBarController *)window.rootViewController;
+                                        barCon.selectedIndex = 0;
+                                        UINavigationController * nav = barCon.viewControllers[0];
+                                        videoPlayVC.hidesBottomBarWhenPushed = YES;
+                                        [nav pushViewController:videoPlayVC animated:YES];
+                                    }
+                                }
+                            }
+                                break;
+                        }
+                    }
+                } @catch (NSException *exception) {
+                    [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"appDelegate exception: %@", [exception description]]];
+                } @finally {
+                    
+                }
+                
+            }
+            else
+            {
+                
+            }
         }
-        else
-        {
-            
-        }
-    }
-    
+        
+    });
 }
 
 -(void)gotoDoorCallVC:(NSString *)cid imageUrl:(NSString *)url timestamp:(long long)timestamp
@@ -519,7 +514,6 @@
             for (JiafeigouDevStatuModel *model in deviList) {
                 if ([model.uuid isEqualToString:cid]) {
                     if (model.unReadMsgCount == 0) {
-                        
                         //为了跳转消息页面
                         model.unReadMsgCount = 1;
                     }
@@ -604,7 +598,6 @@
     [Bugly setUserIdentifier:[NSString stringWithFormat:@"deviceType:[%@]  currentOS: [%f]",[CommonMethod deviceType], [[UIDevice currentDevice].systemVersion floatValue]]];
     [Bugly startWithAppId:buglyAppID config:buglyConfig];
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"bugly sysVersion:%f",[[UIDevice currentDevice].systemVersion floatValue]]];
-    
 }
 
 - (NSString * BLY_NULLABLE)attachmentForException:(NSException * BLY_NULLABLE)exception
@@ -676,6 +669,7 @@
     
     [GeTuiSdk sendFeedbackMessage:90001 andTaskId:taskId andMsgId:msgId];
 }
+
 
 #pragma mark- google Delegate
 

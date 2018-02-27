@@ -55,7 +55,7 @@
     [self.view addSubview:self.bottomView];
     [self.bottomView addSubview:self.selectedAll];
     [self.bottomView addSubview:self.delBtn];
-    [self.topBarBgView addSubview:self.editBtn];
+    //[self.topBarBgView addSubview:self.editBtn];
     // Do any additional setup after loading the view.
 }
 
@@ -110,7 +110,7 @@
     cell.headerImageView.image = [UIImage imageNamed:@"test1"];
     cell.indexPath = indexPath;
     cell.delegate = self;
-    cell.headerImageView.menuItem2Type = MenuItemTypeMoveTo;
+    //cell.headerImageView.menuItem2Type = MenuItemTypeMoveTo;
     FaceManagerDataModel *model = [self.dataArray objectAtIndex:indexPath.row];
     [cell.headerImageView jfg_setImageWithURL:[NSURL URLWithString:model.faceImageUrl] placeholderImage:[UIImage imageNamed:@"news_head128"]];
     if (isEditing) {
@@ -118,7 +118,7 @@
         cell.editImageView.hidden = NO;
         cell.isSelected = model.isSelected;
     }else{
-        cell.headerImageView.canShowMenuView = YES;
+        cell.headerImageView.canShowMenuView = NO;
         cell.editImageView.hidden = YES;
     }
     return cell;

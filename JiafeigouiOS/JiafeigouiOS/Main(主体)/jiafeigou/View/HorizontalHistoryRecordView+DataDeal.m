@@ -16,15 +16,29 @@
 -(NSArray *)dataDeal:(NSArray<JFGSDKHistoryVideoInfo *> *)list
 {
     NSMutableArray *dataArr = [[NSMutableArray alloc]init];
+    NSMutableDictionary *dict = [NSMutableDictionary new];
     
     for (JFGSDKHistoryVideoInfo *info in list) {
         
-        historyVideoDurationTimeModel *model = [[historyVideoDurationTimeModel alloc]init];
-        model.startTimestamp = (int)info.beginTime;
-        model.duration = info.duration;
-        [dataArr addObject:model];
-        
+        if ([info.cid isEqualToString:self.cid]) {
+            //去重
+            historyVideoDurationTimeModel *oldModel = [dict objectForKey:[NSString stringWithFormat:@"%lld",info.beginTime]];
+            if (oldModel) {
+                oldModel.duration = MAX(info.duration, oldModel.duration);
+            }else{
+                historyVideoDurationTimeModel *model = [[historyVideoDurationTimeModel alloc]init];
+                model.startTimestamp = (int)info.beginTime;
+                model.duration = info.duration;
+                [dict setObject:model forKey:[NSString stringWithFormat:@"%lld",info.beginTime]];
+            }
+        }
     }
+    
+    for (NSString *key in dict) {
+        historyVideoDurationTimeModel *model = [dict objectForKey:key];
+        [dataArr addObject:model];
+    }
+    
     //根据时间排序
     NSArray *resultArr = [self taxisForTime:dataArr];
     //倒序

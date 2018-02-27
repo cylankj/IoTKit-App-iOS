@@ -70,6 +70,11 @@ typedef NS_ENUM(NSInteger,JFGSDKLoginStatus) {
 @property (nonatomic,readonly)NSString *currentLoginedAcount;
 
 /**
+ *  AI相关请求authtoken
+ */
+@property (nonatomic,readonly)NSString *aiReqAuthToken;
+
+/**
  *  账号缓存信息(已登录)
  *
  *  @return 账号信息对象

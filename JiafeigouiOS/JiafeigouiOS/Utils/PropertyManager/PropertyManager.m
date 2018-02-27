@@ -53,6 +53,7 @@ NSString *const pRemoteWatchKey = @"REMOTE_VIEW";//是否支持省电模式
 NSString *const pInfraredEnhanced = @"INFRARED_ENHANCED_RECOGNITION";//红外增强
 NSString *const pAreaDetection = @"DETECTION_ZONE";//区域侦测
 NSString *const pDoorLockKey = @"DOOR_LOCK";//门锁
+NSString *const pFaceRecognition = @"FACE_RECOGNITION";//人脸识别
 
 
 @interface PropertyManager()
@@ -90,7 +91,6 @@ NSString *const pDoorLockKey = @"DOOR_LOCK";//门锁
                         result = NO;
                     }
                 }
-                //[JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"showKey:[%@]  showValue[%d]",rowKey, result]];
                 return result;
             }
         }
@@ -112,9 +112,9 @@ NSString *const pDoorLockKey = @"DOOR_LOCK";//门锁
 + (BOOL)showRowWithPid:(NSInteger)pID key:(NSString *)rowKey path:(NSString *)filePath
 {
     BOOL result = NO;
-    
+    //NSLog(@"开始解析设备属性列表");
     NSDictionary *propertyDict = [NSDictionary dictionaryWithJsonString:[NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil]];
-    
+    //NSLog(@"结束解析设备属性列表");
     NSArray *propertyArr = [propertyDict objectForKey:@"pList"];
     
     for (NSInteger i = 0; i < propertyArr.count; i ++)
@@ -135,8 +135,6 @@ NSString *const pDoorLockKey = @"DOOR_LOCK";//门锁
                         result = NO;
                     }
                 }
-                
-                //[JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"showKey:[%@]  showValue[%d]",rowKey, result]];
                 return result;
             }
         }

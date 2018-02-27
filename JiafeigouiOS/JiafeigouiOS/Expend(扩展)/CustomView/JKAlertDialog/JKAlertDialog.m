@@ -4,14 +4,14 @@
 //
 //  Created by Jakey on 15/3/8.
 //  Copyright (c) 2015年 www.skyfox.org. All rights reserved.
-//
+//contentView
 #define AlertPadding 20
 #define MenuHeight 44
 
 #define AlertHeight 130
 #define AlertWidth 270
 
-#define ButtonTitleFontSize 18
+#define ButtonTitleFontSize 15
 #define TitleLabelFontSize 16.5
 #define MessageLabelFontSize 15
 
@@ -128,7 +128,8 @@
 }
 #pragma mark - add item
 
-- (NSInteger)addButtonWithTitle:(NSString *)title{
+- (NSInteger)addButtonWithTitle:(NSString *)title
+{
     JKAlertDialogItem *item = [[JKAlertDialogItem alloc] init];
     item.title = title;
     item.action =  ^(JKAlertDialogItem *item) {
@@ -138,6 +139,7 @@
     [_items addObject:item];
     return [_items indexOfObject:title];
 }
+
 - (void)addButton:(ButtonType)type withTitle:(NSString *)title handler:(JKAlertDialogHandler)handler{
     JKAlertDialogItem *item = [[JKAlertDialogItem alloc] init];
     item.title = title;
@@ -147,7 +149,7 @@
     item.tag = [_items indexOfObject:item];
 }
 - (void)addButtonItem {
-    _buttonScrollView = [[UIScrollView alloc]initWithFrame:CGRectMake(0, _alertView.frame.size.height- MenuHeight,AlertWidth, MenuHeight)];
+    _buttonScrollView = [[UIScrollView alloc]initWithFrame:CGRectMake(0, _alertView.frame.size.height- MenuHeight ,AlertWidth, MenuHeight)];
     _buttonScrollView.bounces = NO;
     _buttonScrollView.showsHorizontalScrollIndicator = NO;
     _buttonScrollView.showsVerticalScrollIndicator =  NO;
@@ -203,12 +205,13 @@
 #pragma mark - show and dismiss
 -(UIView*)topView{
     UIWindow *window = [[UIApplication sharedApplication] keyWindow];
-    return  window.subviews[0];
+    return  window;
 }
 - (void)show {
+    
     [UIView animateWithDuration:0.5 animations:^{
         _coverView.alpha = 0.5;
-
+        
     } completion:^(BOOL finished) {
         
     }];

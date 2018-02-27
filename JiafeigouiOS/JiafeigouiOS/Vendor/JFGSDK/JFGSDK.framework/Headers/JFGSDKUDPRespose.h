@@ -55,6 +55,8 @@
  */
 @property (nonatomic,copy)NSString *ver;
 
+@property (nonatomic,assign)int os;
+
 
 @end
 
@@ -110,14 +112,26 @@
  */
 @property (nonatomic,assign)NSInteger ackMsg;
 
+/*!
+ * ~chinese
+ *  ret==0 标示成功 ，其他失败
+ *
+ * ~english
+ *  ret==0 success,other failed
+ */
 @property (nonatomic,assign)NSInteger ret;
 
 @end
 
 
 @interface JFGSDKUDPResposeWifiStatus : JFGSDKUDPResposeHead
+
 /*!
- *  0标示成功 ，其他失败
+ * ~chinese
+ *  ret==0 标示成功 ，其他失败
+ *
+ * ~english
+ *  ret==0 success,other failed
  */
 @property (nonatomic,assign)int ret;
 
@@ -125,6 +139,13 @@
 
 @interface JFGSDKUDPResposeSetAP : JFGSDKUDPResposeHead
 
+/*!
+ * ~chinese
+ *  ret==0 标示成功 ，其他失败
+ *
+ * ~english
+ *  ret==0 success,other failed
+ */
 @property (nonatomic,assign)int ret;
 
 @end

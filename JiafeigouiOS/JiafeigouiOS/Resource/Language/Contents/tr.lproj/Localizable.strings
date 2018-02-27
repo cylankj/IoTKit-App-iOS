@@ -1,6 +1,6 @@
 /* tr.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
+Created by cylan language tool  on Mon Feb 05 17:41:29 CST 2018.  
 */
 "GLOBAL_NO_NETWORK" = "Ağa bağlı değil";
 "REPEAT_TIME" = "%d saniye";
@@ -165,7 +165,7 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MSG_SYSTEM_UPGRADE" = "Çok uygun! Sistemi V%@ e yükseltir";
 "MSG_WARN_ON" = "Hareket algılamayı açtınız. Cihaz, herhangi bir şey hareket ettiğinde size hemen bildirecektir.";
 "MSG_WARN_OFF" = "Hareket algılamayı kapattınız.";
-"MSG_WARNING" = "Yeni keşif";
+"MSG_WARNING" = "Yeni mesajlar";
 "MSG_REBIND" = "Cihaz %@ tarafından eklendi. Sorunuz olursa bizimle irtibat kurunuz.";
 "LARGER_IMAGE" = "Büyük resim görüntüle";
 "DELETE_SURE" = "Silmek istediğinizden emin misiniz?";
@@ -1125,8 +1125,8 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MESSAGES_TIME_HOUR" = "%@ sa. önce";
 "MESSAGES_TIME_DAY" = "%@ gün önce";
 "MESSAGES_FACE_IDENTIFY" = "belirlemek";
-"MESSAGES_IDENTIFY_POP" = "Yeni yüz veya mevcut bir yüze ekleyerek, yüz tanımanın doğruluğunu artırın";
-"MESSAGES_IDENTIFY_CREATE_BTN" = "Yeni yüz";
+"MESSAGES_IDENTIFY_POP" = "Yüzü kaydettirin veya mevcut bir yüze ekleyerek, yüz tanımanın doğruluğunu geliştirin";
+"MESSAGES_IDENTIFY_CREATE_BTN" = "Yüzünü kaydet";
 "MESSAGES_IDENTIFY_ADD_BTN" = "Mevcut yüz ekle";
 "MESSAGES_DELETE_POP" = "Yüzü ve ilgili tüm mesajları silinsin mi?";
 "MESSAGES_DELETE_FACE_BTN" = "Yüzü kaldır";
@@ -1165,3 +1165,40 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "DOOR_WRONG_PSW" = "yanlış şifre";
 "DOOR_WRONG_PSW_MSG" = "Yanlış kapı şifresi";
 "DETECTION_AREA_FAILED_LOAD_RETRY" = "Canlı resim alamıyor, bu yüzden alan ayarlayamıyor, lütfen tekrar deneyin.";
+"WIRED_GUIDE" = "cihaz ve yönlendirici bağlamak için ağ kablosunu kullanın, cihazı sağlamak ve APP aynı ağ kullanın";
+"WIRED_SELECT_DEVICE_CID" = "Cihaz seç CID";
+"WIRED_SELECT_DEVICE_CID_TIPS" = "Cihaz CID";
+"DEVICE_WIRED_CONNECTION" = "Kablolu bağlantı";
+"HALF_CAMERA_ADD_TIPS" = "Uzun basma 3 saniye";
+"HALF_CAMERA" = "Yarım küresel kamera";
+"FACE_COLLAPSE" = "Çöküş";
+"WIRED_UPGRADE_NON_LAN" = "Lütfen yapılandırmayı yapmadan önce telefonu ve cihazı aynı ağa bağlayın";
+"MESSAGES_FACE_ANALYSIS" = "Yolcu akış analizi";
+"MESSAGES_FACE_TADAY_VISIT" = "Bugünkü ziyaret";
+"MESSAGES_FACE_YESTERDAY_VISIT" = "Dün ziyaret";
+"MESSAGES_FACE_NEW_VISIT" = "Yeni ziyaretçiler";
+"MESSAGES_FACE_PEOPLE" = "insanlar";
+"CLOSE_BUTTON" = "Kapat";
+"MESSAGES_FILTER_STRANGER" = "Ziyaretçi";
+"MESSAGES_REGISTER_FACE" = "Yüzünü kaydet";
+"MESSAGES_GENDER_MALE" = "Erkek";
+"MESSAGES_GENDER_FEMALE" = "Kadın";
+"MESSAGES_AGE" = "%@ yıl";
+"REGISTER_FACE_TIPS" = "net bir ön yüz fotoğrafını yükleyin";
+"MESSAGES_EXPLAIN" = "Resim örneği";
+"MESSAGES_POSITIVE_FACE" = "Olumlu yüz";
+"MESSAGES_SIDE_FACE" = "Yan yüz";
+"MESSAGES_BLURRY" = "Bulanık";
+"REGISTRATION_SECCESS" = "Başarılı Kayıt";
+"CONTINUE_REGISTER" = "Kaydolmaya devam et";
+"WRONG_FORMAT" = "Yanlış format, yalnızca .jpg/.png/.bmp\'yi destekleyin";
+"FACE_NOT_RECOGNIZED" = "Yüz tanınmadı";
+"REGFACE_MULTIFACE" = "Çok fazla yüz, tanınmıyor";
+"REGFACE_FACESMALL" = "Yüz çok küçük, tanınmıyor";
+"REGFACE_NOFACE" = "Yüz tespiti yok";
+"REGISTRATION_FAILED" = "Kayıt yüzü başarısız oldu";
+"FACE_RECOGNITION" = "Yüz tanıma";
+"DOWNLOAD_MSG_PICTURE" = "Mesaj resmi indir";
+"DOWNLOAD_MSG_PICTURE_EXPLAIN" = "Kapandıktan sonra yüz tanıma alarmı mesajı indirilmez";
+"SUCCESS_REGFACE" = "Başarıyla kayıtlı yüz %@";
+"ADD_EXISTINGFACE_BEYOND10" = "En fazla 10 yüz ekleyebilirsiniz";

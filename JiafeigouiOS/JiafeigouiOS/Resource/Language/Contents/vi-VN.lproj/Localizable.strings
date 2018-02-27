@@ -1,6 +1,6 @@
 /* vi-VN.lproj  Localizable.strings 
  JiafeigouIOS 
-Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.  
+Created by cylan language tool  on Mon Feb 05 17:41:29 CST 2018.  
 */
 "GLOBAL_NO_NETWORK" = "Chưa kết nối";
 "REPEAT_TIME" = "%d giây";
@@ -165,7 +165,7 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MSG_SYSTEM_UPGRADE" = "Nâng cấp thành công hệ thống V%@";
 "MSG_WARN_ON" = "Bạn đã bật phát hiện chuyển động. Thiết bị sẽ thông báo cho bạn khi có sự kiện";
 "MSG_WARN_OFF" = "Bạn đã tắt phát hiện chuyển động";
-"MSG_WARNING" = "Khám phá mới";
+"MSG_WARNING" = "Bài viết mới";
 "MSG_REBIND" = "Thiết bị đã thêm bởi %@. Có thắc mắc, hãy liên hệ chúng tôi";
 "LARGER_IMAGE" = "Xem ảnh kích thước lớn";
 "DELETE_SURE" = "Bạn muốn xoá?";
@@ -1125,8 +1125,8 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "MESSAGES_TIME_HOUR" = "%@ giờ trước";
 "MESSAGES_TIME_DAY" = "%@ ngày trước";
 "MESSAGES_FACE_IDENTIFY" = "Nhận định";
-"MESSAGES_IDENTIFY_POP" = "Khuôn mặt mới, hoặc bằng cách thêm vào khuôn mặt hiện tại, nâng cao độ chính xác của nhận dạng khuôn mặt";
-"MESSAGES_IDENTIFY_CREATE_BTN" = "Gương mặt mới";
+"MESSAGES_IDENTIFY_POP" = "Đăng ký mặt, hoặc bằng cách thêm vào khuôn mặt hiện tại, nâng cao độ chính xác của nhận dạng khuôn mặt";
+"MESSAGES_IDENTIFY_CREATE_BTN" = "Đăng ký mặt";
 "MESSAGES_IDENTIFY_ADD_BTN" = "Thêm vào khuôn mặt hiện tại";
 "MESSAGES_DELETE_POP" = "Xóa khuôn mặt và tất cả các tin nhắn có liên quan?";
 "MESSAGES_DELETE_FACE_BTN" = "Xóa khuôn mặt";
@@ -1165,3 +1165,40 @@ Created by cylan language tool  on Thu Nov 23 10:59:25 CST 2017.
 "DOOR_WRONG_PSW" = "sai mật khẩu";
 "DOOR_WRONG_PSW_MSG" = "Mật khẩu cửa sai";
 "DETECTION_AREA_FAILED_LOAD_RETRY" = "không nhận được hình ảnh trực tiếp, vì vậy không thể đặt khu vực, hãy thử lại.";
+"WIRED_GUIDE" = "Sử dụng cáp mạng để kết nối thiết bị và bộ định tuyến, đảm bảo thiết bị và APP sử dụng cùng một mạng";
+"WIRED_SELECT_DEVICE_CID" = "Chọn thiết bị CID";
+"WIRED_SELECT_DEVICE_CID_TIPS" = "Thiết bị CID";
+"DEVICE_WIRED_CONNECTION" = "Kết nối có dây";
+"HALF_CAMERA_ADD_TIPS" = "Nhấn lâu 3 giây";
+"HALF_CAMERA" = "camera nửa hình cầu";
+"FACE_COLLAPSE" = "Sập";
+"WIRED_UPGRADE_NON_LAN" = "Vui lòng kết nối điện thoại và thiết bị với cùng một mạng trước khi cấu hình";
+"MESSAGES_FACE_ANALYSIS" = "Phân tích dòng khách";
+"MESSAGES_FACE_TADAY_VISIT" = "Chuyến thăm hôm nay";
+"MESSAGES_FACE_YESTERDAY_VISIT" = "Lượt truy cập của ngày hôm qua";
+"MESSAGES_FACE_NEW_VISIT" = "Khách mới";
+"MESSAGES_FACE_PEOPLE" = "những người";
+"CLOSE_BUTTON" = "Gần";
+"MESSAGES_FILTER_STRANGER" = "Khách";
+"MESSAGES_REGISTER_FACE" = "Đăng ký mặt";
+"MESSAGES_GENDER_MALE" = "Nam giới";
+"MESSAGES_GENDER_FEMALE" = "Giống cái";
+"MESSAGES_AGE" = "%@ năm";
+"REGISTER_FACE_TIPS" = "Vui lòng tải lên hình ảnh khuôn mặt rõ ràng";
+"MESSAGES_EXPLAIN" = "Ví dụ hình ảnh";
+"MESSAGES_POSITIVE_FACE" = "Mặt tích cực";
+"MESSAGES_SIDE_FACE" = "Mặt mặt";
+"MESSAGES_BLURRY" = "Mờ";
+"REGISTRATION_SECCESS" = "Đăng ký thành công";
+"CONTINUE_REGISTER" = "Tiếp tục đăng ký";
+"WRONG_FORMAT" = "Định dạng sai, chỉ hỗ trợ .jpg/.png/.bmp";
+"FACE_NOT_RECOGNIZED" = "Mặt không được công nhận";
+"REGFACE_MULTIFACE" = "Quá nhiều khuôn mặt, không được nhận ra";
+"REGFACE_FACESMALL" = "Mặt là quá nhỏ, không được công nhận";
+"REGFACE_NOFACE" = "Không nhận diện khuôn mặt";
+"REGISTRATION_FAILED" = "Đăng ký mặt thất bại";
+"FACE_RECOGNITION" = "Nhận dạng khuôn mặt";
+"DOWNLOAD_MSG_PICTURE" = "Tải ảnh thông báo";
+"DOWNLOAD_MSG_PICTURE_EXPLAIN" = "Sau khi đóng, thông báo cảnh báo nhận dạng khuôn mặt sẽ không được tải xuống";
+"SUCCESS_REGFACE" = "đăng ký thành công khuôn mặt %@";
+"ADD_EXISTINGFACE_BEYOND10" = "chỉ thêm tối đa 10 khuôn mặt";

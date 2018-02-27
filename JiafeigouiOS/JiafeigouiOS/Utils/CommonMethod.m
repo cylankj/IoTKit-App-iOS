@@ -345,6 +345,9 @@ NSInteger nameSort(id mod1, id mod2,void*context)
             ap = [NSString stringWithFormat:@"DOG-11W-%@", [cid substringFromIndex:6]];
         }
             break;
+        case productType_AI_Camera_dome:
+            ap = [NSString stringWithFormat:@"DOG-13W-%@", [cid substringFromIndex:6]];
+            break;
         default:
             break;
     }
@@ -625,7 +628,7 @@ NSInteger nameSort(id mod1, id mod2,void*context)
 {
     ///image/[account].jpg
     NSString *fileName = [NSString stringWithFormat:@"/image/%@.jpg",account];
-    NSString *h = [JFGSDK getCloudUrlWithFlag:1 fileName:fileName];
+    NSString *h = [JFGSDK getCloudUrlWithFlag:[JFGSDK getRegionType] fileName:fileName];
     return h;
 }
 
@@ -644,7 +647,7 @@ NSInteger nameSort(id mod1, id mod2,void*context)
 +(void)setHeadImageForImageView:(UIImageView *)imageView account:(NSString *)account
 {
     NSString *fileName = [NSString stringWithFormat:@"/image/%@.jpg",account];
-    NSString *h = [JFGSDK getCloudUrlWithFlag:1 fileName:fileName];
+    NSString *h = [JFGSDK getCloudUrlWithFlag:[JFGSDK getRegionType] fileName:fileName];
     [imageView sd_setImageWithURL:[NSURL URLWithString:h] placeholderImage:[UIImage imageNamed:@"friends_head"]];
 }
 
@@ -663,7 +666,7 @@ NSInteger nameSort(id mod1, id mod2,void*context)
         _account = @"";
     }
     NSString *fileName = [NSString stringWithFormat:@"/image/%@.jpg",_account];
-    NSString *headUrl = [JFGSDK getCloudUrlWithFlag:1 fileName:fileName];
+    NSString *headUrl = [JFGSDK getCloudUrlWithFlag:[JFGSDK getRegionType] fileName:fileName];
     if (headUrl && ![headUrl isEqualToString:@""]) {
         [[NSUserDefaults standardUserDefaults] setObject:headUrl forKey:_account];
     }else{
@@ -983,6 +986,9 @@ NSInteger nameSort(id mod1, id mod2,void*context)
     switch (pType) {
         case productType_720:
         case productType_720p:
+        case productType_AI_Camera_outdoor:
+        case productType_AI_Camera:
+        case productType_AI_Camera_dome:
         {
             return YES;
         }

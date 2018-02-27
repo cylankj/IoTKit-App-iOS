@@ -24,10 +24,16 @@ NSString *const graySupportKey = @"graySupportKey_";
 
 @implementation JFGGrayPolicyManager
 
+static NSDate *lastestReqTokenDate = nil;
 
 //获取token
 +(void)reqGrayToken
 {
+    if (lastestReqTokenDate && [lastestReqTokenDate timeIntervalSinceNow] < 30) {
+        //控制token请求时间为30s每次，防止循环请求
+        return;
+    }
+    lastestReqTokenDate = [NSDate date];
     NSString *account = [LoginManager sharedManager].currentLoginedAcount;
     NSMutableDictionary *dict = [NSMutableDictionary new];
     [dict setObject:@"get_token" forKey:@"act"];
@@ -64,7 +70,7 @@ NSString *const graySupportKey = @"graySupportKey_";
 +(void)reqGrayPolicy
 {
     if (![[self class] isAllowableReq]) {
-        //return;
+        return;
     }
     NSString *account = [LoginManager sharedManager].currentLoginedAcount;
     
@@ -113,6 +119,7 @@ NSString *const graySupportKey = @"graySupportKey_";
             if (ret == 4) {
                 //token失效
                 [self reqGrayToken];
+                
             }else if (ret == 0){
                 
                 NSString *base64String = dict[@"gray"];
@@ -269,5 +276,7 @@ NSString *const graySupportKey = @"graySupportKey_";
     NSString *account = [LoginManager sharedManager].currentLoginedAcount;
     [[NSUserDefaults standardUserDefaults] removeObjectForKey:[NSString stringWithFormat:@"%@_%@",grayReqTimeKey,account]];
 }
+
+
 
 @end

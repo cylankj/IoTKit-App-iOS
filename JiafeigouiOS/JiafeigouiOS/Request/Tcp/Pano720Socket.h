@@ -7,7 +7,6 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <JFGSDK/JFGSDKSock.h>
 
 @protocol Pano720SocketDelegate <NSObject>
 
@@ -23,7 +22,7 @@
 
 @end
 
-@interface Pano720Socket : NSObject<JFGSDKSockCBDelegate>
+@interface Pano720Socket : NSObject
 
 + (instancetype)sharedSocket;
 
@@ -40,7 +39,7 @@
 //send msg named 20006
 -(uint64_t)sendMsgWithCids:(NSArray <NSString *>*)cids isCallBack:(BOOL)isCallBack requestType:(int)requestType requestData:(NSArray *)requestArr;
 // send dp msg
-- (uint64_t)sendDataPointMsg:(NSString *)cid dpMsgSegs:(NSArray <DataPointSeg *> *)segs;
+//- (uint64_t)sendDataPointMsg:(NSString *)cid dpMsgSegs:(NSArray <DataPointSeg *> *)segs;
 
 // 专门下载 消息
 - (uint64_t)sendDownloadMsgWithCids:(NSArray <NSString *>*)cids fileName:(NSString *)fileName md5:(NSString *)md5 begin:(int)begin offset:(int)offset;

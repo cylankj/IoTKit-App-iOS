@@ -28,6 +28,8 @@ typedef NS_ENUM(NSInteger,FaceAddressBookVCType) {
 @property (nonatomic,copy)NSString *cid;
 @property (nonatomic,copy)NSString *face_id;
 @property (nonatomic,copy)NSString *person_id;//如果有，则传入
+@property (nonatomic,copy)NSString *imageUrl;//头像url
+@property (nonatomic,assign)int flag;//头像文件存储区域
 @property (nonatomic,strong)NSIndexPath *selectedIndexPath;
 @property (nonatomic,weak)id <FaceAddressBookVCDelegate> delegate;
 @property (nonatomic,assign)FaceAddressBookVCType vcType;

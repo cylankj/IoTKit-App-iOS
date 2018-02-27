@@ -38,7 +38,7 @@
 #import "WifiModeFor720CFResultVC.h"
 #import "DeepSleepVC.h"
 #import "ChangePwdViewController.h"
-#import "RegionalizationViewController.h"
+#import "MTA.h"
 
 @interface DeviceSettingVC()<autoPhotoVCDelegate,UIAlertViewDelegate,JFGSDKCallbackDelegate, setAngleDelegate, safeDelegate,AddDeviceGuideVCNextActionDelegate>
 {
@@ -300,7 +300,10 @@
     }else if ([cellID isEqualToString:phoneHotspot]){
         
         NSString *iPhoneName = [UIDevice currentDevice].name;
-        if (self.settingTableView.deviceSettingVM.settingModel.deviceNetType == DeviceNetType_Wifi && [iPhoneName isEqualToString:self.settingTableView.deviceSettingVM.settingModel.wifi]) {
+        if(
+       self.settingTableView.deviceSettingVM.settingModel.deviceNetType == DeviceNetType_Wifi &&
+           [iPhoneName isEqualToString:self.settingTableView.deviceSettingVM.settingModel.wifi]) {
+            
             //已开启热点
             [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SETTINGS_HOTSPOT_CONNECTED"]];
             return;
@@ -353,6 +356,7 @@
                 [self.navigationController pushViewController:deviGuide animated:YES];
             }
         }
+        
     }else if ([cellID isEqualToString:idCellDoorlockPw]){
         
         //门锁
@@ -362,7 +366,6 @@
          [self.navigationController pushViewController:pw animated:YES];
     }
 }
-
 
 
 - (void)moveDectionChanged:(BOOL)isOpen repeatTime:(int)repeat begin:(int)begin end:(int)end
@@ -449,6 +452,13 @@
 // 跳转 wifi界面
 -(void)pushToWifiController:(NSString *)dogWifi
 {
+
+//    if ([LoginManager sharedManager].loginStatus != JFGSDKCurrentLoginStatusSuccess) {
+//
+//        [CommonMethod showNetDisconnectAlert];
+//        return;
+//    }
+    
     NSMutableArray *list = [[JFGBoundDevicesMsg sharedDeciceMsg] getDevicesList];
     JiafeigouDevStatuModel *currentModel;
     
@@ -460,6 +470,7 @@
             break;
         }
     }
+    
     // FreeCam 等类型 直接跳转绑定页面
     switch (self.pType)
     {
@@ -477,16 +488,14 @@
             wifiConf.cid = self.cid;
             wifiConf.configType = configWifiType_configWifi;
             [self.navigationController pushViewController:wifiConf animated:YES];
-            
             return;
         }
             break;
+            
         case productType_720p:
         case productType_720:
         {
             NSString *currentWifiName = [CommonMethod currentConnecttedWifi];
-            
-            
             if ([CommonMethod isConnectedAPWithPid:productType_720 Cid:self.devModel.uuid] || [dogWifi isEqualToString:currentWifiName]) {
                 
                 //局域网或者直连AP
@@ -507,6 +516,7 @@
                 deviGuide.delegate = self;
                 [self.navigationController pushViewController:deviGuide animated:YES];
                 
+                
             }else{
                 
                 //前往WiFi配置
@@ -515,6 +525,7 @@
                 } OKBlock:^{
                     
                 }];
+                
             }
             return;
         }
@@ -523,49 +534,40 @@
             break;
     }
 
-    
-    
-    if (currentModel.netType != JFGNetTypeOffline && currentModel.netType != JFGNetTypeConnect)
+    if (currentModel.netType != JFGNetTypeOffline)
     {
         if ([[CommonMethod currentConnecttedWifi] isEqualToString:dogWifi]
-            || [CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid])
+            || [CommonMethod isConnectedAPWithPid:self.pType Cid:self.cid] || [CommonMethod isConnectedAPWithPid:productType_720 Cid:self.cid])
         {
             
-            switch (self.pType)
-            {
-                default:
-                {
-                    //前往WiFi选项
-                    DeviceWifiSetVC *deviceWifiSet = [DeviceWifiSetVC new];
-                    deviceWifiSet.pType = self.pType;
-                    deviceWifiSet.cid = self.cid;
-                    deviceWifiSet.dogWifi = dogWifi;
-                    [self.navigationController pushViewController:deviceWifiSet animated:YES];
-                }
-                    break;
-            }
+            //前往WiFi选项
+            DeviceWifiSetVC *deviceWifiSet = [DeviceWifiSetVC new];
+            deviceWifiSet.pType = self.pType;
+            deviceWifiSet.cid = self.cid;
+            deviceWifiSet.dogWifi = dogWifi;
+            [self.navigationController pushViewController:deviceWifiSet animated:YES];
             
+        }else if ([dogWifi isEqualToString:@""]){
             
-            
-        }
-        else if ([dogWifi isEqualToString:@""])
-        {
             [self pushToAddDevicesVC];
-        }
-        else
-        {
+            
+        }else{
+            
             //前往WiFi配置
             [LSAlertView showAlertWithTitle:nil Message:[NSString stringWithFormat:[JfgLanguage getLanTextStrByKey:@"WIFI_SET_1"],dogWifi] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"WELL_OK"] OtherButtonTitle:nil CancelBlock:^{
                 
             } OKBlock:^{
                 
+                
             }];
         }
-    }
-    else
-    {
+        
+    }else{
+        
         [self pushToAddDevicesVC];
     }
+    
+    [MTA trackCustomKeyValueEvent:@"DevSetting_wifiConfiguration" props:@{}];
 }
 
 - (void)pushToAddDevicesVC

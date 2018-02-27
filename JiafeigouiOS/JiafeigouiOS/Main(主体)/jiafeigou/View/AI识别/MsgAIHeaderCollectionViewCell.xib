@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="13196" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="13771" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
     <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13174"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13772"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -18,17 +18,10 @@
                 <rect key="frame" x="0.0" y="0.0" width="100" height="90"/>
                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                 <subviews>
-                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="jFg-4r-DWR" customClass="MsgAIHeaderImageView">
-                        <rect key="frame" x="18" y="0.0" width="64" height="64"/>
-                        <constraints>
-                            <constraint firstAttribute="width" constant="64" id="nO9-WK-FAY"/>
-                            <constraint firstAttribute="height" constant="64" id="qrr-x5-oBu"/>
-                        </constraints>
-                    </imageView>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="张三" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="r0K-vg-ndO">
-                        <rect key="frame" x="0.0" y="69" width="100" height="21"/>
+                        <rect key="frame" x="0.0" y="75" width="100" height="15"/>
                         <constraints>
-                            <constraint firstAttribute="height" constant="21" id="Qy9-QE-Ccy"/>
+                            <constraint firstAttribute="height" constant="15" id="Qy9-QE-Ccy"/>
                             <constraint firstAttribute="width" constant="100" id="SiJ-xY-4EJ"/>
                         </constraints>
                         <fontDescription key="fontDescription" type="system" pointSize="13"/>
@@ -36,29 +29,39 @@
                         <nil key="highlightedColor"/>
                     </label>
                     <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="icon_stranger" translatesAutoresizingMaskIntoConstraints="NO" id="5le-Ie-sZd">
-                        <rect key="frame" x="62" y="0.0" width="20" height="20"/>
+                        <rect key="frame" x="62" y="4" width="20" height="20"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="SMq-fC-1J9"/>
                             <constraint firstAttribute="width" constant="20" id="mKw-6Q-YLa"/>
                         </constraints>
                     </imageView>
+                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="jFg-4r-DWR" customClass="MsgAIHeaderImageView">
+                        <rect key="frame" x="19" y="5" width="62" height="62"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="62" id="nO9-WK-FAY"/>
+                            <constraint firstAttribute="height" constant="62" id="qrr-x5-oBu"/>
+                        </constraints>
+                    </imageView>
                 </subviews>
             </view>
             <constraints>
-                <constraint firstItem="r0K-vg-ndO" firstAttribute="top" secondItem="jFg-4r-DWR" secondAttribute="bottom" constant="5" id="Bpz-ed-3ed"/>
                 <constraint firstItem="r0K-vg-ndO" firstAttribute="centerX" secondItem="gTV-IL-0wX" secondAttribute="centerX" id="IHW-7n-XCl"/>
                 <constraint firstItem="jFg-4r-DWR" firstAttribute="centerX" secondItem="gTV-IL-0wX" secondAttribute="centerX" id="IOq-vs-Wpv"/>
-                <constraint firstItem="5le-Ie-sZd" firstAttribute="leading" secondItem="jFg-4r-DWR" secondAttribute="trailing" constant="-20" id="X1G-Uo-oft"/>
-                <constraint firstItem="jFg-4r-DWR" firstAttribute="top" secondItem="5le-Ie-sZd" secondAttribute="bottom" constant="-20" id="XEZ-O5-Oeu"/>
-                <constraint firstItem="jFg-4r-DWR" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="z6h-8F-pei"/>
+                <constraint firstItem="r0K-vg-ndO" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" constant="75" id="Tfd-LL-ZYl"/>
+                <constraint firstItem="5le-Ie-sZd" firstAttribute="leading" secondItem="jFg-4r-DWR" secondAttribute="trailing" constant="-19" id="X1G-Uo-oft"/>
+                <constraint firstItem="jFg-4r-DWR" firstAttribute="top" secondItem="5le-Ie-sZd" secondAttribute="bottom" constant="-19" id="XEZ-O5-Oeu"/>
+                <constraint firstItem="jFg-4r-DWR" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" constant="5" id="z6h-8F-pei"/>
             </constraints>
             <size key="customSize" width="167" height="142"/>
             <connections>
                 <outlet property="headImageView" destination="jFg-4r-DWR" id="VpF-OZ-wIQ"/>
+                <outlet property="headerImageHeight" destination="qrr-x5-oBu" id="RUL-9b-Cnb"/>
+                <outlet property="headerImageTop" destination="z6h-8F-pei" id="b1o-T0-GN0"/>
+                <outlet property="headerImageWidth" destination="nO9-WK-FAY" id="28U-Tz-Iqs"/>
                 <outlet property="nameLabel" destination="r0K-vg-ndO" id="LyI-QL-0pa"/>
                 <outlet property="strangerIcon" destination="5le-Ie-sZd" id="hJk-Rq-Wis"/>
             </connections>
-            <point key="canvasLocation" x="-1105" y="-83"/>
+            <point key="canvasLocation" x="-1768" y="-99"/>
         </collectionViewCell>
     </objects>
     <resources>

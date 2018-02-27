@@ -102,6 +102,9 @@
 
 -(void)jfgOnUniversalData:(NSData *)msgData msgID:(int)mid seq:(long)seq
 {
+    if (![msgData isKindOfClass:[NSData class]]) {
+        return;
+    }
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(reqTimeout) object:nil];
     id obj = [MPMessagePackReader readData:msgData error:nil];
     if ([obj isKindOfClass:[NSNumber class]]) {

@@ -174,11 +174,11 @@
         historyVideoDurationTimeModel *resultModel = [histroryDataModelList lastObject];
         NSInteger seconds = allS;
         //format of hour
-        NSString *str_hour = [NSString stringWithFormat:@"%02d",seconds/3600];
+        NSString *str_hour = [NSString stringWithFormat:@"%02ld",seconds/3600];
         //format of minute
-        NSString *str_minute = [NSString stringWithFormat:@"%02d",(seconds%3600)/60];
+        NSString *str_minute = [NSString stringWithFormat:@"%02ld",(seconds%3600)/60];
         //format of second
-        NSString *str_second = [NSString stringWithFormat:@"%02d",seconds%60];
+        NSString *str_second = [NSString stringWithFormat:@"%02ld",seconds%60];
         NSCalendar *greCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
         NSDateComponents *dateComponentsForDate = [[NSDateComponents alloc] init];
         [dateComponentsForDate setDay:resultModel.startDay];
@@ -312,11 +312,13 @@
         
     }
     
-    for (NSInteger i=histroryDataModelList.count; i<240;i++ ) {
+    for (NSInteger i=histroryDataModelList.count; i<10000;i++ ) {
         
         UIImageView *selectedImageView = [bgImageView viewWithTag:i+10];
         if (selectedImageView) {
             selectedImageView.hidden = YES;
+        }else{
+            break;
         }
     }
 
@@ -380,12 +382,10 @@
         if (!lock) {
             lock = [[NSLock alloc] init];
         }
-        
         dispatch_async(dispatch_get_global_queue(0, 0), ^{
             
             [lock lock];
             
-            NSLog(@"thread:%@",[NSThread currentThread]);
             NSArray <JFGSDKHistoryVideoInfo *> *list = notification.object;
             
             if (tempDataArray == nil) {
@@ -393,21 +393,15 @@
             }else{
                 [tempDataArray addObjectsFromArray:list];
             }
-            NSLog(@"historyCount:%ld",(unsigned long)tempDataArray.count);
+            
             NSArray *resultA = [self dataDeal:tempDataArray];
             self.dataArray = [[NSMutableArray alloc]initWithArray:resultA];
-            
             
             dispatch_async(dispatch_get_main_queue(), ^{
                 [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(historyDataFinished) object:nil];
                 [self performSelector:@selector(historyDataFinished) withObject:nil afterDelay:1];
             });
-            
-            
             [lock unlock];
-            
-            
-            
         });
         
     } @catch (NSException *exception) {
@@ -567,6 +561,7 @@
         return;
     }
     [CylanJFGSDK getHistoryVideoListForCid:self.cid];
+    //[CylanJFGSDK getHistoryVideoListV2:self.cid searchWay:1 timeEnd:1 searchRange:1];
     self.isLoadHistoryData = YES;
     self.isLoadingData = YES;
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(reqTimeout) object:nil];

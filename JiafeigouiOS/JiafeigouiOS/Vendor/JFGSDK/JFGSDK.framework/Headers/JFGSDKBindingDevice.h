@@ -81,4 +81,26 @@
                 devMacAddr:(NSString *)macAddr
                   isRebind:(BOOL)isRebind;
 
+
+
+#pragma mark- 以下为自定义绑定流程使用接口，一般情况请使用以上接口实现绑定
+
+/**
+ *  设置设备连接服务器地址
+ *  @param cid 设备标示
+ *  @param devIp 设备当前ip地址
+ *  @param devMac 设备mac地址
+ *  @param serverAddr 设备将要连接服务器地址
+ *  @param serverPost 设备将要连接服务器端口
+ */
+-(void)setDev:(NSString *)cid
+        devIp:(NSString *)devIp
+       devMac:(NSString *)devMac
+   serverAddr:(NSString *)serverAddr
+   serverPost:(int)serverPost;
+
+
+
+
+
 @end

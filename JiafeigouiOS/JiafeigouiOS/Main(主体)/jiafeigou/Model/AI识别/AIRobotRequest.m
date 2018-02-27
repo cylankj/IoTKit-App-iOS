@@ -28,7 +28,7 @@
     //申明返回的结果是json类型
     manager.responseSerializer = [AFJSONResponseSerializer serializer];
     //申明请求的数据是json类型
-    //manager.requestSerializer = [AFJSONRequestSerializer serializer];
+    manager.requestSerializer = [AFJSONRequestSerializer serializer];
 
     [manager POST:url parameters:parameters progress:^(NSProgress * _Nonnull uploadProgress) {
         
@@ -43,6 +43,44 @@
             failure(error);
         }
     }];
+}
+
++(NSString *)aiServiceReqUrl
+{
+    /*
+     https://yun.jfgou.com:8085/aiapp
+     http://yun.jfgou.com:8082/aiapp
+     */
+    NSString *url = [NSString stringWithFormat:@"http://%@:8082/aiapp",[[self class] reqHost]];
+    NSLog(@"url%@",url);
+    return url;
+}
+
++(NSString *)reqHost
+{
+    NSString *jfgServer = [[NSUserDefaults standardUserDefaults] objectForKey:@"_jfg_changedDomain_"];
+    if (jfgServer && [jfgServer isKindOfClass:[NSString class]] && ![jfgServer isEqualToString:@""]) {
+        
+        NSRange range = [jfgServer rangeOfString:@":"];
+        if (range.location !=NSNotFound && range.location>1) {
+            
+            NSString *addr = [jfgServer substringToIndex:range.location];
+            return addr;
+        }else{
+            return @"yun.jfgou.com";
+        }
+        
+    }else{
+        NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
+        
+        NSString *addr = [infoDictionary objectForKey:@"Jfgsdk_host"];
+        if (!addr || [addr isEqualToString:@""]) {
+            addr = @"yun.jfgou.com";
+        }
+        return addr;
+    }
+    
+    
 }
 
 

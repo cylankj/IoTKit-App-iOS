@@ -757,7 +757,6 @@ NSString *const rtmpMiYaoKey = @"rtmpMiYaoKey";
         accountView.detailLabel.text = [JfgLanguage getLanTextStrByKey:@"LIVE_ACCOUNT_UNBOUND"];
     }
     
-    
     if (self.weiboEditBgView.superview == nil) {
         [self.allBgView addSubview:self.weiboEditBgView];
     }

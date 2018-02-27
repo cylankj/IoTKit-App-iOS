@@ -69,7 +69,7 @@ PODS:
   - JZNavigationExtension (1.4.7)
   - KVOController (1.1.0)
   - Masonry (1.0.1)
-  - MJExtension (3.0.10)
+  - MJExtension (3.0.13)
   - MJRefresh (3.1.1)
   - MXParallaxHeader (0.5.0)
   - pop (1.0.9)
@@ -92,7 +92,7 @@ DEPENDENCIES:
   - JZNavigationExtension
   - KVOController
   - Masonry (~> 1.0.0)
-  - MJExtension
+  - MJExtension (~> 3.0.13)
   - MJRefresh
   - MXParallaxHeader (~> 0.5.0)
   - pop
@@ -121,7 +121,7 @@ SPEC CHECKSUMS:
   JZNavigationExtension: 235f57793791de029dd3e6cf785821abf75eeff1
   KVOController: 321b5fc59300fcaabd42c0f679baa7a27efbb2fd
   Masonry: a1a931a0d08870ed8ae415a2ea5ea68ebcac77df
-  MJExtension: d86aacb740c87519d20e3cca55b6fa4be6cc7548
+  MJExtension: 5932755f451458eefa24239358817f8d291240c7
   MJRefresh: 70a47c5543b567cdaf70ead5a6e99ce820652eb9
   MXParallaxHeader: c7dfdf8d769a8eb868a431ec3aeaf994a147b8bc
   pop: f667631a5108a2e60d9e8797c9b32ddaf2080bce
@@ -131,6 +131,6 @@ SPEC CHECKSUMS:
   UITableView+FDTemplateLayoutCell_Bell: ee65b057dbbe937bb6764f33d4ca6910d05a0efd
   weibolive_ios_sdk: ecfbab30bca32346a04953334257a28a02152ab5
 
-PODFILE CHECKSUM: 7cfe839d071b044b3d3102807be0e4ec373ff67d
+PODFILE CHECKSUM: 4be47149f68ddf9ff4e8a276e9445417e6907005
 
 COCOAPODS: 1.4.0.beta.2

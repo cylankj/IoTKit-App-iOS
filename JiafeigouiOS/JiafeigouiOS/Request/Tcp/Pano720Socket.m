@@ -71,15 +71,12 @@ typedef NS_ENUM(NSInteger, socketConnectType){
     {
         [self.delegates addObject:delegate];
     }
-    
-    [[JFGSDKSock sharedClient] addDelegate:self];
     [JFGSDK addDelegate:self];
     
 }
 -(void)removeDelegate:(id<Pano720SocketDelegate>)delegate
 {
     [self.delegates removeObject:delegate];
-    [[JFGSDKSock sharedClient] removeDelegate:self];
     [JFGSDK removeDelegate:self];
 }
 
@@ -105,7 +102,6 @@ typedef NS_ENUM(NSInteger, socketConnectType){
 -(void)panoConnectIp:(NSString *)ip port:(short)port autoConnect:(BOOL)isAuto
 {
     [JFGSDK appendStringToLogFile:[NSString stringWithFormat:@"udp connect ip[%@] port[%d] isAuto[%d]",ip, port, isAuto]];
-    [[JFGSDKSock sharedClient] connectWithIp:ip port:port autoReconnect:isAuto];
 }
 
 //局域网 断开tcp连接
@@ -113,7 +109,6 @@ typedef NS_ENUM(NSInteger, socketConnectType){
 {
     [self setSocketType:socketConnectType_None];
     [JFGSDK appendStringToLogFile:@" disconnect"];
-    [[JFGSDKSock sharedClient] disconnect];
 }
 
 - (void)jfgNetworkChanged:(JFGNetType)netType
@@ -204,7 +199,6 @@ typedef NS_ENUM(NSInteger, socketConnectType){
         case socketConnectType_UDP:
         {
             socketTypeStr = @"udp";
-            result = [[JFGSDKSock sharedClient] sendMsgForSockWithDst:cids isAck:isCallBack fileType:requestType msg:requestData];
         }
             break;
         case socketConnectType_TCP:
@@ -236,7 +230,7 @@ typedef NS_ENUM(NSInteger, socketConnectType){
             break;
         case socketConnectType_UDP:
         {
-            result = [[JFGSDKSock sharedClient] sendDPDataMsgForSockWithPeer:cid dpMsgIDs:segs];
+            //result = [[JFGSDKSock sharedClient] sendDPDataMsgForSockWithPeer:cid dpMsgIDs:segs];
         }
             break;
         default:
@@ -260,7 +254,7 @@ typedef NS_ENUM(NSInteger, socketConnectType){
             break;
         case socketConnectType_UDP:
         {
-            result = [[JFGSDKSock sharedClient] sendMsgForSockDownloadWithDst:cids fileName:fileName md5:md5 begin:begin offset:offset];
+            //result = [[JFGSDKSock sharedClient] sendMsgForSockDownloadWithDst:cids fileName:fileName md5:md5 begin:begin offset:offset];
         }
             break;
         default:

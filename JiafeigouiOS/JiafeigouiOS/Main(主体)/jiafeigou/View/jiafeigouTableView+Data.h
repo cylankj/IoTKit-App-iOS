@@ -8,7 +8,6 @@
 
 #import "jiafeigouTableView.h"
 #import <JFGSDK/JFGSDK.h>
-#import <JFGSDK/JFGSDKSock.h>
 
 @interface jiafeigouTableView (Data)<JFGSDKCallbackDelegate>
 

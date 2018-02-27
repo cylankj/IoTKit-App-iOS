@@ -7,10 +7,23 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <JFGSDK/JFGSDKBindingDevice.h>
 
 @interface WifiListView : UIView
--(instancetype)initWithFrame:(CGRect)frame;
-+(void)createWifiListView:(void (^) (NSString *wifiNameString))selectedBlock;
+
+
+typedef NS_ENUM(NSInteger,WifiListType) {
+    
+    WifiListTypeWifiName,
+    WifiListTypeCid,
+    
+};
+
+
+@property (nonatomic,assign)WifiListType listType;
+
+-(instancetype)initWithFrame:(CGRect)frame withType:(WifiListType)type;
++(void)createWifiListViewForType:(WifiListType)type commplete:(void (^) (id obj))selectedBlock;
 -(void)closeWifiListAction;
 
 @end

@@ -23,7 +23,7 @@
 
 @property (nonatomic, copy) NSString *binUrl;
 
-@property (nonatomic, copy) NSMutableArray *binUrls;          // 记录 url 包
+@property (nonatomic, strong) NSMutableArray *binUrls;          // 记录 url 包
 
 @property (nonatomic, assign) CGFloat totalSize;
 @property (nonatomic, copy) NSString *totalSizeStr;

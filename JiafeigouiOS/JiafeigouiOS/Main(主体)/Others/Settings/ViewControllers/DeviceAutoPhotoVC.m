@@ -174,8 +174,11 @@
     if (_dataArray == nil)
     {
         _dataArray = [[NSMutableArray alloc] initWithCapacity:5];
+        NSArray *arr = [self.autoPhotoVM fetchData];
+        if (arr) {
+            [_dataArray addObjectsFromArray:arr];
+        }
         
-        [_dataArray addObjectsFromArray:[self.autoPhotoVM fetchData]];
     }
     
     return _dataArray;
@@ -374,7 +377,6 @@
     else if (isOpenWarn == NO && indexPath.section == 0)
     {
         //没有开启移动侦测
-        
         [LSAlertView showAlertWithTitle:nil Message:[JfgLanguage getLanTextStrByKey:@"RECORD_ALARM_OPEN"] CancelButtonTitle:[JfgLanguage getLanTextStrByKey:@"CANCEL"] OtherButtonTitle:[JfgLanguage getLanTextStrByKey:@"OPEN"] CancelBlock:^{
             
         } OKBlock:^{

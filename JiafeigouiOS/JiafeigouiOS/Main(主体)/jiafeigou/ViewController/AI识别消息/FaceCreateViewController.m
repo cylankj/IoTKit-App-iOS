@@ -11,6 +11,7 @@
 #import "UIImageView+JFGImageView.h"
 #import "ProgressHUD.h"
 #import "LoginManager.h"
+#import "AIRobotRequest.h"
 
 @interface FaceCreateViewController ()<UITextFieldDelegate>
 {
@@ -71,51 +72,79 @@
     
     NSString *name = self.nameTextField.text;
     name = [name stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-    __weak typeof(self) weakSelf = self;
+    
     
     if (name.length>0 && self.access_id) {
         [ProgressHUD showProgress:nil];
         
-        [AIRobotRequest robotRegisterFace:self.access_id person:nil cid:self.cid personName:name sucess:^(id responseObject) {
-            /*
-             data = 20171024142319m7TT5TpufzF0p5Nalp;
-             msg = ok;
-             ret = 0;
-             */
-            NSLog(@"%@",responseObject);
-            if ([responseObject isKindOfClass:[NSDictionary class]]) {
-                
-                NSDictionary *dict = responseObject;
-                int ret = [dict[@"ret"] intValue];
-                if (ret == 0) {
-                    [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
-                    if (weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(faceCreateSuccessForIndex:)]) {
-                        [weakSelf.delegate faceCreateSuccessForIndex:self.selectedIndexPath];
-                    }
-                    
-                    int64_t delayInSeconds = 1.0;
-                    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
-                    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-                        
-                        if (weakSelf.navigationController && [weakSelf.navigationController respondsToSelector:@selector(popViewControllerAnimated:)]) {
-                            [weakSelf.navigationController popViewControllerAnimated:YES];
-                        }else{
-                            [weakSelf dismissViewControllerAnimated:YES completion:nil];
-                        }
-                        
-                        
-                    });
-                    return ;
-                }
-                
-            }
-            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"LIVE_CREATE_FAIL_TIPS"]];
-        } failure:^(NSError *error) {
-            NSLog(@"%@",error);
-            [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"LIVE_CREATE_FAIL_TIPS"]];
-        }];
+//        [AIRobotRequest robotRegisterFace:self.access_id person:nil cid:self.cid personName:name sucess:^(id responseObject) {
+//            /*
+//             data = 20171024142319m7TT5TpufzF0p5Nalp;
+//             msg = ok;
+//             ret = 0;
+//             */
+//
+//        } failure:^(NSError *error) {
+//
+//        }];
+        
+        [self createPerson];
         
     }
+}
+
+-(void)createPerson
+{
+    LoginManager *loginManag = [LoginManager sharedManager];
+    NSMutableDictionary *patameters = [NSMutableDictionary new];
+    [patameters setObject:@"RegisterByFace" forKey:@"action"];
+    [patameters setObject:loginManag.aiReqAuthToken forKey:@"auth_token"];
+    int64_t time = [[NSDate date] timeIntervalSince1970];
+    [patameters setObject:@(time) forKey:@"time"];
+    [patameters setObject:self.nameTextField.text forKey:@"person_name"];
+    JFGSDKAcount *acc =[loginManag accountCache];
+    NSString *account = acc.account;
+    [patameters setObject:account forKey:@"account"];
+    [patameters setObject:self.cid forKey:@"cid"];
+    [patameters setObject:self.access_id forKey:@"face_id"];
+    __weak typeof(self) weakSelf = self;
+    [AIRobotRequest afNetWorkingForAIRobotWithUrl:[AIRobotRequest aiServiceReqUrl] patameters:patameters sucess:^(id responseObject) {
+        
+        NSLog(@"%@",responseObject);
+        if ([responseObject isKindOfClass:[NSDictionary class]]) {
+            
+            NSDictionary *dict = responseObject;
+            int ret = [dict[@"code"] intValue];
+            if (ret == 200) {
+                [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"SCENE_SAVED"]];
+                if (weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(faceCreateSuccessForIndex:)]) {
+                    [weakSelf.delegate faceCreateSuccessForIndex:self.selectedIndexPath];
+                }
+                
+                int64_t delayInSeconds = 1.0;
+                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                    
+                    if (weakSelf.navigationController && [weakSelf.navigationController respondsToSelector:@selector(popViewControllerAnimated:)]) {
+                        [weakSelf.navigationController popViewControllerAnimated:YES];
+                    }else{
+                        [weakSelf dismissViewControllerAnimated:YES completion:nil];
+                    }
+                    
+                    
+                });
+                return ;
+            }
+            
+        }
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"LIVE_CREATE_FAIL_TIPS"]];
+        
+        
+    } failure:^(NSError *error) {
+        
+        NSLog(@"%@",error);
+        [ProgressHUD showText:[JfgLanguage getLanTextStrByKey:@"LIVE_CREATE_FAIL_TIPS"]];
+    }];
 }
 
 #pragma mark - 键盘通知
@@ -143,6 +172,8 @@
 }
 
 
+
+
 #pragma mark- 键盘监控通知
 ///键盘显示事件
 - (void)keyboardWillShow:(NSNotification *)notification
@@ -164,8 +195,6 @@
             self.bgView.top = 64;
         }];
     }
-        
-    
 }
 
 ///键盘消失事件
@@ -234,6 +263,7 @@
     if (!_nameTextField) {
         _nameTextField = [[UITextField alloc]initWithFrame:CGRectMake(20, 275-64, 200, 20)];
         _nameTextField.borderStyle = UITextBorderStyleNone;
+        _nameTextField.width = self.view.width-40;
         _nameTextField.x = self.view.width*0.5;
         _nameTextField.textAlignment = NSTextAlignmentCenter;
         _nameTextField.font = [UIFont systemFontOfSize:16];
